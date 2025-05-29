@@ -1,196 +1,170 @@
-/* === Complete Flatpickr Custom Styles (Further Adjustments) === */
+/* === 客製化日期選擇器樣式 === */
 
-/* 1. Main Calendar Container (.flatpickr-calendar.inline)
-----------------------------------------------------------------*/
-.flatpickr-calendar.inline {
-    background: transparent !important;
-    box-shadow: none !important;
-    color: white;
-    width: 100% !important;
-    height: 100% !important; 
-    padding: 0;
-    box-sizing: border-box;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* 2. Month Navigation Area (.flatpickr-months)
-----------------------------------------------------------------*/
-/* --- 在你的 style.css 中，Flatpickr 月份標題相關樣式 --- */
-
-.flatpickr-months {
+/* 主容器 - 填滿整個div */
+.custom-datepicker {
+    width: 100%;
+    height: 100%;
     background: transparent;
-    padding: 0.75rem 0;
-    display: flex !important;
-    align-items: center;
-    flex-shrink: 0 !important;
-    position: relative; 
-    z-index: 3; /* <<--- 稍微提高 z-index 以防萬一 */
-    overflow: visible !important; /* <<--- 確保內容不會被意外裁剪 */
+    color: white;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
 }
 
-.flatpickr-calendar.inline .flatpickr-months .flatpickr-month {
-    color: white !important;
-    fill: white !important;
-    font-size: 1.25rem !important; 
-    font-weight: 500 !important;   
-    text-align: center;
-    flex-grow: 1;
-    display: flex !important; /* <<--- 確保 flex 佈局 */
+/* 月份導航區域 */
+.datepicker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0 2rem 0;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.month-navigation {
+    display: flex;
+    gap: 3rem;
+    flex: 1;
     justify-content: center;
     align-items: center;
-    line-height: normal;
-    height: auto;
-    opacity: 1 !important; 
-    visibility: visible !important;
-    overflow: visible !important; /* <<--- 確保內容不會被意外裁剪 */
 }
 
-/* 這是包裹實際月份文字和年份輸入框的 span */
-.flatpickr-calendar.inline .flatpickr-months .flatpickr-month .flatpickr-current-month {
-    display: inline-block !important; /* 或者 flex，確保它有空間 */
-    opacity: 1 !important;
-    visibility: visible !important;
-    color: white !important; /* 直接給這個容器也上色 */
-}
-
-/* 這是實際的月份文字 span */
-.flatpickr-calendar.inline .flatpickr-current-month .cur-month {
-    display: inline !important; /* 確保它作為行內元素顯示 */
-    color: white !important;
-    font-size: inherit !important; /* 應繼承自 .flatpickr-month */
-    font-weight: inherit !important; /* 應繼承自 .flatpickr-month */
-    opacity: 1 !important; 
-    visibility: visible !important;
-    padding: 0 0.25em; /* 給月份文字一點點左右呼吸空間，避免緊貼 */
-}
-
-/* 再次確認年份輸入框是隱藏的 */
-.flatpickr-calendar.inline .flatpickr-current-month .numInputWrapper {
-    display: none !important;
-}
-
-/* 3. Weekdays Area (.flatpickr-weekdays)
-----------------------------------------------------------------*/
-.flatpickr-weekdays {
-    background: transparent;
-    display: flex !important;
-    padding: 0.75rem 0;
-    width: 100%;
-    flex-shrink: 0 !important;
-    box-sizing: border-box;
-    position: relative; /* For z-index context */
-    z-index: 2;         /* Ensure it's visible */
-}
-.flatpickr-weekday {
-    color: white !important; /* <<--- 強調顏色並確保可見 */
+.month-title {
+    font-size: 1.5rem;
     font-weight: 500;
-    font-size: 1rem;
-    line-height: 1.5;
+    color: white;
     text-align: center;
     flex: 1;
-    box-sizing: border-box;
-    opacity: 1 !important; /* <<--- 確保星期文字可見 */
-    visibility: visible !important; /* <<--- 確保可見 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* 4. Days Area (.flatpickr-days, .flatpickr-day)
-----------------------------------------------------------------*/
-.flatpickr-calendar.inline.showMonths-2 .flatpickr-innerContainer {
-    display: flex !important;
-    width: 100%;
-    flex-grow: 1 !important; 
-    align-items: stretch !important; 
-    gap: 2.5rem;    
-    padding: 0.5rem 0.5rem; /* <<--- 給日期區域上下增加一些padding */
-    box-sizing: border-box;
-}
-
-.flatpickr-calendar.inline.showMonths-2 .flatpickr-rContainer {
-    flex: 1 1 0% !important; 
-    min-width: 0;
-    box-shadow: none !important;
-    border: none !important;
-    outline: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden; /* 防止內容溢出 */
-}
-
-.flatpickr-rContainer > .flatpickr-days,
-.flatpickr-days { 
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: minmax(0, 1fr); 
-    flex-grow: 1 !important; 
-    gap: 2px; /* 日期之間的微小間距，可選 */
-    width: 100%;
-    height: 100%; /* <<--- 讓日期網格嘗試填滿 .flatpickr-rContainer 給的高度 */
-    background: transparent;
-    outline: none !important;
-    box-sizing: border-box;
-}
-
-.flatpickr-day {
-    background: transparent !important;
-    border: 1px solid transparent !important;
+.nav-arrow {
+    background: none;
+    border: none;
     color: white;
-    font-size: 1.125rem; 
-    padding: 0; 
-    line-height: normal; 
-    text-align: center;
+    font-size: 1.5rem;
     cursor: pointer;
-    box-sizing: border-box;
-    margin: 0;
-    display: flex !important;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
     align-items: center;
     justify-content: center;
-    height: 100% !important; 
-    /* min-height: 45px; */ /* <<--- 暫時移除 min-height，讓 height: 100% 和 grid-auto-rows 完全主導 */
+}
+
+.nav-arrow:hover {
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
 }
 
-/* Specific day states (保持不變，但包含在內以求完整) */
-.flatpickr-day:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
+/* 雙月曆容器 - 填滿剩餘空間 */
+.calendars-container {
+    display: flex;
+    gap: 3rem;
+    height: 100%;
+    width: 100%;
+    flex-grow: 1;
 }
-.flatpickr-day.today {
-    font-weight: bold;
+
+/* 單個月曆 - 填滿可用空間 */
+.calendar-month {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
 }
-.flatpickr-day.today:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
+
+/* 星期標題 - 更寬的間距 */
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 16px;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+    width: 100%;
 }
-.flatpickr-day.selected,
-.flatpickr-day.startRange,
-.flatpickr-day.endRange,
-.flatpickr-day.inRange:not(.startRange):not(.endRange) {
-    background: #333333 !important; 
-    border-color: #333333 !important;
-    color: white !important;
-    box-shadow: none !important;
-    border-radius: 0%; 
+
+.weekday {
+    text-align: center;
+    font-weight: 500;
+    font-size: 1rem;
+    color: white;
+    padding: 0.5rem 0;
 }
-.flatpickr-day.startRange,
-.flatpickr-day.endRange {
-    background: white !important; 
-    color: black !important;      
-    border-radius: 50% !important; 
+
+/* 日期網格 - 填滿剩餘高度 */
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 16px;
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
 }
-.flatpickr-day.selected.startRange:not(.endRange),
-.flatpickr-day.selected.endRange:not(.startRange) {
+
+/* 日期格子 - 確保正圓形 */
+.day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.125rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 40px;
+    height: 100%;
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 60px;
+    max-width: 60px;
+    margin: 0 auto;
+}
+
+.day:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.day.other-month {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* 今天的日期用圓圈border表示 */
+.day.today {
+    border: 1px solid white;
+}
+
+.day.selected,
+.day.start-range,
+.day.end-range {
+    background: white !important;
+    color: black !important;
     border-radius: 50% !important;
 }
-.flatpickr-day.disabled,
-.flatpickr-day.flatpickr-disabled {
-    color: rgba(255, 255, 255, 0.2) !important;
-    cursor: default;
-    background: transparent !important;
+
+/* 範圍內的日期用白色邊框表示 */
+.day.in-range {
+    border: 1px solid white;
+    background: transparent;
+    color: white;
+    border-radius: 50%;
 }
-.flatpickr-day.prevMonthDay,
-.flatpickr-day.nextMonthDay {
-    color: rgba(255, 255, 255, 0.3) !important;
+
+.day.disabled {
+    color: rgba(255, 255, 255, 0.2);
+    cursor: not-allowed;
 }
-.flatpickr-day.prevMonthDay:hover,
-.flatpickr-day.nextMonthDay:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
+
+.day.disabled:hover {
+    background: transparent;
 }

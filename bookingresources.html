@@ -13,7 +13,6 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="datepicker.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   </head>
 
@@ -56,61 +55,58 @@
 
     <main class="flex-grow flex pt-[3vh] pb-[3vh]">
       <div class="w-full md:flex px-[6%] flex-grow">
-        <div class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8">
+        <div class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-start md:mr-8">
           <div>
             <h1
               class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
             >
-              租借日期
+              租借資源
             </h1>
             <p class="text-base font-['Inter',_sans-serif] text-white mb-12">
-              選擇你想租借的日期
+              選擇你想租借的資源
             </p>
-          </div>
-
-          <div>
-            <div class="mb-8">
-              <h2
-                class="text-base font-['Inter',_sans-serif] font-medium text-gray-300 uppercase tracking-wider mb-2"
-              >
-                起租日
-              </h2>
-              <p
-                id="display-start-date"
-                class="text-4xl font-['Inter',_sans-serif] text-white"
-              >
-                ---- / -- / --
-              </p>
-            </div>
-
-            <div class="mb-8">
-              <h2
-                class="text-base font-['Inter',_sans-serif] font-medium text-gray-300 uppercase tracking-wider mb-2"
-              >
-                歸還日
-              </h2>
-              <p
-                id="display-end-date"
-                class="text-4xl font-['Inter',_sans-serif] text-white"
-              >
-                ---- / -- / --
-              </p>
-            </div>
-
-            <button
-              id="confirm-date-button"
-              type="button"
-              class="cta-button bg-white text-black font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block hover:bg-gray-200 transition-colors text-lg"
-              style="width: 200px"
-              onclick="window.location.href='bookingresources.html'"
-            >
-              確定日期
-            </button>
           </div>
         </div>
 
-        <div id="date-picker-container" class="flex items-stretch min-h-[400px]">
+        <div class="flex gap-15 flex-grow justify-end">
+          <div class="border border-white relative overflow-hidden group cursor-pointer" style="padding: 4%;">
+            <!-- 背景圖片 -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <img src="Images/SpaceImage.png" alt="Equipment" class="w-full h-full object-cover object-center">
+            </div>
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+                 style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
+            <!-- 文字內容 -->
+            <div class="relative z-10 h-full flex flex-col justify-end" style="padding-bottom: 10%;">
+              <h2 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">設備</h2>
+              <h3 class="text-3xl font-['Inter',_sans-serif] font-normal mb-4 tracking-wider uppercase">EQUIPMENT</h3>
+              <hr class="border-white mb-4" />
+              <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                工慾善其事，必先利其器。選擇租借設備，保證讓你的作品更上一層樓！
+              </p>
+            </div>
           </div>
+          
+          <div class="border border-white relative overflow-hidden group cursor-pointer" style="padding: 4%;">
+            <!-- 背景圖片 -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <img src="Images/SpaceImage.png" alt="Space" class="w-full h-full object-cover object-center">
+            </div>
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+                 style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
+            <!-- 文字內容 -->
+            <div class="relative z-10 h-full flex flex-col justify-end" style="padding-bottom: 10%;">
+              <h2 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">空間</h2>
+              <h3 class="text-3xl font-['Inter',_sans-serif] font-normal mb-4 tracking-wider uppercase">SPACE</h3>
+              <hr class="border-white mb-4" />
+              <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                你的作品需要地方放置嗎？選擇租借空間，好讓大家都可以看得到你的作品！
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
