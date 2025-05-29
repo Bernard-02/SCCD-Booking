@@ -9,10 +9,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Serif+TC:wght@200..900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="datepicker.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
   </head>
 
@@ -53,10 +58,63 @@
       </div>
     </header>
 
-    <main
-      class="flex-grow flex flex-col items-center justify-center text-center px-4"
-    >
-    
+    <main class="flex-grow flex pt-[3vh] pb-[3vh]">
+      <div class="w-full md:flex px-[6%] flex-grow">
+        <div class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8">
+          <div>
+            <h1
+              class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
+            >
+              租借日期
+            </h1>
+            <p class="text-base font-['Inter',_sans-serif] text-white mb-12">
+              選擇你想租借的日期
+            </p>
+          </div>
+
+          <div>
+            <div class="mb-8">
+              <h2
+                class="text-base font-['Inter',_sans-serif] font-medium text-gray-300 uppercase tracking-wider mb-2"
+              >
+                起租日
+              </h2>
+              <p
+                id="display-start-date"
+                class="text-4xl font-['Inter',_sans-serif] text-white"
+              >
+                ---- / -- / --
+              </p>
+            </div>
+
+            <div class="mb-8">
+              <h2
+                class="text-base font-['Inter',_sans-serif] font-medium text-gray-300 uppercase tracking-wider mb-2"
+              >
+                歸還日
+              </h2>
+              <p
+                id="display-end-date"
+                class="text-4xl font-['Inter',_sans-serif] text-white"
+              >
+                ---- / -- / --
+              </p>
+            </div>
+
+            <button
+              id="confirm-date-button"
+              type="button"
+              class="cta-button bg-white text-black font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block hover:bg-gray-200 transition-colors text-lg"
+              style="width: 200px"
+            >
+              確定日期
+            </button>
+          </div>
+        </div>
+
+        <div id="date-picker-container" class="flex items-stretch min-h-[400px]">
+          </div>
+      </div>
     </main>
 
     <footer class="py-8">
@@ -89,6 +147,8 @@
       </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/zh-tw.js"></script>
     <script src="script.js" defer></script>
   </body>
 </html>
