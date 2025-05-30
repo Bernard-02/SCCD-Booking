@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.currentMonth = new Date().getMonth();
                 this.currentYear = new Date().getFullYear();
                 this.today = new Date();
+                this.confirmButton = document.getElementById('confirm-date-button');
                 
                 // 月份和星期的中文名稱
                 this.monthNames = [
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
             init() {
                 this.render();
                 this.attachEvents();
+                this.updateButtonState();
             }
             
             render() {
@@ -209,6 +211,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 displayStartDate.textContent = formatDate(this.startDate);
                 displayEndDate.textContent = formatDate(this.endDate);
+                
+                // 更新按鈕狀態
+                this.updateButtonState();
+            }
+            
+            updateButtonState() {
+                if (this.startDate && this.endDate && this.confirmButton) {
+                    // 兩個日期都已選擇，啟用按鈕
+                    this.confirmButton.disabled = false;
+                    this.confirmButton.className = "cta-button bg-white text-black opacity-100 hover:opacity-80 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block transition-all text-lg cursor-pointer";
+                    
+                    // 移除舊的事件監聽器並添加新的
+                    this.confirmButton.onclick = () => {
+                        window.location.href = 'bookingresources.html';
+                    };
+                } else if (this.confirmButton) {
+                    // 日期未完全選擇，禁用按鈕
+                    this.confirmButton.disabled = true;
+                    this.confirmButton.className = "cta-button bg-white text-black opacity-30 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block transition-all text-lg cursor-not-allowed";
+                    this.confirmButton.onclick = null;
+                }
             }
             
             isSameDay(date1, date2) {

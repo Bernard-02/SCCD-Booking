@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SCCD 媒傳系平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  </head>
+
+  <body class="bg-black text-white flex flex-col h-screen">
+    <header class="py-6">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <a href="index.html" class="logo-link mr-10">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
+              SCCD
+            </div>
+          </a>
+
+          <nav>
+            <ul class="flex space-x-10">
+              <li>
+                <a
+                  href="booking.html"
+                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  >BOOKING</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#resources"
+                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  >RESOURCES</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <a
+          href="#login"
+          class="login-btn border text-white px-4 py-1 rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm"
+          >LOGIN</a
+        >
+      </div>
+    </header>
+
+    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
+      <div class="w-full px-[6%] flex-grow flex flex-col">
+        <!-- 頁面標題 -->
+        <div class="mb-8">
+          <h1
+            class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
+          >
+            租借設備
+          </h1>
+        </div>
+
+        <!-- 上方控制區 -->
+        <div class="flex justify-between items-center mb-16">
+          <!-- 左邊：篩選區塊 -->
+          <div class="flex space-x-8 group">
+            <button class="text-base font-['Inter',_sans-serif] text-white transition-all font-bold cursor-pointer filter-active group-hover:opacity-100">查看全部</button>
+            <button class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer group-hover:opacity-30 hover:!opacity-100">線材</button>
+            <button class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer group-hover:opacity-30 hover:!opacity-100">燈具</button>
+            <button class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer group-hover:opacity-30 hover:!opacity-100">展桌/畫板</button>
+            <button class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer group-hover:opacity-30 hover:!opacity-100">視聽類</button>
+            <button class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer group-hover:opacity-30 hover:!opacity-100">工具</button>
+            <button class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer group-hover:opacity-30 hover:!opacity-100">機具</button>
+          </div>
+
+          <!-- 右邊：搜索和狀態篩選 -->
+          <div class="flex items-center space-x-12">
+            <!-- 搜索區塊 -->
+            <div class="flex flex-col relative">
+              <div class="relative">
+                <input 
+                  type="text" 
+                  id="searchInput"
+                  class="bg-transparent border-b border-white text-white placeholder-transparent focus:outline-none focus:border-gray-300 pb-1 pl-0 transition-all duration-200" 
+                  placeholder=""
+                >
+                <span 
+                  id="searchLabel"
+                  class="absolute left-0 top-0 text-base font-['Inter',_sans-serif] font-medium uppercase tracking-wide pointer-events-none transition-all duration-200"
+                >SEARCH</span>
+              </div>
+            </div>
+
+            <!-- 狀態切換 chip -->
+            <div class="flex space-x-4">
+              <button class="bg-white text-black text-sm font-['Inter',_sans-serif] rounded-[30px] transition-colors" style="padding: 2px 8px;">
+                有現貨
+              </button>
+              <button class="border border-white text-white text-sm font-['Inter',_sans-serif] rounded-[30px] transition-colors hover:bg-white hover:text-black" style="padding: 2px 8px;">
+                已借出
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 下方產品陳列區 -->
+        <div class="flex-grow overflow-y-auto">
+          <div class="grid grid-cols-4 gap-16 pb-16">
+            <!-- 產品卡片 - 重複8個做示例 -->
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <!-- 背景圖片 -->
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <!-- 右上角狀態標籤 -->
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+            
+            <!-- 重複產品卡片 -->
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <div class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+                <div class="absolute inset-0">
+                  <img src="Images/Extension Cord.jpg" alt="Product" class="w-full h-full object-cover object-center">
+                </div>
+                
+                <!-- 頂部黑色到透明漸層 -->
+                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+                
+                <div class="absolute top-5 right-6 z-10">
+                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                </div>
+              </div>
+              
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">喇叭夾燈</div>
+                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                </div>
+                <div class="ml-2">
+                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="py-8">
+      <div
+        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
+        <div class="flex space-x-6 mb-4 md:mb-0">
+          <a
+            href="https://sccd.usc.edu.tw/"
+            target="_blank"
+            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
+            >TO SCCD</a
+          >
+          <a
+            href="about.html"
+            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
+            >ABOUT</a
+          >
+        </div>
+        <div class="copyright text-xs md:text-right">
+          <p>
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >Copyright © 2025 111</span
+            >屆系學會
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >All rights reserved.</span
+            >
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="script.js" defer></script>
+    <script>
+      // 搜尋欄互動效果
+      document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const searchLabel = document.getElementById('searchLabel');
+        
+        // 當hover或focus時顯示cursor，label變灰並右移
+        function showCursor() {
+          searchLabel.style.color = '#d4d4d8'; // text-zinc-300
+          searchLabel.style.transform = 'translateX(8px)';
+        }
+        
+        // 當離開且沒有輸入時恢復原狀
+        function hideCursor() {
+          if (searchInput.value === '') {
+            searchLabel.style.color = '#ffffff';
+            searchLabel.style.transform = 'translateX(0)';
+          }
+        }
+        
+        // 當有輸入時隱藏label
+        function toggleLabel() {
+          if (searchInput.value !== '') {
+            searchLabel.style.display = 'none';
+          } else {
+            searchLabel.style.display = 'block';
+          }
+        }
+        
+        // 事件監聽器
+        searchInput.addEventListener('mouseenter', showCursor);
+        searchInput.addEventListener('blur', hideCursor);
+        searchInput.addEventListener('mouseleave', function() {
+          if (document.activeElement !== searchInput) {
+            hideCursor();
+          }
+        });
+        searchInput.addEventListener('input', toggleLabel);
+      });
+    </script>
+  </body>
+</html>
