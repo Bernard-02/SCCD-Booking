@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="page-title">設備詳情 - SCCD 媒傳系平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  </head>
+
+  <body class="bg-black text-white flex flex-col h-screen">
+    <header class="py-6">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <a href="index.html" class="logo-link mr-10">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
+              SCCD
+            </div>
+          </a>
+
+          <nav>
+            <ul class="flex space-x-10">
+              <li>
+                <a
+                  href="booking.html"
+                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  >BOOKING</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#resources"
+                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  >RESOURCES</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <a
+          href="#login"
+          class="login-btn border text-white px-4 py-1 rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm"
+          >LOGIN</a
+        >
+      </div>
+    </header>
+
+    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
+      <div class="w-full flex-grow flex items-center justify-center">
+        <!-- 返回按鈕 -->
+        <div class="absolute top-[calc(4rem+3vh)] left-[5%]">
+          <a href="equipment.html" class="flex items-center text-zinc-300 hover:text-white transition-colors cursor-pointer">
+            <span class="text-3xl mr-2">←</span>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-2 gap-50 w-4/5 h-full items-center" style="margin-top: 4rem;">
+          <!-- 左側：圖片區域 -->
+          <div class="flex justify-end">
+            <div class="aspect-[4/5] w-4/5 cursor-pointer" id="equipment-image-container">
+              <img id="main-image" src="" alt="設備圖片" class="w-full h-full object-cover">
+            </div>
+          </div>
+
+          <!-- 右側：設備信息 -->
+          <div class="w-4/5 flex flex-col justify-center">
+            <!-- 設備基本信息 -->
+            <div class="aspect-[4/5] flex flex-col justify-between">
+              <div>
+                <!-- 狀態 -->
+                <div class="mb-4">
+                  <span id="equipment-status" class="text-base font-['Inter',_sans-serif] font-normal tracking-wide"></span>
+                </div>
+                
+                <!-- 分類和書籤 -->
+                <div class="flex items-start justify-between mb-3">
+                  <span id="equipment-category" class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"></span>
+                  <div class="ml-2">
+                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                  </div>
+                </div>
+                
+                <!-- 設備名稱 -->
+                <h1 id="equipment-name" class="text-3xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-8"></h1>
+                
+                <!-- 數量和押金 -->
+                <div class="grid grid-cols-2 gap-8">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">設備數量</div>
+                    <div id="equipment-quantity" class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wider"></div>
+                  </div>
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">押金</div>
+                    <div id="equipment-deposit" class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"></div>
+                  </div>
+                </div>
+                
+                <!-- 分隔線 -->
+                <hr class="border-white my-10">
+                
+                <!-- 設備描述 -->
+                <p id="equipment-description" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"></p>
+              </div>
+              
+              <!-- 加入清單按鈕 -->
+              <div class="flex items-end">
+                <button id="add-to-cart-btn" class="bg-white text-black opacity-100 hover:opacity-80 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] transition-all text-lg cursor-pointer" style="width: 200px;">
+                  加入清單
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 圖片放大覆蓋層 -->
+    <div id="image-overlay" class="fixed inset-0 bg-black bg-opacity-5 items-center justify-center z-50 hidden">
+      <div class="relative w-full h-full flex items-center justify-center" style="padding: 6vh 3vw;">
+        <img id="enlarged-image" src="" alt="放大圖片" class="max-h-full w-auto object-contain">
+      </div>
+    </div>
+
+    <!-- 加入清單通知 -->
+    <div id="notification" class="fixed bg-white text-black px-20 py-4 z-50 opacity-0 pointer-events-none transition-all duration-300 ease-out" style="bottom: 7.5rem; left: 50%; transform: translateX(-50%);">
+      <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
+    </div>
+
+    <footer class="py-8">
+      <div
+        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
+        <div class="flex space-x-6 mb-4 md:mb-0">
+          <a
+            href="https://sccd.usc.edu.tw/"
+            target="_blank"
+            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
+            >TO SCCD</a
+          >
+          <a
+            href="about.html"
+            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
+            >ABOUT</a
+          >
+        </div>
+        <div class="copyright text-xs md:text-right">
+          <p>
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >Copyright © 2025 111</span
+            >屆系學會
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >All rights reserved.</span
+            >
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- 載入設備數據 -->
+    <script src="equipment-data.js"></script>
+    <script>
+      // 設備詳情頁面邏輯
+      document.addEventListener('DOMContentLoaded', function() {
+        // 從URL參數獲取設備ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const equipmentId = urlParams.get('id');
+        
+        if (!equipmentId) {
+          // 如果沒有設備ID，重定向到設備列表
+          window.location.href = 'equipment.html';
+          return;
+        }
+        
+        // 獲取設備數據
+        const equipment = getEquipmentById(equipmentId);
+        
+        if (!equipment) {
+          // 如果找不到設備，顯示錯誤或重定向
+          alert('找不到該設備信息');
+          window.location.href = 'equipment.html';
+          return;
+        }
+        
+        // 更新頁面內容
+        updateEquipmentDisplay(equipment);
+        
+        // 設置圖片放大功能
+        setupImageEnlargement();
+        
+        // 設置加入清單功能
+        setupAddToCart();
+      });
+      
+      function updateEquipmentDisplay(equipment) {
+        // 更新頁面標題
+        document.getElementById('page-title').textContent = `${equipment.name} - SCCD 媒傳系平台`;
+        
+        // 更新主要圖片
+        document.getElementById('main-image').src = equipment.mainImage;
+        document.getElementById('main-image').alt = equipment.name;
+        
+        // 更新設備信息
+        document.getElementById('equipment-status').textContent = equipment.status;
+        document.getElementById('equipment-status').style.color = equipment.statusColor;
+        document.getElementById('equipment-category').textContent = equipment.category;
+        document.getElementById('equipment-name').textContent = equipment.name;
+        document.getElementById('equipment-quantity').textContent = equipment.quantity;
+        document.getElementById('equipment-deposit').textContent = `NT ${equipment.deposit}`;
+        document.getElementById('equipment-description').textContent = equipment.description;
+      }
+      
+      function setupImageEnlargement() {
+        const imageContainer = document.getElementById('equipment-image-container');
+        const mainImage = document.getElementById('main-image');
+        const overlay = document.getElementById('image-overlay');
+        const enlargedImage = document.getElementById('enlarged-image');
+        
+        // 點擊圖片放大
+        imageContainer.addEventListener('click', function() {
+          enlargedImage.src = mainImage.src;
+          enlargedImage.alt = mainImage.alt;
+          overlay.classList.remove('hidden');
+          overlay.classList.add('flex');
+          document.body.style.overflow = 'hidden'; // 防止背景滾動
+        });
+        
+        // 點擊覆蓋層關閉放大圖片
+        overlay.addEventListener('click', function(e) {
+          if (e.target === overlay || e.target === enlargedImage.parentElement) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.body.style.overflow = 'auto'; // 恢復滾動
+          }
+        });
+        
+        // ESC 鍵關閉放大圖片
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+          }
+        });
+      }
+      
+      function setupAddToCart() {
+        const addBtn = document.getElementById('add-to-cart-btn');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        
+        addBtn.addEventListener('click', function() {
+          // 獲取當前設備名稱
+          const equipmentName = document.getElementById('equipment-name').textContent;
+          
+          // 更新通知文字
+          notificationText.textContent = `${equipmentName}已成功加入租借清單！`;
+          
+          // 顯示通知動畫
+          showNotification(notification);
+        });
+      }
+      
+      function showNotification(notification) {
+        // 重置位置和透明度（從底部開始）
+        notification.style.bottom = '7.5rem';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%) translateY(50px)';
+        notification.style.opacity = '0';
+        notification.style.pointerEvents = 'none';
+        
+        // 顯示通知（從底部浮上來的效果）
+        setTimeout(() => {
+          notification.style.opacity = '1';
+          notification.style.transform = 'translateX(-50%) translateY(0px)';
+        }, 50);
+        
+        // 2秒後開始消失動畫
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          notification.style.transform = 'translateX(-50%) translateY(-10px)';
+        }, 2000);
+        
+        // 動畫完成後完全隱藏
+        setTimeout(() => {
+          notification.style.pointerEvents = 'none';
+        }, 2500);
+      }
+    </script>
+  </body>
+</html> 
