@@ -16,6 +16,65 @@
     <link rel="stylesheet" href="datepicker.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
+    
+    <!-- 箭頭動畫樣式 -->
+    <style>
+      /* 箭頭動畫樣式 */
+      .arrow-link {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+      }
+      
+      .arrow-container {
+        position: relative;
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
+        margin-left: 8px;
+      }
+      
+      .arrow-icons-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+      }
+      
+      .arrow-icon {
+        width: 0.8em;
+        height: 0.8em;
+        flex-shrink: 0;
+        filter: brightness(0) invert(1); /* 預設白色 */
+      }
+      
+      .arrow-link:hover .arrow-icons-wrapper {
+        transform: translateY(-1em);
+      }
+      
+      /* LOGIN 按鈕特殊樣式 */
+      .login-btn {
+        padding: 1.5px 10px !important;
+        padding-right: 8px !important;
+      }
+      
+      .login-btn:hover .arrow-icon {
+        filter: brightness(0); /* hover 時變黑色 */
+      }
+      
+      /* Footer 連結 hover 效果 */
+      .footer-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* Header 導航連結 hover 效果 */
+      .nav-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+    </style>
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen">
@@ -33,14 +92,14 @@
               <li>
                 <a
                   href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >BOOKING</a
                 >
               </li>
               <li>
                 <a
                   href="#resources"
-                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >RESOURCES</a
                 >
               </li>
@@ -51,14 +110,20 @@
           <a
             href="rental-list.html"
             id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
             href="#login"
-            class="login-btn border text-white px-4 py-1 rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm"
-            >LOGIN</a
-          >
+            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
+            >LOG IN
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
         </div>
       </div>
     </header>
@@ -131,14 +196,26 @@
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
-            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
-            >TO SCCD</a
-          >
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >TO SCCD
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
           <a
             href="about.html"
-            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
-            >ABOUT</a
-          >
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >ABOUT
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
         </div>
         <div class="copyright text-xs md:text-right">
           <p>

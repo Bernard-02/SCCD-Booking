@@ -45,9 +45,144 @@
         font-family: Inter, sans-serif;
       }
       
-      .rotate-x:hover {
-        transform: rotate(180deg);
-        transition: transform 0.3s ease;
+      /* SVG 按鈕樣式 */
+      .quantity-btn {
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .quantity-btn:hover {
+        opacity: 0.7;
+      }
+      
+      .quantity-btn.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      
+      .remove-btn {
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .remove-btn:hover {
+        transform: rotate(90deg);
+      }
+      
+      /* 租借摘要層級 */
+      .rental-summary {
+        position: fixed;  
+        bottom: 50px; /* 減少距離底部的空間，讓租借摘要更貼近footer */
+        left: 0;
+        right: 0;
+        z-index: 10;
+        background-color: black;
+        padding: 2rem 6% 1rem 6%;
+      }
+      
+      /* 設備列表滑動區域 */
+      .equipment-scroll-area {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-right: 4px;
+        padding-bottom: 160px; /* 為租借摘要留出空間，讓內容可以滾動到下方 */
+        max-height: calc(100vh - 200px); /* 限制最大高度，確保不會擠掉footer */
+      }
+      
+      /* 移除body的overflow限制，讓footer可以正常顯示 */
+      .main-container {
+        height: calc(100vh - 160px); /* 扣除header和footer的高度 */
+        overflow: hidden;
+      }
+      
+      .equipment-scroll-area::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      .equipment-scroll-area::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      
+      .equipment-scroll-area::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 3px;
+      }
+      
+      .equipment-scroll-area::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+      
+      /* 修復empty-message的顯示問題 */
+      .empty-message-container {
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .empty-message-container.hide {
+        display: none;
+      }
+      
+      /* 箭頭動畫樣式 */
+      .arrow-link {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+      }
+      
+      .arrow-container {
+        position: relative;
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
+        margin-left: 8px;
+      }
+      
+      .arrow-icons-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+      }
+      
+      .arrow-icon {
+        width: 0.8em;
+        height: 0.8em;
+        flex-shrink: 0;
+        filter: brightness(0) invert(1); /* 預設白色 */
+      }
+      
+      .arrow-link:hover .arrow-icons-wrapper {
+        transform: translateY(-1em);
+      }
+      
+      /* LOGIN 按鈕特殊樣式 */
+      .login-btn {
+        padding: 1.5px 10px !important;
+        padding-right: 8px !important;
+      }
+      
+      .login-btn:hover .arrow-icon {
+        filter: brightness(0); /* hover 時變黑色 */
+      }
+      
+      /* Footer 連結 hover 效果 */
+      .footer-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* Header 導航連結 hover 效果 */
+      .nav-link:hover {
+        opacity: 0.8;
+        color: white !important;
       }
     </style>
   </head>
@@ -67,14 +202,14 @@
               <li>
                 <a
                   href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >BOOKING</a
                 >
               </li>
               <li>
                 <a
                   href="#resources"
-                  class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >RESOURCES</a
                 >
               </li>
@@ -85,76 +220,82 @@
           <a
             href="rental-list.html"
             id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium hover:text-gray-300 transition-colors"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
             href="#login"
-            class="login-btn border text-white px-4 py-1 rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm"
-            >LOGIN</a
-          >
+            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
+            >LOG IN
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
-      <div class="w-full px-[6%] flex-grow flex flex-col">
+    <main class="flex-grow flex flex-col pt-[3vh]">
+      <div class="w-full px-[6%] flex-grow flex flex-col main-container">
         <!-- 頁面標題 -->
-        <div class="mb-4">
+        <div class="mb-4 flex-shrink-0">
           <h1 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
             租借清單
           </h1>
         </div>
 
         <!-- 可滾動的設備列表 -->
-        <div class="flex-grow mb-4">
-          <div class="h-full overflow-y-auto pr-4" id="equipment-list">
+        <div class="equipment-scroll-area">
+          <div id="equipment-list">
             <!-- 空清單提示 -->
-            <div id="empty-message" class="h-full items-center justify-center hidden">
+            <div id="empty-message" class="empty-message-container hide">
               <p class="text-base text-white tracking-wide font-['Noto_Sans_TC',_sans-serif]">此清單是空的，快去租借吧！</p>
             </div>
             
             <!-- 設備項目將動態載入 -->
           </div>
         </div>
+      </div>
+    </main>
 
-        <!-- 租借摘要 -->
-        <div class="mb-2">
-          <div class="flex justify-between items-end">
-            <!-- 左邊：租借摘要資訊 -->
-            <div>
-              <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white mb-6">租借摘要</h2>
-              
-              <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white mb-8">
-                租借設備或空間，共 <span id="total-items" class="font-medium">2</span> 件
-              </p>
-              
-              <div class="flex items-start space-x-3">
-                <input type="checkbox" id="terms-checkbox" class="mt-1 custom-checkbox">
-                <label for="terms-checkbox" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer">
-                  我已閱讀並同意系上租借設備與空間的<a href="https://docs.google.com/document/d/1gSzAqyPO922dO6Y61sYF070jZmntP8Kyjz24YQbp4uA/edit?usp=sharing" target="_blank" class="underline cursor-pointer hover:text-zinc-300 transition-colors">使用規則與條款</a>
-                </label>
-              </div>
-            </div>
+    <!-- 租借摘要 -->
+    <div class="rental-summary">
+      <div class="flex justify-between items-end">
+        <!-- 左邊：租借摘要資訊 -->
+        <div>
+          <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white mb-6">租借摘要</h2>
+          
+          <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white mb-4">
+            租借設備或空間，共 <span id="total-items" class="font-medium">2</span> 件
+          </p>
+          
+          <div class="flex items-start space-x-3">
+            <input type="checkbox" id="terms-checkbox" class="mt-1 custom-checkbox">
+            <label for="terms-checkbox" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer">
+              我已閱讀並同意系上租借設備與空間的<a href="https://docs.google.com/document/d/1gSzAqyPO922dO6Y61sYF070jZmntP8Kyjz24YQbp4uA/edit?usp=sharing" target="_blank" class="underline cursor-pointer hover:text-zinc-300 transition-colors">使用規則與條款</a>
+            </label>
+          </div>
+        </div>
+        
+        <!-- 右邊：押金總額和按鈕 -->
+        <div class="text-right">
+          <div>
+            <div id="total-deposit" class="text-3xl font-['Inter',_sans-serif] font-normal text-white mb-4">NT1,000</div>
             
-            <!-- 右邊：押金總額和按鈕 -->
-            <div class="text-right">
-              <div class="mb-2">
-                <div id="total-deposit" class="text-3xl font-['Inter',_sans-serif] font-normal text-white mb-4">NT1,000</div>
-                
-                <div style="margin-left: 2rem;">
-                  <button id="rental-btn" class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] transition-all text-lg cursor-not-allowed" style="width: 200px;" disabled>
-                    租借
-                  </button>
-                </div>
-              </div>
+            <div style="margin-left: 2rem;">
+              <button id="rental-btn" class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] transition-all text-lg cursor-not-allowed" style="width: 200px;" disabled>
+                租借
+              </button>
             </div>
           </div>
         </div>
       </div>
-    </main>
+    </div>
 
-    <footer class="py-8">
+    <footer class="py-4">
       <div
         class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
       >
@@ -162,14 +303,26 @@
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
-            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
-            >TO SCCD</a
-          >
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >TO SCCD
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
           <a
             href="about.html"
-            class="font-['Inter',_sans-serif] hover:text-gray-300 transition-colors"
-            >ABOUT</a
-          >
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >ABOUT
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
         </div>
         <div class="copyright text-xs md:text-right">
           <p>
@@ -206,6 +359,21 @@
           }
         });
         
+        // 租借按鈕點擊事件
+        rentalBtn.addEventListener('click', function() {
+          if (!rentalBtn.disabled && checkbox.checked) {
+            // 保存當前購物車數據到localStorage
+            const currentCart = window.cartManager.getCart();
+            localStorage.setItem('rentalCartData', JSON.stringify(currentCart));
+            
+            // 清除舊的租借號，讓收據頁面生成新的
+            localStorage.removeItem('currentRentalNumber');
+            
+            // 跳轉到租借收據頁面
+            window.location.href = 'rental-receipt.html';
+          }
+        });
+        
         // 監聽購物車更新事件
         window.addEventListener('cartUpdated', function(event) {
           loadCartItems();
@@ -235,6 +403,9 @@
         div.className = 'flex items-center border-b border-white';
         div.style.cssText = 'height: 200px; padding: 1rem 0;';
         
+        // 檢查是否為教室
+        const isClassroom = item.category === 'classroom';
+        
         div.innerHTML = `
           <!-- 設備圖片 -->
           <div class="flex items-center justify-center" style="width: 150px;">
@@ -246,25 +417,33 @@
           <!-- 剩餘空間平均分佈 -->
           <div class="flex-1 grid grid-cols-4 gap-6 items-center h-full">
             <!-- 設備名稱 -->
-            <div class="flex items-center justify-start ml-8">
+            <div class="flex items-center justify-start ml-12">
               <h3 class="text-xl font-['Inter',_sans-serif] font-medium tracking-wide text-white">${item.name}</h3>
             </div>
             
             <!-- 數量調整 -->
             <div class="flex items-center justify-center space-x-4">
-              <button class="text-2xl font-['Inter',_sans-serif] font-normal tracking-normal text-white hover:text-zinc-300 transition-colors cursor-pointer" onclick="decreaseQuantity('${item.id}')">-</button>
+              <svg class="quantity-btn ${item.quantity === 1 || isClassroom ? 'disabled' : ''}" viewBox="0 0 30 30" onclick="${isClassroom ? '' : `decreaseQuantity('${item.id}')`}">
+                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+              </svg>
               <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-normal text-white min-w-[2rem] text-center" data-quantity="${item.quantity}" data-equipment-id="${item.id}">${item.quantity}</span>
-              <button class="text-2xl font-['Inter',_sans-serif] font-normal tracking-normal text-white hover:text-zinc-300 transition-colors cursor-pointer" onclick="increaseQuantity('${item.id}')">+</button>
+              <svg class="quantity-btn ${isClassroom ? 'disabled' : ''}" viewBox="0 0 30 30" onclick="${isClassroom ? '' : `increaseQuantity('${item.id}')`}">
+                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              </svg>
             </div>
             
             <!-- 押金 -->
-            <div class="flex items-center justify-center">
+            <div class="flex items-center justify-start ml-15">
               <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-normal text-white" data-unit-price="${item.deposit}" data-total-price="${item.deposit * item.quantity}" data-equipment-id="${item.id}">NT${(item.deposit * item.quantity).toLocaleString()}</span>
             </div>
             
             <!-- 刪除按鈕 -->
             <div class="flex items-center justify-end">
-              <button class="text-2xl text-white cursor-pointer rotate-x" onclick="removeItem('${item.id}')">✕</button>
+              <svg class="remove-btn" viewBox="0 0 30 30" onclick="removeItem('${item.id}')">
+                <line x1="5" y1="5" x2="25" y2="25" stroke="white" stroke-width="1"/>
+                <line x1="25" y1="5" x2="5" y2="25" stroke="white" stroke-width="1"/>
+              </svg>
             </div>
           </div>
         `;
@@ -275,7 +454,7 @@
       function increaseQuantity(equipmentId) {
         const cart = window.cartManager.getCart();
         const item = cart.find(item => item.id === equipmentId);
-        if (item) {
+        if (item && item.category !== 'classroom') {
           window.cartManager.updateQuantity(equipmentId, item.quantity + 1);
         }
       }
@@ -283,7 +462,7 @@
       function decreaseQuantity(equipmentId) {
         const cart = window.cartManager.getCart();
         const item = cart.find(item => item.id === equipmentId);
-        if (item && item.quantity > 1) {
+        if (item && item.quantity > 1 && item.category !== 'classroom') {
           window.cartManager.updateQuantity(equipmentId, item.quantity - 1);
         }
       }
@@ -307,8 +486,7 @@
         // 檢查是否有設備項目
         if (cart.length === 0) {
           // 顯示空清單提示
-          emptyMessage.classList.remove('hidden');
-          emptyMessage.classList.add('flex');
+          emptyMessage.classList.remove('hide');
           
           // 禁用checkbox和button
           checkbox.disabled = true;
@@ -318,8 +496,7 @@
           rentalBtn.classList.remove('opacity-100', 'hover:opacity-80', 'cursor-pointer');
         } else {
           // 隱藏空清單提示
-          emptyMessage.classList.remove('flex');
-          emptyMessage.classList.add('hidden');
+          emptyMessage.classList.add('hide');
           
           // 恢復checkbox可用狀態
           checkbox.disabled = false;

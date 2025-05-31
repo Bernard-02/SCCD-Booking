@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
     
@@ -127,24 +127,49 @@
       </div>
     </header>
 
-    <main
-      class="flex-grow flex flex-col items-center justify-center text-center px-4"
-    >
-      <div class="main-container">
-        <h1 class="main-title text-5xl font-medium mb-6">
-          <span class="title-text">媒傳系專屬租借資源平台</span>
-        </h1>
-        <p class="max-w-xl mx-auto text-base mb-8">
-          歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
-        </p>
-        <a href="booking.html">
-          <button
-            class="cta-button bg-white text-black font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block hover:bg-gray-200 transition-colors cursor-pointer"
-            style="min-width: 200px"
-          >
-            開始租借
-          </button>
-        </a>
+    <main class="flex-grow flex pt-[3vh] pb-[3vh]">
+      <div class="w-full md:flex px-[6%] flex-grow">
+        <div class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8">
+          <div>
+            <h1
+              class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
+            >
+              租借空間
+            </h1>
+          </div>
+        </div>
+
+        <div class="flex gap-15 flex-grow justify-end">
+          <div class="border border-white relative overflow-hidden group cursor-pointer flex-1" style="padding: 4%;">
+            <!-- 背景圖片 -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <img src="Images/A5F Numbered Area.png" alt="A5F Numbered Area" class="w-full h-full object-cover object-center">
+            </div>
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+                 style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
+            <!-- 文字內容 -->
+            <div class="relative z-10 h-full flex flex-col justify-end">
+              <h2 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">A5F 編號區</h2>
+              <h3 class="text-3xl font-['Inter',_sans-serif] font-normal mb-4 tracking-wider uppercase">A5F NUMBERED AREA</h3>
+            </div>
+          </div>
+
+          <a href="classroom.html" class="border border-white relative overflow-hidden group cursor-pointer flex-1 block" style="padding: 4%;">
+            <!-- 背景圖片 -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <img src="Images/Classroom.png" alt="Classroom" class="w-full h-full object-cover object-center">
+            </div>
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
+                 style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
+            <!-- 文字內容 -->
+            <div class="relative z-10 h-full flex flex-col justify-end">
+              <h2 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">教室</h2>
+              <h3 class="text-3xl font-['Inter',_sans-serif] font-normal mb-4 tracking-wider uppercase">CLASSROOM</h3>
+            </div>
+          </a>
+        </div>
       </div>
     </main>
 
@@ -192,4 +217,4 @@
 
     <script src="script.js" defer></script>
   </body>
-</html>
+</html> 

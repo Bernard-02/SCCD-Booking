@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>教室租借 - SCCD 媒傳系平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <script src="cart-manager.js"></script>
+    
+    <!-- 箭頭動畫樣式 -->
+    <style>
+      /* 箭頭動畫樣式 */
+      .arrow-link {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+      }
+      
+      .arrow-container {
+        position: relative;
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
+        margin-left: 8px;
+      }
+      
+      .arrow-icons-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+      }
+      
+      .arrow-icon {
+        width: 0.8em;
+        height: 0.8em;
+        flex-shrink: 0;
+        filter: brightness(0) invert(1); /* 預設白色 */
+      }
+      
+      .arrow-link:hover .arrow-icons-wrapper {
+        transform: translateY(-1em);
+      }
+      
+      /* LOGIN 按鈕特殊樣式 */
+      .login-btn {
+        padding: 1.5px 10px !important;
+        padding-right: 8px !important;
+      }
+      
+      .login-btn:hover .arrow-icon {
+        filter: brightness(0); /* hover 時變黑色 */
+      }
+      
+      /* Footer 連結 hover 效果 */
+      .footer-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* Header 導航連結 hover 效果 */
+      .nav-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* 展開式元件樣式 */
+      .accordion-item {
+        border-bottom: 1px solid white;
+      }
+      
+      .accordion-item:last-child {
+        border-bottom: none;
+      }
+      
+      .accordion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        padding: 0;
+      }
+      
+      .accordion-content.expanded {
+        max-height: 500px;
+        padding-bottom: 24px;
+        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding-bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .expand-icon {
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .expand-icon.plus:hover {
+        transform: rotate(90deg);
+      }
+      
+      .accordion-content-inner {
+        opacity: 0;
+        transition: opacity 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) 0.1s;
+      }
+      
+      .accordion-content.expanded .accordion-content-inner {
+        opacity: 1;
+      }
+      
+      .classroom-image {
+        aspect-ratio: 3/2;
+        width: 100%;
+        object-fit: cover;
+      }
+      
+      /* 通知樣式 - 參照 equipment-detail */
+      #notification {
+        position: fixed;
+        background-color: white;
+        color: black;
+        padding: 16px 80px;
+        z-index: 50;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease-out;
+        bottom: 7.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      
+      #notification.error {
+        background-color: #ffd9e0;
+        color: #ff4560;
+      }
+      
+      #notification.show {
+        opacity: 1;
+      }
+      
+      /* 禁用按鈕樣式 */
+      .button-disabled {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+      }
+    </style>
+  </head>
+
+  <body class="bg-black text-white flex flex-col h-screen">
+    <header class="py-6">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <a href="index.html" class="logo-link mr-10">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
+              SCCD
+            </div>
+          </a>
+
+          <nav>
+            <ul class="flex space-x-10">
+              <li>
+                <a
+                  href="booking.html"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+                  >BOOKING</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#resources"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+                  >RESOURCES</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div class="flex items-center space-x-5">
+          <a
+            href="rental-list.html"
+            id="cart-link"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+            >(<span id="cart-count">0</span>) CART</a
+          >
+          <a
+            href="#login"
+            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
+            >LOG IN
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow flex pt-[3vh] pb-[3vh] justify-center items-center">
+      <div class="w-4/5 flex gap-35">
+        <!-- 左側：教室列表 -->
+        <div class="flex-1 pr-20">
+          <!-- A503 教室 -->
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('a503')">
+              <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
+              <svg class="expand-icon plus" id="icon-a503" viewBox="0 0 30 30">
+                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              </svg>
+            </div>
+            <div class="accordion-content" id="content-a503">
+              <div class="accordion-content-inner space-y-8">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                </div>
+                <div class="space-y-2">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                  </div>
+                </div>
+                <div>
+                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                    A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- A507 教室 -->
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('a507')">
+              <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
+              <svg class="expand-icon plus" id="icon-a507" viewBox="0 0 30 30">
+                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              </svg>
+            </div>
+            <div class="accordion-content" id="content-a507">
+              <div class="accordion-content-inner space-y-8">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                </div>
+                <div class="space-y-2">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                  </div>
+                </div>
+                <div>
+                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                    A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- A508 教室 -->
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('a508')">
+              <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
+              <svg class="expand-icon plus" id="icon-a508" viewBox="0 0 30 30">
+                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              </svg>
+            </div>
+            <div class="accordion-content" id="content-a508">
+              <div class="accordion-content-inner space-y-8">
+                <div>
+                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                </div>
+                <div class="space-y-2">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                  </div>
+                </div>
+                <div>
+                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                    A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：教室圖片和按鈕 -->
+        <div class="flex-1">
+          <div>
+            <img id="classroom-image" src="Images/A503.png" alt="教室圖片" class="classroom-image">
+            <button id="add-classroom-btn" class="bg-white text-black opacity-100 hover:opacity-80 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] transition-all text-lg cursor-pointer mt-12" style="width: 200px;" onclick="addClassroomToCart()">
+              加入清單
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 通知元件 -->
+    <div id="notification">
+      <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
+    </div>
+
+    <footer class="py-8">
+      <div
+        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
+        <div class="flex space-x-6 mb-4 md:mb-0">
+          <a
+            href="https://sccd.usc.edu.tw/"
+            target="_blank"
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >TO SCCD
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+          <a
+            href="about.html"
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >ABOUT
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+        </div>
+        <div class="copyright text-xs md:text-right">
+          <p>
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >Copyright © 2025 111</span
+            >屆系學會
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >All rights reserved.</span
+            >
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      let currentSelectedClassroom = 'a503';
+      let classroomErrorCounts = {}; // 追蹤每個教室的錯誤通知次數
+      
+      // 教室圖片對應
+      const classroomImages = {
+        'a503': 'Images/A503.png',
+        'a507': 'Images/A507.png',
+        'a508': 'Images/A508.jpg'
+      };
+      
+      // 教室資料
+      const classroomData = {
+        'a503': {
+          id: 'classroom-a503',
+          name: 'A503 教室',
+          category: 'classroom',
+          deposit: 5000,
+          image: 'Images/A503.png'
+        },
+        'a507': {
+          id: 'classroom-a507',
+          name: 'A507 教室', 
+          category: 'classroom',
+          deposit: 5000,
+          image: 'Images/A507.png'
+        },
+        'a508': {
+          id: 'classroom-a508',
+          name: 'A508 教室',
+          category: 'classroom', 
+          deposit: 5000,
+          image: 'Images/A508.jpg'
+        }
+      };
+      
+      function toggleAccordion(classroomId) {
+        // 如果點擊的是已經打開的教室，就關閉它
+        if (currentSelectedClassroom === classroomId) {
+          closeAccordion(classroomId);
+          currentSelectedClassroom = null;
+          updateButtonState();
+          return;
+        }
+        
+        // 關閉當前打開的教室
+        if (currentSelectedClassroom) {
+          closeAccordion(currentSelectedClassroom);
+        }
+        
+        // 延遲打開新選擇的教室，讓關閉動畫先完成
+        setTimeout(() => {
+          openAccordion(classroomId);
+          currentSelectedClassroom = classroomId;
+          updateClassroomImage(classroomId);
+          updateButtonState();
+        }, 200);
+      }
+      
+      function openAccordion(classroomId) {
+        const content = document.getElementById(`content-${classroomId}`);
+        const icon = document.getElementById(`icon-${classroomId}`);
+        
+        content.classList.add('expanded');
+        
+        // 改變圖標為 "-" 並移除 plus 類別
+        icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>';
+        icon.classList.remove('plus');
+      }
+      
+      function closeAccordion(classroomId) {
+        const content = document.getElementById(`content-${classroomId}`);
+        const icon = document.getElementById(`icon-${classroomId}`);
+        
+        content.classList.remove('expanded');
+        
+        // 改變圖標為 "+" 並添加 plus 類別
+        icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/><line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>';
+        icon.classList.add('plus');
+      }
+      
+      function updateClassroomImage(classroomId) {
+        const image = document.getElementById('classroom-image');
+        image.src = classroomImages[classroomId];
+        image.alt = `${classroomId.toUpperCase()} 教室`;
+      }
+      
+      function updateButtonState() {
+        const button = document.getElementById('add-classroom-btn');
+        
+        if (!currentSelectedClassroom) {
+          // 沒有選中教室時，按鈕可用
+          button.classList.remove('button-disabled');
+          return;
+        }
+        
+        const cart = window.cartManager.getCart();
+        const classroom = classroomData[currentSelectedClassroom];
+        const isClassroomInCart = cart.find(item => item.id === classroom.id);
+        const errorCount = classroomErrorCounts[currentSelectedClassroom] || 0;
+        
+        // 只有當前教室已在購物車中且錯誤次數達到2次時才禁用
+        if (isClassroomInCart && errorCount >= 2) {
+          button.classList.add('button-disabled');
+        } else {
+          button.classList.remove('button-disabled');
+        }
+      }
+      
+      function addClassroomToCart() {
+        const button = document.getElementById('add-classroom-btn');
+        
+        // 檢查按鈕是否已被禁用
+        if (button.classList.contains('button-disabled')) {
+          return;
+        }
+        
+        if (!currentSelectedClassroom) {
+          showNotification('請先選擇一間教室！', 'error');
+          return;
+        }
+        
+        const classroom = classroomData[currentSelectedClassroom];
+        const cart = window.cartManager.getCart();
+        
+        // 檢查當前選中的教室是否已經在購物車中
+        const existingClassroom = cart.find(item => item.id === classroom.id);
+        
+        if (existingClassroom) {
+          // 增加當前教室的錯誤計數
+          classroomErrorCounts[currentSelectedClassroom] = (classroomErrorCounts[currentSelectedClassroom] || 0) + 1;
+          showNotification('教室只有一個啦...不能重複添加！', 'error');
+          
+          // 更新按鈕狀態
+          updateButtonState();
+          return;
+        }
+        
+        // 如果教室不在購物車中，可以正常添加
+        const success = window.cartManager.addToCart({
+          id: classroom.id,
+          name: classroom.name,
+          category: classroom.category,
+          deposit: classroom.deposit,
+          mainImage: classroom.image
+        });
+        
+        if (success) {
+          showNotification(`${classroom.name}已成功加入租借清單！`);
+          // 成功添加後更新按鈕狀態
+          updateButtonState();
+        }
+      }
+      
+      function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        
+        // 設置通知內容
+        notificationText.textContent = message;
+        
+        // 根據類型設置樣式
+        if (type === 'error') {
+          notification.classList.add('error');
+        } else {
+          notification.classList.remove('error');
+        }
+        
+        // 重置位置和透明度（從底部開始）
+        notification.style.bottom = '7.5rem';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%) translateY(50px)';
+        notification.style.opacity = '0';
+        notification.style.pointerEvents = 'none';
+        
+        // 顯示通知（從底部浮上來的效果）
+        setTimeout(() => {
+          notification.style.opacity = '1';
+          notification.style.transform = 'translateX(-50%) translateY(0px)';
+        }, 50);
+        
+        // 2秒後開始消失動畫
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          notification.style.transform = 'translateX(-50%) translateY(-10px)';
+        }, 2000);
+        
+        // 動畫完成後完全隱藏並重置樣式
+        setTimeout(() => {
+          notification.style.pointerEvents = 'none';
+          notification.classList.remove('error');
+        }, 2500);
+      }
+      
+      // 初始化：默認展開 A503
+      document.addEventListener('DOMContentLoaded', function() {
+        openAccordion('a503');
+      });
+    </script>
+
+    <script src="script.js" defer></script>
+  </body>
+</html> 

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>租借收據 - SCCD 媒傳系平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="cart-manager.js"></script>
+    
+    <!-- 自定義動畫樣式 -->
+    <style>
+      .download-container {
+        position: relative;
+        width: 50px;
+        height: 50px;
+        overflow: hidden;
+      }
+      
+      .download-icons-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(-60px);
+      }
+      
+      .download-icon {
+        width: 50px;
+        height: 50px;
+        flex-shrink: 0;
+      }
+      
+      .download-btn:hover .download-icons-wrapper {
+        transform: translateY(0);
+      }
+      
+      /* 箭頭動畫樣式 */
+      .arrow-link {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+      }
+      
+      .arrow-container {
+        position: relative;
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
+        margin-left: 8px;
+      }
+      
+      .arrow-icons-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+      }
+      
+      .arrow-icon {
+        width: 0.8em;
+        height: 0.8em;
+        flex-shrink: 0;
+        filter: brightness(0) invert(1); /* 預設白色 */
+      }
+      
+      .arrow-link:hover .arrow-icons-wrapper {
+        transform: translateY(-1em);
+      }
+      
+      /* LOGIN 按鈕特殊樣式 */
+      .login-btn {
+        padding: 1.5px 10px !important;
+        padding-right: 8px !important;
+      }
+      
+      .login-btn:hover .arrow-icon {
+        filter: brightness(0); /* hover 時變黑色 */
+      }
+      
+      /* Footer 連結 hover 效果 */
+      .footer-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* Header 導航連結 hover 效果 */
+      .nav-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+    </style>
+  </head>
+
+  <body class="bg-black text-white flex flex-col h-screen">
+    <header class="py-6">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <a href="index.html" class="logo-link mr-10">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
+              SCCD
+            </div>
+          </a>
+
+          <nav>
+            <ul class="flex space-x-10">
+              <li>
+                <a
+                  href="booking.html"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+                  >BOOKING</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#resources"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+                  >RESOURCES</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div class="flex items-center space-x-5">
+          <a
+            href="rental-list.html"
+            id="cart-link"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+            >(<span id="cart-count">0</span>) CART</a
+          >
+          <a
+            href="#login"
+            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
+            >LOG IN
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
+      <div class="w-full px-[6%] flex-grow flex">
+        
+        <!-- 左邊：租借資訊 -->
+        <div class="w-2/5 pr-12 flex flex-col">
+          <!-- 頁面標題和描述 -->
+          <div class="mb-16">
+            <h1 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
+              租借收據
+            </h1>
+            <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">
+              你已成功租借！請至系學會繳交押金完成租借手續
+            </p>
+          </div>
+
+          <!-- 租借詳細資訊 -->
+          <div class="space-y-8 flex-grow mt-4">
+            <!-- 租借人 -->
+            <div>
+              <div class="text-base font-['Inter',_sans-serif] mb-2" style="color: #cccccc;">租借人</div>
+              <div id="borrower-name" class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white">阿志</div>
+            </div>
+
+            <!-- 租借日期 -->
+            <div>
+              <div class="text-base font-['Inter',_sans-serif] mb-2" style="color: #cccccc;">租借日期</div>
+              <div id="rental-dates" class="text-2xl font-['Inter',_sans-serif] text-white tracking-normal uppercase"></div>
+            </div>
+
+            <!-- 租借號 -->
+            <div>
+              <div class="text-base font-['Inter',_sans-serif] mb-2" style="color: #cccccc;">租借號</div>
+              <div id="rental-number" class="text-2xl font-['Inter',_sans-serif] text-white tracking-normal uppercase"></div>
+            </div>
+
+            <!-- 租借條碼 -->
+            <div>
+              <div class="text-base font-['Inter',_sans-serif] mb-4" style="color: #cccccc;">租借條碼</div>
+              <div class="max-w-md">
+                <svg id="barcode" class="w-full h-auto"></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- 下載按鈕 -->
+          <div class="mt-auto">
+            <button id="download-btn" class="text-white hover:text-zinc-300 transition-colors cursor-pointer download-btn">
+              <div class="download-container">
+                <div class="download-icons-wrapper">
+                  <img src="Icons/Download White.svg" alt="Download" class="download-icon">
+                  <img src="Icons/Download White.svg" alt="Download" class="download-icon">
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 右邊：租借摘要 -->
+        <div class="w-3/5 pl-12 flex flex-col">
+          <!-- 標題 -->
+          <div class="mb-6">
+            <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white">租借摘要</h2>
+          </div>
+
+          <!-- 設備清單區域 -->
+          <div class="flex flex-col flex-grow">
+            <!-- 可滾動的設備列表 -->
+            <div class="flex-grow overflow-y-auto" style="max-height: calc(100vh - 320px);">
+              <div id="equipment-summary-list">
+                <!-- 設備項目將動態載入 -->
+              </div>
+            </div>
+
+            <!-- 押金總額 -->
+            <div class="mt-auto pt-6">
+              <div class="text-right">
+                <div class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white mb-4">押金總額</div>
+                <div id="total-deposit-amount" class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <footer class="py-8">
+      <div
+        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
+        <div class="flex space-x-6 mb-4 md:mb-0">
+          <a
+            href="https://sccd.usc.edu.tw/"
+            target="_blank"
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >TO SCCD
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+          <a
+            href="about.html"
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >ABOUT
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+        </div>
+        <div class="copyright text-xs md:text-right">
+          <p>
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >Copyright © 2025 111</span
+            >屆系學會
+            <span class="font-['Inter',_sans-serif] uppercase"
+              >All rights reserved.</span
+            >
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="equipment-data.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        clearCartAfterRental();
+        generateRentalInfo();
+        loadEquipmentSummary();
+        setupDownloadButton();
+        updateCartCount();
+      });
+
+      // 清空購物車（租借完成後）
+      function clearCartAfterRental() {
+        window.cartManager.clearCart();
+      }
+
+      // 生成租借資訊
+      function generateRentalInfo() {
+        // 檢查是否已有儲存的租借號
+        let rentalNumber = localStorage.getItem('currentRentalNumber');
+        
+        if (!rentalNumber) {
+          // 如果沒有，生成新的租借號並儲存
+          rentalNumber = generateRentalNumber();
+          localStorage.setItem('currentRentalNumber', rentalNumber);
+        }
+        
+        document.getElementById('rental-number').textContent = rentalNumber;
+        
+        // 生成條碼
+        JsBarcode("#barcode", rentalNumber, {
+          format: "CODE128",
+          width: 2,
+          height: 60,
+          displayValue: false,
+          background: "transparent",
+          lineColor: "white",
+          margin: 0,
+          marginLeft: 0,
+          marginRight: 0,
+          marginTop: 0,
+          marginBottom: 0
+        });
+
+        // 設定當前日期和歸還日期（假設租借3天）
+        const today = new Date();
+        const returnDate = new Date(today);
+        returnDate.setDate(today.getDate() + 3);
+        
+        const startDate = formatDate(today);
+        const endDate = formatDate(returnDate);
+        document.getElementById('rental-dates').textContent = `${startDate}  -  ${endDate}`;
+      }
+
+      // 生成隨機租借號
+      function generateRentalNumber() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 15; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      }
+
+      // 格式化日期
+      function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}/${month}/${day}`;
+      }
+
+      // 載入設備摘要
+      function loadEquipmentSummary() {
+        const equipmentList = document.getElementById('equipment-summary-list');
+        
+        // 從localStorage獲取租借時的購物車數據
+        const rentalData = localStorage.getItem('rentalCartData');
+        let cart = [];
+        
+        if (rentalData) {
+          cart = JSON.parse(rentalData);
+        }
+        
+        let totalDeposit = 0;
+
+        cart.forEach(item => {
+          const itemElement = createSummaryItem(item);
+          equipmentList.appendChild(itemElement);
+          totalDeposit += item.deposit * item.quantity;
+        });
+
+        // 更新總押金
+        document.getElementById('total-deposit-amount').textContent = `NT${totalDeposit.toLocaleString()}`;
+      }
+
+      // 創建摘要項目元素
+      function createSummaryItem(item) {
+        const div = document.createElement('div');
+        div.className = 'flex items-center border-b border-white';
+        div.style.cssText = 'height: 150px; padding: 1rem 0;';
+        
+        div.innerHTML = `
+          <!-- 設備圖片 -->
+          <div class="flex items-center justify-center" style="width: 120px;">
+            <div style="height: 96px; width: 76.8px;">
+              <img src="${item.image}" alt="設備圖片" class="w-full h-full object-cover">
+            </div>
+          </div>
+          
+          <!-- 設備資訊和押金 -->
+          <div class="flex-1 flex justify-between items-center ml-6">
+            <!-- 左邊：名稱和數量 -->
+            <div>
+              <h3 class="text-xl font-['Inter',_sans-serif] font-medium tracking-wide text-white mb-3">${item.name}</h3>
+              <div class="flex items-center space-x-4">
+                <span class="text-base font-['Noto_Sans_TC',_sans-serif]" style="color: #cccccc;">數量</span>
+                <span class="text-base font-['Inter',_sans-serif] text-white">${item.quantity}</span>
+              </div>
+            </div>
+            
+            <!-- 右邊：押金 -->
+            <div class="text-right">
+              <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-wide text-white">NT${(item.deposit * item.quantity).toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+        
+        return div;
+      }
+
+      // 設定下載按鈕
+      function setupDownloadButton() {
+        const downloadBtn = document.getElementById('download-btn');
+        downloadBtn.addEventListener('click', function() {
+          // 暫時只顯示提示，之後可以實作真實的下載功能
+          alert('下載功能將在未來版本中實現');
+        });
+      }
+
+      // 更新購物車數量顯示
+      function updateCartCount() {
+        // 收據頁面購物車應該是空的
+        document.getElementById('cart-count').textContent = '0';
+      }
+    </script>
+  </body>
+</html> 

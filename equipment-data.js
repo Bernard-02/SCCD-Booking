@@ -19,7 +19,7 @@ const EQUIPMENT_DATA = {
         statusColor: '#00ff80',
         mainImage: 'Images/Extension Cord.jpg',
         quantity: 5,
-        deposit: 300,
+        deposit: 500,
         description: '高品質專業延長線，適用於各種攝影設備供電需求。多重安全保護，確保設備安全運行。'
     }
     // 可以繼續添加更多設備...
