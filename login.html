@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SCCD 媒傳系平台</title>
+    <title>帳號登入 - SCCD 媒傳系平台</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,11 +12,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
     
-    <!-- 箭頭動畫樣式 -->
     <style>
       /* 箭頭動畫樣式 */
       .arrow-link {
@@ -72,6 +71,136 @@
       .nav-link:hover {
         opacity: 0.8;
         color: white !important;
+      }
+      
+      /* 輸入框樣式 */
+      .input-group {
+        position: relative;
+        margin-bottom: 2rem;
+      }
+      
+      .input-group.error {
+        margin-bottom: 3rem;
+      }
+      
+      .input-field {
+        width: 100%;
+        padding: 8px 1px 8px 1px;
+        border: none;
+        border-bottom: 1px solid white;
+        background: transparent;
+        color: white;
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        outline: none;
+      }
+      
+      .input-label {
+        position: absolute;
+        left: 1px;
+        top: 8px;
+        color: #cccccc;
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        transform-origin: left top;
+      }
+      
+      .input-field:focus + .input-label,
+      .input-field:not(:placeholder-shown) + .input-label {
+        transform: translateY(-1.5rem) translateX(-1px) scale(0.875);
+        color: #cccccc;
+      }
+      
+      /* 錯誤訊息樣式 */
+      .error-message {
+        position: absolute;
+        bottom: -1.5rem;
+        left: 1px;
+        color: #ff8698;
+        font-family: 'Noto Sans TC', sans-serif;
+        font-size: 0.75rem; /* text-xs */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      
+      .error-message.show {
+        opacity: 1;
+      }
+      
+      .input-group.error .input-field {
+        border-bottom-color: #ff8698;
+      }
+      
+      /* 自定義checkbox樣式 */
+      .custom-checkbox {
+        appearance: none;
+        width: 1rem;
+        height: 1rem;
+        border: 1px solid white;
+        background-color: transparent;
+        cursor: pointer;
+        position: relative;
+      }
+      
+      .custom-checkbox:checked {
+        background-color: white;
+        border-color: white;
+      }
+      
+      .custom-checkbox:checked::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: black;
+        font-size: 1rem;
+        font-weight: bold;
+        font-family: Inter, sans-serif;
+      }
+      
+      /* 忘記密碼連結 */
+      .forgot-password:hover {
+        text-decoration: underline;
+      }
+      
+      /* 登入按鈕箭頭動畫 */
+      .login-button {
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .login-arrow-container {
+        position: relative;
+        width: 30px;
+        height: 22px;
+        margin-left: 14px;
+        overflow: hidden;
+      }
+      
+      .login-arrows-wrapper {
+        display: flex;
+        gap: 4px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(-34px);
+      }
+      
+      .login-button:hover .login-arrows-wrapper {
+        transform: translateX(0px);
+      }
+      
+      .custom-arrow {
+        width: 30px;
+        height: 22px;
+        flex-shrink: 0;
+      }
+      
+      .custom-arrow svg {
+        width: 100%;
+        height: 100%;
       }
       
       /* Copyright 彩蛋效果 */
@@ -149,24 +278,89 @@
       </div>
     </header>
 
-    <main
-      class="flex-grow flex flex-col items-center justify-center text-center px-4"
-    >
-      <div class="main-container">
-        <h1 class="main-title text-5xl font-medium mb-6">
-          <span class="title-text">媒傳系專屬租借資源平台</span>
-        </h1>
-        <p class="max-w-xl mx-auto text-base mb-8">
-          歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
-        </p>
-        <a href="booking.html">
-          <button
-            class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 inline-block transition-all cursor-pointer hover:bg-white hover:text-black"
-            style="min-width: 200px"
+    <main class="flex-grow flex items-center justify-center">
+      <div class="w-full max-w-md px-6">
+        <!-- 標題區域 -->
+        <div class="mb-12 text-left">
+          <h1 class="text-xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white mb-2">
+            帳號登入
+          </h1>
+          <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">
+            登入您的帳號
+          </p>
+        </div>
+
+        <!-- 登入表單 -->
+        <form id="login-form" novalidate>
+          <!-- 帳號輸入框 -->
+          <div class="input-group">
+            <input 
+              type="text" 
+              id="username" 
+              class="input-field" 
+              placeholder=" "
+              autocomplete="username"
+            >
+            <label for="username" class="input-label">帳號</label>
+            <div class="error-message" id="username-error">請輸入帳號名稱！</div>
+          </div>
+
+          <!-- 密碼輸入框 -->
+          <div class="input-group">
+            <input 
+              type="password" 
+              id="password" 
+              class="input-field" 
+              placeholder=" "
+              autocomplete="current-password"
+            >
+            <label for="password" class="input-label">密碼</label>
+            <div class="error-message" id="password-error">請輸入密碼！</div>
+          </div>
+
+          <!-- 記住我和忘記密碼 -->
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-3">
+              <input type="checkbox" id="remember-me" class="custom-checkbox">
+              <label for="remember-me" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer">
+                記住我
+              </label>
+            </div>
+            
+            <a href="#forgot-password" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer forgot-password">
+              忘記密碼？
+            </a>
+          </div>
+
+          <!-- 登入按鈕 -->
+          <button 
+            type="submit" 
+            class="login-button border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer flex items-center justify-center hover:bg-white hover:text-black"
+            style="width: 150px;"
           >
-            開始租借
+            <span>登入</span>
+            <div class="login-arrow-container">
+              <div class="login-arrows-wrapper">
+                <div class="custom-arrow">
+                  <svg viewBox="0 0 30 22">
+                    <!-- 第一個箭頭 -->
+                    <line x1="4" y1="11" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                    <line x1="19" y1="5" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                    <line x1="19" y1="17" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                  </svg>
+                </div>
+                <div class="custom-arrow">
+                  <svg viewBox="0 0 30 22">
+                    <!-- 第二個箭頭 -->
+                    <line x1="4" y1="11" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                    <line x1="19" y1="5" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                    <line x1="19" y1="17" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
           </button>
-        </a>
+        </form>
       </div>
     </main>
 
@@ -214,6 +408,82 @@
     </footer>
 
     <script>
+      // 登入表單處理
+      document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameError = document.getElementById('username-error');
+        const passwordError = document.getElementById('password-error');
+        
+        // 清除錯誤狀態
+        function clearError(inputGroup, errorElement) {
+          inputGroup.classList.remove('error');
+          errorElement.classList.remove('show');
+        }
+        
+        // 顯示錯誤狀態
+        function showError(inputGroup, errorElement) {
+          inputGroup.classList.add('error');
+          errorElement.classList.add('show');
+        }
+        
+        // 輸入時清除錯誤狀態（只有在已經有錯誤時才清除）
+        usernameInput.addEventListener('input', function() {
+          if (this.value.trim() && this.parentElement.classList.contains('error')) {
+            clearError(this.parentElement, usernameError);
+          }
+        });
+        
+        passwordInput.addEventListener('input', function() {
+          if (this.value.trim() && this.parentElement.classList.contains('error')) {
+            clearError(this.parentElement, passwordError);
+          }
+        });
+        
+        form.addEventListener('submit', function(e) {
+          e.preventDefault(); // 阻止表單提交
+          
+          let hasError = false;
+          
+          // 驗證帳號
+          if (!usernameInput.value.trim()) {
+            showError(usernameInput.parentElement, usernameError);
+            hasError = true;
+          } else {
+            clearError(usernameInput.parentElement, usernameError);
+          }
+          
+          // 驗證密碼
+          if (!passwordInput.value.trim()) {
+            showError(passwordInput.parentElement, passwordError);
+            hasError = true;
+          } else {
+            clearError(passwordInput.parentElement, passwordError);
+          }
+          
+          // 如果沒有錯誤，繼續處理登入邏輯
+          if (!hasError) {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            // 這裡之後可以添加實際的登入邏輯
+            console.log('Login attempt:', { username, password, rememberMe });
+            
+            // 暫時顯示登入成功消息
+            alert('登入功能尚未實作，但表單已正常工作！');
+          }
+        });
+        
+        // 忘記密碼連結處理
+        const forgotPasswordLink = document.querySelector('.forgot-password');
+        forgotPasswordLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          alert('忘記密碼功能尚未實作！');
+        });
+      });
+
       // Copyright 彩蛋效果 - 打字機風格
       document.addEventListener('DOMContentLoaded', function() {
         const copyrightElement = document.querySelector('.copyright');
@@ -341,7 +611,5 @@
         }
       });
     </script>
-
-    <script src="script.js" defer></script>
   </body>
-</html>
+</html> 

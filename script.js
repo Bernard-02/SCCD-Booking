@@ -40,12 +40,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.container.innerHTML = `
                     <div class="custom-datepicker">
                         <div class="datepicker-header">
-                            <button class="nav-arrow" id="prev-month">‹</button>
+                            <button class="nav-arrow" id="prev-month">
+                                <svg viewBox="0 0 30 22">
+                                    <line x1="25" y1="11" x2="4" y2="11" stroke="white" stroke-width="1"/>
+                                    <line x1="10" y1="5" x2="4" y2="11" stroke="white" stroke-width="1"/>
+                                    <line x1="10" y1="17" x2="4" y2="11" stroke="white" stroke-width="1"/>
+                                </svg>
+                            </button>
                             <div class="month-navigation">
                                 <div class="month-title">${this.monthNames[currentMonth.getMonth()]}</div>
                                 <div class="month-title">${this.monthNames[nextMonth.getMonth()]}</div>
                             </div>
-                            <button class="nav-arrow" id="next-month">›</button>
+                            <button class="nav-arrow" id="next-month">
+                                <svg viewBox="0 0 30 22">
+                                    <line x1="4" y1="11" x2="25" y2="11" stroke="white" stroke-width="1"/>
+                                    <line x1="19" y1="5" x2="25" y2="11" stroke="white" stroke-width="1"/>
+                                    <line x1="19" y1="17" x2="25" y2="11" stroke="white" stroke-width="1"/>
+                                </svg>
+                            </button>
                         </div>
                         <div class="calendars-container">
                             <div class="calendar-month">
@@ -134,25 +146,38 @@ document.addEventListener('DOMContentLoaded', function () {
             
             attachEvents() {
                 // 導航按鈕事件
-                this.container.querySelector('#prev-month').addEventListener('click', () => {
-                    this.currentMonth--;
-                    if (this.currentMonth < 0) {
-                        this.currentMonth = 11;
-                        this.currentYear--;
-                    }
-                    this.render();
-                    this.attachEvents();
-                });
+                const prevButton = this.container.querySelector('#prev-month');
+                const nextButton = this.container.querySelector('#next-month');
                 
-                this.container.querySelector('#next-month').addEventListener('click', () => {
-                    this.currentMonth++;
-                    if (this.currentMonth > 11) {
-                        this.currentMonth = 0;
-                        this.currentYear++;
-                    }
-                    this.render();
-                    this.attachEvents();
-                });
+                if (prevButton) {
+                    prevButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Previous month clicked'); // 調試用
+                        this.currentMonth--;
+                        if (this.currentMonth < 0) {
+                            this.currentMonth = 11;
+                            this.currentYear--;
+                        }
+                        this.render();
+                        this.attachEvents();
+                    });
+                }
+                
+                if (nextButton) {
+                    nextButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Next month clicked'); // 調試用
+                        this.currentMonth++;
+                        if (this.currentMonth > 11) {
+                            this.currentMonth = 0;
+                            this.currentYear++;
+                        }
+                        this.render();
+                        this.attachEvents();
+                    });
+                }
                 
                 // 日期點擊事件
                 this.container.querySelectorAll('.day:not(.disabled)').forEach(dayEl => {
@@ -220,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (this.startDate && this.endDate && this.confirmButton) {
                     // 兩個日期都已選擇，啟用按鈕
                     this.confirmButton.disabled = false;
-                    this.confirmButton.className = "cta-button bg-white text-black opacity-100 hover:opacity-80 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block transition-all text-lg cursor-pointer";
+                    this.confirmButton.className = "border border-white bg-transparent text-white opacity-100 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:bg-white hover:text-black";
                     
                     // 移除舊的事件監聽器並添加新的
                     this.confirmButton.onclick = () => {
@@ -229,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (this.confirmButton) {
                     // 日期未完全選擇，禁用按鈕
                     this.confirmButton.disabled = true;
-                    this.confirmButton.className = "cta-button bg-white text-black opacity-30 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] inline-block transition-all text-lg cursor-not-allowed";
+                    this.confirmButton.className = "border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed";
                     this.confirmButton.onclick = null;
                 }
             }

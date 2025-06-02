@@ -74,6 +74,39 @@
         color: white !important;
       }
       
+      /* Breadcrumb 樣式 */
+      .breadcrumb {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 300; /* font-light */
+        color: white;
+        text-align: left;
+        margin-bottom: 1rem;
+        letter-spacing: 0.05em; /* tracking-wider */
+        position: absolute;
+        top: calc(3rem + 3vh);
+        left: 6%;
+        z-index: 10;
+      }
+      
+      .breadcrumb:hover .breadcrumb-item {
+        opacity: 0.6;
+      }
+      
+      .breadcrumb .breadcrumb-item {
+        transition: opacity 0.3s ease;
+        cursor: pointer;
+      }
+      
+      .breadcrumb .breadcrumb-item:hover {
+        opacity: 1 !important;
+      }
+      
+      .breadcrumb .breadcrumb-separator {
+        margin: 0 0.5rem;
+        opacity: 0.6;
+      }
+      
       /* 展開式元件樣式 */
       .accordion-item {
         border-bottom: 1px solid white;
@@ -125,12 +158,6 @@
         opacity: 1;
       }
       
-      .classroom-image {
-        aspect-ratio: 3/2;
-        width: 100%;
-        object-fit: cover;
-      }
-      
       /* 通知樣式 - 參照 equipment-detail */
       #notification {
         position: fixed;
@@ -160,6 +187,28 @@
         opacity: 0.5 !important;
         cursor: not-allowed !important;
         pointer-events: none !important;
+      }
+      
+      /* Copyright 彩蛋效果 */
+      .copyright {
+        position: relative;
+      }
+      
+      .copyright-original {
+        transition: none;
+      }
+      
+      .copyright-easter-egg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        white-space: nowrap;
+        opacity: 0;
+        font-family: 'Inter', sans-serif;
+        font-size: inherit;
+        letter-spacing: inherit;
       }
     </style>
   </head>
@@ -201,7 +250,7 @@
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
-            href="#login"
+            href="login.html"
             class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
             >LOG IN
             <div class="arrow-container">
@@ -215,114 +264,136 @@
       </div>
     </header>
 
-    <main class="flex-grow flex pt-[3vh] pb-[3vh] justify-center items-center">
-      <div class="w-4/5 flex gap-35">
-        <!-- 左側：教室列表 -->
-        <div class="flex-1 pr-20">
-          <!-- A503 教室 -->
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('a503')">
-              <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
-              <svg class="expand-icon plus" id="icon-a503" viewBox="0 0 30 30">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
-              </svg>
-            </div>
-            <div class="accordion-content" id="content-a503">
-              <div class="accordion-content-inner space-y-8">
-                <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
-                </div>
-                <div class="space-y-2">
-                  <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
-                  </div>
-                </div>
-                <div>
-                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                    A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- A507 教室 -->
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('a507')">
-              <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
-              <svg class="expand-icon plus" id="icon-a507" viewBox="0 0 30 30">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
-              </svg>
-            </div>
-            <div class="accordion-content" id="content-a507">
-              <div class="accordion-content-inner space-y-8">
-                <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
-                </div>
-                <div class="space-y-2">
-                  <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
-                  </div>
-                </div>
-                <div>
-                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                    A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- A508 教室 -->
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('a508')">
-              <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
-              <svg class="expand-icon plus" id="icon-a508" viewBox="0 0 30 30">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
-              </svg>
-            </div>
-            <div class="accordion-content" id="content-a508">
-              <div class="accordion-content-inner space-y-8">
-                <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
-                </div>
-                <div class="space-y-2">
-                  <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
-                  </div>
-                </div>
-                <div>
-                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                    A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb">
+        <a href="index.html" class="breadcrumb-item">首頁</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="booking.html" class="breadcrumb-item">租借日期</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="bookingresources.html" class="breadcrumb-item">租借資源</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="space.html" class="breadcrumb-item">租借空間</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-item">教室</span>
+      </nav>
+      
+      <div class="w-full px-[6%] flex-grow flex flex-col">
+        <!-- 頁面標題 -->
+        <div class="mb-6">
+          <h1 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2">
+            租借教室
+          </h1>
         </div>
+        
+        <div class="flex gap-35 flex-grow">
+          <!-- 左側：教室列表 -->
+          <div class="flex-1">
+            <!-- A503 教室 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('a503')">
+                <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
+                <svg class="expand-icon plus" id="icon-a503" viewBox="0 0 30 30">
+                  <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                  <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-a503">
+                <div class="accordion-content-inner space-y-8">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div>
+                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <!-- 右側：教室圖片和按鈕 -->
-        <div class="flex-1">
-          <div>
-            <img id="classroom-image" src="Images/A503.png" alt="教室圖片" class="classroom-image">
-            <button id="add-classroom-btn" class="bg-white text-black opacity-100 hover:opacity-80 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] transition-all text-lg cursor-pointer mt-12" style="width: 200px;" onclick="addClassroomToCart()">
-              加入清單
-            </button>
+            <!-- A507 教室 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('a507')">
+                <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
+                <svg class="expand-icon plus" id="icon-a507" viewBox="0 0 30 30">
+                  <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                  <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-a507">
+                <div class="accordion-content-inner space-y-8">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div>
+                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- A508 教室 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('a508')">
+                <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
+                <svg class="expand-icon plus" id="icon-a508" viewBox="0 0 30 30">
+                  <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
+                  <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-a508">
+                <div class="accordion-content-inner space-y-8">
+                  <div>
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                  </div>
+                  <div class="space-y-2">
+                    <div>
+                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
+                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右側：教室圖片和按鈕 -->
+          <div class="flex-1">
+            <div>
+              <img id="classroom-image" src="Images/A503.png" alt="教室圖片" class="w-full aspect-[16/9] object-cover">
+              <button id="add-classroom-btn" class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:bg-white hover:text-black mt-12" style="width: 200px;" onclick="addClassroomToCart()">
+                加入清單
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -364,12 +435,13 @@
         </div>
         <div class="copyright text-xs md:text-right">
           <p>
-            <span class="font-['Inter',_sans-serif] uppercase"
-              >Copyright © 2025 111</span
-            >屆系學會
-            <span class="font-['Inter',_sans-serif] uppercase"
-              >All rights reserved.</span
-            >
+            <span class="copyright-original">
+              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+            </span>
+            <span class="copyright-easter-egg" id="easter-egg-text">
+              <!-- 彩蛋文字將由JavaScript生成 -->
+            </span>
           </p>
         </div>
       </div>
@@ -572,6 +644,133 @@
       // 初始化：默認展開 A503
       document.addEventListener('DOMContentLoaded', function() {
         openAccordion('a503');
+      });
+
+      // Copyright 彩蛋效果 - 打字機風格
+      document.addEventListener('DOMContentLoaded', function() {
+        const copyrightElement = document.querySelector('.copyright');
+        const originalElement = document.querySelector('.copyright-original');
+        const easterEggElement = document.getElementById('easter-egg-text');
+        
+        if (copyrightElement && originalElement && easterEggElement) {
+          const originalText = originalElement.textContent;
+          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
+          const maxLength = Math.min(originalText.length, targetText.length);
+          const truncatedTarget = targetText.substring(0, maxLength);
+          
+          let isHovering = false;
+          let animationInterval = null;
+          let currentStep = 0;
+          let isAnimatingIn = false;
+          let isAnimatingOut = false;
+          
+          // 隨機字符池
+          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
+          
+          function getRandomChar() {
+            return randomChars[Math.floor(Math.random() * randomChars.length)];
+          }
+          
+          function generateRandomString(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+              result += getRandomChar();
+            }
+            return result;
+          }
+          
+          function animateToTarget() {
+            if (isAnimatingOut) return;
+            isAnimatingIn = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
+            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
+            
+            easterEggElement.textContent = generateRandomString(maxLength);
+            easterEggElement.style.opacity = '1';
+            originalElement.style.opacity = '0';
+            
+            animationInterval = setInterval(() => {
+              if (!isHovering || isAnimatingOut) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                return;
+              }
+              
+              currentStep++;
+              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
+              
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (i < revealedChars) {
+                  displayText += truncatedTarget[i] || ' ';
+                } else {
+                  displayText += getRandomChar();
+                }
+              }
+              
+              easterEggElement.textContent = displayText;
+              
+              if (revealedChars >= maxLength) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                easterEggElement.textContent = truncatedTarget;
+              }
+            }, 50);
+          }
+          
+          function animateToOriginal() {
+            // 立即停止任何正在進行的動畫
+            if (animationInterval) {
+              clearInterval(animationInterval);
+            }
+            
+            isAnimatingIn = false;
+            isAnimatingOut = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
+            
+            animationInterval = setInterval(() => {
+              currentStep++;
+              const progress = currentStep / totalSteps;
+              
+              if (progress >= 1) {
+                clearInterval(animationInterval);
+                easterEggElement.style.opacity = '0';
+                originalElement.style.opacity = '1';
+                isAnimatingOut = false;
+                animationInterval = null;
+                return;
+              }
+              
+              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
+                  displayText += getRandomChar();
+                } else {
+                  // 保持當前字符或目標字符
+                  const currentChar = easterEggElement.textContent[i];
+                  displayText += currentChar || getRandomChar();
+                }
+              }
+              easterEggElement.textContent = displayText;
+            }, 30);
+          }
+          
+          copyrightElement.addEventListener('mouseenter', () => {
+            isHovering = true;
+            if (animationInterval) clearInterval(animationInterval);
+            animateToTarget();
+          });
+          
+          copyrightElement.addEventListener('mouseleave', () => {
+            isHovering = false;
+            animateToOriginal();
+          });
+        }
       });
     </script>
 

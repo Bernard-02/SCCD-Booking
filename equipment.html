@@ -73,6 +73,61 @@
         opacity: 0.8;
         color: white !important;
       }
+      
+      /* Breadcrumb 樣式 */
+      .breadcrumb {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 300; /* font-light */
+        color: white;
+        text-align: left;
+        margin-bottom: 1rem;
+        letter-spacing: 0.05em; /* tracking-wider */
+        position: absolute;
+        top: calc(3rem + 3vh);
+        left: 6%;
+        z-index: 10;
+      }
+      
+      .breadcrumb:hover .breadcrumb-item {
+        opacity: 0.6;
+      }
+      
+      .breadcrumb .breadcrumb-item {
+        transition: opacity 0.3s ease;
+        cursor: pointer;
+      }
+      
+      .breadcrumb .breadcrumb-item:hover {
+        opacity: 1 !important;
+      }
+      
+      .breadcrumb .breadcrumb-separator {
+        margin: 0 0.5rem;
+        opacity: 0.6;
+      }
+      
+      /* Copyright 彩蛋效果 */
+      .copyright {
+        position: relative;
+      }
+      
+      .copyright-original {
+        transition: none;
+      }
+      
+      .copyright-easter-egg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        white-space: nowrap;
+        opacity: 0;
+        font-family: 'Inter', sans-serif;
+        font-size: inherit;
+        letter-spacing: inherit;
+      }
     </style>
   </head>
 
@@ -113,7 +168,7 @@
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
-            href="#login"
+            href="login.html"
             class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
             >LOG IN
             <div class="arrow-container">
@@ -128,18 +183,29 @@
     </header>
 
     <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb">
+        <a href="index.html" class="breadcrumb-item">首頁</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="booking.html" class="breadcrumb-item">租借日期</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="bookingresources.html" class="breadcrumb-item">租借資源</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-item">租借設備</span>
+      </nav>
+      
       <div class="w-full px-[6%] flex-grow flex flex-col">
         <!-- 頁面標題 -->
-        <div class="mb-8">
+        <div class="mb-6">
           <h1
-            class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
+            class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2"
           >
             租借設備
           </h1>
         </div>
 
         <!-- 上方控制區 -->
-        <div class="flex justify-between items-center mb-16">
+        <div class="flex justify-between items-center mb-14">
           <!-- 左邊：篩選區塊 -->
           <div class="flex space-x-8 group">
             <button class="text-base font-['Inter',_sans-serif] text-white transition-all font-bold cursor-pointer filter-active group-hover:opacity-100">查看全部</button>
@@ -379,12 +445,13 @@
         </div>
         <div class="copyright text-xs md:text-right">
           <p>
-            <span class="font-['Inter',_sans-serif] uppercase"
-              >Copyright © 2025 111</span
-            >屆系學會
-            <span class="font-['Inter',_sans-serif] uppercase"
-              >All rights reserved.</span
-            >
+            <span class="copyright-original">
+              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+            </span>
+            <span class="copyright-easter-egg" id="easter-egg-text">
+              <!-- 彩蛋文字將由JavaScript生成 -->
+            </span>
           </p>
         </div>
       </div>
@@ -392,6 +459,133 @@
 
     <script src="script.js" defer></script>
     <script>
+      // Copyright 彩蛋效果 - 打字機風格
+      document.addEventListener('DOMContentLoaded', function() {
+        const copyrightElement = document.querySelector('.copyright');
+        const originalElement = document.querySelector('.copyright-original');
+        const easterEggElement = document.getElementById('easter-egg-text');
+        
+        if (copyrightElement && originalElement && easterEggElement) {
+          const originalText = originalElement.textContent;
+          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
+          const maxLength = Math.min(originalText.length, targetText.length);
+          const truncatedTarget = targetText.substring(0, maxLength);
+          
+          let isHovering = false;
+          let animationInterval = null;
+          let currentStep = 0;
+          let isAnimatingIn = false;
+          let isAnimatingOut = false;
+          
+          // 隨機字符池
+          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
+          
+          function getRandomChar() {
+            return randomChars[Math.floor(Math.random() * randomChars.length)];
+          }
+          
+          function generateRandomString(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+              result += getRandomChar();
+            }
+            return result;
+          }
+          
+          function animateToTarget() {
+            if (isAnimatingOut) return;
+            isAnimatingIn = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
+            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
+            
+            easterEggElement.textContent = generateRandomString(maxLength);
+            easterEggElement.style.opacity = '1';
+            originalElement.style.opacity = '0';
+            
+            animationInterval = setInterval(() => {
+              if (!isHovering || isAnimatingOut) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                return;
+              }
+              
+              currentStep++;
+              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
+              
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (i < revealedChars) {
+                  displayText += truncatedTarget[i] || ' ';
+                } else {
+                  displayText += getRandomChar();
+                }
+              }
+              
+              easterEggElement.textContent = displayText;
+              
+              if (revealedChars >= maxLength) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                easterEggElement.textContent = truncatedTarget;
+              }
+            }, 50);
+          }
+          
+          function animateToOriginal() {
+            // 立即停止任何正在進行的動畫
+            if (animationInterval) {
+              clearInterval(animationInterval);
+            }
+            
+            isAnimatingIn = false;
+            isAnimatingOut = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
+            
+            animationInterval = setInterval(() => {
+              currentStep++;
+              const progress = currentStep / totalSteps;
+              
+              if (progress >= 1) {
+                clearInterval(animationInterval);
+                easterEggElement.style.opacity = '0';
+                originalElement.style.opacity = '1';
+                isAnimatingOut = false;
+                animationInterval = null;
+                return;
+              }
+              
+              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
+                  displayText += getRandomChar();
+                } else {
+                  // 保持當前字符或目標字符
+                  const currentChar = easterEggElement.textContent[i];
+                  displayText += currentChar || getRandomChar();
+                }
+              }
+              easterEggElement.textContent = displayText;
+            }, 30);
+          }
+          
+          copyrightElement.addEventListener('mouseenter', () => {
+            isHovering = true;
+            if (animationInterval) clearInterval(animationInterval);
+            animateToTarget();
+          });
+          
+          copyrightElement.addEventListener('mouseleave', () => {
+            isHovering = false;
+            animateToOriginal();
+          });
+        }
+      });
+      
       // 搜尋欄互動效果
       document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInput');

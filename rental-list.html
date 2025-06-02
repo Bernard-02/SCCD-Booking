@@ -47,8 +47,6 @@
       
       /* SVG 按鈕樣式 */
       .quantity-btn {
-        width: 30px;
-        height: 30px;
         cursor: pointer;
         transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
@@ -61,17 +59,6 @@
         opacity: 0.3;
         cursor: not-allowed;
         pointer-events: none;
-      }
-      
-      .remove-btn {
-        width: 30px;
-        height: 30px;
-        cursor: pointer;
-        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      }
-      
-      .remove-btn:hover {
-        transform: rotate(90deg);
       }
       
       /* 租借摘要層級 */
@@ -119,7 +106,7 @@
       
       /* 修復empty-message的顯示問題 */
       .empty-message-container {
-        min-height: 300px;
+        height: calc(100vh - 400px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -184,6 +171,63 @@
         opacity: 0.8;
         color: white !important;
       }
+      
+      /* Copyright 彩蛋效果 */
+      .copyright {
+        position: relative;
+      }
+      
+      .copyright-original {
+        transition: none;
+      }
+      
+      .copyright-easter-egg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        white-space: nowrap;
+        opacity: 0;
+        font-family: 'Inter', sans-serif;
+        font-size: inherit;
+        letter-spacing: inherit;
+      }
+      
+      /* 刪除按鈕樣式 */
+      .remove-btn {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        position: absolute;
+        top: 6%;
+        right: 6%;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      .equipment-card:hover .remove-btn {
+        opacity: 1;
+      }
+      
+      .remove-btn svg {
+        width: 100%;
+        height: 100%;
+      }
+      
+      /* 設備卡片樣式 */
+      .equipment-card {
+        position: relative;
+        background: transparent;
+        padding: 1rem;
+        transition: all 0.3s ease;
+      }
+      
+      /* 淡出動畫樣式 */
+      .equipment-card.fade-out {
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
     </style>
   </head>
 
@@ -224,7 +268,7 @@
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
-            href="#login"
+            href="login.html"
             class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
             >LOG IN
             <div class="arrow-container">
@@ -283,10 +327,10 @@
         <!-- 右邊：押金總額和按鈕 -->
         <div class="text-right">
           <div>
-            <div id="total-deposit" class="text-3xl font-['Inter',_sans-serif] font-normal text-white mb-4">NT1,000</div>
+            <div id="total-deposit" class="text-3xl font-['Inter',_sans-serif] font-normal text-white mb-4 tracking-wide">NT1,000</div>
             
             <div style="margin-left: 2rem;">
-              <button id="rental-btn" class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-semibold py-3 px-8 rounded-[30px] transition-all text-lg cursor-not-allowed" style="width: 200px;" disabled>
+              <button id="rental-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black" style="width: 200px;" disabled>
                 租借
               </button>
             </div>
@@ -326,12 +370,13 @@
         </div>
         <div class="copyright text-xs md:text-right">
           <p>
-            <span class="font-['Inter',_sans-serif] uppercase"
-              >Copyright © 2025 111</span
-            >屆系學會
-            <span class="font-['Inter',_sans-serif] uppercase"
-              >All rights reserved.</span
-            >
+            <span class="copyright-original">
+              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+            </span>
+            <span class="copyright-easter-egg" id="easter-egg-text">
+              <!-- 彩蛋文字將由JavaScript生成 -->
+            </span>
           </p>
         </div>
       </div>
@@ -351,11 +396,11 @@
           if (this.checked) {
             rentalBtn.disabled = false;
             rentalBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-            rentalBtn.classList.add('opacity-100', 'hover:opacity-80', 'cursor-pointer');
+            rentalBtn.classList.add('opacity-100', 'cursor-pointer');
           } else {
             rentalBtn.disabled = true;
             rentalBtn.classList.add('opacity-30', 'cursor-not-allowed');
-            rentalBtn.classList.remove('opacity-100', 'hover:opacity-80', 'cursor-pointer');
+            rentalBtn.classList.remove('opacity-100', 'cursor-pointer');
           }
         });
         
@@ -387,62 +432,70 @@
         const cart = window.cartManager.getCart();
         
         // 清除現有項目（除了空清單提示）
-        const existingItems = equipmentList.querySelectorAll('div[style*="height: 200px"]');
+        const existingItems = equipmentList.querySelectorAll('.equipment-card');
         existingItems.forEach(item => item.remove());
+        
+        // 創建網格容器
+        let gridContainer = equipmentList.querySelector('.equipment-grid');
+        if (!gridContainer) {
+          gridContainer = document.createElement('div');
+          gridContainer.className = 'equipment-grid grid grid-cols-4 gap-16';
+          equipmentList.appendChild(gridContainer);
+        } else {
+          // 清空現有項目
+          gridContainer.innerHTML = '';
+        }
         
         // 添加購物車中的項目
         cart.forEach(item => {
           const itemElement = createEquipmentItem(item);
-          equipmentList.appendChild(itemElement);
+          gridContainer.appendChild(itemElement);
         });
       }
       
       // 創建設備項目元素
       function createEquipmentItem(item) {
         const div = document.createElement('div');
-        div.className = 'flex items-center border-b border-white';
-        div.style.cssText = 'height: 200px; padding: 1rem 0;';
+        div.className = 'equipment-card';
         
         // 檢查是否為教室
         const isClassroom = item.category === 'classroom';
         
         div.innerHTML = `
           <!-- 設備圖片 -->
-          <div class="flex items-center justify-center" style="width: 150px;">
-            <div style="height: 120px; width: 100px;">
+          <div class="relative mb-6">
+            <div class="w-full h-96">
               <img src="${item.image}" alt="設備圖片" class="w-full h-full object-cover">
-            </div>
-          </div>
-          
-          <!-- 剩餘空間平均分佈 -->
-          <div class="flex-1 grid grid-cols-4 gap-6 items-center h-full">
-            <!-- 設備名稱 -->
-            <div class="flex items-center justify-start ml-12">
-              <h3 class="text-xl font-['Inter',_sans-serif] font-medium tracking-wide text-white">${item.name}</h3>
-            </div>
-            
-            <!-- 數量調整 -->
-            <div class="flex items-center justify-center space-x-4">
-              <svg class="quantity-btn ${item.quantity === 1 || isClassroom ? 'disabled' : ''}" viewBox="0 0 30 30" onclick="${isClassroom ? '' : `decreaseQuantity('${item.id}')`}">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-              </svg>
-              <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-normal text-white min-w-[2rem] text-center" data-quantity="${item.quantity}" data-equipment-id="${item.id}">${item.quantity}</span>
-              <svg class="quantity-btn ${isClassroom ? 'disabled' : ''}" viewBox="0 0 30 30" onclick="${isClassroom ? '' : `increaseQuantity('${item.id}')`}">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
-              </svg>
-            </div>
-            
-            <!-- 押金 -->
-            <div class="flex items-center justify-start ml-15">
-              <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-normal text-white" data-unit-price="${item.deposit}" data-total-price="${item.deposit * item.quantity}" data-equipment-id="${item.id}">NT${(item.deposit * item.quantity).toLocaleString()}</span>
             </div>
             
             <!-- 刪除按鈕 -->
-            <div class="flex items-center justify-end">
-              <svg class="remove-btn" viewBox="0 0 30 30" onclick="removeItem('${item.id}')">
-                <line x1="5" y1="5" x2="25" y2="25" stroke="white" stroke-width="1"/>
-                <line x1="25" y1="5" x2="5" y2="25" stroke="white" stroke-width="1"/>
+            <div class="remove-btn" onclick="removeItem('${item.id}')">
+              <svg viewBox="0 0 20 20">
+                <line x1="4" y1="4" x2="16" y2="16" stroke="black" stroke-width="1"/>
+                <line x1="16" y1="4" x2="4" y2="16" stroke="black" stroke-width="1"/>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- 設備資訊 -->
+          <div class="space-y-2">
+            <!-- 設備名稱 -->
+            <h3 class="text-base font-['Inter',_sans-serif] font-medium text-white text-left">${item.name}</h3>
+            
+            <!-- 押金 -->
+            <div class="text-left">
+              <span class="text-base font-['Inter',_sans-serif] font-normal text-white tracking-wide" data-unit-price="${item.deposit}" data-total-price="${item.deposit * item.quantity}" data-equipment-id="${item.id}">NT${(item.deposit * item.quantity).toLocaleString()}</span>
+            </div>
+            
+            <!-- 數量調整 -->
+            <div class="flex items-center justify-start space-x-3 mt-6">
+              <svg class="quantity-btn ${item.quantity === 1 || isClassroom ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="${isClassroom ? '' : `decreaseQuantity('${item.id}')`}" style="width: 20px; height: 20px;">
+                <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
+              </svg>
+              <span class="text-base font-['Inter',_sans-serif] font-normal text-white min-w-[1.5rem] text-center" data-quantity="${item.quantity}" data-equipment-id="${item.id}">${item.quantity}</span>
+              <svg class="quantity-btn ${isClassroom ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="${isClassroom ? '' : `increaseQuantity('${item.id}')`}" style="width: 20px; height: 20px;">
+                <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
+                <line x1="10" y1="4" x2="10" y2="16" stroke="white" stroke-width="1"/>
               </svg>
             </div>
           </div>
@@ -468,7 +521,29 @@
       }
       
       function removeItem(equipmentId) {
-        window.cartManager.removeFromCart(equipmentId);
+        // 找到對應的設備卡片元素
+        const equipmentCards = document.querySelectorAll('.equipment-card');
+        let targetCard = null;
+        
+        equipmentCards.forEach(card => {
+          const quantitySpan = card.querySelector(`[data-equipment-id="${equipmentId}"]`);
+          if (quantitySpan) {
+            targetCard = card;
+          }
+        });
+        
+        if (targetCard) {
+          // 添加淡出動畫class
+          targetCard.classList.add('fade-out');
+          
+          // 等待動畫完成後執行實際刪除
+          setTimeout(() => {
+            window.cartManager.removeFromCart(equipmentId);
+          }, 500); // 0.5秒後執行刪除
+        } else {
+          // 如果找不到對應卡片，直接執行刪除
+          window.cartManager.removeFromCart(equipmentId);
+        }
       }
       
       function formatCurrency(amount) {
@@ -493,7 +568,7 @@
           checkbox.checked = false; // 取消勾選
           rentalBtn.disabled = true;
           rentalBtn.classList.add('opacity-30', 'cursor-not-allowed');
-          rentalBtn.classList.remove('opacity-100', 'hover:opacity-80', 'cursor-pointer');
+          rentalBtn.classList.remove('opacity-100', 'cursor-pointer');
         } else {
           // 隱藏空清單提示
           emptyMessage.classList.add('hide');
@@ -510,11 +585,11 @@
           if (checkbox.checked) {
             rentalBtn.disabled = false;
             rentalBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-            rentalBtn.classList.add('opacity-100', 'hover:opacity-80', 'cursor-pointer');
+            rentalBtn.classList.add('opacity-100', 'cursor-pointer');
           } else {
             rentalBtn.disabled = true;
             rentalBtn.classList.add('opacity-30', 'cursor-not-allowed');
-            rentalBtn.classList.remove('opacity-100', 'hover:opacity-80', 'cursor-pointer');
+            rentalBtn.classList.remove('opacity-100', 'cursor-pointer');
           }
         }
         
@@ -522,5 +597,136 @@
         document.getElementById('total-deposit').textContent = formatCurrency(totalDeposit);
       }
     </script>
+
+    <script>
+      // Copyright 彩蛋效果 - 打字機風格
+      document.addEventListener('DOMContentLoaded', function() {
+        const copyrightElement = document.querySelector('.copyright');
+        const originalElement = document.querySelector('.copyright-original');
+        const easterEggElement = document.getElementById('easter-egg-text');
+        
+        if (copyrightElement && originalElement && easterEggElement) {
+          const originalText = originalElement.textContent;
+          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
+          const maxLength = Math.min(originalText.length, targetText.length);
+          const truncatedTarget = targetText.substring(0, maxLength);
+          
+          let isHovering = false;
+          let animationInterval = null;
+          let currentStep = 0;
+          let isAnimatingIn = false;
+          let isAnimatingOut = false;
+          
+          // 隨機字符池
+          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
+          
+          function getRandomChar() {
+            return randomChars[Math.floor(Math.random() * randomChars.length)];
+          }
+          
+          function generateRandomString(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+              result += getRandomChar();
+            }
+            return result;
+          }
+          
+          function animateToTarget() {
+            if (isAnimatingOut) return;
+            isAnimatingIn = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
+            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
+            
+            easterEggElement.textContent = generateRandomString(maxLength);
+            easterEggElement.style.opacity = '1';
+            originalElement.style.opacity = '0';
+            
+            animationInterval = setInterval(() => {
+              if (!isHovering || isAnimatingOut) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                return;
+              }
+              
+              currentStep++;
+              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
+              
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (i < revealedChars) {
+                  displayText += truncatedTarget[i] || ' ';
+                } else {
+                  displayText += getRandomChar();
+                }
+              }
+              
+              easterEggElement.textContent = displayText;
+              
+              if (revealedChars >= maxLength) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                easterEggElement.textContent = truncatedTarget;
+              }
+            }, 50);
+          }
+          
+          function animateToOriginal() {
+            // 立即停止任何正在進行的動畫
+            if (animationInterval) {
+              clearInterval(animationInterval);
+            }
+            
+            isAnimatingIn = false;
+            isAnimatingOut = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
+            
+            animationInterval = setInterval(() => {
+              currentStep++;
+              const progress = currentStep / totalSteps;
+              
+              if (progress >= 1) {
+                clearInterval(animationInterval);
+                easterEggElement.style.opacity = '0';
+                originalElement.style.opacity = '1';
+                isAnimatingOut = false;
+                animationInterval = null;
+                return;
+              }
+              
+              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
+                  displayText += getRandomChar();
+                } else {
+                  // 保持當前字符或目標字符
+                  const currentChar = easterEggElement.textContent[i];
+                  displayText += currentChar || getRandomChar();
+                }
+              }
+              easterEggElement.textContent = displayText;
+            }, 30);
+          }
+          
+          copyrightElement.addEventListener('mouseenter', () => {
+            isHovering = true;
+            if (animationInterval) clearInterval(animationInterval);
+            animateToTarget();
+          });
+          
+          copyrightElement.addEventListener('mouseleave', () => {
+            isHovering = false;
+            animateToOriginal();
+          });
+        }
+      });
+    </script>
+
+    <script src="script.js" defer></script>
   </body>
 </html> 

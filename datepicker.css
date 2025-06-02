@@ -27,6 +27,7 @@
     flex: 1;
     justify-content: center;
     align-items: center;
+    transform: translateX(calc(-(100% / 7) * 0.5)); /* 向左偏移0.5個星期格，對齊到"三"的中心 */
 }
 
 .month-title {
@@ -44,7 +45,6 @@
     background: none;
     border: none;
     color: white;
-    font-size: 1.5rem;
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 50%;
@@ -55,6 +55,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+}
+
+.nav-arrow svg {
+    width: 2rem;
+    height: 1.5rem;
+    pointer-events: none; /* 讓SVG不阻擋點擊事件 */
+}
+
+/* 隱藏的點擊區域 */
+.nav-arrow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    z-index: 1;
 }
 
 .nav-arrow:hover {
