@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 392.78 1596.67">
+  <g id="Glass_Wall" data-name="Glass Wall">
+    <rect id="Y26" x="-24.01" y="24.01" width="57.69" height="9.67" transform="translate(33.68 24.01) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y25" x="-24.01" y="97.16" width="57.69" height="9.67" transform="translate(106.84 97.16) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y24" x="-24.01" y="170.32" width="57.69" height="9.67" transform="translate(179.99 170.32) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y23" x="-24.01" y="243.47" width="57.69" height="9.67" transform="translate(253.15 243.47) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y13" x="359.1" y="829.07" width="57.69" height="9.67" transform="translate(1221.84 445.96) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y12" x="359.1" y="902.22" width="57.69" height="9.67" transform="translate(1295 519.12) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y11" x="359.1" y="975.38" width="57.69" height="9.67" transform="translate(1368.15 592.27) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y10" x="359.1" y="1048.53" width="57.69" height="9.67" transform="translate(1441.31 665.43) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y14" x="334.08" y="785.27" width="58.7" height="9.67" transform="translate(726.86 1580.21) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y15" x="259.65" y="785.27" width="58.7" height="9.67" transform="translate(578 1580.21) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y7" x="334.08" y="1241.68" width="58.7" height="9.67" transform="translate(726.86 2493.03) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y6" x="259.65" y="1241.68" width="58.7" height="9.67" transform="translate(577.99 2493.03) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y4" x="334.08" y="1371.63" width="58.7" height="9.67" transform="translate(726.86 2752.94) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y5" x="259.65" y="1371.63" width="58.7" height="9.67" transform="translate(577.99 2752.94) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y16" x="185.22" y="785.27" width="58.7" height="9.67" transform="translate(429.13 1580.21) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y17" x="110.79" y="785.27" width="58.7" height="9.67" transform="translate(280.27 1580.21) rotate(-180)" style="fill: #ccc;"/>
+    <rect id="Y9" x="359.1" y="1121.69" width="57.69" height="9.67" transform="translate(1514.46 738.58) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y8" x="359.1" y="1194.84" width="57.69" height="9.67" transform="translate(1587.62 811.74) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y3" x="359.1" y="1416.68" width="57.69" height="9.67" transform="translate(1809.46 1033.58) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y2" x="359.1" y="1489.84" width="57.69" height="9.67" transform="translate(1882.61 1106.73) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y1" x="359.1" y="1562.99" width="57.69" height="9.67" transform="translate(1955.77 1179.89) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y22" x="-8.03" y="353.21" width="25.73" height="9.67" transform="translate(362.88 353.21) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y21" x="-24.01" y="462.94" width="57.69" height="9.67" transform="translate(472.61 462.94) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y20" x="-24.01" y="536.09" width="57.69" height="9.67" transform="translate(545.77 536.09) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y19" x="-24.01" y="609.25" width="57.69" height="9.67" transform="translate(618.92 609.25) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Y18" x="-24.01" y="682.4" width="57.69" height="9.67" transform="translate(692.08 682.4) rotate(90)" style="fill: #ccc;"/>
+  </g>
+</svg>

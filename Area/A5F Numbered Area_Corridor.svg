@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 421.51 788.51">
+  <g id="Corridor">
+    <rect id="G10" y="0" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="G9" y="73.23" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="G8" y="146.46" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="G7" y="219.7" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="G6" y="292.93" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="G5" y="366.16" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H9" x="74.5" y="73.23" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H8" x="74.5" y="146.46" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H7" x="74.5" y="219.7" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H6" x="74.5" y="292.93" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H3" x="74.5" y="512.62" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H2" x="74.5" y="585.86" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="H1" x="74.5" y="659.09" width="55" height="55" style="fill: #ccc;"/>
+    <rect id="J3" x="366.51" y="733.51" width="55" height="55" transform="translate(1155.02 367.01) rotate(90)" style="fill: #ccc;"/>
+    <rect id="J2" x="293.27" y="733.51" width="55" height="55" transform="translate(1081.79 440.24) rotate(90)" style="fill: #ccc;"/>
+    <rect id="J1" x="220.04" y="733.51" width="55" height="55" transform="translate(1008.56 513.47) rotate(90)" style="fill: #ccc;"/>
+    <polygon id="H5" points="129.5 366.26 129.5 408.9 117.15 408.9 117.15 421.26 74.5 421.26 74.5 366.26 129.5 366.26" style="fill: #ccc;"/>
+    <polygon id="H4" points="117.15 439.39 117.15 451.75 129.5 451.75 129.5 494.39 74.5 494.39 74.5 439.39 117.15 439.39" style="fill: #ccc;"/>
+    <polygon id="H10" points="117.15 0 117.15 12.36 129.5 12.36 129.5 55 74.5 55 74.5 0 117.15 0" style="fill: #ccc;"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 464.01 1343.14">
+  <g id="Pillar">
+    <rect id="Z8" x="439.37" y="0" width="24.64" height="24.64" transform="translate(464.01 -439.37) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z7" x="439.37" y="146.66" width="24.64" height="24.64" transform="translate(610.67 -292.71) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z6" x="439.37" y="293.32" width="24.64" height="24.64" transform="translate(757.32 -146.05) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z5" x="439.37" y="439.97" width="24.64" height="24.64" transform="translate(903.98 .61) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z9" x="0" y="439.97" width="24.64" height="24.64" transform="translate(464.62 439.97) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z4" x="439.37" y="586.63" width="24.64" height="24.64" transform="translate(1050.64 147.27) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z3" x="439.37" y="733.29" width="24.64" height="24.64" transform="translate(1197.3 293.92) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z2" x="439.37" y="879.95" width="24.64" height="24.64" transform="translate(1343.96 440.58) rotate(90)" style="fill: #ccc;"/>
+    <rect id="Z1" x="439.37" y="1318.49" width="24.64" height="24.64" transform="translate(1782.5 879.13) rotate(90)" style="fill: #ccc;"/>
+  </g>
+</svg>

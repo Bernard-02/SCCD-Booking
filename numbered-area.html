@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A5F編號區租借 - SCCD 媒傳系平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <script src="cart-manager.js"></script>
+    
+    <!-- 箭頭動畫樣式 -->
+    <style>
+      /* 箭頭動畫樣式 */
+      .arrow-link {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+      }
+      
+      .arrow-container {
+        position: relative;
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
+        margin-left: 8px;
+      }
+      
+      .arrow-icons-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+      }
+      
+      .arrow-icon {
+        width: 0.8em;
+        height: 0.8em;
+        flex-shrink: 0;
+        filter: brightness(0) invert(1); /* 預設白色 */
+      }
+      
+      .arrow-link:hover .arrow-icons-wrapper {
+        transform: translateY(-1em);
+      }
+      
+      /* LOGIN 按鈕特殊樣式 */
+      .login-btn {
+        padding: 1.5px 10px !important;
+        padding-right: 8px !important;
+      }
+      
+      .login-btn:hover .arrow-icon {
+        filter: brightness(0); /* hover 時變黑色 */
+      }
+      
+      /* Footer 連結 hover 效果 */
+      .footer-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* Header 導航連結 hover 效果 */
+      .nav-link:hover {
+        opacity: 0.8;
+        color: white !important;
+      }
+      
+      /* Breadcrumb 樣式 */
+      .breadcrumb {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 300; /* font-light */
+        color: white;
+        text-align: left;
+        margin-bottom: 1rem;
+        letter-spacing: 0.05em; /* tracking-wider */
+        position: absolute;
+        top: calc(3rem + 3vh);
+        left: 6%;
+        z-index: 10;
+      }
+      
+      .breadcrumb:hover .breadcrumb-item {
+        opacity: 0.6;
+      }
+      
+      .breadcrumb .breadcrumb-item {
+        transition: opacity 0.3s ease;
+        cursor: pointer;
+      }
+      
+      .breadcrumb .breadcrumb-item:hover {
+        opacity: 1 !important;
+      }
+      
+      .breadcrumb .breadcrumb-separator {
+        margin: 0 0.5rem;
+        opacity: 0.6;
+      }
+      
+      /* 展開式元件樣式 */
+      .accordion-item {
+        border-bottom: 1px solid white;
+        padding: 0.6rem 0; /* 增加分類間距 */
+      }
+      
+      .accordion-item:last-child {
+        border-bottom: none;
+      }
+      
+      .accordion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        padding: 0;
+      }
+      
+      .accordion-content.expanded {
+        max-height: 300px;
+        padding-bottom: 20px; /* 增加底部間距 */
+        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding-bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .expand-icon {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .expand-icon.plus:hover {
+        transform: rotate(90deg);
+      }
+      
+      .accordion-content-inner {
+        opacity: 0;
+        transition: opacity 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) 0.1s;
+        margin-top: 16px; /* 押金群組往下移動 */
+      }
+      
+      .accordion-content.expanded .accordion-content-inner {
+        opacity: 1;
+      }
+      
+      /* 地圖區域樣式 */
+      .map-container {
+        display: flex;
+        align-items: flex-start; /* 改為頂部對齊 */
+        justify-content: center;
+        height: 100%;
+        padding: 0; /* 移除padding */
+        overflow: hidden;
+      }
+      
+      .map-svg {
+        width: 100%; /* SVG佔滿容器寬度 */
+        height: 100%; /* 改為100%以fit進container */
+        max-height: none; /* 移除max-height限制 */
+        cursor: pointer;
+        object-fit: contain;
+      }
+      
+      /* SVG 格子樣式 */
+      .grid-cell {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        transform-box: fill-box; /* 重要：讓transform-origin基於元素自身的邊界框 */
+        transform-origin: center center; /* 以格子自身中心為錨點 */
+      }
+      
+      .grid-cell:hover {
+        transform: scale(1.05); /* 增加放大倍數 */
+        filter: brightness(1.1); /* 調整亮度 */
+      }
+      
+      .grid-cell.selected {
+        fill: #00ff80 !important;
+      }
+      
+      .grid-cell.booked {
+        fill: #ff448a !important;
+        cursor: not-allowed;
+      }
+      
+      .grid-cell.booked:hover {
+        transform: none;
+        filter: none;
+      }
+      
+      /* 阻止頁面滾動 */
+      body {
+        overflow: hidden;
+      }
+      
+      /* 狀態指示器樣式 */
+      .status-indicators {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      
+      .status-box {
+        width: 1.2rem;
+        height: 1.2rem;
+      }
+      
+      .status-available {
+        background-color: #cccccc;
+      }
+      
+      .status-booked {
+        background-color: #ff448a;
+      }
+      
+      .status-selected {
+        background-color: #00ff80;
+      }
+      
+      /* 通知樣式 */
+      #notification {
+        position: fixed;
+        background-color: white;
+        color: black;
+        padding: 16px 80px;
+        z-index: 50;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease-out;
+        bottom: 7.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      
+      #notification.error {
+        background-color: #ffd9e0;
+        color: #ff4560;
+      }
+      
+      #notification.show {
+        opacity: 1;
+      }
+      
+      /* Copyright 彩蛋效果 */
+      .copyright {
+        position: relative;
+      }
+      
+      .copyright-original {
+        transition: none;
+      }
+      
+      .copyright-easter-egg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        white-space: nowrap;
+        opacity: 0;
+        font-family: 'Inter', sans-serif;
+        font-size: inherit;
+        letter-spacing: inherit;
+      }
+      
+      /* SVG 點擊區域樣式 */
+      .clickable-area {
+        cursor: pointer;
+        transition: fill 0.2s ease;
+      }
+      
+      .clickable-area:hover {
+        opacity: 0.8;
+      }
+      
+      .clickable-area.selected {
+        fill: #00ff80 !important;
+      }
+      
+      .clickable-area.booked {
+        fill: #ff448a !important;
+        cursor: not-allowed;
+      }
+      
+      /* Tooltip 樣式 */
+      #grid-tooltip {
+        position: fixed;
+        background-color: white;
+        color: black;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem; /* 從text-sm改為text-xs */
+        font-weight: 400;
+        padding: 3px 8px; /* 減少上下padding */
+        border-radius: 0; /* 移除倒角 */
+        pointer-events: none;
+        z-index: 1000;
+        opacity: 0;
+        transform: translate(10px, -30px); /* 偏移到滑鼠右上角 */
+        transition: opacity 0.2s ease;
+      }
+      
+      #grid-tooltip.show {
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body class="bg-black text-white flex flex-col h-screen">
+    <header class="py-6">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <a href="index.html" class="logo-link mr-10">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
+              SCCD
+            </div>
+          </a>
+
+          <nav>
+            <ul class="flex space-x-10">
+              <li>
+                <a
+                  href="booking.html"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+                  >BOOKING</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#resources"
+                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+                  >RESOURCES</a
+                >
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div class="flex items-center space-x-5">
+          <a
+            href="rental-list.html"
+            id="cart-link"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+            >(<span id="cart-count">0</span>) CART</a
+          >
+          <a
+            href="login.html"
+            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
+            >LOG IN
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow flex flex-col pt-[3vh] pb-[2vh] overflow-hidden">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb">
+        <a href="index.html" class="breadcrumb-item">首頁</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="booking.html" class="breadcrumb-item">租借日期</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="bookingresources.html" class="breadcrumb-item">租借資源</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="space.html" class="breadcrumb-item">租借空間</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-item">A5F編號區</span>
+      </nav>
+      
+      <div class="w-full px-[6%] flex-grow flex flex-col overflow-hidden">
+        <!-- 頁面標題 -->
+        <div class="mb-6">
+          <h1 class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2">
+            A5F編號區
+          </h1>
+        </div>
+        
+        <div class="flex gap-6 flex-grow overflow-hidden"> <!-- 減少gap讓SVG更大 -->
+          <!-- 左側：區域列表 -->
+          <div class="w-1/5 overflow-y-auto"> <!-- 增加左側padding -->
+            <!-- 中庭 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('courtyard')">
+                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">中庭</h2>
+                <svg class="expand-icon plus" id="icon-courtyard" viewBox="0 0 24 24">
+                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-courtyard">
+                <div class="accordion-content-inner space-y-4">
+                  <div class="space-y-2">
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      中庭區域適合展覽和大型活動，空間開闊，採光良好。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 走廊 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('corridor')">
+                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">走廊</h2>
+                <svg class="expand-icon plus" id="icon-corridor" viewBox="0 0 24 24">
+                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-corridor">
+                <div class="accordion-content-inner space-y-4">
+                  <div class="space-y-2">
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      走廊區域適合小型展示和作品陳列，人流量大。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 前陽台 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('front-balcony')">
+                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">前陽台</h2>
+                <svg class="expand-icon plus" id="icon-front-balcony" viewBox="0 0 24 24">
+                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-front-balcony">
+                <div class="accordion-content-inner space-y-4">
+                  <div class="space-y-2">
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      前陽台擁有絕佳視野，適合戶外展示和活動。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 後陽台 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('back-balcony')">
+                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">後陽台</h2>
+                <svg class="expand-icon plus" id="icon-back-balcony" viewBox="0 0 24 24">
+                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-back-balcony">
+                <div class="accordion-content-inner space-y-4">
+                  <div class="space-y-2">
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      後陽台環境相對安靜，適合需要專注的創作活動。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 玻璃牆 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('glass-wall')">
+                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">玻璃牆</h2>
+                <svg class="expand-icon plus" id="icon-glass-wall" viewBox="0 0 24 24">
+                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-glass-wall">
+                <div class="accordion-content-inner space-y-4">
+                  <div class="space-y-2">
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      玻璃牆區域展示效果佳，適合視覺作品展出。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 柱子 -->
+            <div class="accordion-item">
+              <div class="accordion-header" onclick="toggleAccordion('pillar')">
+                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">柱子</h2>
+                <svg class="expand-icon plus" id="icon-pillar" viewBox="0 0 24 24">
+                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="accordion-content" id="content-pillar">
+                <div class="accordion-content-inner space-y-4">
+                  <div class="space-y-2">
+                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                      柱子區域適合立體作品展示和裝置藝術。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中間：地圖區域 -->
+          <!-- 📍 SPACING CONTROL: 這裡是第二部分右移距離控制 - 調整 ml-4 的數值 -->
+          <div class="flex-3 overflow-hidden ml-4"> <!-- 增加中間部分的比例 -->
+            <div class="map-container" id="map-container">
+              <!-- SVG將由JavaScript動態載入 -->
+            </div>
+          </div>
+
+          <!-- 右側：資訊和按鈕 -->
+          <!-- 📍 SPACING CONTROL: 這裡是第三部分右移距離控制 - 調整 ml-12 的數值 -->
+          <div class="w-1/5 flex flex-col ml-8"> <!-- 減少右側寬度和間距 -->
+            <!-- 狀態指示器 -->
+            <div class="status-indicators">
+              <div class="status-item">
+                <div class="status-box status-available"></div>
+                <span class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">可租借</span>
+              </div>
+              <div class="status-item">
+                <div class="status-box status-booked"></div>
+                <span class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">已借出</span>
+              </div>
+              <div class="status-item">
+                <div class="status-box status-selected"></div>
+                <span class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">已選擇</span>
+              </div>
+            </div>
+
+            <div class="flex-grow"></div>
+
+            <!-- 租借資訊 -->
+            <div class="space-y-6 mb-12"> <!-- 增加底部間距讓按鈕更靠近footer -->
+              <!-- 租借區塊 -->
+              <div>
+                <div class="text-base font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">租借區塊</div>
+                <div id="selected-blocks" class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">--</div>
+              </div>
+
+              <!-- 押金總額 -->
+              <div>
+                <div class="text-base font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">押金總額</div>
+                <div id="total-deposit" class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT0</div>
+              </div>
+            </div>
+
+            <!-- 按鈕區域 -->
+            <div class="flex gap-4"> <!-- 使用flex布局和gap -->
+              <button id="clear-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black flex-1" disabled onclick="clearSelection()">
+                清除
+              </button>
+              <button id="add-area-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black flex-1" disabled onclick="addAreaToCart()">
+                加入清單
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tooltip 元件 -->
+    <div id="grid-tooltip"></div>
+
+    <!-- 通知元件 -->
+    <div id="notification">
+      <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
+    </div>
+
+    <footer class="py-8">
+      <div
+        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
+        <div class="flex space-x-6 mb-4 md:mb-0">
+          <a
+            href="https://sccd.usc.edu.tw/"
+            target="_blank"
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >TO SCCD
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+          <a
+            href="about.html"
+            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
+            >ABOUT
+            <div class="arrow-container">
+              <div class="arrow-icons-wrapper">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+              </div>
+            </div>
+          </a>
+        </div>
+        <div class="copyright text-xs md:text-right">
+          <p>
+            <span class="copyright-original">
+              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+            </span>
+            <span class="copyright-easter-egg" id="easter-egg-text">
+              <!-- 彩蛋文字將由JavaScript生成 -->
+            </span>
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      let currentSelectedArea = 'courtyard';
+      let selectedBlocks = []; // 存儲選中的區塊
+      let selectedBlockNames = []; // 存儲選中區塊的名稱
+      
+      // 區域資料
+      const areaData = {
+        'courtyard': {
+          id: 'area-courtyard',
+          name: '中庭',
+          category: 'area',
+          deposit: 1000,
+          image: 'Area/A5F Numbered Area_Square.svg',
+          mapImage: 'Area/A5F Numbered Area_Square.svg'
+        },
+        'corridor': {
+          id: 'area-corridor',
+          name: '走廊',
+          category: 'area',
+          deposit: 1000,
+          image: 'Area/A5F Numbered Area_Square.svg',
+          mapImage: 'Area/A5F Numbered Area_Square.svg'
+        },
+        'front-balcony': {
+          id: 'area-front-balcony',
+          name: '前陽台',
+          category: 'area',
+          deposit: 1000,
+          image: 'Area/A5F Numbered Area_Square.svg',
+          mapImage: 'Area/A5F Numbered Area_Square.svg'
+        },
+        'back-balcony': {
+          id: 'area-back-balcony',
+          name: '後陽台',
+          category: 'area',
+          deposit: 1000,
+          image: 'Area/A5F Numbered Area_Square.svg',
+          mapImage: 'Area/A5F Numbered Area_Square.svg'
+        },
+        'glass-wall': {
+          id: 'area-glass-wall',
+          name: '玻璃牆',
+          category: 'area',
+          deposit: 1000,
+          image: 'Area/A5F Numbered Area_Square.svg',
+          mapImage: 'Area/A5F Numbered Area_Square.svg'
+        },
+        'pillar': {
+          id: 'area-pillar',
+          name: '柱子',
+          category: 'area',
+          deposit: 1000,
+          image: 'Area/A5F Numbered Area_Square.svg',
+          mapImage: 'Area/A5F Numbered Area_Square.svg'
+        }
+      };
+      
+      function toggleAccordion(areaId) {
+        // 如果點擊的是已經打開的區域，就關閉它
+        if (currentSelectedArea === areaId) {
+          closeAccordion(areaId);
+          currentSelectedArea = null;
+          updateAreaDisplay();
+          return;
+        }
+        
+        // 關閉當前打開的區域
+        if (currentSelectedArea) {
+          closeAccordion(currentSelectedArea);
+        }
+        
+        // 延遲打開新選擇的區域
+        setTimeout(() => {
+          openAccordion(areaId);
+          currentSelectedArea = areaId;
+          updateAreaDisplay();
+          // 清空已選擇的區塊
+          selectedBlocks = [];
+          selectedBlockNames = [];
+          updateSelectedBlocks();
+        }, 200);
+      }
+      
+      function openAccordion(areaId) {
+        const content = document.getElementById(`content-${areaId}`);
+        const icon = document.getElementById(`icon-${areaId}`);
+        
+        content.classList.add('expanded');
+        
+        // 改變圖標為 "-"
+        icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>';
+        icon.classList.remove('plus');
+      }
+      
+      function closeAccordion(areaId) {
+        const content = document.getElementById(`content-${areaId}`);
+        const icon = document.getElementById(`icon-${areaId}`);
+        
+        content.classList.remove('expanded');
+        
+        // 改變圖標為 "+"
+        icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/><line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>';
+        icon.classList.add('plus');
+      }
+      
+      function updateAreaDisplay() {
+        if (!currentSelectedArea) {
+          return;
+        }
+        
+        const mapContainer = document.getElementById('map-container');
+        const svgData = getSVGDataForArea(currentSelectedArea);
+        
+        // 動態更新SVG內容
+        mapContainer.innerHTML = svgData.svg;
+        
+        // 重新設置SVG點擊事件
+        setTimeout(() => {
+          setupSVGClickEvents();
+          
+          // 示範：設置一些格子為已預訂狀態
+          const bookedBlocks = getBookedBlocksForArea(currentSelectedArea);
+          bookedBlocks.forEach(blockName => {
+            const cell = document.getElementById(blockName);
+            if (cell) {
+              cell.classList.add('booked');
+            }
+          });
+        }, 100);
+      }
+      
+      function getSVGDataForArea(areaId) {
+        const svgConfigs = {
+          'courtyard': {
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 493.86 820" xmlns="http://www.w3.org/2000/svg">
+              <g id="Square">
+                <rect class="grid-cell" id="A10" x="36.87" y="85.22" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A11" x="36.87" y="29.24" width="55" height="40" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B11" x="108.22" y="29.24" width="55" height="40" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C11" x="179.57" y="29.24" width="55" height="40" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D11" x="250.92" y="29.24" width="55" height="40" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E11" x="322.27" y="29.24" width="55" height="40" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="F6" x="443.82" y="29.15" width="25" height="96.03" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="F5" x="443.82" y="170.86" width="25" height="96.03" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="F4" x="443.82" y="312.58" width="25" height="96.03" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="F3" x="443.82" y="454.29" width="25" height="96.03" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="F2" x="443.82" y="596.01" width="25" height="96.03" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="F1" x="443.82" y="737.72" width="25" height="96.03" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B10" x="108.22" y="85.22" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C10" x="179.57" y="85.22" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D10" x="250.92" y="85.22" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E10" x="322.27" y="85.22" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A9" x="36.87" y="156.25" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A8" x="36.87" y="227.29" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A7" x="36.87" y="298.33" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B9" x="108.22" y="156.25" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C9" x="179.57" y="156.25" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D9" x="250.92" y="156.25" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E9" x="322.27" y="156.25" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B8" x="108.22" y="227.29" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C8" x="179.57" y="227.29" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D8" x="250.92" y="227.29" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E8" x="322.27" y="227.29" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B7" x="108.22" y="298.33" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C7" x="179.57" y="298.33" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D7" x="250.92" y="298.33" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E7" x="322.27" y="298.33" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B6" x="108.22" y="369.37" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C6" x="179.57" y="369.37" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D6" x="250.92" y="369.37" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E6" x="322.27" y="369.37" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B5" x="108.22" y="440.4" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C5" x="179.57" y="440.4" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D5" x="250.92" y="440.4" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E5" x="322.27" y="440.4" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B4" x="108.22" y="511.44" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C4" x="179.57" y="511.44" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D4" x="250.92" y="511.44" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E4" x="322.27" y="511.44" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B3" x="108.22" y="582.48" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B2" x="108.22" y="653.52" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="B1" x="108.22" y="724.55" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A4" x="36.87" y="511.44" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A3" x="36.87" y="582.48" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A2" x="36.87" y="653.52" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A1" x="36.87" y="724.55" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="C3" x="179.57" y="582.48" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="D3" x="250.92" y="582.48" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E3" x="322.27" y="582.48" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E2" x="322.27" y="653.52" width="55" height="55" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="E1" x="322.27" y="724.55" width="55" height="55" style="fill: #ccc;"/>
+                <polygon class="grid-cell" id="A6" points="36.87 369.37 36.87 412.01 49.23 412.01 49.23 424.37 91.87 424.37 91.87 369.37 36.87 369.37" style="fill: #ccc;"/>
+                <polygon class="grid-cell" id="A5" points="49.23 440.4 49.23 452.76 36.87 452.76 36.87 495.4 91.87 495.4 91.87 440.4 49.23 440.4" style="fill: #ccc;"/>
+                
+                <g id="Number" style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
+                  <text x="64" y="15" text-anchor="middle" style="fill: #fff;">A</text>
+                  <text x="136" y="15" text-anchor="middle" style="fill: #fff;">B</text>
+                  <text x="207" y="15" text-anchor="middle" style="fill: #fff;">C</text>
+                  <text x="278" y="15" text-anchor="middle" style="fill: #fff;">D</text>
+                  <text x="350" y="15" text-anchor="middle" style="fill: #fff;">E</text>
+                  <text x="456" y="15" text-anchor="middle" style="fill: #fff;">F</text>
+                  <text x="15" y="57" text-anchor="middle" style="fill: #fff;">11</text>
+                  <text x="15" y="116" text-anchor="middle" style="fill: #fff;">10</text>
+                  <text x="15" y="187" text-anchor="middle" style="fill: #fff;">9</text>
+                  <text x="15" y="258" text-anchor="middle" style="fill: #fff;">8</text>
+                  <text x="15" y="329" text-anchor="middle" style="fill: #fff;">7</text>
+                  <text x="15" y="400" text-anchor="middle" style="fill: #fff;">6</text>
+                  <text x="15" y="471" text-anchor="middle" style="fill: #fff;">5</text>
+                  <text x="15" y="542" text-anchor="middle" style="fill: #fff;">4</text>
+                  <text x="15" y="613" text-anchor="middle" style="fill: #fff;">3</text>
+                  <text x="15" y="684" text-anchor="middle" style="fill: #fff;">2</text>
+                  <text x="15" y="755" text-anchor="middle" style="fill: #fff;">1</text>
+                  <text x="485" y="77" text-anchor="middle" style="fill: #fff;">6</text>
+                  <text x="485" y="219" text-anchor="middle" style="fill: #fff;">5</text>
+                  <text x="485" y="361" text-anchor="middle" style="fill: #fff;">4</text>
+                  <text x="485" y="502" text-anchor="middle" style="fill: #fff;">3</text>
+                  <text x="485" y="644" text-anchor="middle" style="fill: #fff;">2</text>
+                  <text x="485" y="785" text-anchor="middle" style="fill: #fff;">1</text>
+                </g>
+              </g>
+            </svg>`
+          },
+          'corridor': {
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 450 820" xmlns="http://www.w3.org/2000/svg">
+              <g id="Corridor">
+                <!-- G列格子 -->
+                <rect class="grid-cell" id="G10" x="5" y="25" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="G9" x="5" y="90" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="G8" x="5" y="155" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="G7" x="5" y="220" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="G6" x="5" y="285" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="G5" x="5" y="350" width="50" height="50" style="fill: #ccc;"/>
+                
+                <!-- H列格子 -->
+                <rect class="grid-cell" id="H10" x="70" y="25" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H9" x="70" y="90" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H8" x="70" y="155" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H7" x="70" y="220" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H6" x="70" y="285" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H5" x="70" y="350" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H4" x="70" y="415" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H3" x="70" y="480" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H2" x="70" y="545" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="H1" x="70" y="610" width="50" height="50" style="fill: #ccc;"/>
+                
+                <!-- J1-J3 格子 -->
+                <rect class="grid-cell" id="J1" x="200" y="720" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="J2" x="270" y="720" width="50" height="50" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="J3" x="340" y="720" width="50" height="50" style="fill: #ccc;"/>
+                
+                <g style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
+                  <!-- 頂部列標籤 G、H，確保可見 -->
+                  <text x="30" y="15" text-anchor="middle" style="fill: #fff;">G</text>
+                  <text x="95" y="15" text-anchor="middle" style="fill: #fff;">H</text>
+                  
+                  <!-- 左側行標籤，增加距離 -->
+                  <text x="-15" y="53" text-anchor="middle" style="fill: #fff;">10</text>
+                  <text x="-15" y="118" text-anchor="middle" style="fill: #fff;">9</text>
+                  <text x="-15" y="183" text-anchor="middle" style="fill: #fff;">8</text>
+                  <text x="-15" y="248" text-anchor="middle" style="fill: #fff;">7</text>
+                  <text x="-15" y="313" text-anchor="middle" style="fill: #fff;">6</text>
+                  <text x="-15" y="378" text-anchor="middle" style="fill: #fff;">5</text>
+                  <text x="-15" y="443" text-anchor="middle" style="fill: #fff;">4</text>
+                  <text x="-15" y="508" text-anchor="middle" style="fill: #fff;">3</text>
+                  <text x="-15" y="573" text-anchor="middle" style="fill: #fff;">2</text>
+                  <text x="-15" y="638" text-anchor="middle" style="fill: #fff;">1</text>
+                  
+                  <!-- 底部J標籤，增加距離 -->
+                  <text x="225" y="795" text-anchor="middle" style="fill: #fff;">J1</text>
+                  <text x="295" y="795" text-anchor="middle" style="fill: #fff;">J2</text>
+                  <text x="365" y="795" text-anchor="middle" style="fill: #fff;">J3</text>
+                </g>
+              </g>
+            </svg>`
+          },
+          'front-balcony': {
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg">
+              <g id="Front_Terrace">
+                <rect class="grid-cell" id="K3" x="20" y="80" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K2" x="20" y="200" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K1" x="20" y="320" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K6" x="120" y="200" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K5" x="120" y="320" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K4" x="120" y="440" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K9" x="220" y="320" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K8" x="220" y="440" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K10" x="320" y="440" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K7" x="220" y="560" width="80" height="80" style="fill: #ccc;"/>
+                
+                <g style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 500;">
+                  <!-- 文字標籤，放在格子上方 -->
+                  <text x="60" y="65" text-anchor="middle" style="fill: #fff;">K3</text>
+                  <text x="60" y="185" text-anchor="middle" style="fill: #fff;">K2</text>
+                  <text x="60" y="305" text-anchor="middle" style="fill: #fff;">K1</text>
+                  <text x="160" y="185" text-anchor="middle" style="fill: #fff;">K6</text>
+                  <text x="160" y="305" text-anchor="middle" style="fill: #fff;">K5</text>
+                  <text x="160" y="425" text-anchor="middle" style="fill: #fff;">K4</text>
+                  <text x="260" y="305" text-anchor="middle" style="fill: #fff;">K9</text>
+                  <text x="260" y="425" text-anchor="middle" style="fill: #fff;">K8</text>
+                  <text x="360" y="425" text-anchor="middle" style="fill: #fff;">K10</text>
+                  <text x="260" y="545" text-anchor="middle" style="fill: #fff;">K7</text>
+                </g>
+              </g>
+            </svg>`
+          },
+          'back-balcony': {
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+              <g id="Back_Terrace">
+                <!-- 第一列：L3, L2, L1 (由上到下，較寬的格子) -->
+                <rect class="grid-cell" id="L3" x="60" y="80" width="60" height="60" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="L2" x="60" y="170" width="60" height="60" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="L1" x="60" y="260" width="60" height="60" style="fill: #ccc;"/>
+                
+                <!-- 第二列：L6, L5, L4 (由上到下，較窄的格子) -->
+                <rect class="grid-cell" id="L6" x="140" y="80" width="48" height="60" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="L5" x="140" y="170" width="48" height="60" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="L4" x="140" y="260" width="48" height="60" style="fill: #ccc;"/>
+                
+                <g style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 500;">
+                  <!-- 文字標籤，放在格子上方 -->
+                  <text x="90" y="70" text-anchor="middle" style="fill: #fff;">L3</text>
+                  <text x="90" y="160" text-anchor="middle" style="fill: #fff;">L2</text>
+                  <text x="90" y="250" text-anchor="middle" style="fill: #fff;">L1</text>
+                  <text x="164" y="70" text-anchor="middle" style="fill: #fff;">L6</text>
+                  <text x="164" y="160" text-anchor="middle" style="fill: #fff;">L5</text>
+                  <text x="164" y="250" text-anchor="middle" style="fill: #fff;">L4</text>
+                </g>
+              </g>
+            </svg>`
+          },
+          'glass-wall': {
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 392.78 1620" xmlns="http://www.w3.org/2000/svg">
+              <g id="Glass_Wall">
+                <rect class="grid-cell" id="Y26" x="-24.01" y="24.01" width="57.69" height="9.67" transform="translate(33.68 24.01) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y25" x="-24.01" y="97.16" width="57.69" height="9.67" transform="translate(106.84 97.16) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y24" x="-24.01" y="170.32" width="57.69" height="9.67" transform="translate(179.99 170.32) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y23" x="-24.01" y="243.47" width="57.69" height="9.67" transform="translate(253.15 243.47) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y13" x="359.1" y="829.07" width="57.69" height="9.67" transform="translate(1221.84 445.96) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y12" x="359.1" y="902.22" width="57.69" height="9.67" transform="translate(1295 519.12) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y11" x="359.1" y="975.38" width="57.69" height="9.67" transform="translate(1368.15 592.27) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y10" x="359.1" y="1048.53" width="57.69" height="9.67" transform="translate(1441.31 665.43) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y14" x="334.08" y="785.27" width="58.7" height="9.67" transform="translate(726.86 1580.21) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y15" x="259.65" y="785.27" width="58.7" height="9.67" transform="translate(578 1580.21) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y7" x="334.08" y="1241.68" width="58.7" height="9.67" transform="translate(726.86 2493.03) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y6" x="259.65" y="1241.68" width="58.7" height="9.67" transform="translate(577.99 2493.03) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y4" x="334.08" y="1371.63" width="58.7" height="9.67" transform="translate(726.86 2752.94) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y5" x="259.65" y="1371.63" width="58.7" height="9.67" transform="translate(577.99 2752.94) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y16" x="185.22" y="785.27" width="58.7" height="9.67" transform="translate(429.13 1580.21) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y17" x="110.79" y="785.27" width="58.7" height="9.67" transform="translate(280.27 1580.21) rotate(-180)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y9" x="359.1" y="1121.69" width="57.69" height="9.67" transform="translate(1514.46 738.58) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y8" x="359.1" y="1194.84" width="57.69" height="9.67" transform="translate(1587.62 811.74) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y3" x="359.1" y="1416.68" width="57.69" height="9.67" transform="translate(1809.46 1033.58) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y2" x="359.1" y="1489.84" width="57.69" height="9.67" transform="translate(1882.61 1106.73) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y1" x="359.1" y="1562.99" width="57.69" height="9.67" transform="translate(1955.77 1179.89) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y22" x="-8.03" y="353.21" width="25.73" height="9.67" transform="translate(362.88 353.21) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y21" x="-24.01" y="462.94" width="57.69" height="9.67" transform="translate(472.61 462.94) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y20" x="-24.01" y="536.09" width="57.69" height="9.67" transform="translate(545.77 536.09) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y19" x="-24.01" y="609.25" width="57.69" height="9.67" transform="translate(618.92 609.25) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Y18" x="-24.01" y="682.4" width="57.69" height="9.67" transform="translate(692.08 682.4) rotate(90)" style="fill: #ccc;"/>
+                
+                <g style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
+                  <text x="410" y="1570" text-anchor="middle" style="fill: #fff;">Y1</text>
+                  <text x="410" y="1497" text-anchor="middle" style="fill: #fff;">Y2</text>
+                  <text x="410" y="1424" text-anchor="middle" style="fill: #fff;">Y3</text>
+                  <text x="334" y="1355" text-anchor="middle" style="fill: #fff;">Y4</text>
+                  <text x="289" y="1355" text-anchor="middle" style="fill: #fff;">Y5</text>
+                  <text x="289" y="1260" text-anchor="middle" style="fill: #fff;">Y6</text>
+                  <text x="334" y="1260" text-anchor="middle" style="fill: #fff;">Y7</text>
+                  <text x="410" y="1202" text-anchor="middle" style="fill: #fff;">Y8</text>
+                  <text x="410" y="1129" text-anchor="middle" style="fill: #fff;">Y9</text>
+                  <text x="410" y="1056" text-anchor="middle" style="fill: #fff;">Y10</text>
+                  <text x="410" y="983" text-anchor="middle" style="fill: #fff;">Y11</text>
+                  <text x="410" y="910" text-anchor="middle" style="fill: #fff;">Y12</text>
+                  <text x="410" y="837" text-anchor="middle" style="fill: #fff;">Y13</text>
+                  <text x="334" y="800" text-anchor="middle" style="fill: #fff;">Y14</text>
+                  <text x="289" y="800" text-anchor="middle" style="fill: #fff;">Y15</text>
+                  <text x="215" y="800" text-anchor="middle" style="fill: #fff;">Y16</text>
+                  <text x="140" y="800" text-anchor="middle" style="fill: #fff;">Y17</text>
+                  <text x="-5" y="690" text-anchor="middle" style="fill: #fff;">Y18</text>
+                  <text x="-5" y="617" text-anchor="middle" style="fill: #fff;">Y19</text>
+                  <text x="-5" y="544" text-anchor="middle" style="fill: #fff;">Y20</text>
+                  <text x="-5" y="471" text-anchor="middle" style="fill: #fff;">Y21</text>
+                  <text x="5" y="361" text-anchor="middle" style="fill: #fff;">Y22</text>
+                  <text x="-5" y="251" text-anchor="middle" style="fill: #fff;">Y23</text>
+                  <text x="-5" y="178" text-anchor="middle" style="fill: #fff;">Y24</text>
+                  <text x="-5" y="105" text-anchor="middle" style="fill: #fff;">Y25</text>
+                  <text x="-5" y="32" text-anchor="middle" style="fill: #fff;">Y26</text>
+                </g>
+              </g>
+            </svg>`
+          },
+          'pillar': {
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 464.01 1360" xmlns="http://www.w3.org/2000/svg">
+              <g id="Pillar">
+                <rect class="grid-cell" id="Z8" x="439.37" y="0" width="24.64" height="24.64" transform="translate(464.01 -439.37) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z7" x="439.37" y="146.66" width="24.64" height="24.64" transform="translate(610.67 -292.71) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z6" x="439.37" y="293.32" width="24.64" height="24.64" transform="translate(757.32 -146.05) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z5" x="439.37" y="439.97" width="24.64" height="24.64" transform="translate(903.98 .61) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z9" x="0" y="439.97" width="24.64" height="24.64" transform="translate(464.62 439.97) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z4" x="439.37" y="586.63" width="24.64" height="24.64" transform="translate(1050.64 147.27) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z3" x="439.37" y="733.29" width="24.64" height="24.64" transform="translate(1197.3 293.92) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z2" x="439.37" y="879.95" width="24.64" height="24.64" transform="translate(1343.96 440.58) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z1" x="439.37" y="1318.49" width="24.64" height="24.64" transform="translate(1782.5 879.13) rotate(90)" style="fill: #ccc;"/>
+                
+                <g style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
+                  <text x="410" y="1335" text-anchor="middle" style="fill: #fff;">Z1</text>
+                  <text x="410" y="897" text-anchor="middle" style="fill: #fff;">Z2</text>
+                  <text x="410" y="751" text-anchor="middle" style="fill: #fff;">Z3</text>
+                  <text x="410" y="604" text-anchor="middle" style="fill: #fff;">Z4</text>
+                  <text x="410" y="458" text-anchor="middle" style="fill: #fff;">Z5</text>
+                  <text x="410" y="311" text-anchor="middle" style="fill: #fff;">Z6</text>
+                  <text x="410" y="165" text-anchor="middle" style="fill: #fff;">Z7</text>
+                  <text x="410" y="18" text-anchor="middle" style="fill: #fff;">Z8</text>
+                  <text x="54" y="458" text-anchor="middle" style="fill: #fff;">Z9</text>
+                </g>
+              </g>
+            </svg>`
+          }
+        };
+        
+        return svgConfigs[areaId] || svgConfigs['courtyard'];
+      }
+      
+      function getBookedBlocksForArea(areaId) {
+        // 為不同區域設置不同的預訂狀態示範
+        const bookedBlocks = {
+          'courtyard': ['B5', 'C7', 'D9'],
+          'corridor': ['G8', 'H6'],
+          'front-balcony': ['K3', 'K7'],
+          'back-balcony': ['L2'],
+          'glass-wall': ['Y5', 'Y12', 'Y20'],
+          'pillar': ['Z3', 'Z6']
+        };
+        
+        return bookedBlocks[areaId] || [];
+      }
+      
+      function setupSVGClickEvents() {
+        // 為每個格子添加點擊事件
+        const gridCells = document.querySelectorAll('.grid-cell');
+        const tooltip = document.getElementById('grid-tooltip');
+        
+        gridCells.forEach(cell => {
+          // 點擊事件
+          cell.addEventListener('click', function() {
+            const blockName = this.id;
+            handleBlockClick(blockName);
+          });
+          
+          // Hover事件 - 顯示tooltip
+          cell.addEventListener('mouseenter', function(e) {
+            const blockName = this.id;
+            tooltip.textContent = blockName;
+            tooltip.classList.add('show');
+            updateTooltipPosition(e);
+          });
+          
+          // 滑鼠移動事件 - 更新tooltip位置
+          cell.addEventListener('mousemove', function(e) {
+            updateTooltipPosition(e);
+          });
+          
+          // 離開hover - 隱藏tooltip
+          cell.addEventListener('mouseleave', function() {
+            tooltip.classList.remove('show');
+          });
+        });
+      }
+      
+      function updateTooltipPosition(e) {
+        const tooltip = document.getElementById('grid-tooltip');
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+      }
+      
+      function handleBlockClick(blockName) {
+        const cell = document.getElementById(blockName);
+        
+        // 檢查是否已被預訂（這裡可以設置一些預訂的格子用於示範）
+        if (cell.classList.contains('booked')) {
+          showNotification(`${blockName} 已被預訂！`, 'error');
+          return;
+        }
+        
+        const index = selectedBlockNames.indexOf(blockName);
+        if (index > -1) {
+          // 如果已選中，則取消選中
+          selectedBlockNames.splice(index, 1);
+          cell.classList.remove('selected');
+        } else {
+          // 如果未選中，則添加到選中列表
+          selectedBlockNames.push(blockName);
+          cell.classList.add('selected');
+        }
+        
+        updateSelectedBlocks();
+      }
+      
+      function updateSelectedBlocks() {
+        const selectedBlocksElement = document.getElementById('selected-blocks');
+        const totalDepositElement = document.getElementById('total-deposit');
+        const addButton = document.getElementById('add-area-btn');
+        const clearButton = document.getElementById('clear-btn');
+        
+        if (selectedBlockNames.length === 0) {
+          selectedBlocksElement.textContent = '--';
+          totalDepositElement.textContent = 'NT0';
+          
+          // 兩個按鈕都禁用
+          addButton.disabled = true;
+          addButton.classList.add('opacity-30', 'cursor-not-allowed');
+          addButton.classList.remove('opacity-100', 'cursor-pointer');
+          
+          clearButton.disabled = true;
+          clearButton.classList.add('opacity-30', 'cursor-not-allowed');
+          clearButton.classList.remove('opacity-100', 'cursor-pointer');
+        } else {
+          selectedBlocksElement.textContent = selectedBlockNames.join(', ');
+          totalDepositElement.textContent = `NT${(selectedBlockNames.length * 1000).toLocaleString()}`;
+          
+          // 兩個按鈕都啟用
+          addButton.disabled = false;
+          addButton.classList.remove('opacity-30', 'cursor-not-allowed');
+          addButton.classList.add('opacity-100', 'cursor-pointer');
+          
+          clearButton.disabled = false;
+          clearButton.classList.remove('opacity-30', 'cursor-not-allowed');
+          clearButton.classList.add('opacity-100', 'cursor-pointer');
+        }
+      }
+      
+      function clearSelection() {
+        const clearButton = document.getElementById('clear-btn');
+        
+        if (clearButton.disabled) {
+          return;
+        }
+        
+        // 清除所有選中的格子
+        selectedBlockNames.forEach(blockName => {
+          const cell = document.getElementById(blockName);
+          if (cell) {
+            cell.classList.remove('selected');
+          }
+        });
+        
+        // 清空選中列表
+        selectedBlockNames = [];
+        selectedBlocks = [];
+        
+        // 更新顯示
+        updateSelectedBlocks();
+        
+        // 顯示通知
+        showNotification('已清除所有選擇！');
+      }
+      
+      function addAreaToCart() {
+        const button = document.getElementById('add-area-btn');
+        
+        if (button.disabled || !currentSelectedArea || selectedBlockNames.length === 0) {
+          showNotification('請先選擇區塊！', 'error');
+          return;
+        }
+        
+        const area = areaData[currentSelectedArea];
+        const totalDeposit = selectedBlockNames.length * 1000;
+        const blockList = selectedBlockNames.join(', ');
+        
+        // 創建購物車項目
+        const cartItem = {
+          id: `${area.id}-${Date.now()}`, // 使用時間戳確保唯一性
+          name: `${area.name} (${blockList})`,
+          category: area.category,
+          deposit: totalDeposit,
+          mainImage: area.image,
+          blocks: selectedBlockNames.slice() // 複製數組
+        };
+        
+        const success = window.cartManager.addToCart(cartItem);
+        
+        if (success) {
+          showNotification(`${area.name}區域 ${blockList} 已成功加入租借清單！`);
+          // 清空選擇
+          selectedBlocks = [];
+          selectedBlockNames = [];
+          updateSelectedBlocks();
+        }
+      }
+      
+      function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        
+        // 設置通知內容
+        notificationText.textContent = message;
+        
+        // 根據類型設置樣式
+        if (type === 'error') {
+          notification.classList.add('error');
+        } else {
+          notification.classList.remove('error');
+        }
+        
+        // 重置位置和透明度
+        notification.style.bottom = '7.5rem';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%) translateY(50px)';
+        notification.style.opacity = '0';
+        notification.style.pointerEvents = 'none';
+        
+        // 顯示通知
+        setTimeout(() => {
+          notification.style.opacity = '1';
+          notification.style.transform = 'translateX(-50%) translateY(0px)';
+        }, 50);
+        
+        // 2秒後消失
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          notification.style.transform = 'translateX(-50%) translateY(-10px)';
+        }, 2000);
+        
+        // 完全隱藏
+        setTimeout(() => {
+          notification.style.pointerEvents = 'none';
+          notification.classList.remove('error');
+        }, 2500);
+      }
+      
+      // 初始化：默認展開中庭
+      document.addEventListener('DOMContentLoaded', function() {
+        openAccordion('courtyard');
+        updateAreaDisplay();
+        
+        // 示範用：添加一些測試按鈕來模擬區塊點擊
+        // 這些可以在實際實作時移除
+        setTimeout(() => {
+          console.log('頁面載入完成。由於使用img標籤載入SVG，無法直接操作內部元素。');
+          console.log('要讓SVG內部元素可點擊，請使用以下方法之一：');
+          console.log('1. 使用 <object> 標籤：<object data="Area/Square Area.svg" type="image/svg+xml"></object>');
+          console.log('2. 使用 <embed> 標籤：<embed src="Area/Square Area.svg" type="image/svg+xml">');
+          console.log('3. 直接將SVG代碼嵌入HTML中');
+          console.log('然後可以使用 simulateBlockClick("A1") 來測試功能');
+        }, 1000);
+      });
+
+      // Copyright 彩蛋效果
+      document.addEventListener('DOMContentLoaded', function() {
+        const copyrightElement = document.querySelector('.copyright');
+        const originalElement = document.querySelector('.copyright-original');
+        const easterEggElement = document.getElementById('easter-egg-text');
+        
+        if (copyrightElement && originalElement && easterEggElement) {
+          const originalText = originalElement.textContent;
+          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
+          const maxLength = Math.min(originalText.length, targetText.length);
+          const truncatedTarget = targetText.substring(0, maxLength);
+          
+          let isHovering = false;
+          let animationInterval = null;
+          let currentStep = 0;
+          let isAnimatingIn = false;
+          let isAnimatingOut = false;
+          
+          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
+          
+          function getRandomChar() {
+            return randomChars[Math.floor(Math.random() * randomChars.length)];
+          }
+          
+          function generateRandomString(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+              result += getRandomChar();
+            }
+            return result;
+          }
+          
+          function animateToTarget() {
+            if (isAnimatingOut) return;
+            isAnimatingIn = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(2000 / 50);
+            const charsToReveal = Math.ceil(maxLength / totalSteps * 4);
+            
+            easterEggElement.textContent = generateRandomString(maxLength);
+            easterEggElement.style.opacity = '1';
+            originalElement.style.opacity = '0';
+            
+            animationInterval = setInterval(() => {
+              if (!isHovering || isAnimatingOut) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                return;
+              }
+              
+              currentStep++;
+              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
+              
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (i < revealedChars) {
+                  displayText += truncatedTarget[i] || ' ';
+                } else {
+                  displayText += getRandomChar();
+                }
+              }
+              
+              easterEggElement.textContent = displayText;
+              
+              if (revealedChars >= maxLength) {
+                clearInterval(animationInterval);
+                isAnimatingIn = false;
+                easterEggElement.textContent = truncatedTarget;
+              }
+            }, 50);
+          }
+          
+          function animateToOriginal() {
+            if (animationInterval) {
+              clearInterval(animationInterval);
+            }
+            
+            isAnimatingIn = false;
+            isAnimatingOut = true;
+            currentStep = 0;
+            
+            const totalSteps = Math.ceil(300 / 30);
+            
+            animationInterval = setInterval(() => {
+              currentStep++;
+              const progress = currentStep / totalSteps;
+              
+              if (progress >= 1) {
+                clearInterval(animationInterval);
+                easterEggElement.style.opacity = '0';
+                originalElement.style.opacity = '1';
+                isAnimatingOut = false;
+                animationInterval = null;
+                return;
+              }
+              
+              let displayText = '';
+              for (let i = 0; i < maxLength; i++) {
+                if (Math.random() < progress * 0.8) {
+                  displayText += getRandomChar();
+                } else {
+                  const currentChar = easterEggElement.textContent[i];
+                  displayText += currentChar || getRandomChar();
+                }
+              }
+              easterEggElement.textContent = displayText;
+            }, 30);
+          }
+          
+          copyrightElement.addEventListener('mouseenter', () => {
+            isHovering = true;
+            if (animationInterval) clearInterval(animationInterval);
+            animateToTarget();
+          });
+          
+          copyrightElement.addEventListener('mouseleave', () => {
+            isHovering = false;
+            animateToOriginal();
+          });
+        }
+      });
+    </script>
+
+    <script src="script.js" defer></script>
+  </body>
+</html> 

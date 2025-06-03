@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210.95 418.55">
+  <g id="Back_Terrace" data-name="Back Terrace">
+    <rect id="L3" x="0" y="0" width="104.65" height="104.65" transform="translate(104.65 0) rotate(90)" style="fill: #ccc;"/>
+    <rect id="L2" x="0" y="156.95" width="104.65" height="104.65" transform="translate(261.6 156.95) rotate(90)" style="fill: #ccc;"/>
+    <rect id="L1" x="0" y="313.9" width="104.65" height="104.65" transform="translate(418.55 313.9) rotate(90)" style="fill: #ccc;"/>
+    <rect id="L6" x="116.97" y="10.67" width="104.65" height="83.31" transform="translate(221.62 -116.97) rotate(90)" style="fill: #ccc;"/>
+    <rect id="L5" x="116.97" y="167.62" width="104.65" height="83.31" transform="translate(378.57 39.98) rotate(90)" style="fill: #ccc;"/>
+    <rect id="L4" x="116.97" y="324.57" width="104.65" height="83.31" transform="translate(535.52 196.94) rotate(90)" style="fill: #ccc;"/>
+  </g>
+</svg>
