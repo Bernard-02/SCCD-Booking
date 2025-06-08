@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.currentYear = new Date().getFullYear();
                 this.today = new Date();
                 this.confirmButton = document.getElementById('confirm-date-button');
+                this.resetButton = document.getElementById('reset-date-button');
                 
                 // 月份和星期的中文名稱
                 this.monthNames = [
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.render();
                 this.attachEvents();
                 this.updateButtonState();
+                this.attachResetEvent();
             }
             
             render() {
@@ -86,59 +88,57 @@ document.addEventListener('DOMContentLoaded', function () {
                 const month = date.getMonth();
                 const firstDay = new Date(year, month, 1);
                 const lastDay = new Date(year, month + 1, 0);
-                const startDate = new Date(firstDay);
-                startDate.setDate(startDate.getDate() - firstDay.getDay());
+                const daysInMonth = lastDay.getDate();
                 
                 const days = [];
-                const current = new Date(startDate);
                 
-                // 生成5週的日期（而非6週）
-                for (let week = 0; week < 5; week++) {
-                    for (let day = 0; day < 7; day++) {
-                        const dayDate = new Date(current);
-                        const isCurrentMonth = dayDate.getMonth() === month;
-                        const isToday = this.isSameDay(dayDate, this.today);
-                        const isPast = dayDate < this.today && !this.isSameDay(dayDate, this.today);
-                        
-                        // 檢查是否超過30天範圍（如果已選擇起租日）
-                        let isOutOfRange = false;
-                        if (this.startDate && !this.endDate) {
-                            const daysDifference = Math.ceil((dayDate - this.startDate) / (1000 * 60 * 60 * 24));
-                            isOutOfRange = daysDifference > 30;
-                        }
-                        
-                        let classes = ['day'];
-                        if (!isCurrentMonth) classes.push('other-month');
-                        if (isToday) classes.push('today');
-                        if (isPast || isOutOfRange) classes.push('disabled');
-                        
-                        // 檢查選擇狀態
-                        if (this.startDate && this.isSameDay(dayDate, this.startDate)) {
-                            classes.push('start-range');
-                        }
-                        if (this.endDate && this.isSameDay(dayDate, this.endDate)) {
-                            classes.push('end-range');
-                        }
-                        if (this.startDate && this.endDate && 
-                            dayDate > this.startDate && dayDate < this.endDate) {
-                            classes.push('in-range');
-                        }
-                        
-                        // 使用本地日期格式避免時區問題
-                        const dateString = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
-                        
-                        days.push(`
-                            <div class="${classes.join(' ')}" 
-                                 data-date="${dateString}"
-                                 data-year="${dayDate.getFullYear()}"
-                                 data-month="${dayDate.getMonth()}"
-                                 data-day="${dayDate.getDate()}">
-                                ${dayDate.getDate()}
-                            </div>
-                        `);
-                        
-                        current.setDate(current.getDate() + 1);
+                // 在月份開始前填入空格子以對齊星期
+                const startDayOfWeek = firstDay.getDay();
+                for (let i = 0; i < startDayOfWeek; i++) {
+                    days.push(`<div class="day empty-day"></div>`);
+                }
+                
+                // 只顯示當前月份的日期
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayDate = new Date(year, month, day);
+                    const isToday = this.isSameDay(dayDate, this.today);
+                    const isPast = dayDate < this.today && !this.isSameDay(dayDate, this.today);
+                    
+                    // 檢查是否超過30天範圍（如果已選擇起租日）
+                    let isOutOfRange = false;
+                    if (this.startDate && !this.endDate) {
+                        const daysDifference = Math.ceil((dayDate - this.startDate) / (1000 * 60 * 60 * 24));
+                        isOutOfRange = daysDifference > 30;
                     }
+                    
+                    let classes = ['day'];
+                    if (isToday) classes.push('today');
+                    if (isPast || isOutOfRange) classes.push('disabled');
+                    
+                    // 檢查選擇狀態
+                    if (this.startDate && this.isSameDay(dayDate, this.startDate)) {
+                        classes.push('start-range');
+                    }
+                    if (this.endDate && this.isSameDay(dayDate, this.endDate)) {
+                        classes.push('end-range');
+                    }
+                    if (this.startDate && this.endDate && 
+                        dayDate > this.startDate && dayDate < this.endDate) {
+                        classes.push('in-range');
+                    }
+                    
+                    // 使用本地日期格式避免時區問題
+                    const dateString = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
+                    
+                    days.push(`
+                        <div class="${classes.join(' ')}" 
+                             data-date="${dateString}"
+                             data-year="${dayDate.getFullYear()}"
+                             data-month="${dayDate.getMonth()}"
+                             data-day="${dayDate.getDate()}">
+                            ${day}
+                        </div>
+                    `);
                 }
                 
                 return `<div class="days-grid">${days.join('')}</div>`;
@@ -242,10 +242,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             updateButtonState() {
+                // 處理確定日期按鈕
                 if (this.startDate && this.endDate && this.confirmButton) {
                     // 兩個日期都已選擇，啟用按鈕
                     this.confirmButton.disabled = false;
-                    this.confirmButton.className = "border border-white bg-transparent text-white opacity-100 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:bg-white hover:text-black";
+                    this.confirmButton.className = "bg-white text-black opacity-100 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:opacity-60";
                     
                     // 移除舊的事件監聽器並添加新的
                     this.confirmButton.onclick = () => {
@@ -254,8 +255,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (this.confirmButton) {
                     // 日期未完全選擇，禁用按鈕
                     this.confirmButton.disabled = true;
-                    this.confirmButton.className = "border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed";
+                    this.confirmButton.className = "bg-white text-black opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed hover:opacity-60";
                     this.confirmButton.onclick = null;
+                }
+                
+                // 處理重設日期按鈕
+                if (this.startDate && this.resetButton) {
+                    // 至少有起租日被選擇，啟用重設按鈕
+                    this.resetButton.disabled = false;
+                    this.resetButton.className = "border border-white bg-transparent text-white opacity-100 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:bg-white hover:text-black mb-4";
+                } else if (this.resetButton) {
+                    // 沒有日期被選擇，禁用重設按鈕
+                    this.resetButton.disabled = true;
+                    this.resetButton.className = "border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black mb-4";
+                }
+            }
+            
+            attachResetEvent() {
+                if (this.resetButton) {
+                    this.resetButton.addEventListener('click', () => {
+                        this.startDate = null;
+                        this.endDate = null;
+                        this.updateDisplay();
+                        this.render();
+                        this.attachEvents();
+                        this.updateButtonState();
+                    });
                 }
             }
             

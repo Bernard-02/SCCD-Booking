@@ -17,6 +17,12 @@
     <script src="cart-manager.js"></script>
     
     <style>
+      /* 選取（反白）樣式 */
+      ::selection {
+        background-color: #f7f7f7;
+        color: black;
+      }
+      
       /* 箭頭動畫樣式 */
       .arrow-link {
         display: inline-flex;
@@ -63,14 +69,12 @@
       
       /* Footer 連結 hover 效果 */
       .footer-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Header 導航連結 hover 效果 */
       .nav-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* 輸入框樣式 */
@@ -203,6 +207,15 @@
         height: 100%;
       }
       
+      /* 按鈕動畫樣式 */
+      .button-animated {
+        transition: color 0.5s ease;
+      }
+      
+      .button-animated.white-text {
+        color: black;
+      }
+      
       /* Copyright 彩蛋效果 */
       .copyright {
         position: relative;
@@ -265,9 +278,13 @@
           >
           <a
             href="login.html"
-            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
-            >LOG IN
-            <div class="arrow-container">
+            id="login-btn"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            style="position: relative; overflow: hidden;"
+            >
+            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
+            <span style="position: relative; z-index: 2;">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2;">
               <div class="arrow-icons-wrapper">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
@@ -335,11 +352,12 @@
           <!-- 登入按鈕 -->
           <button 
             type="submit" 
-            class="login-button border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer flex items-center justify-center hover:bg-white hover:text-black"
-            style="width: 150px;"
+            class="login-button border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer flex items-center justify-center button-animated"
+            style="width: 150px; position: relative; overflow: hidden;"
           >
-            <span>登入</span>
-            <div class="login-arrow-container">
+            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
+            <span style="position: relative; z-index: 2;">登入</span>
+            <div class="login-arrow-container" style="position: relative; z-index: 2;">
               <div class="login-arrows-wrapper">
                 <div class="custom-arrow">
                   <svg viewBox="0 0 30 22">
@@ -481,6 +499,58 @@
         forgotPasswordLink.addEventListener('click', function(e) {
           e.preventDefault();
           alert('忘記密碼功能尚未實作！');
+        });
+        
+        // 按鈕動畫效果
+        const button = document.querySelector('.login-button');
+        const buttonFill = button.querySelector('.button-bg-fill');
+        
+        button.addEventListener('mouseenter', function() {
+          gsap.to(buttonFill, {
+            height: '100%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色變化
+          this.classList.add('white-text');
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          gsap.to(buttonFill, {
+            height: '0%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色恢復
+          this.classList.remove('white-text');
+        });
+        
+        // Login 按鈕動畫效果
+        const loginBtn = document.getElementById('login-btn');
+        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        
+        loginBtn.addEventListener('mouseenter', function() {
+          gsap.to(loginBtnFill, {
+            height: '100%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色變化
+          this.classList.add('white-text');
+        });
+        
+        loginBtn.addEventListener('mouseleave', function() {
+          gsap.to(loginBtnFill, {
+            height: '0%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色恢復
+          this.classList.remove('white-text');
         });
       });
 

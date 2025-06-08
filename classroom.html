@@ -18,6 +18,12 @@
     
     <!-- 箭頭動畫樣式 -->
     <style>
+      /* 選取（反白）樣式 */
+      ::selection {
+        background-color: #f7f7f7;
+        color: black;
+      }
+      
       /* 箭頭動畫樣式 */
       .arrow-link {
         display: inline-flex;
@@ -64,14 +70,12 @@
       
       /* Footer 連結 hover 效果 */
       .footer-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Header 導航連結 hover 效果 */
       .nav-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Breadcrumb 樣式 */
@@ -126,36 +130,23 @@
       }
       
       .accordion-content {
-        max-height: 0;
+        height: 0;
         overflow: hidden;
-        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         padding: 0;
       }
       
       .accordion-content.expanded {
-        max-height: 500px;
         padding-bottom: 24px;
-        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding-bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
       
       .expand-icon {
         width: 30px;
         height: 30px;
         cursor: pointer;
-        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      }
-      
-      .expand-icon.plus:hover {
-        transform: rotate(90deg);
       }
       
       .accordion-content-inner {
         opacity: 0;
-        transition: opacity 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) 0.1s;
-      }
-      
-      .accordion-content.expanded .accordion-content-inner {
-        opacity: 1;
       }
       
       /* 通知樣式 - 參照 equipment-detail */
@@ -187,6 +178,38 @@
         opacity: 0.5 !important;
         cursor: not-allowed !important;
         pointer-events: none !important;
+      }
+      
+      /* 按鈕動畫樣式 */
+      .button-animated {
+        transition: color 0.5s ease;
+      }
+      
+      .button-animated.white-text {
+        color: black;
+      }
+      
+      /* Toast 提示訊息樣式 */
+      .toast {
+        position: fixed;
+        bottom: 7.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: white;
+        color: black;
+        padding: 1rem 5rem;
+        z-index: 50;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease-out;
+      }
+      
+      .toast p {
+        font-size: 1rem;
+        font-family: 'Noto Sans TC', sans-serif;
+        line-height: 1.625;
+        text-align: center;
+        margin: 0;
       }
       
       /* Copyright 彩蛋效果 */
@@ -251,9 +274,13 @@
           >
           <a
             href="login.html"
-            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
-            >LOG IN
-            <div class="arrow-container">
+            id="login-btn"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            style="position: relative; overflow: hidden;"
+            >
+            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
+            <span style="position: relative; z-index: 2;">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2;">
               <div class="arrow-icons-wrapper">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
@@ -292,7 +319,7 @@
             <!-- A503 教室 -->
             <div class="accordion-item">
               <div class="accordion-header" onclick="toggleAccordion('a503')">
-                <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
+                <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
                 <svg class="expand-icon plus" id="icon-a503" viewBox="0 0 30 30">
                   <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
                   <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
@@ -309,7 +336,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                       <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="A503 教室">
                     </div>
                   </div>
                   <div>
@@ -324,7 +351,7 @@
             <!-- A507 教室 -->
             <div class="accordion-item">
               <div class="accordion-header" onclick="toggleAccordion('a507')">
-                <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
+                <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
                 <svg class="expand-icon plus" id="icon-a507" viewBox="0 0 30 30">
                   <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
                   <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
@@ -341,7 +368,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                       <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="A507 教室">
                     </div>
                   </div>
                   <div>
@@ -356,7 +383,7 @@
             <!-- A508 教室 -->
             <div class="accordion-item">
               <div class="accordion-header" onclick="toggleAccordion('a508')">
-                <h2 class="text-3xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
+                <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
                 <svg class="expand-icon plus" id="icon-a508" viewBox="0 0 30 30">
                   <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
                   <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
@@ -373,7 +400,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                       <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity">
+                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="A508 教室">
                     </div>
                   </div>
                   <div>
@@ -390,8 +417,9 @@
           <div class="flex-1">
             <div>
               <img id="classroom-image" src="Images/A503.png" alt="教室圖片" class="w-full aspect-[16/9] object-cover">
-              <button id="add-classroom-btn" class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:bg-white hover:text-black mt-12" style="width: 200px;" onclick="addClassroomToCart()">
-                加入清單
+              <button id="add-classroom-btn" class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer mt-12 button-animated" style="width: 200px; position: relative; overflow: hidden;" onclick="addClassroomToCart()">
+                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
+                <span style="position: relative; z-index: 2;">加入清單</span>
               </button>
             </div>
           </div>
@@ -508,22 +536,59 @@
       
       function openAccordion(classroomId) {
         const content = document.getElementById(`content-${classroomId}`);
+        const contentInner = content.querySelector('.accordion-content-inner');
         const icon = document.getElementById(`icon-${classroomId}`);
         
-        content.classList.add('expanded');
+        // 先設置內容顯示以計算高度
+        gsap.set(contentInner, { opacity: 0 });
+        content.classList.add('expanded'); // 添加expanded類別以獲得正確的padding
+        gsap.set(content, { height: 'auto' });
+        const autoHeight = content.offsetHeight;
+        gsap.set(content, { height: 0 });
         
-        // 改變圖標為 "-" 並移除 plus 類別
+        // 使用GSAP動畫展開
+        const tl = gsap.timeline();
+        tl.to(content, {
+          height: autoHeight,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            gsap.set(content, { height: 'auto' }); // 設置為auto以適應內容變化
+          }
+        })
+        .to(contentInner, {
+          opacity: 1,
+          duration: 0.3,
+          ease: "power2.out"
+        }, "-=0.2");
+        
+        // 改變圖標為 "-"
         icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>';
         icon.classList.remove('plus');
       }
       
       function closeAccordion(classroomId) {
         const content = document.getElementById(`content-${classroomId}`);
+        const contentInner = content.querySelector('.accordion-content-inner');
         const icon = document.getElementById(`icon-${classroomId}`);
         
-        content.classList.remove('expanded');
+        // 使用GSAP動畫收起
+        const tl = gsap.timeline();
+        tl.to(contentInner, {
+          opacity: 0,
+          duration: 0.2,
+          ease: "power2.out"
+        })
+        .to(content, {
+          height: 0,
+          duration: 0.4,
+          ease: "power2.out",
+          onComplete: () => {
+            content.classList.remove('expanded'); // 動畫完成後移除expanded類別
+          }
+        }, "-=0.1");
         
-        // 改變圖標為 "+" 並添加 plus 類別
+        // 改變圖標為 "+"
         icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/><line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>';
         icon.classList.add('plus');
       }
@@ -644,6 +709,88 @@
       // 初始化：默認展開 A503
       document.addEventListener('DOMContentLoaded', function() {
         openAccordion('a503');
+        
+        // 為圖標添加hover效果
+        const icons = document.querySelectorAll('.expand-icon');
+        icons.forEach(icon => {
+          icon.addEventListener('mouseenter', function() {
+            if (this.classList.contains('plus')) {
+              gsap.to(this, {
+                rotation: 90,
+                duration: 0.3,
+                ease: "power2.out"
+              });
+            }
+          });
+          
+          icon.addEventListener('mouseleave', function() {
+            if (this.classList.contains('plus')) {
+              gsap.to(this, {
+                rotation: 0,
+                duration: 0.3,
+                ease: "power2.out"
+              });
+            }
+          });
+        });
+        
+        // 按鈕動畫效果
+        const button = document.getElementById('add-classroom-btn');
+        const buttonFill = button.querySelector('.button-bg-fill');
+        
+        button.addEventListener('mouseenter', function() {
+          // 不包含disabled類時才執行動畫
+          if (!this.classList.contains('button-disabled')) {
+            gsap.to(buttonFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
+          }
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          // 不包含disabled類時才執行動畫
+          if (!this.classList.contains('button-disabled')) {
+            gsap.to(buttonFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
+          }
+        });
+        
+        // Login 按鈕動畫效果
+        const loginBtn = document.getElementById('login-btn');
+        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        
+        loginBtn.addEventListener('mouseenter', function() {
+          gsap.to(loginBtnFill, {
+            height: '100%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色變化
+          this.classList.add('white-text');
+        });
+        
+        loginBtn.addEventListener('mouseleave', function() {
+          gsap.to(loginBtnFill, {
+            height: '0%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色恢復
+          this.classList.remove('white-text');
+        });
       });
 
       // Copyright 彩蛋效果 - 打字機風格
@@ -771,6 +918,76 @@
             animateToOriginal();
           });
         }
+      });
+      
+      // 收藏夾功能
+      const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
+      
+      // 顯示Toast提示
+      function showToast(message) {
+        // 檢查是否已有toast，如果有則移除
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+          existingToast.remove();
+        }
+        
+        // 創建新的toast
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        
+        // 創建內部的p元素
+        const p = document.createElement('p');
+        p.textContent = message;
+        toast.appendChild(p);
+        
+        document.body.appendChild(toast);
+        
+        // 重置位置和透明度（從底部開始）
+        toast.style.bottom = '7.5rem';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%) translateY(50px)';
+        toast.style.opacity = '0';
+        toast.style.pointerEvents = 'none';
+        
+        // 顯示通知（從底部浮上來的效果）
+        setTimeout(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateX(-50%) translateY(0px)';
+        }, 50);
+        
+        // 2秒後開始消失動畫
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(-50%) translateY(-10px)';
+        }, 2000);
+        
+        // 動畫完成後完全隱藏並移除
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 2500);
+      }
+      
+      // 為每個收藏夾按鈕添加點擊事件
+      bookmarkButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const equipmentName = this.getAttribute('data-equipment');
+          const isBookmarked = this.src.includes('Fill');
+          
+          if (isBookmarked) {
+            // 如果已收藏，切換回空心
+            this.src = 'Icons/Bookmark Sharp Regular.svg';
+            showToast(`${equipmentName}已從收藏夾中移除！`);
+          } else {
+            // 如果未收藏，切換為填色
+            this.src = 'Icons/Bookmark Sharp Fill.svg';
+            showToast(`${equipmentName}已加入收藏夾！`);
+          }
+        });
       });
     </script>
 

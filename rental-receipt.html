@@ -90,14 +90,12 @@
       
       /* Footer 連結 hover 效果 */
       .footer-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Header 導航連結 hover 效果 */
       .nav-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* 租借收據特定樣式 */
@@ -165,6 +163,12 @@
         font-size: inherit;
         letter-spacing: inherit;
       }
+      
+      /* 選取（反白）樣式 */
+      ::selection {
+        background-color: #f7f7f7;
+        color: black;
+      }
     </style>
   </head>
 
@@ -206,9 +210,13 @@
           >
           <a
             href="login.html"
-            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
-            >LOG IN
-            <div class="arrow-container">
+            id="login-btn"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            style="position: relative; overflow: hidden;"
+            >
+            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
+            <span style="position: relative; z-index: 2;">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2;">
               <div class="arrow-icons-wrapper">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
@@ -617,6 +625,32 @@
             animateToOriginal();
           });
         }
+        
+        // Login 按鈕動畫效果
+        const loginBtn = document.getElementById('login-btn');
+        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        
+        loginBtn.addEventListener('mouseenter', function() {
+          gsap.to(loginBtnFill, {
+            height: '100%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色變化
+          this.classList.add('white-text');
+        });
+        
+        loginBtn.addEventListener('mouseleave', function() {
+          gsap.to(loginBtnFill, {
+            height: '0%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色恢復
+          this.classList.remove('white-text');
+        });
       });
     </script>
 

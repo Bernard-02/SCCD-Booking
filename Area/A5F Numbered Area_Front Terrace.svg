@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.81 732.45">
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.81 762.8">
   <g id="Front_Terrace" data-name="Front Terrace">
-    <rect id="K3" x="0" y="0" width="104.65" height="104.65" transform="translate(104.65 0) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K2" x="0" y="156.95" width="104.65" height="104.65" transform="translate(261.6 156.95) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K1" x="0" y="313.9" width="104.65" height="104.65" transform="translate(418.55 313.9) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K6" x="135.72" y="156.95" width="104.65" height="104.65" transform="translate(397.32 21.23) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K5" x="135.72" y="313.9" width="104.65" height="104.65" transform="translate(554.27 178.18) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K4" x="135.72" y="470.85" width="104.65" height="104.65" transform="translate(711.22 335.13) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K9" x="271.44" y="313.9" width="104.65" height="104.65" transform="translate(689.99 42.46) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K8" x="271.44" y="470.85" width="104.65" height="104.65" transform="translate(846.95 199.41) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K10" x="407.17" y="470.85" width="104.65" height="104.65" transform="translate(982.67 63.69) rotate(90)" style="fill: #ccc;"/>
-    <rect id="K7" x="271.44" y="627.81" width="104.65" height="104.65" transform="translate(1003.9 356.36) rotate(90)" style="fill: #ccc;"/>
+    <rect id="K3" x="0" y="30.34" width="104.65" height="104.65" transform="translate(134.99 30.34) rotate(90)" style="fill: #898989;"/>
+    <rect id="K2" x="0" y="187.3" width="104.65" height="104.65" transform="translate(291.94 187.3) rotate(90)" style="fill: #898989;"/>
+    <rect id="K1" x="0" y="344.25" width="104.65" height="104.65" transform="translate(448.9 344.25) rotate(90)" style="fill: #898989;"/>
+    <rect id="K6" x="135.72" y="187.3" width="104.65" height="104.65" transform="translate(427.67 51.57) rotate(90)" style="fill: #898989;"/>
+    <rect id="K5" x="135.72" y="344.25" width="104.65" height="104.65" transform="translate(584.62 208.53) rotate(90)" style="fill: #898989;"/>
+    <rect id="K4" x="135.72" y="501.2" width="104.65" height="104.65" transform="translate(741.57 365.48) rotate(90)" style="fill: #898989;"/>
+    <rect id="K9" x="271.44" y="344.25" width="104.65" height="104.65" transform="translate(720.34 72.8) rotate(90)" style="fill: #898989;"/>
+    <rect id="K8" x="271.44" y="501.2" width="104.65" height="104.65" transform="translate(877.29 229.76) rotate(90)" style="fill: #898989;"/>
+    <rect id="K10" x="407.17" y="501.2" width="104.65" height="104.65" transform="translate(1013.01 94.03) rotate(90)" style="fill: #898989;"/>
+    <rect id="K7" x="271.44" y="658.15" width="104.65" height="104.65" transform="translate(1034.24 386.71) rotate(90)" style="fill: #898989;"/>
+    <text transform="translate(40.73 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K3</tspan></text>
+    <text transform="translate(41.3 172.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K2</tspan></text>
+    <text transform="translate(176.57 172.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K6</tspan></text>
+    <text transform="translate(42.57 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K1</tspan></text>
+    <text transform="translate(176.71 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K5</tspan></text>
+    <text transform="translate(312.29 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K9</tspan></text>
+    <text transform="translate(176.55 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K4</tspan></text>
+    <text transform="translate(312.28 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K8</tspan></text>
+    <text transform="translate(312.69 646.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K7</tspan></text>
+    <text transform="translate(443.67 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K10</tspan></text>
   </g>
 </svg>

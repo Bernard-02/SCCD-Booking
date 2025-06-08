@@ -162,7 +162,27 @@
 
 /* 今天的日期用圓圈border表示 */
 .day.today {
-    border: 1px solid white;
+    border: 1px solid transparent;
+    position: relative;
+}
+
+.day.today::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background-color: white;
+    border-radius: 50%;
+}
+
+/* 當今天被選中時，小點變為黑色 */
+.day.today.selected::after,
+.day.today.start-range::after,
+.day.today.end-range::after {
+    background-color: black;
 }
 
 .day.selected,

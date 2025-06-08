@@ -162,14 +162,12 @@
       
       /* Footer 連結 hover 效果 */
       .footer-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Header 導航連結 hover 效果 */
       .nav-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Copyright 彩蛋效果 */
@@ -228,6 +226,21 @@
         opacity: 0;
         transition: opacity 0.5s ease;
       }
+      
+      /* 按鈕動畫樣式 */
+      .button-animated {
+        transition: color 0.5s ease;
+      }
+      
+      .button-animated.white-text {
+        color: black;
+      }
+      
+      /* 選取（反白）樣式 */
+      ::selection {
+        background-color: #f7f7f7;
+        color: black;
+      }
     </style>
   </head>
 
@@ -269,9 +282,13 @@
           >
           <a
             href="login.html"
-            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
-            >LOG IN
-            <div class="arrow-container">
+            id="login-btn"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            style="position: relative; overflow: hidden;"
+            >
+            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
+            <span style="position: relative; z-index: 2;">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2;">
               <div class="arrow-icons-wrapper">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
@@ -330,8 +347,9 @@
             <div id="total-deposit" class="text-3xl font-['Inter',_sans-serif] font-normal text-white mb-4 tracking-wide">NT1,000</div>
             
             <div style="margin-left: 2rem;">
-              <button id="rental-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black" style="width: 200px;" disabled>
-                租借
+              <button id="rental-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-not-allowed button-animated" style="width: 200px; position: relative; overflow: hidden;" disabled>
+                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
+                <span style="position: relative; z-index: 2;">租借</span>
               </button>
             </div>
           </div>
@@ -383,10 +401,69 @@
     </footer>
 
     <script>
+      // 按鈕動畫效果
+      function setupButtonAnimation() {
+        const button = document.getElementById('rental-btn');
+        const buttonFill = button.querySelector('.button-bg-fill');
+        
+        button.addEventListener('mouseenter', function() {
+          if (!this.disabled) {
+            gsap.to(buttonFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
+          }
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          if (!this.disabled) {
+            gsap.to(buttonFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
+          }
+        });
+      }
+      
       // 租借清單功能
       document.addEventListener('DOMContentLoaded', function() {
         loadCartItems();
         updateSummary();
+        setupButtonAnimation(); // 初始化按鈕動畫
+        
+        // Login 按鈕動畫效果
+        const loginBtn = document.getElementById('login-btn');
+        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        
+        loginBtn.addEventListener('mouseenter', function() {
+          gsap.to(loginBtnFill, {
+            height: '100%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色變化
+          this.classList.add('white-text');
+        });
+        
+        loginBtn.addEventListener('mouseleave', function() {
+          gsap.to(loginBtnFill, {
+            height: '0%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色恢復
+          this.classList.remove('white-text');
+        });
         
         // 監聽checkbox變化
         const checkbox = document.getElementById('terms-checkbox');

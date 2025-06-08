@@ -64,14 +64,12 @@
       
       /* Footer 連結 hover 效果 */
       .footer-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Header 導航連結 hover 效果 */
       .nav-link:hover {
-        opacity: 0.8;
-        color: white !important;
+        opacity: 0.6;
       }
       
       /* Breadcrumb 樣式 */
@@ -127,68 +125,72 @@
       }
       
       .accordion-content {
-        max-height: 0;
+        height: 0;
         overflow: hidden;
-        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         padding: 0;
       }
       
       .accordion-content.expanded {
-        max-height: 300px;
         padding-bottom: 20px; /* 增加底部間距 */
-        transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding-bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
       
       .expand-icon {
         width: 24px;
         height: 24px;
         cursor: pointer;
-        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      }
-      
-      .expand-icon.plus:hover {
-        transform: rotate(90deg);
       }
       
       .accordion-content-inner {
         opacity: 0;
-        transition: opacity 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) 0.1s;
         margin-top: 16px; /* 押金群組往下移動 */
-      }
-      
-      .accordion-content.expanded .accordion-content-inner {
-        opacity: 1;
       }
       
       /* 地圖區域樣式 */
       .map-container {
         display: flex;
-        align-items: flex-start; /* 改為頂部對齊 */
-        justify-content: center;
+        align-items: center; /* 垂直居中對齊 */
+        justify-content: center; /* 水平居中對齊 */
         height: 100%;
-        padding: 0; /* 移除padding */
+        padding: 0;
         overflow: hidden;
       }
       
+      /* 玻璃牆和柱子的特殊滾動容器 */
+      .map-container.scrollable {
+        overflow: auto;
+        align-items: flex-start; /* 改為頂部對齊 */
+        justify-content: center; /* 保持水平居中 */
+      }
+      
       .map-svg {
-        width: 100%; /* SVG佔滿容器寬度 */
-        height: 100%; /* 改為100%以fit進container */
-        max-height: none; /* 移除max-height限制 */
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
         cursor: pointer;
-        object-fit: contain;
+      }
+      
+      /* 玻璃牆和柱子的SVG不縮放，保持原始比例 */
+      .map-svg.no-scale {
+        width: auto;
+        height: auto;
+        max-width: none;
+        max-height: none;
+        object-fit: none;
+        flex-shrink: 0; /* 防止被壓縮 */
       }
       
       /* SVG 格子樣式 */
       .grid-cell {
         cursor: pointer;
         transition: all 0.2s ease;
-        transform-box: fill-box; /* 重要：讓transform-origin基於元素自身的邊界框 */
-        transform-origin: center center; /* 以格子自身中心為錨點 */
+        transform-box: fill-box;
+        transform-origin: center center;
       }
       
       .grid-cell:hover {
-        transform: scale(1.05); /* 增加放大倍數 */
-        filter: brightness(1.1); /* 調整亮度 */
+        transform: scale(1.05);
+        filter: brightness(1.1);
       }
       
       .grid-cell.selected {
@@ -203,6 +205,17 @@
       .grid-cell.booked:hover {
         transform: none;
         filter: none;
+      }
+      
+      /* 可租借格子顏色 */
+      .grid-cell:not(.selected):not(.booked) {
+        fill: #898989 !important;
+      }
+      
+      /* 後陽台SVG特殊縮放 */
+      #area-map[data-area="back-balcony"] {
+        transform: scale(0.6);
+        transform-origin: center center;
       }
       
       /* 阻止頁面滾動 */
@@ -230,7 +243,7 @@
       }
       
       .status-available {
-        background-color: #cccccc;
+        background-color: #898989;
       }
       
       .status-booked {
@@ -326,6 +339,21 @@
       #grid-tooltip.show {
         opacity: 1;
       }
+      
+      /* 按鈕動畫樣式 */
+      .button-animated {
+        transition: color 0.5s ease;
+      }
+      
+      .button-animated.white-text {
+        color: black;
+      }
+      
+      /* 選取（反白）樣式 */
+      ::selection {
+        background-color: #f7f7f7;
+        color: black;
+      }
     </style>
   </head>
 
@@ -367,9 +395,13 @@
           >
           <a
             href="login.html"
-            class="login-btn border text-white rounded-[30px] hover:bg-white hover:text-black transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link"
-            >LOG IN
-            <div class="arrow-container">
+            id="login-btn"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            style="position: relative; overflow: hidden;"
+            >
+            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
+            <span style="position: relative; z-index: 2;">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2;">
               <div class="arrow-icons-wrapper">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
                 <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
@@ -596,11 +628,13 @@
 
             <!-- 按鈕區域 -->
             <div class="flex gap-4"> <!-- 使用flex布局和gap -->
-              <button id="clear-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black flex-1" disabled onclick="clearSelection()">
-                清除
+              <button id="clear-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 text-lg cursor-not-allowed button-animated flex-1" style="position: relative; overflow: hidden;" disabled onclick="clearSelection()">
+                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
+                <span style="position: relative; z-index: 2;">清除</span>
               </button>
-              <button id="add-area-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black flex-1" disabled onclick="addAreaToCart()">
-                加入清單
+              <button id="add-area-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 text-lg cursor-not-allowed button-animated flex-1" style="position: relative; overflow: hidden;" disabled onclick="addAreaToCart()">
+                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
+                <span style="position: relative; z-index: 2;">加入清單</span>
               </button>
             </div>
           </div>
@@ -744,9 +778,31 @@
       
       function openAccordion(areaId) {
         const content = document.getElementById(`content-${areaId}`);
+        const contentInner = content.querySelector('.accordion-content-inner');
         const icon = document.getElementById(`icon-${areaId}`);
         
-        content.classList.add('expanded');
+        // 先設置內容顯示以計算高度
+        gsap.set(contentInner, { opacity: 0 });
+        content.classList.add('expanded'); // 添加expanded類別以獲得正確的padding
+        gsap.set(content, { height: 'auto' });
+        const autoHeight = content.offsetHeight;
+        gsap.set(content, { height: 0 });
+        
+        // 使用GSAP動畫展開
+        const tl = gsap.timeline();
+        tl.to(content, {
+          height: autoHeight,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => {
+            gsap.set(content, { height: 'auto' }); // 設置為auto以適應內容變化
+          }
+        })
+        .to(contentInner, {
+          opacity: 1,
+          duration: 0.3,
+          ease: "power2.out"
+        }, "-=0.2");
         
         // 改變圖標為 "-"
         icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>';
@@ -755,9 +811,24 @@
       
       function closeAccordion(areaId) {
         const content = document.getElementById(`content-${areaId}`);
+        const contentInner = content.querySelector('.accordion-content-inner');
         const icon = document.getElementById(`icon-${areaId}`);
         
-        content.classList.remove('expanded');
+        // 使用GSAP動畫收起
+        const tl = gsap.timeline();
+        tl.to(contentInner, {
+          opacity: 0,
+          duration: 0.2,
+          ease: "power2.out"
+        })
+        .to(content, {
+          height: 0,
+          duration: 0.4,
+          ease: "power2.out",
+          onComplete: () => {
+            content.classList.remove('expanded'); // 動畫完成後移除expanded類別
+          }
+        }, "-=0.1");
         
         // 改變圖標為 "+"
         icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/><line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>';
@@ -772,8 +843,21 @@
         const mapContainer = document.getElementById('map-container');
         const svgData = getSVGDataForArea(currentSelectedArea);
         
+        // 為玻璃牆和柱子設置滾動容器
+        if (currentSelectedArea === 'glass-wall' || currentSelectedArea === 'pillar') {
+          mapContainer.classList.add('scrollable');
+        } else {
+          mapContainer.classList.remove('scrollable');
+        }
+        
         // 動態更新SVG內容
         mapContainer.innerHTML = svgData.svg;
+        
+        // 為玻璃牆和柱子的SVG添加no-scale class
+        const svg = mapContainer.querySelector('#area-map');
+        if (svg && (currentSelectedArea === 'glass-wall' || currentSelectedArea === 'pillar')) {
+          svg.classList.add('no-scale');
+        }
         
         // 重新設置SVG點擊事件
         setTimeout(() => {
@@ -793,287 +877,258 @@
       function getSVGDataForArea(areaId) {
         const svgConfigs = {
           'courtyard': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 493.86 820" xmlns="http://www.w3.org/2000/svg">
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 499.93 836.04" xmlns="http://www.w3.org/2000/svg">
               <g id="Square">
-                <rect class="grid-cell" id="A10" x="36.87" y="85.22" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A11" x="36.87" y="29.24" width="55" height="40" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B11" x="108.22" y="29.24" width="55" height="40" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C11" x="179.57" y="29.24" width="55" height="40" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D11" x="250.92" y="29.24" width="55" height="40" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E11" x="322.27" y="29.24" width="55" height="40" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="F6" x="443.82" y="29.15" width="25" height="96.03" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="F5" x="443.82" y="170.86" width="25" height="96.03" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="F4" x="443.82" y="312.58" width="25" height="96.03" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="F3" x="443.82" y="454.29" width="25" height="96.03" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="F2" x="443.82" y="596.01" width="25" height="96.03" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="F1" x="443.82" y="737.72" width="25" height="96.03" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B10" x="108.22" y="85.22" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C10" x="179.57" y="85.22" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D10" x="250.92" y="85.22" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E10" x="322.27" y="85.22" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A9" x="36.87" y="156.25" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A8" x="36.87" y="227.29" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A7" x="36.87" y="298.33" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B9" x="108.22" y="156.25" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C9" x="179.57" y="156.25" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D9" x="250.92" y="156.25" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E9" x="322.27" y="156.25" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B8" x="108.22" y="227.29" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C8" x="179.57" y="227.29" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D8" x="250.92" y="227.29" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E8" x="322.27" y="227.29" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B7" x="108.22" y="298.33" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C7" x="179.57" y="298.33" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D7" x="250.92" y="298.33" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E7" x="322.27" y="298.33" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B6" x="108.22" y="369.37" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C6" x="179.57" y="369.37" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D6" x="250.92" y="369.37" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E6" x="322.27" y="369.37" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B5" x="108.22" y="440.4" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C5" x="179.57" y="440.4" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D5" x="250.92" y="440.4" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E5" x="322.27" y="440.4" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B4" x="108.22" y="511.44" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C4" x="179.57" y="511.44" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D4" x="250.92" y="511.44" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E4" x="322.27" y="511.44" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B3" x="108.22" y="582.48" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B2" x="108.22" y="653.52" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="B1" x="108.22" y="724.55" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A4" x="36.87" y="511.44" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A3" x="36.87" y="582.48" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A2" x="36.87" y="653.52" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="A1" x="36.87" y="724.55" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="C3" x="179.57" y="582.48" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="D3" x="250.92" y="582.48" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E3" x="322.27" y="582.48" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E2" x="322.27" y="653.52" width="55" height="55" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="E1" x="322.27" y="724.55" width="55" height="55" style="fill: #ccc;"/>
-                <polygon class="grid-cell" id="A6" points="36.87 369.37 36.87 412.01 49.23 412.01 49.23 424.37 91.87 424.37 91.87 369.37 36.87 369.37" style="fill: #ccc;"/>
-                <polygon class="grid-cell" id="A5" points="49.23 440.4 49.23 452.76 36.87 452.76 36.87 495.4 91.87 495.4 91.87 440.4 49.23 440.4" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="A10" x="38.12" y="87.5" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A11" x="38.12" y="31.52" width="55" height="40" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B11" x="109.48" y="31.52" width="55" height="40" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C11" x="180.83" y="31.52" width="55" height="40" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D11" x="252.18" y="31.52" width="55" height="40" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E11" x="323.53" y="31.52" width="55" height="40" style="fill: #898989;"/>
+                <rect class="grid-cell" id="F6" x="445.07" y="31.43" width="25" height="96.03" style="fill: #898989;"/>
+                <rect class="grid-cell" id="F5" x="445.07" y="173.14" width="25" height="96.03" style="fill: #898989;"/>
+                <rect class="grid-cell" id="F4" x="445.07" y="314.86" width="25" height="96.03" style="fill: #898989;"/>
+                <rect class="grid-cell" id="F3" x="445.07" y="456.57" width="25" height="96.03" style="fill: #898989;"/>
+                <rect class="grid-cell" id="F2" x="445.07" y="598.29" width="25" height="96.03" style="fill: #898989;"/>
+                <rect class="grid-cell" id="F1" x="445.07" y="740" width="25" height="96.03" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B10" x="109.48" y="87.5" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C10" x="180.83" y="87.5" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D10" x="252.18" y="87.5" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E10" x="323.53" y="87.5" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A9" x="38.12" y="158.53" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A8" x="38.12" y="229.57" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A7" x="38.12" y="300.61" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B9" x="109.48" y="158.53" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C9" x="180.83" y="158.53" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D9" x="252.18" y="158.53" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E9" x="323.53" y="158.53" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B8" x="109.48" y="229.57" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C8" x="180.83" y="229.57" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D8" x="252.18" y="229.57" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E8" x="323.53" y="229.57" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B7" x="109.48" y="300.61" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C7" x="180.83" y="300.61" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D7" x="252.18" y="300.61" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E7" x="323.53" y="300.61" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B6" x="109.48" y="371.65" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C6" x="180.83" y="371.65" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D6" x="252.18" y="371.65" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E6" x="323.53" y="371.65" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B5" x="109.48" y="442.68" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C5" x="180.83" y="442.68" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D5" x="252.18" y="442.68" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E5" x="323.53" y="442.68" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B4" x="109.48" y="513.72" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C4" x="180.83" y="513.72" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D4" x="252.18" y="513.72" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E4" x="323.53" y="513.72" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B3" x="109.48" y="584.76" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B2" x="109.48" y="655.8" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="B1" x="109.48" y="726.83" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A4" x="38.12" y="513.72" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A3" x="38.12" y="584.76" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A2" x="38.12" y="655.8" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="A1" x="38.12" y="726.83" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="C3" x="180.83" y="584.76" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="D3" x="252.18" y="584.76" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E3" x="323.53" y="584.76" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E2" x="323.53" y="655.8" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="E1" x="323.53" y="726.83" width="55" height="55" style="fill: #898989;"/>
+                <polygon class="grid-cell" id="A6" points="38.13 371.65 38.13 414.29 50.48 414.29 50.48 426.65 93.13 426.65 93.13 371.65 38.13 371.65" style="fill: #898989;"/>
+                <polygon class="grid-cell" id="A5" points="50.48 442.68 50.48 455.04 38.13 455.04 38.13 497.68 93.13 497.68 93.13 442.68 50.48 442.68" style="fill: #898989;"/>
                 
-                <g id="Number" style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
-                  <text x="64" y="15" text-anchor="middle" style="fill: #fff;">A</text>
-                  <text x="136" y="15" text-anchor="middle" style="fill: #fff;">B</text>
-                  <text x="207" y="15" text-anchor="middle" style="fill: #fff;">C</text>
-                  <text x="278" y="15" text-anchor="middle" style="fill: #fff;">D</text>
-                  <text x="350" y="15" text-anchor="middle" style="fill: #fff;">E</text>
-                  <text x="456" y="15" text-anchor="middle" style="fill: #fff;">F</text>
-                  <text x="15" y="57" text-anchor="middle" style="fill: #fff;">11</text>
-                  <text x="15" y="116" text-anchor="middle" style="fill: #fff;">10</text>
-                  <text x="15" y="187" text-anchor="middle" style="fill: #fff;">9</text>
-                  <text x="15" y="258" text-anchor="middle" style="fill: #fff;">8</text>
-                  <text x="15" y="329" text-anchor="middle" style="fill: #fff;">7</text>
-                  <text x="15" y="400" text-anchor="middle" style="fill: #fff;">6</text>
-                  <text x="15" y="471" text-anchor="middle" style="fill: #fff;">5</text>
-                  <text x="15" y="542" text-anchor="middle" style="fill: #fff;">4</text>
-                  <text x="15" y="613" text-anchor="middle" style="fill: #fff;">3</text>
-                  <text x="15" y="684" text-anchor="middle" style="fill: #fff;">2</text>
-                  <text x="15" y="755" text-anchor="middle" style="fill: #fff;">1</text>
-                  <text x="485" y="77" text-anchor="middle" style="fill: #fff;">6</text>
-                  <text x="485" y="219" text-anchor="middle" style="fill: #fff;">5</text>
-                  <text x="485" y="361" text-anchor="middle" style="fill: #fff;">4</text>
-                  <text x="485" y="502" text-anchor="middle" style="fill: #fff;">3</text>
-                  <text x="485" y="644" text-anchor="middle" style="fill: #fff;">2</text>
-                  <text x="485" y="785" text-anchor="middle" style="fill: #fff;">1</text>
-                </g>
+                <text transform="translate(59.54 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">A</tspan></text>
+                <text transform="translate(1.45 56.42)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">11</tspan></text>
+                <text transform="translate(0 119.89)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">10</tspan></text>
+                <text transform="translate(4.19 190.93)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">9</tspan></text>
+                <text transform="translate(4.26 261.97)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">8</tspan></text>
+                <text transform="translate(4.67 333.01)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">7</tspan></text>
+                <text transform="translate(4.19 404.04)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">6</tspan></text>
+                <text transform="translate(4.34 475.08)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">5</tspan></text>
+                <text transform="translate(4.03 546.12)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">4</tspan></text>
+                <text transform="translate(4.08 617.16)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">3</tspan></text>
+                <text transform="translate(4.36 688.19)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">2</tspan></text>
+                <text transform="translate(5.63 759.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">1</tspan></text>
+                <text transform="translate(488.53 84.34)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">6</tspan></text>
+                <text transform="translate(488.67 226.06)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">5</tspan></text>
+                <text transform="translate(488.37 367.77)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">4</tspan></text>
+                <text transform="translate(488.42 509.49)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">3</tspan></text>
+                <text transform="translate(488.7 651.2)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">2</tspan></text>
+                <text transform="translate(489.97 792.92)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">1</tspan></text>
+                <text transform="translate(131.12 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">B</tspan></text>
+                <text transform="translate(201.78 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">C</tspan></text>
+                <text transform="translate(273.2 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">D</tspan></text>
+                <text transform="translate(345.64 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">E</tspan></text>
+                <text transform="translate(452.29 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">F</tspan></text>
               </g>
             </svg>`
           },
           'corridor': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 450 820" xmlns="http://www.w3.org/2000/svg">
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 459.1 855.74" xmlns="http://www.w3.org/2000/svg">
               <g id="Corridor">
-                <!-- G列格子 -->
-                <rect class="grid-cell" id="G10" x="5" y="25" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="G9" x="5" y="90" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="G8" x="5" y="155" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="G7" x="5" y="220" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="G6" x="5" y="285" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="G5" x="5" y="350" width="50" height="50" style="fill: #ccc;"/>
-                
-                <!-- H列格子 -->
-                <rect class="grid-cell" id="H10" x="70" y="25" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H9" x="70" y="90" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H8" x="70" y="155" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H7" x="70" y="220" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H6" x="70" y="285" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H5" x="70" y="350" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H4" x="70" y="415" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H3" x="70" y="480" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H2" x="70" y="545" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="H1" x="70" y="610" width="50" height="50" style="fill: #ccc;"/>
-                
-                <!-- J1-J3 格子 -->
-                <rect class="grid-cell" id="J1" x="200" y="720" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="J2" x="270" y="720" width="50" height="50" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="J3" x="340" y="720" width="50" height="50" style="fill: #ccc;"/>
-                
-                <g style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
-                  <!-- 頂部列標籤 G、H，確保可見 -->
-                  <text x="30" y="15" text-anchor="middle" style="fill: #fff;">G</text>
-                  <text x="95" y="15" text-anchor="middle" style="fill: #fff;">H</text>
-                  
-                  <!-- 左側行標籤，增加距離 -->
-                  <text x="-15" y="53" text-anchor="middle" style="fill: #fff;">10</text>
-                  <text x="-15" y="118" text-anchor="middle" style="fill: #fff;">9</text>
-                  <text x="-15" y="183" text-anchor="middle" style="fill: #fff;">8</text>
-                  <text x="-15" y="248" text-anchor="middle" style="fill: #fff;">7</text>
-                  <text x="-15" y="313" text-anchor="middle" style="fill: #fff;">6</text>
-                  <text x="-15" y="378" text-anchor="middle" style="fill: #fff;">5</text>
-                  <text x="-15" y="443" text-anchor="middle" style="fill: #fff;">4</text>
-                  <text x="-15" y="508" text-anchor="middle" style="fill: #fff;">3</text>
-                  <text x="-15" y="573" text-anchor="middle" style="fill: #fff;">2</text>
-                  <text x="-15" y="638" text-anchor="middle" style="fill: #fff;">1</text>
-                  
-                  <!-- 底部J標籤，增加距離 -->
-                  <text x="225" y="795" text-anchor="middle" style="fill: #fff;">J1</text>
-                  <text x="295" y="795" text-anchor="middle" style="fill: #fff;">J2</text>
-                  <text x="365" y="795" text-anchor="middle" style="fill: #fff;">J3</text>
-                </g>
+                <text transform="translate(58.41 15.54)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">G</tspan></text>
+                <text transform="translate(129.79 15.54)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">H</tspan></text>
+                <rect class="grid-cell" id="G10" x="37.6" y="32.88" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="G9" x="37.6" y="106.11" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="G8" x="37.6" y="179.35" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="G7" x="37.6" y="252.58" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="G6" x="37.6" y="325.81" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="G5" x="37.6" y="399.04" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H9" x="112.1" y="106.11" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H8" x="112.1" y="179.35" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H7" x="112.1" y="252.58" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H6" x="112.1" y="325.81" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H3" x="112.1" y="545.51" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H2" x="112.1" y="618.74" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="H1" x="112.1" y="691.97" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="J3" x="404.1" y="766.4" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="J2" x="330.87" y="766.4" width="55" height="55" style="fill: #898989;"/>
+                <rect class="grid-cell" id="J1" x="257.64" y="766.4" width="55" height="55" style="fill: #898989;"/>
+                <polygon class="grid-cell" id="H5" points="167.1 399.14 167.1 441.78 154.74 441.78 154.74 454.14 112.1 454.14 112.1 399.14 167.1 399.14" style="fill: #898989;"/>
+                <polygon class="grid-cell" id="H4" points="154.74 472.27 154.74 484.63 167.1 484.63 167.1 527.27 112.1 527.27 112.1 472.27 154.74 472.27" style="fill: #898989;"/>
+                <polygon class="grid-cell" id="H10" points="154.74 32.88 154.74 45.24 167.1 45.24 167.1 87.88 112.1 87.88 112.1 32.88 154.74 32.88" style="fill: #898989;"/>
+                <text transform="translate(0 65.28)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">10</tspan></text>
+                <text transform="translate(4.19 138.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">9</tspan></text>
+                <text transform="translate(4.26 211.74)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">8</tspan></text>
+                <text transform="translate(4.67 284.98)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">7</tspan></text>
+                <text transform="translate(4.19 358.21)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">6</tspan></text>
+                <text transform="translate(4.33 431.44)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">5</tspan></text>
+                <text transform="translate(4.03 504.67)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">4</tspan></text>
+                <text transform="translate(4.08 577.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">3</tspan></text>
+                <text transform="translate(4.36 651.14)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">2</tspan></text>
+                <text transform="translate(5.62 724.37)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">1</tspan></text>
+                <text transform="translate(276.07 849.99)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">J1</tspan></text>
+                <text transform="translate(348.04 849.99)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">J2</tspan></text>
+                <text transform="translate(420.99 849.99)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">J3</tspan></text>
               </g>
             </svg>`
           },
           'front-balcony': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg">
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 511.81 762.8" xmlns="http://www.w3.org/2000/svg">
               <g id="Front_Terrace">
-                <rect class="grid-cell" id="K3" x="20" y="80" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K2" x="20" y="200" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K1" x="20" y="320" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K6" x="120" y="200" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K5" x="120" y="320" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K4" x="120" y="440" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K9" x="220" y="320" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K8" x="220" y="440" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K10" x="320" y="440" width="80" height="80" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="K7" x="220" y="560" width="80" height="80" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="K3" x="0" y="30.34" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K2" x="0" y="187.3" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K1" x="0" y="344.25" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K6" x="135.72" y="187.3" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K5" x="135.72" y="344.25" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K4" x="135.72" y="501.2" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K9" x="271.44" y="344.25" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K8" x="271.44" y="501.2" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K10" x="407.17" y="501.2" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="K7" x="271.44" y="658.15" width="104.65" height="104.65" style="fill: #898989;"/>
                 
-                <g style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 500;">
-                  <!-- 文字標籤，放在格子上方 -->
-                  <text x="60" y="65" text-anchor="middle" style="fill: #fff;">K3</text>
-                  <text x="60" y="185" text-anchor="middle" style="fill: #fff;">K2</text>
-                  <text x="60" y="305" text-anchor="middle" style="fill: #fff;">K1</text>
-                  <text x="160" y="185" text-anchor="middle" style="fill: #fff;">K6</text>
-                  <text x="160" y="305" text-anchor="middle" style="fill: #fff;">K5</text>
-                  <text x="160" y="425" text-anchor="middle" style="fill: #fff;">K4</text>
-                  <text x="260" y="305" text-anchor="middle" style="fill: #fff;">K9</text>
-                  <text x="260" y="425" text-anchor="middle" style="fill: #fff;">K8</text>
-                  <text x="360" y="425" text-anchor="middle" style="fill: #fff;">K10</text>
-                  <text x="260" y="545" text-anchor="middle" style="fill: #fff;">K7</text>
-                </g>
+                <text transform="translate(40.73 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K3</tspan></text>
+                <text transform="translate(41.3 172.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K2</tspan></text>
+                <text transform="translate(176.57 172.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K6</tspan></text>
+                <text transform="translate(42.57 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K1</tspan></text>
+                <text transform="translate(176.71 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K5</tspan></text>
+                <text transform="translate(312.29 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K9</tspan></text>
+                <text transform="translate(176.55 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K4</tspan></text>
+                <text transform="translate(312.28 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K8</tspan></text>
+                <text transform="translate(312.69 646.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K7</tspan></text>
+                <text transform="translate(443.67 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K10</tspan></text>
               </g>
             </svg>`
           },
           'back-balcony': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+            svg: `<svg id="area-map" class="map-svg" data-area="back-balcony" viewBox="0 0 210.95 452.03" xmlns="http://www.w3.org/2000/svg">
               <g id="Back_Terrace">
-                <!-- 第一列：L3, L2, L1 (由上到下，較寬的格子) -->
-                <rect class="grid-cell" id="L3" x="60" y="80" width="60" height="60" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="L2" x="60" y="170" width="60" height="60" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="L1" x="60" y="260" width="60" height="60" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="L3" x="0" y="33.48" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="L2" x="0" y="190.43" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="L1" x="0" y="347.38" width="104.65" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="L6" x="127.64" y="33.48" width="83.31" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="L5" x="127.64" y="190.43" width="83.31" height="104.65" style="fill: #898989;"/>
+                <rect class="grid-cell" id="L4" x="127.64" y="347.38" width="83.31" height="104.65" style="fill: #898989;"/>
                 
-                <!-- 第二列：L6, L5, L4 (由上到下，較窄的格子) -->
-                <rect class="grid-cell" id="L6" x="140" y="80" width="48" height="60" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="L5" x="140" y="170" width="48" height="60" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="L4" x="140" y="260" width="48" height="60" style="fill: #ccc;"/>
-                
-                <g style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 500;">
-                  <!-- 文字標籤，放在格子上方 -->
-                  <text x="90" y="70" text-anchor="middle" style="fill: #fff;">L3</text>
-                  <text x="90" y="160" text-anchor="middle" style="fill: #fff;">L2</text>
-                  <text x="90" y="250" text-anchor="middle" style="fill: #fff;">L1</text>
-                  <text x="164" y="70" text-anchor="middle" style="fill: #fff;">L6</text>
-                  <text x="164" y="160" text-anchor="middle" style="fill: #fff;">L5</text>
-                  <text x="164" y="250" text-anchor="middle" style="fill: #fff;">L4</text>
-                </g>
+                <text transform="translate(41.53 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L3</tspan></text>
+                <text transform="translate(158.62 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L6</tspan></text>
+                <text transform="translate(41.82 173.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L2</tspan></text>
+                <text transform="translate(158.76 173.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L5</tspan></text>
+                <text transform="translate(43.49 330.66)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0" style="letter-spacing: -.05em;">L</tspan><tspan x="9.31" y="0" style="letter-spacing: 0em;">1</tspan></text>
+                <text transform="translate(158.45 330.66)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L4</tspan></text>
               </g>
             </svg>`
           },
           'glass-wall': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 392.78 1620" xmlns="http://www.w3.org/2000/svg">
-              <g id="Glass_Wall">
-                <rect class="grid-cell" id="Y26" x="-24.01" y="24.01" width="57.69" height="9.67" transform="translate(33.68 24.01) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y25" x="-24.01" y="97.16" width="57.69" height="9.67" transform="translate(106.84 97.16) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y24" x="-24.01" y="170.32" width="57.69" height="9.67" transform="translate(179.99 170.32) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y23" x="-24.01" y="243.47" width="57.69" height="9.67" transform="translate(253.15 243.47) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y13" x="359.1" y="829.07" width="57.69" height="9.67" transform="translate(1221.84 445.96) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y12" x="359.1" y="902.22" width="57.69" height="9.67" transform="translate(1295 519.12) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y11" x="359.1" y="975.38" width="57.69" height="9.67" transform="translate(1368.15 592.27) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y10" x="359.1" y="1048.53" width="57.69" height="9.67" transform="translate(1441.31 665.43) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y14" x="334.08" y="785.27" width="58.7" height="9.67" transform="translate(726.86 1580.21) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y15" x="259.65" y="785.27" width="58.7" height="9.67" transform="translate(578 1580.21) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y7" x="334.08" y="1241.68" width="58.7" height="9.67" transform="translate(726.86 2493.03) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y6" x="259.65" y="1241.68" width="58.7" height="9.67" transform="translate(577.99 2493.03) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y4" x="334.08" y="1371.63" width="58.7" height="9.67" transform="translate(726.86 2752.94) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y5" x="259.65" y="1371.63" width="58.7" height="9.67" transform="translate(577.99 2752.94) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y16" x="185.22" y="785.27" width="58.7" height="9.67" transform="translate(429.13 1580.21) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y17" x="110.79" y="785.27" width="58.7" height="9.67" transform="translate(280.27 1580.21) rotate(-180)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y9" x="359.1" y="1121.69" width="57.69" height="9.67" transform="translate(1514.46 738.58) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y8" x="359.1" y="1194.84" width="57.69" height="9.67" transform="translate(1587.62 811.74) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y3" x="359.1" y="1416.68" width="57.69" height="9.67" transform="translate(1809.46 1033.58) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y2" x="359.1" y="1489.84" width="57.69" height="9.67" transform="translate(1882.61 1106.73) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y1" x="359.1" y="1562.99" width="57.69" height="9.67" transform="translate(1955.77 1179.89) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y22" x="-8.03" y="353.21" width="25.73" height="9.67" transform="translate(362.88 353.21) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y21" x="-24.01" y="462.94" width="57.69" height="9.67" transform="translate(472.61 462.94) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y20" x="-24.01" y="536.09" width="57.69" height="9.67" transform="translate(545.77 536.09) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y19" x="-24.01" y="609.25" width="57.69" height="9.67" transform="translate(618.92 609.25) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Y18" x="-24.01" y="682.4" width="57.69" height="9.67" transform="translate(692.08 682.4) rotate(90)" style="fill: #ccc;"/>
-                
-                <g style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
-                  <text x="410" y="1570" text-anchor="middle" style="fill: #fff;">Y1</text>
-                  <text x="410" y="1497" text-anchor="middle" style="fill: #fff;">Y2</text>
-                  <text x="410" y="1424" text-anchor="middle" style="fill: #fff;">Y3</text>
-                  <text x="334" y="1355" text-anchor="middle" style="fill: #fff;">Y4</text>
-                  <text x="289" y="1355" text-anchor="middle" style="fill: #fff;">Y5</text>
-                  <text x="289" y="1260" text-anchor="middle" style="fill: #fff;">Y6</text>
-                  <text x="334" y="1260" text-anchor="middle" style="fill: #fff;">Y7</text>
-                  <text x="410" y="1202" text-anchor="middle" style="fill: #fff;">Y8</text>
-                  <text x="410" y="1129" text-anchor="middle" style="fill: #fff;">Y9</text>
-                  <text x="410" y="1056" text-anchor="middle" style="fill: #fff;">Y10</text>
-                  <text x="410" y="983" text-anchor="middle" style="fill: #fff;">Y11</text>
-                  <text x="410" y="910" text-anchor="middle" style="fill: #fff;">Y12</text>
-                  <text x="410" y="837" text-anchor="middle" style="fill: #fff;">Y13</text>
-                  <text x="334" y="800" text-anchor="middle" style="fill: #fff;">Y14</text>
-                  <text x="289" y="800" text-anchor="middle" style="fill: #fff;">Y15</text>
-                  <text x="215" y="800" text-anchor="middle" style="fill: #fff;">Y16</text>
-                  <text x="140" y="800" text-anchor="middle" style="fill: #fff;">Y17</text>
-                  <text x="-5" y="690" text-anchor="middle" style="fill: #fff;">Y18</text>
-                  <text x="-5" y="617" text-anchor="middle" style="fill: #fff;">Y19</text>
-                  <text x="-5" y="544" text-anchor="middle" style="fill: #fff;">Y20</text>
-                  <text x="-5" y="471" text-anchor="middle" style="fill: #fff;">Y21</text>
-                  <text x="5" y="361" text-anchor="middle" style="fill: #fff;">Y22</text>
-                  <text x="-5" y="251" text-anchor="middle" style="fill: #fff;">Y23</text>
-                  <text x="-5" y="178" text-anchor="middle" style="fill: #fff;">Y24</text>
-                  <text x="-5" y="105" text-anchor="middle" style="fill: #fff;">Y25</text>
-                  <text x="-5" y="32" text-anchor="middle" style="fill: #fff;">Y26</text>
-                </g>
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 495.22 1596.67" xmlns="http://www.w3.org/2000/svg">
+              <g id="Glass_Wall" data-name="Glass Wall">
+                <rect id="Y26" x="27.97" y="24.01" width="57.69" height="9.67" transform="translate(85.66 -27.97) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y25" x="27.97" y="97.16" width="57.69" height="9.67" transform="translate(158.81 45.19) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y24" x="27.97" y="170.32" width="57.69" height="9.67" transform="translate(231.97 118.34) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y23" x="27.97" y="243.47" width="57.69" height="9.67" transform="translate(305.12 191.5) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y13" x="411.07" y="829.07" width="57.69" height="9.67" transform="translate(1273.82 393.99) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y12" x="411.07" y="902.22" width="57.69" height="9.67" transform="translate(1346.98 467.14) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y11" x="411.07" y="975.38" width="57.69" height="9.67" transform="translate(1420.13 540.3) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y10" x="411.07" y="1048.53" width="57.69" height="9.67" transform="translate(1493.29 613.45) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y14" x="386.06" y="785.27" width="58.7" height="9.67" transform="translate(830.81 1580.21) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y15" x="311.63" y="785.27" width="58.7" height="9.67" transform="translate(681.95 1580.21) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y7" x="386.06" y="1241.68" width="58.7" height="9.67" transform="translate(830.81 2493.03) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y6" x="311.63" y="1241.68" width="58.7" height="9.67" transform="translate(681.95 2493.03) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y4" x="386.06" y="1371.63" width="58.7" height="9.67" transform="translate(830.81 2752.94) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y5" x="311.63" y="1371.63" width="58.7" height="9.67" transform="translate(681.95 2752.94) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y16" x="237.2" y="785.27" width="58.7" height="9.67" transform="translate(533.09 1580.21) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y17" x="162.76" y="785.27" width="58.7" height="9.67" transform="translate(384.22 1580.21) rotate(-180)" style="fill: #898989;"/>
+                <rect id="Y9" x="411.07" y="1121.69" width="57.69" height="9.67" transform="translate(1566.44 686.61) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y8" x="411.07" y="1194.84" width="57.69" height="9.67" transform="translate(1639.6 759.76) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y3" x="411.07" y="1416.68" width="57.69" height="9.67" transform="translate(1861.44 981.6) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y2" x="411.07" y="1489.84" width="57.69" height="9.67" transform="translate(1934.59 1054.76) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y1" x="411.07" y="1562.99" width="57.69" height="9.67" transform="translate(2007.75 1127.91) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y22" x="43.95" y="353.21" width="25.73" height="9.67" transform="translate(414.86 301.23) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y21" x="27.97" y="462.94" width="57.69" height="9.67" transform="translate(524.59 410.96) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y20" x="27.97" y="536.09" width="57.69" height="9.67" transform="translate(597.74 484.12) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y19" x="27.97" y="609.25" width="57.69" height="9.67" transform="translate(670.9 557.27) rotate(90)" style="fill: #898989;"/>
+                <rect id="Y18" x="27.97" y="682.4" width="57.69" height="9.67" transform="translate(744.05 630.43) rotate(90)" style="fill: #898989;"/>
+                <text transform="translate(.12 33.74)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y26</tspan></text>
+                <text transform="translate(.26 106.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y25</tspan></text>
+                <text transform="translate(.09 180.05)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y</tspan><tspan x="11.97" y="0" style="letter-spacing: -.02em;">2</tspan><tspan x="22.58" y="0" style="letter-spacing: 0em;">4</tspan></text>
+                <text transform="translate(0 253.21)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y23</tspan></text>
+                <text transform="translate(1.55 472.67)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y21</tspan></text>
+                <text transform="translate(.1 545.83)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y20</tspan></text>
+                <text transform="translate(1.38 618.98)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y19</tspan></text>
+                <text transform="translate(1.45 692.14)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y18</tspan></text>
+                <text transform="translate(463.44 838.8)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y13</tspan></text>
+                <text transform="translate(176.81 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y17</tspan></text>
+                <text transform="translate(399.47 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y14</tspan></text>
+                <text transform="translate(250.77 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y16</tspan></text>
+                <text transform="translate(325.34 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y15</tspan></text>
+                <text transform="translate(329.52 1358.6)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y5</tspan></text>
+                <text transform="translate(404.28 1281.29)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y7</tspan></text>
+                <text transform="translate(404.26 1358.6)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0" style="letter-spacing: -.07em;">Y</tspan><tspan x="10.74" y="0">4</tspan></text>
+                <text transform="translate(329.38 1281.29)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y6</tspan></text>
+                <text transform="translate(463.72 911.95)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y12</tspan></text>
+                <text transform="translate(464.99 985.11)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y11</tspan></text>
+                <text transform="translate(463.54 1058.26)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y10</tspan></text>
+                <text transform="translate(467.74 1131.42)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y9</tspan></text>
+                <text transform="translate(467.8 1204.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y8</tspan></text>
+                <text transform="translate(467.62 1426.41)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y3</tspan></text>
+                <text transform="translate(467.9 1499.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y2</tspan></text>
+                <text transform="translate(469.17 1572.72)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y1</tspan></text>
+                <text transform="translate(.28 362.94)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y22</tspan></text>
               </g>
             </svg>`
           },
           'pillar': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 464.01 1360" xmlns="http://www.w3.org/2000/svg">
+            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 464.01 1343.14" xmlns="http://www.w3.org/2000/svg">
               <g id="Pillar">
-                <rect class="grid-cell" id="Z8" x="439.37" y="0" width="24.64" height="24.64" transform="translate(464.01 -439.37) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z7" x="439.37" y="146.66" width="24.64" height="24.64" transform="translate(610.67 -292.71) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z6" x="439.37" y="293.32" width="24.64" height="24.64" transform="translate(757.32 -146.05) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z5" x="439.37" y="439.97" width="24.64" height="24.64" transform="translate(903.98 .61) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z9" x="0" y="439.97" width="24.64" height="24.64" transform="translate(464.62 439.97) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z4" x="439.37" y="586.63" width="24.64" height="24.64" transform="translate(1050.64 147.27) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z3" x="439.37" y="733.29" width="24.64" height="24.64" transform="translate(1197.3 293.92) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z2" x="439.37" y="879.95" width="24.64" height="24.64" transform="translate(1343.96 440.58) rotate(90)" style="fill: #ccc;"/>
-                <rect class="grid-cell" id="Z1" x="439.37" y="1318.49" width="24.64" height="24.64" transform="translate(1782.5 879.13) rotate(90)" style="fill: #ccc;"/>
+                <rect class="grid-cell" id="Z8" x="439.37" y="0" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z7" x="439.37" y="146.66" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z6" x="439.37" y="293.32" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z5" x="439.37" y="439.97" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z9" x="0" y="439.97" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z4" x="439.37" y="586.63" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z3" x="439.37" y="733.29" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z2" x="439.37" y="879.95" width="24.64" height="24.64" style="fill: #898989;"/>
+                <rect class="grid-cell" id="Z1" x="439.37" y="1318.49" width="24.64" height="24.64" style="fill: #898989;"/>
                 
-                <g style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600;">
-                  <text x="410" y="1335" text-anchor="middle" style="fill: #fff;">Z1</text>
-                  <text x="410" y="897" text-anchor="middle" style="fill: #fff;">Z2</text>
-                  <text x="410" y="751" text-anchor="middle" style="fill: #fff;">Z3</text>
-                  <text x="410" y="604" text-anchor="middle" style="fill: #fff;">Z4</text>
-                  <text x="410" y="458" text-anchor="middle" style="fill: #fff;">Z5</text>
-                  <text x="410" y="311" text-anchor="middle" style="fill: #fff;">Z6</text>
-                  <text x="410" y="165" text-anchor="middle" style="fill: #fff;">Z7</text>
-                  <text x="410" y="18" text-anchor="middle" style="fill: #fff;">Z8</text>
-                  <text x="54" y="458" text-anchor="middle" style="fill: #fff;">Z9</text>
-                </g>
+                <text transform="translate(40.11 457.19)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z9</tspan></text>
+                <text transform="translate(399.23 1335.71)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z1</tspan></text>
+                <text transform="translate(397.96 897.17)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z2</tspan></text>
+                <text transform="translate(397.68 750.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z3</tspan></text>
+                <text transform="translate(397.63 603.85)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z4</tspan></text>
+                <text transform="translate(397.94 457.19)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z5</tspan></text>
+                <text transform="translate(397.8 310.53)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z6</tspan></text>
+                <text transform="translate(398.27 163.87)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z7</tspan></text>
+                <text transform="translate(397.86 17.22)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z8</tspan></text>
               </g>
             </svg>`
           }
@@ -1289,10 +1344,97 @@
         }, 2500);
       }
       
+      // 按鈕動畫效果
+      function setupButtonAnimations() {
+        const buttons = ['clear-btn', 'add-area-btn'];
+        
+        buttons.forEach(buttonId => {
+          const button = document.getElementById(buttonId);
+          const buttonFill = button.querySelector('.button-bg-fill');
+          
+          button.addEventListener('mouseenter', function() {
+            if (!this.disabled) {
+              gsap.to(buttonFill, {
+                height: '100%',
+                duration: 0.5,
+                ease: "power2.out"
+              });
+              
+              // 文字顏色變化
+              this.classList.add('white-text');
+            }
+          });
+          
+          button.addEventListener('mouseleave', function() {
+            if (!this.disabled) {
+              gsap.to(buttonFill, {
+                height: '0%',
+                duration: 0.5,
+                ease: "power2.out"
+              });
+              
+              // 文字顏色恢復
+              this.classList.remove('white-text');
+            }
+          });
+        });
+      }
+      
       // 初始化：默認展開中庭
       document.addEventListener('DOMContentLoaded', function() {
         openAccordion('courtyard');
         updateAreaDisplay();
+        setupButtonAnimations(); // 初始化按鈕動畫
+        
+        // Login 按鈕動畫效果
+        const loginBtn = document.getElementById('login-btn');
+        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        
+        loginBtn.addEventListener('mouseenter', function() {
+          gsap.to(loginBtnFill, {
+            height: '100%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色變化
+          this.classList.add('white-text');
+        });
+        
+        loginBtn.addEventListener('mouseleave', function() {
+          gsap.to(loginBtnFill, {
+            height: '0%',
+            duration: 0.5,
+            ease: "power2.out"
+          });
+          
+          // 文字顏色恢復
+          this.classList.remove('white-text');
+        });
+        
+        // 為圖標添加hover效果
+        const icons = document.querySelectorAll('.expand-icon');
+        icons.forEach(icon => {
+          icon.addEventListener('mouseenter', function() {
+            if (this.classList.contains('plus')) {
+              gsap.to(this, {
+                rotation: 90,
+                duration: 0.3,
+                ease: "power2.out"
+              });
+            }
+          });
+          
+          icon.addEventListener('mouseleave', function() {
+            if (this.classList.contains('plus')) {
+              gsap.to(this, {
+                rotation: 0,
+                duration: 0.3,
+                ease: "power2.out"
+              });
+            }
+          });
+        });
         
         // 示範用：添加一些測試按鈕來模擬區塊點擊
         // 這些可以在實際實作時移除
