@@ -1,0 +1,64 @@
+/* ===== 手機版選單樣式 ===== */
+
+/* 手機版選單基礎樣式 */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: #000000 !important;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu.active {
+  opacity: 1;
+  visibility: visible;
+  background-color: #000000 !important;
+}
+
+/* 手機版選單動畫 */
+.menu-animate-enter {
+  overflow: hidden;
+}
+
+.menu-animate-enter-content {
+  transform: translateY(150%);
+  animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes menuSlideUp {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 選單項目動畫延遲 */
+.menu-animate-enter-content.menu-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.menu-animate-enter-content.menu-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.menu-animate-enter-content.menu-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.menu-animate-enter-content.menu-delay-4 {
+  animation-delay: 0.4s;
+}
+
+.menu-animate-enter-content.menu-delay-5 {
+  animation-delay: 0.5s;
+}
+
+.menu-animate-enter-content.menu-delay-6 {
+  animation-delay: 0.6s;
+} 

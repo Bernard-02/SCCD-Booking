@@ -1,0 +1,48 @@
+/* ===== 箭頭動畫樣式 ===== */
+
+/* 基礎箭頭連結樣式 */
+.arrow-link {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.arrow-container {
+  position: relative;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+.arrow-icons-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.arrow-icon {
+  width: 0.8em;
+  height: 0.8em;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1); /* 預設白色 */
+}
+
+/* 只在桌面版顯示 hover 效果 */
+@media (hover: hover) and (pointer: fine) {
+  .arrow-link:hover .arrow-icons-wrapper {
+    transform: translateY(-1em);
+  }
+  
+  /* Footer 連結 hover 效果 */
+  .footer-link:hover {
+    opacity: 0.6;
+  }
+  
+  /* Header 導航連結 hover 效果 */
+  .nav-link:hover {
+    opacity: 0.6;
+  }
+} 

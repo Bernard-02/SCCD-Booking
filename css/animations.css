@@ -1,0 +1,144 @@
+/* ===== 進場動畫樣式 ===== */
+
+/* Header 進場動畫 */
+.header-animate {
+  transform: translateY(-100%);
+  animation: slideDown 1s ease forwards;
+}
+
+@keyframes slideDown {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Footer 淡入動畫 */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 滑動上來動畫 */
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 滑動進場動畫類 */
+.slide-up {
+  animation: slideUp 0.8s ease forwards;
+}
+
+/* ===== Index 頁面主要內容進場動畫 ===== */
+/* 進入動畫樣式 */
+.animate-enter {
+  overflow: hidden;
+}
+
+.animate-enter-content {
+  transform: translateY(150%);
+  animation: slideUpMain 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes slideUpMain {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 為不同元素添加延遲 */
+.animate-enter-content.delay-1 {
+  animation-delay: 0.7s;
+}
+
+.animate-enter-content.delay-2 {
+  animation-delay: 0.9s;
+}
+
+.animate-enter-content.delay-3 {
+  animation-delay: 1.1s;
+}
+
+/* 標題文字保護樣式 */
+.main-title {
+  min-width: max-content;
+  position: relative;
+  z-index: 10;
+  width: max-content;
+}
+
+/* 標題容器保護 */
+.title-container {
+  overflow: visible !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* 響應式標題大小調整 */
+@media (max-width: 1200px) {
+  .main-title {
+    font-size: 2.5rem; /* text-4xl */
+  }
+}
+
+@media (max-width: 767px) {
+  .main-title {
+    font-size: 2rem;
+    white-space: normal;
+    line-height: 1.2;
+    max-width: 100%;
+  }
+  
+  /* 手機版內容佈局調整 */
+  .mobile-content-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+    padding: 2rem 1.5rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  .mobile-content-layout p {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-title {
+    font-size: 1.75rem; /* text-2xl */
+  }
+  
+  /* 更小的手機螢幕調整 */
+  .mobile-content-layout {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 1.5rem;
+  }
+  
+  .mobile-content-layout {
+    padding: 1rem 0.75rem;
+  }
+} 

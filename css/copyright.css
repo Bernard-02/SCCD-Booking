@@ -1,0 +1,22 @@
+/* ===== Copyright 彩蛋效果樣式 ===== */
+
+.copyright {
+  position: relative;
+}
+
+.copyright-original {
+  transition: none;
+}
+
+.copyright-easter-egg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  white-space: nowrap;
+  opacity: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: inherit;
+  letter-spacing: inherit;
+} 

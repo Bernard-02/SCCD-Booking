@@ -13,330 +13,31 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-    <script src="cart-manager.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  <script src="cart-manager.js"></script>
+  <script src="js/common.js"></script>
+  <!-- 新的外部JavaScript文件 -->
+  <script src="js/copyright-easter-egg.js"></script>
+  <script src="js/button-animations.js"></script>
+  <script src="js/ui-animations.js"></script>
+  <script src="js/form-validation.js"></script>
+    
+    <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/arrows.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/mobile-menu.css">
+    <link rel="stylesheet" href="css/copyright.css">
+    <link rel="stylesheet" href="css/breadcrumb.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <link rel="stylesheet" href="css/animations.css">
     
     <style>
-      /* 選取（反白）樣式 */
-      ::selection {
-        background-color: #f7f7f7;
-        color: black;
-      }
+
       
-      /* 箭頭動畫樣式 */
-      .arrow-link {
-        display: inline-flex;
-        align-items: center;
-        position: relative;
-      }
+
       
-      .arrow-container {
-        position: relative;
-        width: 1em;
-        height: 1em;
-        overflow: hidden;
-        margin-left: 8px;
-      }
-      
-      .arrow-icons-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(0);
-      }
-      
-      .arrow-icon {
-        width: 0.8em;
-        height: 0.8em;
-        flex-shrink: 0;
-        filter: brightness(0) invert(1); /* 預設白色 */
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .arrow-link:hover .arrow-icons-wrapper {
-          transform: translateY(-1em);
-        }
-      }
-      
-      /* LOGIN 按鈕特殊樣式 */
-      .login-btn {
-        padding: 1.5px 10px !important;
-        padding-right: 8px !important;
-      }
-      
-      /* 手機版 LOGIN 按鈕縮小 */
-      @media (max-width: 768px) {
-        .login-btn {
-          padding: 1px 8px !important;
-          padding-right: 6px !important;
-          font-size: 0.75rem !important;
-        }
-        
-        .login-btn .arrow-container {
-          width: 0.8em;
-          height: 0.8em;
-        }
-        
-        .login-btn .arrow-icon {
-          width: 0.6em;
-          height: 0.6em;
-        }
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .login-btn:hover .arrow-icon {
-          filter: brightness(0); /* hover 時變黑色 */
-        }
-        
-        /* Footer 連結 hover 效果 */
-        .footer-link:hover {
-          opacity: 0.6;
-        }
-        
-        /* Header 導航連結 hover 效果 */
-        .nav-link:hover {
-          opacity: 0.6;
-        }
-      }
-      
-      /* 手機版選單樣式 */
-      .mobile-menu {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background-color: #000000 !important;
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s ease, visibility 0.5s ease;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .mobile-menu.active {
-        opacity: 1;
-        visibility: visible;
-        background-color: #000000 !important;
-      }
-      
-      /* 響應式調整 */
-      @media (max-width: 767px) {
-        /* 防止水平滾動 */
-        * {
-          max-width: 100vw;
-        }
-        
-        /* 手機版隱藏桌面導航 */
-        .desktop-nav {
-          display: none;
-        }
-        
-        /* Footer 在手機版的調整 */
-        footer .container {
-          max-width: 100vw;
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .container > div:first-child {
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .copyright {
-          text-align: left !important;
-        }
-        
-        /* 容器最大寬度限制 */
-        .container {
-          max-width: 100vw;
-          overflow-x: hidden;
-        }
-      }
-      
-      /* 手機版選單動畫 */
-      .menu-animate-enter {
-        overflow: hidden;
-      }
-      
-      .menu-animate-enter-content {
-        transform: translateY(150%);
-        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-      }
-      
-      @keyframes menuSlideUp {
-        to {
-          transform: translateY(0);
-        }
-      }
-      
-      /* 選單項目動畫延遲 */
-      .menu-animate-enter-content.menu-delay-1 {
-        animation-delay: 0.1s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-2 {
-        animation-delay: 0.2s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-3 {
-        animation-delay: 0.3s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-4 {
-        animation-delay: 0.4s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-5 {
-        animation-delay: 0.5s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-6 {
-        animation-delay: 0.6s;
-      }
-      
-      /* 確保大於768px時隱藏手機版選單 */
-      @media (min-width: 768px) {
-        .mobile-menu { 
-          display: none !important; 
-        }
-      }
-      
-      /* 輸入框樣式 */
-      .input-group {
-        position: relative;
-        margin-bottom: 2rem;
-      }
-      
-      .input-group.error {
-        margin-bottom: 3rem;
-      }
-      
-      .input-field {
-        width: 100%;
-        padding: 8px 1px 8px 1px;
-        border: none;
-        border-bottom: 1px solid white;
-        background: transparent;
-        color: white;
-        font-family: 'Inter', sans-serif;
-        font-size: 1rem;
-        outline: none;
-      }
-      
-      .input-label {
-        position: absolute;
-        left: 1px;
-        top: 8px;
-        color: #cccccc;
-        font-family: 'Inter', sans-serif;
-        font-size: 1rem;
-        pointer-events: none;
-        transition: all 0.3s ease;
-        transform-origin: left top;
-      }
-      
-      .input-field:focus + .input-label,
-      .input-field:not(:placeholder-shown) + .input-label {
-        transform: translateY(-1.5rem) translateX(-1px) scale(0.875);
-        color: #cccccc;
-      }
-      
-      /* 錯誤訊息樣式 */
-      .error-message {
-        position: absolute;
-        bottom: -1.5rem;
-        left: 1px;
-        color: #ff8698;
-        font-family: 'Noto Sans TC', sans-serif;
-        font-size: 0.75rem; /* text-xs */
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-      }
-      
-      .error-message.show {
-        opacity: 1;
-      }
-      
-      .input-group.error .input-field {
-        border-bottom-color: #ff8698;
-      }
-      
-      /* 自定義checkbox樣式 */
-      .custom-checkbox {
-        appearance: none;
-        width: 1rem;
-        height: 1rem;
-        border: 1px solid white;
-        background-color: transparent;
-        cursor: pointer;
-        position: relative;
-      }
-      
-      .custom-checkbox:checked {
-        background-color: white;
-        border-color: white;
-      }
-      
-      .custom-checkbox:checked::after {
-        content: '✓';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: black;
-        font-size: 1rem;
-        font-weight: bold;
-        font-family: Inter, sans-serif;
-      }
-      
-      /* 忘記密碼連結 */
-      .forgot-password {
-        position: relative;
-      }
-      
-      .forgot-password::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        width: 0;
-        height: 1px;
-        background-color: white;
-        transition: width 0.5s ease;
-      }
-      
-      .forgot-password:hover::after {
-        width: 100%;
-      }
-      
-      /* 注冊連結 */
-      .register-link {
-        position: relative;
-      }
-      
-      .register-link::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 0;
-        width: 0;
-        height: 1px;
-        background-color: white;
-        transition: width 0.5s ease;
-      }
-      
-      .register-link:hover::after {
-        width: 100%;
-      }
+
       
       /* 登入按鈕箭頭動畫 - 只在桌面版 */
       .login-button {
@@ -377,35 +78,23 @@
         height: 100%;
       }
       
-      /* 按鈕動畫樣式 */
-      .button-animated {
-        transition: color 0.5s ease;
+
+      
+      /* login頁面特有的手機版樣式 */
+      @media (max-width: 767px) {
+        /* 確保手機版完全隱藏 LOGIN 按鈕 */
+        #login-btn {
+          display: none !important;
+        }
       }
       
-      .button-animated.white-text {
-        color: black;
-      }
+
       
-      /* Copyright 彩蛋效果 */
-      .copyright {
-        position: relative;
-      }
-      
-      .copyright-original {
-        transition: none;
-      }
-      
-      .copyright-easter-egg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        white-space: nowrap;
-        opacity: 0;
-        font-family: 'Inter', sans-serif;
-        font-size: inherit;
-        letter-spacing: inherit;
+      /* 登入框專用樣式 */
+      .login-container {
+        background: rgba(50, 50, 50, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
     </style>
   </head>
@@ -463,6 +152,14 @@
               </div>
             </div>
           </a>
+          
+          <!-- 手機版 CART 按鈕 -->
+          <a
+            href="rental-list.html"
+            id="mobile-cart-link"
+            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
+            >(<span id="mobile-cart-count">0</span>) CART</a
+          >
           
           <!-- 手機版選單按鈕 -->
           <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
@@ -566,7 +263,7 @@
 
             <footer class="pt-4 pb-8">
       <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
-        <div class="flex space-x-6 md:mb-0">
+        <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
@@ -699,85 +396,18 @@
     <script>
       // 登入表單處理
       document.addEventListener('DOMContentLoaded', function() {
+        // 初始化 CART 數量
+        if (typeof updateCartDisplay === 'function') {
+          updateCartDisplay();
+        }
+        
         const form = document.getElementById('login-form');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const usernameError = document.getElementById('username-error');
         const passwordError = document.getElementById('password-error');
         
-        // 清除錯誤狀態
-        function clearError(inputGroup, errorElement) {
-          inputGroup.classList.remove('error');
-          errorElement.classList.remove('show');
-        }
-        
-        // 顯示錯誤狀態
-        function showError(inputGroup, errorElement) {
-          inputGroup.classList.add('error');
-          errorElement.classList.add('show');
-        }
-        
-        // 輸入時清除錯誤狀態（只有在已經有錯誤時才清除）
-        usernameInput.addEventListener('input', function() {
-          if (this.value.trim() && this.parentElement.classList.contains('error')) {
-            clearError(this.parentElement, usernameError);
-          }
-        });
-        
-        passwordInput.addEventListener('input', function() {
-          if (this.value.trim() && this.parentElement.classList.contains('error')) {
-            clearError(this.parentElement, passwordError);
-          }
-        });
-        
-        form.addEventListener('submit', function(e) {
-          e.preventDefault(); // 阻止表單提交
-          
-          let hasError = false;
-          
-          // 驗證帳號
-          if (!usernameInput.value.trim()) {
-            showError(usernameInput.parentElement, usernameError);
-            hasError = true;
-          } else {
-            clearError(usernameInput.parentElement, usernameError);
-          }
-          
-          // 驗證密碼
-          if (!passwordInput.value.trim()) {
-            showError(passwordInput.parentElement, passwordError);
-            hasError = true;
-          } else {
-            clearError(passwordInput.parentElement, passwordError);
-          }
-          
-          // 如果沒有錯誤，繼續處理登入邏輯
-          if (!hasError) {
-            const username = usernameInput.value;
-            const password = passwordInput.value;
-            const rememberMe = document.getElementById('remember-me').checked;
-            
-            // 這裡之後可以添加實際的登入邏輯
-            console.log('Login attempt:', { username, password, rememberMe });
-            
-            // 暫時顯示登入成功消息
-            alert('登入功能尚未實作，但表單已正常工作！');
-          }
-        });
-        
-        // 忘記密碼連結處理
-        const forgotPasswordLink = document.querySelector('.forgot-password');
-        forgotPasswordLink.addEventListener('click', function(e) {
-          e.preventDefault();
-          alert('忘記密碼功能尚未實作！');
-        });
-        
-        // 注冊連結處理
-        const registerLink = document.getElementById('register-link');
-        registerLink.addEventListener('click', function(e) {
-          e.preventDefault();
-          alert('注冊功能尚未實作！');
-        });
+        // 表單驗證功能已移至外部文件 form-validation.js
         
         // 按鈕動畫效果 - 只在桌面版
         const button = document.querySelector('.login-button');

@@ -102,10 +102,18 @@ class CartManager {
   
   // 更新頁面上的購物車數量顯示
   updateCartDisplay() {
+    const totalQuantity = this.getTotalQuantity();
+    
+    // 更新桌面版 CART 數量
     const cartCountElement = document.getElementById('cart-count');
     if (cartCountElement) {
-      const totalQuantity = this.getTotalQuantity();
       cartCountElement.textContent = totalQuantity;
+    }
+    
+    // 更新手機版 CART 數量
+    const mobileCartCountElement = document.getElementById('mobile-cart-count');
+    if (mobileCartCountElement) {
+      mobileCartCountElement.textContent = totalQuantity;
     }
   }
   
@@ -124,6 +132,13 @@ class CartManager {
 
 // 創建全域購物車管理實例
 window.cartManager = new CartManager();
+
+// 全域函數，供其他頁面調用
+window.updateCartDisplay = function() {
+  if (window.cartManager) {
+    window.cartManager.updateCartDisplay();
+  }
+};
 
 // 頁面載入完成後初始化購物車顯示
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,0 +1,129 @@
+/* ===== 表單樣式 ===== */
+
+/* 輸入框樣式 */
+.input-group {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.input-group.error {
+  margin-bottom: 3rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 8px 1px 8px 1px;
+  border: none;
+  border-bottom: 1px solid white;
+  background: transparent;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  outline: none;
+}
+
+.input-label {
+  position: absolute;
+  left: 1px;
+  top: 8px;
+  color: #cccccc;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  transform-origin: left top;
+}
+
+.input-field:focus + .input-label,
+.input-field:not(:placeholder-shown) + .input-label {
+  transform: translateY(-1.5rem) translateX(-1px) scale(0.875);
+  color: #cccccc;
+}
+
+/* 錯誤訊息樣式 */
+.error-message {
+  position: absolute;
+  bottom: -1.5rem;
+  left: 1px;
+  color: #ff8698;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 0.75rem; /* text-xs */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.error-message.show {
+  opacity: 1;
+}
+
+.input-group.error .input-field {
+  border-bottom-color: #ff8698;
+}
+
+/* 自定義checkbox樣式 */
+.custom-checkbox {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid white;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-checkbox:checked {
+  background-color: white;
+  border-color: white;
+}
+
+.custom-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: black;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: Inter, sans-serif;
+}
+
+/* 連結樣式 */
+.forgot-password {
+  position: relative;
+}
+
+.forgot-password::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: white;
+  transition: width 0.5s ease;
+}
+
+.forgot-password:hover::after {
+  width: 100%;
+}
+
+.register-link {
+  position: relative;
+}
+
+.register-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: white;
+  transition: width 0.5s ease;
+}
+
+.register-link:hover::after {
+  width: 100%;
+} 

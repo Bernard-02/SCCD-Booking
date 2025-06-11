@@ -1,0 +1,56 @@
+/* ===== 通用樣式 ===== */
+
+/* 選取（反白）樣式 */
+::selection {
+  background-color: #f7f7f7;
+  color: black;
+}
+
+/* 基礎響應式調整 */
+@media (max-width: 767px) {
+  /* 防止水平滾動 */
+  * {
+    max-width: 100vw;
+  }
+  
+  /* 手機版隱藏桌面導航 */
+  .desktop-nav {
+    display: none;
+  }
+  
+  /* 確保手機版完全隱藏 LOGIN 按鈕 */
+  #login-btn {
+    display: none !important;
+  }
+  
+  /* Footer 在手機版的調整 */
+  footer .container {
+    max-width: 100vw;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  footer .container > div:first-child {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  footer .copyright {
+    text-align: left !important;
+  }
+  
+  /* 容器最大寬度限制 */
+  .container {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+}
+
+/* 確保大於768px時隱藏手機版選單 */
+@media (min-width: 768px) {
+  .mobile-menu { 
+    display: none !important; 
+  }
+} 

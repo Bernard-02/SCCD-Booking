@@ -13,197 +13,25 @@
       rel="stylesheet"
     />
 
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-    <script src="cart-manager.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  <script src="cart-manager.js"></script>
+  <script src="js/common.js"></script>
+  <!-- 新的外部JavaScript文件 -->
+  <script src="js/copyright-easter-egg.js"></script>
+  <script src="js/button-animations.js"></script>
+  <script src="js/ui-animations.js"></script>
+    
+    <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/arrows.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/mobile-menu.css">
+    <link rel="stylesheet" href="css/copyright.css">
+    <link rel="stylesheet" href="css/breadcrumb.css">
+    <link rel="stylesheet" href="css/animations.css">
     
     <style>
-      /* 箭頭動畫樣式 */
-      .arrow-link {
-        display: inline-flex;
-        align-items: center;
-        position: relative;
-      }
-      
-      /* 選取（反白）樣式 */
-      ::selection {
-        background-color: #f7f7f7;
-        color: black;
-      }
-      
-      .arrow-container {
-        position: relative;
-        width: 1em;
-        height: 1em;
-        overflow: hidden;
-        margin-left: 8px;
-      }
-      
-      .arrow-icons-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(0);
-      }
-      
-      .arrow-icon {
-        width: 0.8em;
-        height: 0.8em;
-        flex-shrink: 0;
-        filter: brightness(0) invert(1); /* 預設白色 */
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .arrow-link:hover .arrow-icons-wrapper {
-          transform: translateY(-1em);
-        }
-      }
-      
-      /* LOGIN 按鈕特殊樣式 */
-      .login-btn {
-        padding: 1.5px 10px !important;
-        padding-right: 8px !important;
-      }
-      
-      /* 手機版 LOGIN 按鈕縮小 */
-      @media (max-width: 768px) {
-        .login-btn {
-          padding: 1px 8px !important;
-          padding-right: 6px !important;
-          font-size: 0.75rem !important;
-        }
-        
-        .login-btn .arrow-container {
-          width: 0.8em;
-          height: 0.8em;
-        }
-        
-        .login-btn .arrow-icon {
-          width: 0.6em;
-          height: 0.6em;
-        }
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .login-btn:hover .arrow-icon {
-          filter: brightness(0); /* hover 時變黑色 */
-        }
-        
-        /* Footer 連結 hover 效果 */
-        .footer-link:hover {
-          opacity: 0.6;
-        }
-        
-        /* Header 導航連結 hover 效果 */
-        .nav-link:hover {
-          opacity: 0.6;
-        }
-      }
-      
-      /* 手機版選單樣式 */
-      .mobile-menu {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background-color: #000000 !important;
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s ease, visibility 0.5s ease;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .mobile-menu.active {
-        opacity: 1;
-        visibility: visible;
-        background-color: #000000 !important;
-      }
-      
-      /* 響應式調整 */
-      @media (max-width: 767px) {
-        /* 手機版隱藏桌面導航 */
-        .desktop-nav {
-          display: none;
-        }
-        
-        /* Footer 在手機版的調整 */
-        footer .container {
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .container > div:first-child {
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .copyright {
-          text-align: left !important;
-        }
-      }
-      
-      /* Copyright 彩蛋效果 */
-      .copyright {
-        position: relative;
-      }
-      
-      .copyright-original {
-        transition: none;
-      }
-      
-      .copyright-easter-egg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        white-space: nowrap;
-        opacity: 0;
-        font-family: 'Inter', sans-serif;
-        font-size: inherit;
-        letter-spacing: inherit;
-      }
-
-      /* Header 進場動畫 */
-      .header-animate {
-        transform: translateY(-100%);
-        animation: slideDown 1s ease forwards;
-      }
-      
-      @keyframes slideDown {
-        to {
-          transform: translateY(0);
-        }
-      }
-      
-      /* 按鈕動畫樣式 */
-      .button-animated {
-        transition: color 0.5s ease;
-      }
-      
-      .button-animated.white-text {
-        color: black;
-      }
-      
-      /* Footer 淡入動畫 */
-      .fade-in {
-        opacity: 0;
-        animation: fadeIn 1s ease forwards;
-        animation-delay: 0.5s;
-      }
-      
-      @keyframes fadeIn {
-        to {
-          opacity: 1;
-        }
-      }
+      /* 暫無頁面特有樣式 */
     </style>
   </head>
 
@@ -261,6 +89,14 @@
             </div>
           </a>
           
+          <!-- 手機版 CART 按鈕 -->
+          <a
+            href="rental-list.html"
+            id="mobile-cart-link"
+            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
+            >(<span id="mobile-cart-count">0</span>) CART</a
+          >
+          
           <!-- 手機版選單按鈕 -->
           <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
             <span class="text-white" id="menu-btn-text">MENU</span>
@@ -277,7 +113,7 @@
 
             <footer class="pt-4 pb-8 fade-in">
       <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
-        <div class="flex space-x-6 md:mb-0">
+        <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
@@ -408,13 +244,13 @@
     </div>
 
     <script>
-      // Copyright 彩蛋效果
+      // Copyright 彩蛋效果 - 只在桌面版啟用
       document.addEventListener('DOMContentLoaded', function() {
         const copyrightElement = document.querySelector('.copyright');
         const originalElement = document.querySelector('.copyright-original');
         const easterEggElement = document.getElementById('easter-egg-text');
         
-        if (copyrightElement && originalElement && easterEggElement) {
+        if (copyrightElement && originalElement && easterEggElement && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
           const originalText = originalElement.textContent;
           const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
           const maxLength = Math.min(originalText.length, targetText.length);
@@ -530,66 +366,33 @@
           });
         }
         
-        // Login 按鈕動畫效果
+        // Login 按鈕動畫效果 - 只在桌面版
         const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
         
-        loginBtn.addEventListener('mouseenter', function() {
-          gsap.to(loginBtnFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
+        if (loginBtn && loginBtnFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          loginBtn.addEventListener('mouseenter', function() {
+            gsap.to(loginBtnFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
           });
           
-          // 文字顏色變化
-          this.classList.add('white-text');
-        });
-        
-        loginBtn.addEventListener('mouseleave', function() {
-          gsap.to(loginBtnFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
+          loginBtn.addEventListener('mouseleave', function() {
+            gsap.to(loginBtnFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
           });
-          
-          // 文字顏色恢復
-          this.classList.remove('white-text');
-        });
-        
-        // 手機版選單功能
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuClose = document.getElementById('mobile-menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
-        
-        function openMenu() {
-          mobileMenu.classList.add('active');
-          body.style.overflow = 'hidden'; // 防止背景滾動
         }
-        
-        function closeMenu() {
-          mobileMenu.classList.remove('active');
-          body.style.overflow = ''; // 恢復滾動
-        }
-        
-        // 打開選單
-        mobileMenuBtn.addEventListener('click', openMenu);
-        
-        // 關閉選單
-        mobileMenuClose.addEventListener('click', closeMenu);
-        
-        // 點擊選單項目時關閉選單
-        const mobileMenuLinks = mobileMenu.querySelectorAll('nav a');
-        mobileMenuLinks.forEach(link => {
-          link.addEventListener('click', closeMenu);
-        });
-        
-        // 點擊背景關閉選單
-        mobileMenu.addEventListener('click', function(event) {
-          if (event.target === mobileMenu) {
-            closeMenu();
-          }
-        });
       });
     </script>
 
