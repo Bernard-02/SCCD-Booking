@@ -1,0 +1,28 @@
+{
+  "name": "sccd-booking",
+  "version": "1.0.0",
+  "main": "api-manager.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bernard-02/SCCD-Booking.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bernard-02/SCCD-Booking/issues"
+  },
+  "homepage": "https://github.com/Bernard-02/SCCD-Booking#readme",
+  "description": "",
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
+    "fluid-tailwind": "^1.0.4",
+    "tailwindcss": "^3.4.17"
+  },
+  "dependencies": {
+    "animejs": "^4.0.2"
+  }
+}

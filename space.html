@@ -54,8 +54,11 @@
         filter: brightness(0) invert(1); /* 預設白色 */
       }
       
-      .arrow-link:hover .arrow-icons-wrapper {
-        transform: translateY(-1em);
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .arrow-link:hover .arrow-icons-wrapper {
+          transform: translateY(-1em);
+        }
       }
       
       /* LOGIN 按鈕特殊樣式 */
@@ -64,21 +67,43 @@
         padding-right: 8px !important;
       }
       
-      .login-btn:hover .arrow-icon {
-        filter: brightness(0); /* hover 時變黑色 */
+      /* 手機版 LOGIN 按鈕縮小 */
+      @media (max-width: 768px) {
+        .login-btn {
+          padding: 1px 8px !important;
+          padding-right: 6px !important;
+          font-size: 0.75rem !important;
+        }
+        
+        .login-btn .arrow-container {
+          width: 0.8em;
+          height: 0.8em;
+        }
+        
+        .login-btn .arrow-icon {
+          width: 0.6em;
+          height: 0.6em;
+        }
       }
       
-      /* Footer 連結 hover 效果 */
-      .footer-link:hover {
-        opacity: 0.6;
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .login-btn:hover .arrow-icon {
+          filter: brightness(0); /* hover 時變黑色 */
+        }
+        
+        /* Footer 連結 hover 效果 */
+        .footer-link:hover {
+          opacity: 0.6;
+        }
+        
+        /* Header 導航連結 hover 效果 */
+        .nav-link:hover {
+          opacity: 0.6;
+        }
       }
       
-      /* Header 導航連結 hover 效果 */
-      .nav-link:hover {
-        opacity: 0.6;
-      }
-      
-      /* Breadcrumb 樣式 */
+      /* Breadcrumb 樣式 - 只在桌面版顯示 */
       .breadcrumb {
         font-family: 'Inter', sans-serif;
         font-size: 0.75rem; /* text-xs */
@@ -93,8 +118,15 @@
         z-index: 10;
       }
       
-      .breadcrumb:hover .breadcrumb-item {
-        opacity: 0.6;
+      /* 桌面版 breadcrumb hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .breadcrumb:hover .breadcrumb-item {
+          opacity: 0.6;
+        }
+        
+        .breadcrumb .breadcrumb-item:hover {
+          opacity: 1 !important;
+        }
       }
       
       .breadcrumb .breadcrumb-item {
@@ -102,13 +134,16 @@
         cursor: pointer;
       }
       
-      .breadcrumb .breadcrumb-item:hover {
-        opacity: 1 !important;
-      }
-      
       .breadcrumb .breadcrumb-separator {
         margin: 0 0.5rem;
         opacity: 0.6;
+      }
+      
+      /* 手機版隱藏 breadcrumb */
+      @media (max-width: 767px) {
+        .breadcrumb {
+          display: none;
+        }
       }
       
       /* Copyright 彩蛋效果 */
@@ -133,33 +168,207 @@
         letter-spacing: inherit;
       }
       
-      /* 卡片進場動畫 */
-      .card-slide-in {
-        opacity: 0;
-        transform: translateX(100px);
-        animation: slideInFromRight 1s ease forwards;
+      /* 卡片進場動畫 - 只在桌面版 */
+      @media (min-width: 768px) {
+        .card-slide-in {
+          opacity: 0;
+          transform: translateX(100px);
+          animation: slideInFromRight 1s ease forwards;
+          transition: border-color 0.3s ease;
+        }
+        
+        .card-slide-in:nth-child(1) {
+          animation-delay: 0.2s;
+        }
+        
+        .card-slide-in:nth-child(2) {
+          animation-delay: 0.4s;
+        }
+        
+        .card-slide-in:hover {
+          border-color: transparent;
+        }
+        
+        @keyframes slideInFromRight {
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
       }
       
-      .card-slide-in:nth-child(1) {
+      /* 手機版選單動畫 */
+      .menu-animate-enter {
+        overflow: hidden;
+      }
+      
+      .menu-animate-enter-content {
+        transform: translateY(150%);
+        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+      }
+      
+      @keyframes menuSlideUp {
+        to {
+          transform: translateY(0);
+        }
+      }
+      
+      /* 選單項目動畫延遲 */
+      .menu-animate-enter-content.menu-delay-1 {
+        animation-delay: 0.1s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-2 {
         animation-delay: 0.2s;
       }
       
-      .card-slide-in:nth-child(2) {
+      .menu-animate-enter-content.menu-delay-3 {
+        animation-delay: 0.3s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-4 {
         animation-delay: 0.4s;
       }
       
-      @keyframes slideInFromRight {
-        to {
-          opacity: 1;
-          transform: translateX(0);
+      .menu-animate-enter-content.menu-delay-5 {
+        animation-delay: 0.5s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-6 {
+        animation-delay: 0.6s;
+      }
+
+      /* 手機版選單樣式 */
+      .mobile-menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background-color: #000000 !important;
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .mobile-menu.active {
+        opacity: 1;
+        visibility: visible;
+        background-color: #000000 !important;
+      }
+      
+      /* 按鈕動畫樣式 */
+      .button-animated {
+        transition: color 0.5s ease;
+      }
+      
+      .button-animated.white-text {
+        color: black;
+      }
+      
+      /* 響應式佈局 */
+      @media (max-width: 767px) {
+        /* 防止水平滾動 */
+        * {
+          max-width: 100vw;
+        }
+        
+        /* 手機版隱藏桌面導航 */
+        .desktop-nav {
+          display: none;
+        }
+        
+        /* 手機版卡片佈局 */
+        .mobile-cards-layout {
+          display: flex;
+          flex-direction: column;
+          gap: 3rem;
+          padding: 1rem;
+          overflow-x: hidden;
+          max-width: 100vw;
+        }
+        
+        .mobile-card {
+          width: 100%;
+          min-height: 280px;
+          padding: 1.2rem;
+          position: relative;
+        }
+        
+        /* 手機版卡片進場動畫 */
+        .mobile-card-slide-in {
+          opacity: 0;
+          transform: translateY(50px);
+          animation: slideInFromBottom 1s ease forwards;
+        }
+        
+        .mobile-card-slide-in:nth-child(1) {
+          animation-delay: 0.2s;
+        }
+        
+        .mobile-card-slide-in:nth-child(2) {
+          animation-delay: 0.4s;
+        }
+        
+        @keyframes slideInFromBottom {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Footer 在手機版的調整 */
+        footer .container {
+          max-width: 100vw;
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: flex-start;
+        }
+        
+        footer .container > div:first-child {
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: flex-start;
+        }
+        
+        footer .copyright {
+          text-align: left !important;
+        }
+        
+        /* 容器最大寬度限制 */
+        .container {
+          max-width: 100vw;
+          overflow-x: hidden;
+        }
+        
+        /* 手機版主要內容佈局 */
+        .mobile-main-content {
+          padding: 1rem;
+          flex-direction: column;
+          gap: 2rem;
+        }
+        
+        .mobile-title-section {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+      }
+      
+      /* 確保大於768px時隱藏手機版選單 */
+      @media (min-width: 768px) {
+        .mobile-menu { 
+          display: none !important; 
         }
       }
     </style>
   </head>
 
-  <body class="bg-black text-white flex flex-col h-screen">
+  <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6">
-      <div class="container mx-auto px-4 flex justify-between items-center">
+      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -167,7 +376,8 @@
             </div>
           </a>
 
-          <nav>
+          <!-- 桌面版導航 -->
+          <nav class="desktop-nav">
             <ul class="flex space-x-10">
               <li>
                 <a
@@ -178,7 +388,7 @@
               </li>
               <li>
                 <a
-                  href="#resources"
+                  href="resources.html"
                   class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >RESOURCES</a
                 >
@@ -186,17 +396,18 @@
             </ul>
           </nav>
         </div>
+        
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
             id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
             href="login.html"
             id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
             style="position: relative; overflow: hidden;"
             >
             <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
@@ -208,13 +419,18 @@
               </div>
             </div>
           </a>
+          
+          <!-- 手機版選單按鈕 -->
+          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+            <span class="text-white" id="menu-btn-text">MENU</span>
+          </button>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex pt-[3vh] pb-[3vh]">
-      <!-- Breadcrumb -->
-      <nav class="breadcrumb">
+    <main class="flex-grow flex pt-[3vh] pb-[3vh] md:pt-[3vh] md:pb-[3vh]">
+      <!-- Breadcrumb - 只在桌面版顯示 -->
+      <nav class="breadcrumb hidden md:block">
         <a href="index.html" class="breadcrumb-item">首頁</a>
         <span class="breadcrumb-separator">/</span>
         <a href="booking.html" class="breadcrumb-item">租借日期</a>
@@ -224,7 +440,8 @@
         <span class="breadcrumb-item">租借空間</span>
       </nav>
       
-      <div class="w-full md:flex px-[6%] flex-grow">
+      <!-- 桌面版佈局 -->
+      <div class="w-full hidden md:flex px-[6%] flex-grow">
         <div class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8">
           <div>
             <h1
@@ -246,8 +463,8 @@
                  style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
             <!-- 文字內容 -->
             <div class="relative z-10 h-full flex flex-col justify-end">
-              <h2 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">A5F 編號區</h2>
-              <h3 class="text-3xl font-['Inter',_sans-serif] font-normal tracking-wider uppercase">A5F NUMBERED AREA</h3>
+              <h2 class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">A5F 編號區</h2>
+              <h3 class="text-4xl font-['Inter',_sans-serif] font-normal tracking-wider uppercase">A5F NUMBERED AREA</h3>
             </div>
           </a>
 
@@ -261,19 +478,60 @@
                  style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
             <!-- 文字內容 -->
             <div class="relative z-10 h-full flex flex-col justify-end">
-              <h2 class="text-5xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">教室</h2>
-              <h3 class="text-3xl font-['Inter',_sans-serif] font-normal tracking-wider uppercase">CLASSROOM</h3>
+              <h2 class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">教室</h2>
+              <h3 class="text-4xl font-['Inter',_sans-serif] font-normal tracking-wider uppercase">CLASSROOM</h3>
             </div>
+          </a>
+        </div>
+      </div>
+      
+      <!-- 手機版佈局 -->
+      <div class="w-full md:hidden mobile-main-content flex flex-col">
+        <!-- 標題區域 -->
+        <div class="mobile-title-section">
+          <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
+            租借空間
+          </h1>
+        </div>
+        
+        <!-- 卡片區域 -->
+        <div class="mobile-cards-layout">
+          <a href="numbered-area.html" class="relative overflow-hidden block mobile-card mobile-card-slide-in">
+            <!-- 背景圖片 -->
+            <div class="absolute inset-0">
+              <img src="Images/A5F Numbered Area.png" alt="A5F Numbered Area" class="w-full h-full object-cover object-center">
+            </div>
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0" 
+                 style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
+                         <!-- 文字內容 -->
+             <div class="relative z-10 h-full flex flex-col justify-end text-left">
+               <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium">A5F 編號區</h2>
+               <h3 class="text-lg font-['Inter',_sans-serif] font-normal tracking-wider uppercase">A5F NUMBERED AREA</h3>
+             </div>
+          </a>
+
+          <a href="classroom.html" class="relative overflow-hidden block mobile-card mobile-card-slide-in">
+            <!-- 背景圖片 -->
+            <div class="absolute inset-0">
+              <img src="Images/Classroom.png" alt="Classroom" class="w-full h-full object-cover object-center">
+            </div>
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0" 
+                 style="background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);"></div>
+                         <!-- 文字內容 -->
+             <div class="relative z-10 h-full flex flex-col justify-end text-left">
+               <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium">教室</h2>
+               <h3 class="text-lg font-['Inter',_sans-serif] font-normal tracking-wider uppercase">CLASSROOM</h3>
+             </div>
           </a>
         </div>
       </div>
     </main>
 
-    <footer class="py-8">
-      <div
-        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 mb-4 md:mb-0">
+    <footer class="pt-4 pb-8">
+      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+        <div class="flex space-x-6 md:mb-0">
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
@@ -312,14 +570,161 @@
       </div>
     </footer>
 
+    <!-- 手機版選單 -->
+    <div class="mobile-menu md:hidden" id="mobile-menu">
+      <!-- Header區域 -->
+      <div class="py-6 px-6">
+        <div class="flex justify-between items-center">
+          <a href="index.html" class="logo-link">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+              SCCD
+            </div>
+          </a>
+          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+            <span class="text-white">CLOSE</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 選單項目 -->
+      <div class="flex-grow px-6">
+        <nav>
+          <ul class="flex flex-col space-y-4">
+            <li class="menu-animate-enter">
+              <a
+                href="booking.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
+                >BOOKING</a
+              >
+            </li>
+            <li class="menu-animate-enter">
+              <a
+                href="resources.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
+                >RESOURCES</a
+              >
+            </li>
+            <li class="menu-animate-enter">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
+                >LOG IN</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      <!-- Footer區域 -->
+      <div class="pt-4 pb-8 px-6">
+        <div class="flex flex-col text-sm">
+          <div class="flex flex-col space-y-2 mb-2 items-start">
+            <div class="menu-animate-enter">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
+                >TO SCCD
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                  </div>
+                </div>
+              </a>
+            </div>
+            <div class="menu-animate-enter">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
+                >ABOUT
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+              <p>
+                <span class="copyright-original">
+                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
-      // Copyright 彩蛋效果 - 打字機風格
+      // 手機版選單功能
       document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenuClose = document.getElementById('mobile-menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const body = document.body;
+        
+        function openMenu() {
+          mobileMenu.classList.add('active');
+          body.style.overflow = 'hidden'; // 防止背景滾動
+          
+          // 觸發選單動畫
+          triggerMenuAnimation();
+        }
+        
+        function triggerMenuAnimation() {
+          // 獲取所有動畫元素
+          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
+          
+          // 重置動畫
+          animatedElements.forEach(element => {
+            element.style.animation = 'none';
+            element.offsetHeight; // 強制重排
+            element.style.animation = null;
+          });
+        }
+        
+        function closeMenu() {
+          mobileMenu.classList.remove('active');
+          body.style.overflow = ''; // 恢復滾動
+        }
+        
+        // 打開選單
+        if (mobileMenuBtn) {
+          mobileMenuBtn.addEventListener('click', openMenu);
+        }
+        
+        // 關閉選單
+        if (mobileMenuClose) {
+          mobileMenuClose.addEventListener('click', closeMenu);
+        }
+        
+        // 點擊選單項目時關閉選單
+        const mobileMenuLinks = mobileMenu ? mobileMenu.querySelectorAll('nav a') : [];
+        mobileMenuLinks.forEach(link => {
+          link.addEventListener('click', closeMenu);
+        });
+        
+        // 點擊背景關閉選單
+        if (mobileMenu) {
+          mobileMenu.addEventListener('click', function(event) {
+            if (event.target === mobileMenu) {
+              closeMenu();
+            }
+          });
+        }
+        
+        // Copyright 彩蛋效果 - 只在桌面版啟用
         const copyrightElement = document.querySelector('.copyright');
         const originalElement = document.querySelector('.copyright-original');
         const easterEggElement = document.getElementById('easter-egg-text');
         
-        if (copyrightElement && originalElement && easterEggElement) {
+        if (copyrightElement && originalElement && easterEggElement && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
           const originalText = originalElement.textContent;
           const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
           const maxLength = Math.min(originalText.length, targetText.length);
@@ -439,31 +844,33 @@
           });
         }
         
-        // Login 按鈕動畫效果
+        // Login 按鈕動畫效果 - 只在桌面版
         const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
         
-        loginBtn.addEventListener('mouseenter', function() {
-          gsap.to(loginBtnFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
+        if (loginBtn && loginBtnFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          loginBtn.addEventListener('mouseenter', function() {
+            gsap.to(loginBtnFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
           });
           
-          // 文字顏色變化
-          this.classList.add('white-text');
-        });
-        
-        loginBtn.addEventListener('mouseleave', function() {
-          gsap.to(loginBtnFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
+          loginBtn.addEventListener('mouseleave', function() {
+            gsap.to(loginBtnFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
           });
-          
-          // 文字顏色恢復
-          this.classList.remove('white-text');
-        });
+        }
       });
     </script>
 

@@ -15,6 +15,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
+    <script src="api-manager.js"></script>
     
     <!-- 箭頭動畫樣式 -->
     <style>
@@ -84,8 +85,11 @@
         filter: brightness(0) invert(1); /* 預設白色 */
       }
       
-      .arrow-link:hover .arrow-icons-wrapper {
-        transform: translateY(-1em);
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .arrow-link:hover .arrow-icons-wrapper {
+          transform: translateY(-1em);
+        }
       }
       
       /* LOGIN 按鈕特殊樣式 */
@@ -94,18 +98,40 @@
         padding-right: 8px !important;
       }
       
-      .login-btn:hover .arrow-icon {
-        filter: brightness(0); /* hover 時變黑色 */
+      /* 手機版 LOGIN 按鈕縮小 */
+      @media (max-width: 768px) {
+        .login-btn {
+          padding: 1px 8px !important;
+          padding-right: 6px !important;
+          font-size: 0.75rem !important;
+        }
+        
+        .login-btn .arrow-container {
+          width: 0.8em;
+          height: 0.8em;
+        }
+        
+        .login-btn .arrow-icon {
+          width: 0.6em;
+          height: 0.6em;
+        }
       }
       
-      /* Footer 連結 hover 效果 */
-      .footer-link:hover {
-        opacity: 0.6;
-      }
-      
-      /* Header 導航連結 hover 效果 */
-      .nav-link:hover {
-        opacity: 0.6;
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .login-btn:hover .arrow-icon {
+          filter: brightness(0); /* hover 時變黑色 */
+        }
+        
+        /* Footer 連結 hover 效果 */
+        .footer-link:hover {
+          opacity: 0.6;
+        }
+        
+        /* Header 導航連結 hover 效果 */
+        .nav-link:hover {
+          opacity: 0.6;
+        }
       }
       
       /* Copyright 彩蛋效果 */
@@ -142,6 +168,47 @@
           opacity: 1;
         }
       }
+      
+      /* 手機版選單動畫 */
+      .menu-animate-enter {
+        overflow: hidden;
+      }
+      
+      .menu-animate-enter-content {
+        transform: translateY(150%);
+        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+      }
+      
+      @keyframes menuSlideUp {
+        to {
+          transform: translateY(0);
+        }
+      }
+      
+      /* 選單項目動畫延遲 */
+      .menu-animate-enter-content.menu-delay-1 {
+        animation-delay: 0.1s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-2 {
+        animation-delay: 0.2s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-3 {
+        animation-delay: 0.3s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-4 {
+        animation-delay: 0.4s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-5 {
+        animation-delay: 0.5s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-6 {
+        animation-delay: 0.6s;
+      }
 
       /* Header 進場動畫 */
       .header-animate {
@@ -163,12 +230,143 @@
       .button-animated.white-text {
         color: black;
       }
+      
+      /* 標題文字保護樣式 */
+      .main-title {
+        min-width: max-content;
+        position: relative;
+        z-index: 10;
+        width: max-content;
+      }
+      
+      /* 標題容器保護 */
+      .title-container {
+        overflow: visible !important;
+        position: relative;
+        z-index: 10;
+      }
+      
+      /* 手機版選單樣式 */
+      .mobile-menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background-color: #000000 !important;
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .mobile-menu.active {
+        opacity: 1;
+        visibility: visible;
+        background-color: #000000 !important;
+      }
+      
+      /* 響應式標題大小調整 */
+      @media (max-width: 1200px) {
+        .main-title {
+          font-size: 2.5rem; /* text-4xl */
+        }
+      }
+      
+      @media (max-width: 767px) {
+        /* 防止水平滾動 */
+        * {
+          max-width: 100vw;
+        }
+        
+        .main-title {
+          font-size: 2rem;
+          white-space: normal;
+          line-height: 1.2;
+          max-width: 100%;
+        }
+        
+        /* 手機版隱藏桌面導航 */
+        .desktop-nav {
+          display: none;
+        }
+        
+        /* 手機版內容佈局調整 */
+        .mobile-content-layout {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          height: 100%;
+          padding: 2rem 1.5rem;
+          max-width: 100vw;
+          overflow-x: hidden;
+        }
+        
+        /* Footer 在手機版的調整 */
+        footer .container {
+          max-width: 100vw;
+        }
+        
+        @media (max-width: 767px) {
+          footer .container {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-start;
+          }
+          
+          footer .container > div:first-child {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-start;
+          }
+          
+          footer .copyright {
+            text-align: left !important;
+          }
+        }
+        
+        /* 容器最大寬度限制 */
+        .container {
+          max-width: 100vw;
+          overflow-x: hidden;
+        }
+      }
+      
+      @media (max-width: 640px) {
+        .main-title {
+          font-size: 1.75rem; /* text-2xl */
+        }
+        
+        /* 更小的手機螢幕調整 */
+        .mobile-content-layout {
+          padding: 1.5rem 1rem;
+        }
+        
+        .mobile-content-layout p {
+          font-size: 0.875rem;
+          line-height: 1.6;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .main-title {
+          font-size: 1.5rem;
+        }
+        
+        .mobile-content-layout {
+          padding: 1rem 0.75rem;
+        }
+      }
     </style>
   </head>
 
-  <body class="bg-black text-white flex flex-col h-screen">
+  <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6 header-animate">
-      <div class="container mx-auto px-4 flex justify-between items-center">
+      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -176,7 +374,8 @@
             </div>
           </a>
 
-          <nav>
+          <!-- 桌面版導航 -->
+          <nav class="desktop-nav">
             <ul class="flex space-x-10">
               <li>
                 <a
@@ -187,7 +386,7 @@
               </li>
               <li>
                 <a
-                  href="#resources"
+                  href="resources.html"
                   class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >RESOURCES</a
                 >
@@ -195,17 +394,18 @@
             </ul>
           </nav>
         </div>
+        
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
             id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
             href="login.html"
             id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
             style="position: relative; overflow: hidden;"
             >
             <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
@@ -217,30 +417,69 @@
               </div>
             </div>
           </a>
+          
+          <!-- 手機版選單按鈕 -->
+          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+            <span class="text-white" id="menu-btn-text">MENU</span>
+          </button>
         </div>
       </div>
     </header>
 
-    <main
-      class="flex-grow flex flex-col items-center justify-center text-center px-4"
-    >
-      <div class="main-container">
-        <div class="animate-enter">
-          <h1 class="main-title text-5xl font-medium mb-6 animate-enter-content">
+    <main class="flex-grow">
+      <!-- 桌面版佈局 -->
+      <div class="container mx-auto px-6 md:px-4 h-full overflow-visible hidden md:grid md:grid-cols-3 md:grid-rows-5">
+        <!-- 標題 - 第三行第一列，跨越兩列 -->
+        <div class="md:col-start-1 md:col-span-2 md:row-start-3 flex items-center title-container">
+          <div class="animate-enter overflow-visible">
+            <h1 class="main-title text-6xl font-medium mb-6 animate-enter-content text-left whitespace-nowrap overflow-visible">
+              <span class="title-text">媒傳系專屬租借資源平台</span>
+            </h1>
+          </div>
+        </div>
+        
+        <!-- 段落和按鈕 - 第四行第三列 -->
+        <div class="md:col-start-3 md:row-start-4 flex flex-col items-start">
+          <div class="animate-enter">
+            <p class="max-w-xl text-base mb-8 animate-enter-content delay-1 text-left">
+              歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
+            </p>
+          </div>
+          <div class="animate-enter">
+            <a href="booking.html" class="animate-enter-content delay-2" style="display: inline-block;">
+              <button
+                id="start-rental-btn"
+                class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 inline-block cursor-pointer button-animated"
+                style="min-width: 200px; position: relative; overflow: hidden;"
+              >
+                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
+                <span style="position: relative; z-index: 2;">開始租借</span>
+              </button>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 手機版佈局 -->
+      <div class="md:hidden mobile-content-layout">
+        <div class="animate-enter overflow-visible mb-8">
+          <h1 class="main-title text-3xl sm:text-4xl font-medium animate-enter-content text-center">
             <span class="title-text">媒傳系專屬租借資源平台</span>
           </h1>
         </div>
-        <div class="animate-enter">
-          <p class="max-w-xl mx-auto text-base mb-8 animate-enter-content delay-1">
+        
+        <div class="animate-enter mb-8 px-6">
+          <p class="text-sm mb-8 animate-enter-content delay-1 text-center max-w-sm">
             歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
           </p>
         </div>
+        
         <div class="animate-enter">
           <a href="booking.html" class="animate-enter-content delay-2" style="display: inline-block;">
             <button
-              id="start-rental-btn"
-              class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 inline-block cursor-pointer button-animated"
-              style="min-width: 200px; position: relative; overflow: hidden;"
+              id="mobile-start-rental-btn"
+              class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-6 sm:px-8 inline-block cursor-pointer button-animated"
+              style="min-width: 160px; position: relative; overflow: hidden;"
             >
               <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
               <span style="position: relative; z-index: 2;">開始租借</span>
@@ -250,11 +489,9 @@
       </div>
     </main>
 
-    <footer class="py-8 fade-in">
-      <div
-        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 mb-4 md:mb-0">
+        <footer class="pt-4 pb-8 fade-in">
+      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+        <div class="flex space-x-6 md:mb-0">
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
@@ -293,9 +530,156 @@
       </div>
     </footer>
 
+    <!-- 手機版選單 -->
+    <div class="mobile-menu md:hidden" id="mobile-menu">
+      <style>
+        @media (min-width: 768px) {
+          .mobile-menu { display: none !important; }
+        }
+      </style>
+      
+      <!-- Header區域 -->
+      <div class="py-6 px-6">
+        <div class="flex justify-between items-center">
+          <a href="index.html" class="logo-link">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+              SCCD
+            </div>
+          </a>
+          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+            <span class="text-white">CLOSE</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 選單項目 -->
+      <div class="flex-grow px-6">
+        <nav>
+          <ul class="flex flex-col space-y-4">
+            <li class="menu-animate-enter">
+              <a
+                href="booking.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
+                >BOOKING</a
+              >
+            </li>
+            <li class="menu-animate-enter">
+              <a
+                href="resources.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
+                >RESOURCES</a
+              >
+            </li>
+            <li class="menu-animate-enter">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
+                >LOG IN</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      <!-- Footer區域 -->
+      <div class="pt-4 pb-8 px-6">
+        <div class="flex flex-col text-sm">
+          <div class="flex flex-col space-y-2 mb-2 items-start">
+            <div class="menu-animate-enter">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
+                >TO SCCD
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                  </div>
+                </div>
+              </a>
+            </div>
+            <div class="menu-animate-enter">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
+                >ABOUT
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+              <p>
+                <span class="copyright-original">
+                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
-      // Copyright 彩蛋效果 - 打字機風格
+      // 手機版選單功能
       document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenuClose = document.getElementById('mobile-menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const body = document.body;
+        
+        function openMenu() {
+          mobileMenu.classList.add('active');
+          body.style.overflow = 'hidden'; // 防止背景滾動
+          
+          // 觸發選單動畫
+          triggerMenuAnimation();
+        }
+        
+        function triggerMenuAnimation() {
+          // 獲取所有動畫元素
+          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
+          
+          // 重置動畫
+          animatedElements.forEach(element => {
+            element.style.animation = 'none';
+            element.offsetHeight; // 強制重排
+            element.style.animation = null;
+          });
+        }
+        
+        function closeMenu() {
+          mobileMenu.classList.remove('active');
+          body.style.overflow = ''; // 恢復滾動
+        }
+        
+        // 打開選單
+        mobileMenuBtn.addEventListener('click', openMenu);
+        
+        // 關閉選單
+        mobileMenuClose.addEventListener('click', closeMenu);
+        
+        // 點擊選單項目時關閉選單
+        const mobileMenuLinks = mobileMenu.querySelectorAll('nav a');
+        mobileMenuLinks.forEach(link => {
+          link.addEventListener('click', closeMenu);
+        });
+        
+        // 點擊背景關閉選單
+        mobileMenu.addEventListener('click', function(event) {
+          if (event.target === mobileMenu) {
+            closeMenu();
+          }
+        });
+      
+      // Copyright 彩蛋效果 - 打字機風格
         const copyrightElement = document.querySelector('.copyright');
         const originalElement = document.querySelector('.copyright-original');
         const easterEggElement = document.getElementById('easter-egg-text');
@@ -408,16 +792,19 @@
             }, 30);
           }
           
-          copyrightElement.addEventListener('mouseenter', () => {
-            isHovering = true;
-            if (animationInterval) clearInterval(animationInterval);
-            animateToTarget();
-          });
-          
-          copyrightElement.addEventListener('mouseleave', () => {
-            isHovering = false;
-            animateToOriginal();
-          });
+          // 只在桌面版啟用 copyright hover 效果
+          if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            copyrightElement.addEventListener('mouseenter', () => {
+              isHovering = true;
+              if (animationInterval) clearInterval(animationInterval);
+              animateToTarget();
+            });
+            
+            copyrightElement.addEventListener('mouseleave', () => {
+              isHovering = false;
+              animateToOriginal();
+            });
+          }
         }
         
         // 按鈕動畫效果
@@ -448,29 +835,61 @@
         
         // Login 按鈕動畫效果
         const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
         
-        loginBtn.addEventListener('mouseenter', function() {
-          gsap.to(loginBtnFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
+        if (loginBtn && loginBtnFill) {
+          loginBtn.addEventListener('mouseenter', function() {
+            gsap.to(loginBtnFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
           });
           
-          // 文字顏色變化
-          this.classList.add('white-text');
-        });
+          loginBtn.addEventListener('mouseleave', function() {
+            gsap.to(loginBtnFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
+          });
+        }
         
-        loginBtn.addEventListener('mouseleave', function() {
-          gsap.to(loginBtnFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
+        // 手機版按鈕動畫效果
+        const mobileStartBtn = document.getElementById('mobile-start-rental-btn');
+        const mobileStartBtnFill = mobileStartBtn ? mobileStartBtn.querySelector('.button-bg-fill') : null;
+        
+        if (mobileStartBtn && mobileStartBtnFill) {
+          mobileStartBtn.addEventListener('mouseenter', function() {
+            gsap.to(mobileStartBtnFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
           });
           
-          // 文字顏色恢復
-          this.classList.remove('white-text');
-        });
+          mobileStartBtn.addEventListener('mouseleave', function() {
+            gsap.to(mobileStartBtnFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
+          });
+        }
+        
+
       });
     </script>
 

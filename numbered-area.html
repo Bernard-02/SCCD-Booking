@@ -48,8 +48,11 @@
         filter: brightness(0) invert(1); /* 預設白色 */
       }
       
-      .arrow-link:hover .arrow-icons-wrapper {
-        transform: translateY(-1em);
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .arrow-link:hover .arrow-icons-wrapper {
+          transform: translateY(-1em);
+        }
       }
       
       /* LOGIN 按鈕特殊樣式 */
@@ -58,21 +61,43 @@
         padding-right: 8px !important;
       }
       
-      .login-btn:hover .arrow-icon {
-        filter: brightness(0); /* hover 時變黑色 */
+      /* 手機版 LOGIN 按鈕縮小 */
+      @media (max-width: 768px) {
+        .login-btn {
+          padding: 1px 8px !important;
+          padding-right: 6px !important;
+          font-size: 0.75rem !important;
+        }
+        
+        .login-btn .arrow-container {
+          width: 0.8em;
+          height: 0.8em;
+        }
+        
+        .login-btn .arrow-icon {
+          width: 0.6em;
+          height: 0.6em;
+        }
       }
       
-      /* Footer 連結 hover 效果 */
-      .footer-link:hover {
-        opacity: 0.6;
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .login-btn:hover .arrow-icon {
+          filter: brightness(0); /* hover 時變黑色 */
+        }
+        
+        /* Footer 連結 hover 效果 */
+        .footer-link:hover {
+          opacity: 0.6;
+        }
+        
+        /* Header 導航連結 hover 效果 */
+        .nav-link:hover {
+          opacity: 0.6;
+        }
       }
       
-      /* Header 導航連結 hover 效果 */
-      .nav-link:hover {
-        opacity: 0.6;
-      }
-      
-      /* Breadcrumb 樣式 */
+      /* Breadcrumb 樣式 - 只在桌面版顯示 */
       .breadcrumb {
         font-family: 'Inter', sans-serif;
         font-size: 0.75rem; /* text-xs */
@@ -87,8 +112,15 @@
         z-index: 10;
       }
       
-      .breadcrumb:hover .breadcrumb-item {
-        opacity: 0.6;
+      /* 桌面版 breadcrumb hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .breadcrumb:hover .breadcrumb-item {
+          opacity: 0.6;
+        }
+        
+        .breadcrumb .breadcrumb-item:hover {
+          opacity: 1 !important;
+        }
       }
       
       .breadcrumb .breadcrumb-item {
@@ -96,13 +128,16 @@
         cursor: pointer;
       }
       
-      .breadcrumb .breadcrumb-item:hover {
-        opacity: 1 !important;
-      }
-      
       .breadcrumb .breadcrumb-separator {
         margin: 0 0.5rem;
         opacity: 0.6;
+      }
+      
+      /* 手機版隱藏 breadcrumb */
+      @media (max-width: 767px) {
+        .breadcrumb {
+          display: none;
+        }
       }
       
       /* 展開式元件樣式 */
@@ -188,9 +223,12 @@
         transform-origin: center center;
       }
       
-      .grid-cell:hover {
-        transform: scale(1.05);
-        filter: brightness(1.1);
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .grid-cell:hover {
+          transform: scale(1.05);
+          filter: brightness(1.1);
+        }
       }
       
       .grid-cell.selected {
@@ -202,9 +240,12 @@
         cursor: not-allowed;
       }
       
-      .grid-cell.booked:hover {
-        transform: none;
-        filter: none;
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .grid-cell.booked:hover {
+          transform: none;
+          filter: none;
+        }
       }
       
       /* 可租借格子顏色 */
@@ -300,14 +341,80 @@
         letter-spacing: inherit;
       }
       
+      /* 手機版選單動畫 */
+      .menu-animate-enter {
+        overflow: hidden;
+      }
+      
+      .menu-animate-enter-content {
+        transform: translateY(150%);
+        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+      }
+      
+      @keyframes menuSlideUp {
+        to {
+          transform: translateY(0);
+        }
+      }
+      
+      /* 選單項目動畫延遲 */
+      .menu-animate-enter-content.menu-delay-1 {
+        animation-delay: 0.1s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-2 {
+        animation-delay: 0.2s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-3 {
+        animation-delay: 0.3s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-4 {
+        animation-delay: 0.4s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-5 {
+        animation-delay: 0.5s;
+      }
+      
+      .menu-animate-enter-content.menu-delay-6 {
+        animation-delay: 0.6s;
+      }
+
+      /* 手機版選單樣式 */
+      .mobile-menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background-color: #000000 !important;
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .mobile-menu.active {
+        opacity: 1;
+        visibility: visible;
+        background-color: #000000 !important;
+      }
+      
       /* SVG 點擊區域樣式 */
       .clickable-area {
         cursor: pointer;
         transition: fill 0.2s ease;
       }
       
-      .clickable-area:hover {
-        opacity: 0.8;
+      /* 只在桌面版顯示 hover 效果 */
+      @media (hover: hover) and (pointer: fine) {
+        .clickable-area:hover {
+          opacity: 0.8;
+        }
       }
       
       .clickable-area.selected {
@@ -354,12 +461,68 @@
         background-color: #f7f7f7;
         color: black;
       }
+      
+      /* 響應式佈局 */
+      @media (max-width: 767px) {
+        /* 防止水平滾動 */
+        * {
+          max-width: 100vw;
+        }
+        
+        /* 手機版隱藏桌面導航 */
+        .desktop-nav {
+          display: none;
+        }
+        
+        /* Footer 在手機版的調整 */
+        footer .container {
+          max-width: 100vw;
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: flex-start;
+        }
+        
+        footer .container > div:first-child {
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: flex-start;
+        }
+        
+        footer .copyright {
+          text-align: left !important;
+        }
+        
+        /* 容器最大寬度限制 */
+        .container {
+          max-width: 100vw;
+          overflow-x: hidden;
+        }
+        
+        /* 手機版主要內容佈局 */
+        .mobile-main-content {
+          padding: 1rem;
+          flex-direction: column;
+          gap: 2rem;
+        }
+        
+        .mobile-title-section {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+      }
+      
+      /* 確保大於768px時隱藏手機版選單 */
+      @media (min-width: 768px) {
+        .mobile-menu { 
+          display: none !important; 
+        }
+      }
     </style>
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen">
     <header class="py-6">
-      <div class="container mx-auto px-4 flex justify-between items-center">
+      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -367,7 +530,8 @@
             </div>
           </a>
 
-          <nav>
+          <!-- 桌面版導航 -->
+          <nav class="desktop-nav">
             <ul class="flex space-x-10">
               <li>
                 <a
@@ -378,7 +542,7 @@
               </li>
               <li>
                 <a
-                  href="#resources"
+                  href="resources.html"
                   class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
                   >RESOURCES</a
                 >
@@ -390,13 +554,13 @@
           <a
             href="rental-list.html"
             id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
+            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
             >(<span id="cart-count">0</span>) CART</a
           >
           <a
             href="login.html"
             id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated"
+            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
             style="position: relative; overflow: hidden;"
             >
             <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
@@ -408,13 +572,18 @@
               </div>
             </div>
           </a>
+          
+          <!-- 手機版選單按鈕 -->
+          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+            <span class="text-white" id="menu-btn-text">MENU</span>
+          </button>
         </div>
       </div>
     </header>
 
     <main class="flex-grow flex flex-col pt-[3vh] pb-[2vh] overflow-hidden">
-      <!-- Breadcrumb -->
-      <nav class="breadcrumb">
+      <!-- Breadcrumb - 只在桌面版顯示 -->
+      <nav class="breadcrumb hidden md:block">
         <a href="index.html" class="breadcrumb-item">首頁</a>
         <span class="breadcrumb-separator">/</span>
         <a href="booking.html" class="breadcrumb-item">租借日期</a>
@@ -426,7 +595,8 @@
         <span class="breadcrumb-item">A5F編號區</span>
       </nav>
       
-      <div class="w-full px-[6%] flex-grow flex flex-col overflow-hidden">
+      <!-- 桌面版佈局 -->
+      <div class="w-full px-[6%] flex-grow flex-col overflow-hidden hidden md:flex">
         <!-- 頁面標題 -->
         <div class="mb-6">
           <h1 class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2">
@@ -522,7 +692,7 @@
                 <div class="accordion-content-inner space-y-4">
                   <div class="space-y-2">
                     <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
+                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT2,000</div>
                   </div>
                   <div>
                     <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
@@ -632,12 +802,26 @@
                 <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
                 <span style="position: relative; z-index: 2;">清除</span>
               </button>
-              <button id="add-area-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 text-lg cursor-not-allowed button-animated flex-1" style="position: relative; overflow: hidden;" disabled onclick="addAreaToCart()">
-                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                <span style="position: relative; z-index: 2;">加入清單</span>
+              <button id="add-area-btn" class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-lg cursor-not-allowed hover:opacity-60 flex-1" disabled onclick="addAreaToCart()">
+                加入清單
               </button>
             </div>
           </div>
+        </div>
+      </div>
+      
+      <!-- 手機版佈局 -->
+      <div class="w-full md:hidden flex-grow flex flex-col">
+        <!-- 標題區域 -->
+        <div class="mobile-title-section">
+          <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
+            A5F編號區
+          </h1>
+        </div>
+        
+        <!-- 暫時內容 -->
+        <div class="flex-grow flex items-center justify-center">
+          <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
         </div>
       </div>
     </main>
@@ -650,11 +834,9 @@
       <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
     </div>
 
-    <footer class="py-8">
-      <div
-        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 mb-4 md:mb-0">
+            <footer class="pt-4 pb-8">
+      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+        <div class="flex space-x-6 md:mb-0">
           <a
             href="https://sccd.usc.edu.tw/"
             target="_blank"
@@ -693,10 +875,111 @@
       </div>
     </footer>
 
+    <!-- 手機版選單 -->
+    <div class="mobile-menu md:hidden" id="mobile-menu">
+      <!-- Header區域 -->
+      <div class="py-6 px-6">
+        <div class="flex justify-between items-center">
+          <a href="index.html" class="logo-link">
+            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+              SCCD
+            </div>
+          </a>
+          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+            <span class="text-white">CLOSE</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 選單項目 -->
+      <div class="flex-grow px-6">
+        <nav>
+          <ul class="flex flex-col space-y-4">
+            <li class="menu-animate-enter">
+              <a
+                href="booking.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
+                >BOOKING</a
+              >
+            </li>
+            <li class="menu-animate-enter">
+              <a
+                href="resources.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
+                >RESOURCES</a
+              >
+            </li>
+            <li class="menu-animate-enter">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
+                >LOG IN</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      <!-- Footer區域 -->
+      <div class="pt-4 pb-8 px-6">
+        <div class="flex flex-col text-sm">
+          <div class="flex flex-col space-y-2 mb-2 items-start">
+            <div class="menu-animate-enter">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
+                >TO SCCD
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                  </div>
+                </div>
+              </a>
+            </div>
+            <div class="menu-animate-enter">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
+                >ABOUT
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+              <p>
+                <span class="copyright-original">
+                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       let currentSelectedArea = 'courtyard';
       let selectedBlocks = []; // 存儲選中的區塊
       let selectedBlockNames = []; // 存儲選中區塊的名稱
+      
+      // 存儲每個區域的選擇狀態
+      let areaSelections = {
+        'courtyard': [],
+        'corridor': [],
+        'front-balcony': [],
+        'back-balcony': [],
+        'glass-wall': [],
+        'pillar': []
+      };
       
       // 區域資料
       const areaData = {
@@ -728,7 +1011,7 @@
           id: 'area-back-balcony',
           name: '後陽台',
           category: 'area',
-          deposit: 1000,
+          deposit: 2000,
           image: 'Area/A5F Numbered Area_Square.svg',
           mapImage: 'Area/A5F Numbered Area_Square.svg'
         },
@@ -766,12 +1049,18 @@
         
         // 延遲打開新選擇的區域
         setTimeout(() => {
+          // 保存當前區域的選擇狀態
+          if (currentSelectedArea) {
+            areaSelections[currentSelectedArea] = [...selectedBlockNames];
+          }
+          
           openAccordion(areaId);
           currentSelectedArea = areaId;
           updateAreaDisplay();
-          // 清空已選擇的區塊
-          selectedBlocks = [];
-          selectedBlockNames = [];
+          
+          // 恢復新區域的選擇狀態
+          selectedBlockNames = [...areaSelections[areaId]];
+          selectedBlocks = [...selectedBlockNames]; // 保持同步
           updateSelectedBlocks();
         }, 200);
       }
@@ -869,6 +1158,14 @@
             const cell = document.getElementById(blockName);
             if (cell) {
               cell.classList.add('booked');
+            }
+          });
+          
+          // 恢復已選擇的區塊視覺狀態
+          selectedBlockNames.forEach(blockName => {
+            const cell = document.getElementById(blockName);
+            if (cell && !cell.classList.contains('booked')) {
+              cell.classList.add('selected');
             }
           });
         }, 100);
@@ -1050,87 +1347,14 @@
             </svg>`
           },
           'glass-wall': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 495.22 1596.67" xmlns="http://www.w3.org/2000/svg">
-              <g id="Glass_Wall" data-name="Glass Wall">
-                <rect id="Y26" x="27.97" y="24.01" width="57.69" height="9.67" transform="translate(85.66 -27.97) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y25" x="27.97" y="97.16" width="57.69" height="9.67" transform="translate(158.81 45.19) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y24" x="27.97" y="170.32" width="57.69" height="9.67" transform="translate(231.97 118.34) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y23" x="27.97" y="243.47" width="57.69" height="9.67" transform="translate(305.12 191.5) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y13" x="411.07" y="829.07" width="57.69" height="9.67" transform="translate(1273.82 393.99) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y12" x="411.07" y="902.22" width="57.69" height="9.67" transform="translate(1346.98 467.14) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y11" x="411.07" y="975.38" width="57.69" height="9.67" transform="translate(1420.13 540.3) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y10" x="411.07" y="1048.53" width="57.69" height="9.67" transform="translate(1493.29 613.45) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y14" x="386.06" y="785.27" width="58.7" height="9.67" transform="translate(830.81 1580.21) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y15" x="311.63" y="785.27" width="58.7" height="9.67" transform="translate(681.95 1580.21) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y7" x="386.06" y="1241.68" width="58.7" height="9.67" transform="translate(830.81 2493.03) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y6" x="311.63" y="1241.68" width="58.7" height="9.67" transform="translate(681.95 2493.03) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y4" x="386.06" y="1371.63" width="58.7" height="9.67" transform="translate(830.81 2752.94) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y5" x="311.63" y="1371.63" width="58.7" height="9.67" transform="translate(681.95 2752.94) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y16" x="237.2" y="785.27" width="58.7" height="9.67" transform="translate(533.09 1580.21) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y17" x="162.76" y="785.27" width="58.7" height="9.67" transform="translate(384.22 1580.21) rotate(-180)" style="fill: #898989;"/>
-                <rect id="Y9" x="411.07" y="1121.69" width="57.69" height="9.67" transform="translate(1566.44 686.61) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y8" x="411.07" y="1194.84" width="57.69" height="9.67" transform="translate(1639.6 759.76) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y3" x="411.07" y="1416.68" width="57.69" height="9.67" transform="translate(1861.44 981.6) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y2" x="411.07" y="1489.84" width="57.69" height="9.67" transform="translate(1934.59 1054.76) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y1" x="411.07" y="1562.99" width="57.69" height="9.67" transform="translate(2007.75 1127.91) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y22" x="43.95" y="353.21" width="25.73" height="9.67" transform="translate(414.86 301.23) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y21" x="27.97" y="462.94" width="57.69" height="9.67" transform="translate(524.59 410.96) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y20" x="27.97" y="536.09" width="57.69" height="9.67" transform="translate(597.74 484.12) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y19" x="27.97" y="609.25" width="57.69" height="9.67" transform="translate(670.9 557.27) rotate(90)" style="fill: #898989;"/>
-                <rect id="Y18" x="27.97" y="682.4" width="57.69" height="9.67" transform="translate(744.05 630.43) rotate(90)" style="fill: #898989;"/>
-                <text transform="translate(.12 33.74)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y26</tspan></text>
-                <text transform="translate(.26 106.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y25</tspan></text>
-                <text transform="translate(.09 180.05)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y</tspan><tspan x="11.97" y="0" style="letter-spacing: -.02em;">2</tspan><tspan x="22.58" y="0" style="letter-spacing: 0em;">4</tspan></text>
-                <text transform="translate(0 253.21)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y23</tspan></text>
-                <text transform="translate(1.55 472.67)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y21</tspan></text>
-                <text transform="translate(.1 545.83)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y20</tspan></text>
-                <text transform="translate(1.38 618.98)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y19</tspan></text>
-                <text transform="translate(1.45 692.14)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y18</tspan></text>
-                <text transform="translate(463.44 838.8)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y13</tspan></text>
-                <text transform="translate(176.81 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y17</tspan></text>
-                <text transform="translate(399.47 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y14</tspan></text>
-                <text transform="translate(250.77 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y16</tspan></text>
-                <text transform="translate(325.34 772.58)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y15</tspan></text>
-                <text transform="translate(329.52 1358.6)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y5</tspan></text>
-                <text transform="translate(404.28 1281.29)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y7</tspan></text>
-                <text transform="translate(404.26 1358.6)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0" style="letter-spacing: -.07em;">Y</tspan><tspan x="10.74" y="0">4</tspan></text>
-                <text transform="translate(329.38 1281.29)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y6</tspan></text>
-                <text transform="translate(463.72 911.95)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y12</tspan></text>
-                <text transform="translate(464.99 985.11)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y11</tspan></text>
-                <text transform="translate(463.54 1058.26)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y10</tspan></text>
-                <text transform="translate(467.74 1131.42)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y9</tspan></text>
-                <text transform="translate(467.8 1204.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y8</tspan></text>
-                <text transform="translate(467.62 1426.41)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y3</tspan></text>
-                <text transform="translate(467.9 1499.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y2</tspan></text>
-                <text transform="translate(469.17 1572.72)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y1</tspan></text>
-                <text transform="translate(.28 362.94)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Y22</tspan></text>
-              </g>
-            </svg>`
+            svg: `<div class="flex items-center justify-center h-full">
+              <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
+            </div>`
           },
           'pillar': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 464.01 1343.14" xmlns="http://www.w3.org/2000/svg">
-              <g id="Pillar">
-                <rect class="grid-cell" id="Z8" x="439.37" y="0" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z7" x="439.37" y="146.66" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z6" x="439.37" y="293.32" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z5" x="439.37" y="439.97" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z9" x="0" y="439.97" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z4" x="439.37" y="586.63" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z3" x="439.37" y="733.29" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z2" x="439.37" y="879.95" width="24.64" height="24.64" style="fill: #898989;"/>
-                <rect class="grid-cell" id="Z1" x="439.37" y="1318.49" width="24.64" height="24.64" style="fill: #898989;"/>
-                
-                <text transform="translate(40.11 457.19)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z9</tspan></text>
-                <text transform="translate(399.23 1335.71)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z1</tspan></text>
-                <text transform="translate(397.96 897.17)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z2</tspan></text>
-                <text transform="translate(397.68 750.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z3</tspan></text>
-                <text transform="translate(397.63 603.85)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z4</tspan></text>
-                <text transform="translate(397.94 457.19)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z5</tspan></text>
-                <text transform="translate(397.8 310.53)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z6</tspan></text>
-                <text transform="translate(398.27 163.87)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z7</tspan></text>
-                <text transform="translate(397.86 17.22)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">Z8</tspan></text>
-              </g>
-            </svg>`
+            svg: `<div class="flex items-center justify-center h-full">
+              <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
+            </div>`
           }
         };
         
@@ -1232,7 +1456,11 @@
           clearButton.classList.remove('opacity-100', 'cursor-pointer');
         } else {
           selectedBlocksElement.textContent = selectedBlockNames.join(', ');
-          totalDepositElement.textContent = `NT${(selectedBlockNames.length * 1000).toLocaleString()}`;
+          
+          // 根據當前區域計算押金
+          const area = areaData[currentSelectedArea];
+          const totalDeposit = selectedBlockNames.length * (area ? area.deposit : 1000);
+          totalDepositElement.textContent = `NT${totalDeposit.toLocaleString()}`;
           
           // 兩個按鈕都啟用
           addButton.disabled = false;
@@ -1264,11 +1492,36 @@
         selectedBlockNames = [];
         selectedBlocks = [];
         
+        // 清空當前區域的記錄
+        if (currentSelectedArea) {
+          areaSelections[currentSelectedArea] = [];
+        }
+        
         // 更新顯示
         updateSelectedBlocks();
         
         // 顯示通知
         showNotification('已清除所有選擇！');
+        
+        // 執行點擊後的反向動畫
+        const buttonFill = clearButton.querySelector('.button-bg-fill');
+        if (buttonFill) {
+          // 先快速填滿背景
+          gsap.set(buttonFill, { height: '100%' });
+          clearButton.classList.add('white-text');
+          
+          // 然後執行從上往下的清空動畫，同時文字顏色逐漸變回白色
+          setTimeout(() => {
+            gsap.to(buttonFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色同時開始過渡變回白色
+            clearButton.classList.remove('white-text');
+          }, 100);
+        }
       }
       
       function addAreaToCart() {
@@ -1280,7 +1533,7 @@
         }
         
         const area = areaData[currentSelectedArea];
-        const totalDeposit = selectedBlockNames.length * 1000;
+        const totalDeposit = selectedBlockNames.length * area.deposit;
         const blockList = selectedBlockNames.join(', ');
         
         // 創建購物車項目
@@ -1300,6 +1553,18 @@
           // 清空選擇
           selectedBlocks = [];
           selectedBlockNames = [];
+          
+          // 清空當前區域的記錄
+          if (currentSelectedArea) {
+            areaSelections[currentSelectedArea] = [];
+          }
+          
+          // 清除視覺選擇狀態
+          const selectedCells = document.querySelectorAll('.grid-cell.selected');
+          selectedCells.forEach(cell => {
+            cell.classList.remove('selected');
+          });
+          
           updateSelectedBlocks();
         }
       }
@@ -1344,17 +1609,16 @@
         }, 2500);
       }
       
-      // 按鈕動畫效果
+      // 按鈕動畫效果 - 只在桌面版
       function setupButtonAnimations() {
-        const buttons = ['clear-btn', 'add-area-btn'];
-        
-        buttons.forEach(buttonId => {
-          const button = document.getElementById(buttonId);
-          const buttonFill = button.querySelector('.button-bg-fill');
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          // 清除按鈕動畫（有 button-bg-fill）
+          const clearButton = document.getElementById('clear-btn');
+          const clearButtonFill = clearButton.querySelector('.button-bg-fill');
           
-          button.addEventListener('mouseenter', function() {
+          clearButton.addEventListener('mouseenter', function() {
             if (!this.disabled) {
-              gsap.to(buttonFill, {
+              gsap.to(clearButtonFill, {
                 height: '100%',
                 duration: 0.5,
                 ease: "power2.out"
@@ -1365,9 +1629,9 @@
             }
           });
           
-          button.addEventListener('mouseleave', function() {
+          clearButton.addEventListener('mouseleave', function() {
             if (!this.disabled) {
-              gsap.to(buttonFill, {
+              gsap.to(clearButtonFill, {
                 height: '0%',
                 duration: 0.5,
                 ease: "power2.out"
@@ -1377,64 +1641,132 @@
               this.classList.remove('white-text');
             }
           });
-        });
+        }
+        
+        // 加入清單按鈕已經有 CSS hover 效果，不需要額外 JavaScript 動畫
       }
       
       // 初始化：默認展開中庭
       document.addEventListener('DOMContentLoaded', function() {
         openAccordion('courtyard');
         updateAreaDisplay();
+        
+        // 恢復默認區域的選擇狀態
+        selectedBlockNames = [...areaSelections['courtyard']];
+        selectedBlocks = [...selectedBlockNames];
+        updateSelectedBlocks();
+        
         setupButtonAnimations(); // 初始化按鈕動畫
         
-        // Login 按鈕動畫效果
+        // Login 按鈕動畫效果 - 只在桌面版
         const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
+        const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
         
-        loginBtn.addEventListener('mouseenter', function() {
-          gsap.to(loginBtnFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
+        if (loginBtn && loginBtnFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          loginBtn.addEventListener('mouseenter', function() {
+            gsap.to(loginBtnFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色變化
+            this.classList.add('white-text');
           });
           
-          // 文字顏色變化
-          this.classList.add('white-text');
-        });
-        
-        loginBtn.addEventListener('mouseleave', function() {
-          gsap.to(loginBtnFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
+          loginBtn.addEventListener('mouseleave', function() {
+            gsap.to(loginBtnFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            
+            // 文字顏色恢復
+            this.classList.remove('white-text');
           });
+        }
+        
+        // 手機版選單功能
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenuClose = document.getElementById('mobile-menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const body = document.body;
+        
+        function openMenu() {
+          mobileMenu.classList.add('active');
+          body.style.overflow = 'hidden'; // 防止背景滾動
           
-          // 文字顏色恢復
-          this.classList.remove('white-text');
+          // 觸發選單動畫
+          triggerMenuAnimation();
+        }
+        
+        function triggerMenuAnimation() {
+          // 獲取所有動畫元素
+          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
+          
+          // 重置動畫
+          animatedElements.forEach(element => {
+            element.style.animation = 'none';
+            element.offsetHeight; // 強制重排
+            element.style.animation = null;
+          });
+        }
+        
+        function closeMenu() {
+          mobileMenu.classList.remove('active');
+          body.style.overflow = ''; // 恢復滾動
+        }
+        
+        // 打開選單
+        if (mobileMenuBtn) {
+          mobileMenuBtn.addEventListener('click', openMenu);
+        }
+        
+        // 關閉選單
+        if (mobileMenuClose) {
+          mobileMenuClose.addEventListener('click', closeMenu);
+        }
+        
+        // 點擊選單項目時關閉選單
+        const mobileMenuLinks = mobileMenu ? mobileMenu.querySelectorAll('nav a') : [];
+        mobileMenuLinks.forEach(link => {
+          link.addEventListener('click', closeMenu);
         });
         
-        // 為圖標添加hover效果
-        const icons = document.querySelectorAll('.expand-icon');
-        icons.forEach(icon => {
-          icon.addEventListener('mouseenter', function() {
-            if (this.classList.contains('plus')) {
-              gsap.to(this, {
-                rotation: 90,
-                duration: 0.3,
-                ease: "power2.out"
-              });
+        // 點擊背景關閉選單
+        if (mobileMenu) {
+          mobileMenu.addEventListener('click', function(event) {
+            if (event.target === mobileMenu) {
+              closeMenu();
             }
           });
-          
-          icon.addEventListener('mouseleave', function() {
-            if (this.classList.contains('plus')) {
-              gsap.to(this, {
-                rotation: 0,
-                duration: 0.3,
-                ease: "power2.out"
-              });
-            }
+        }
+        
+        // 為圖標添加hover效果 - 只在桌面版
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          const icons = document.querySelectorAll('.expand-icon');
+          icons.forEach(icon => {
+            icon.addEventListener('mouseenter', function() {
+              if (this.classList.contains('plus')) {
+                gsap.to(this, {
+                  rotation: 90,
+                  duration: 0.3,
+                  ease: "power2.out"
+                });
+              }
+            });
+            
+            icon.addEventListener('mouseleave', function() {
+              if (this.classList.contains('plus')) {
+                gsap.to(this, {
+                  rotation: 0,
+                  duration: 0.3,
+                  ease: "power2.out"
+                });
+              }
+            });
           });
-        });
+        }
         
         // 示範用：添加一些測試按鈕來模擬區塊點擊
         // 這些可以在實際實作時移除
@@ -1448,13 +1780,13 @@
         }, 1000);
       });
 
-      // Copyright 彩蛋效果
+      // Copyright 彩蛋效果 - 只在桌面版啟用
       document.addEventListener('DOMContentLoaded', function() {
         const copyrightElement = document.querySelector('.copyright');
         const originalElement = document.querySelector('.copyright-original');
         const easterEggElement = document.getElementById('easter-egg-text');
         
-        if (copyrightElement && originalElement && easterEggElement) {
+        if (copyrightElement && originalElement && easterEggElement && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
           const originalText = originalElement.textContent;
           const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
           const maxLength = Math.min(originalText.length, targetText.length);

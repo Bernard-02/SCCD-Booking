@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.endDate = null;
                 this.currentMonth = new Date().getMonth();
                 this.currentYear = new Date().getFullYear();
+                // 記錄起始月份（當前月份），用於限制導航範圍
+                this.baseMonth = new Date().getMonth();
+                this.baseYear = new Date().getFullYear();
                 this.today = new Date();
                 this.confirmButton = document.getElementById('confirm-date-button');
                 this.resetButton = document.getElementById('reset-date-button');
@@ -32,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.render();
                 this.attachEvents();
                 this.updateButtonState();
+                this.updateNavigationButtons();
                 this.attachResetEvent();
             }
             
@@ -154,13 +158,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Previous month clicked'); // 調試用
-                        this.currentMonth--;
-                        if (this.currentMonth < 0) {
-                            this.currentMonth = 11;
-                            this.currentYear--;
+                        
+                        // 檢查是否可以往前導航（不能早於起始月份）
+                        if (this.canNavigatePrevious()) {
+                            this.currentMonth--;
+                            if (this.currentMonth < 0) {
+                                this.currentMonth = 11;
+                                this.currentYear--;
+                            }
+                            this.render();
+                            this.attachEvents();
+                            this.updateNavigationButtons();
                         }
-                        this.render();
-                        this.attachEvents();
                     });
                 }
                 
@@ -169,13 +178,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Next month clicked'); // 調試用
-                        this.currentMonth++;
-                        if (this.currentMonth > 11) {
-                            this.currentMonth = 0;
-                            this.currentYear++;
+                        
+                        // 檢查是否可以往後導航（最多到起始月份+3個月）
+                        if (this.canNavigateNext()) {
+                            this.currentMonth++;
+                            if (this.currentMonth > 11) {
+                                this.currentMonth = 0;
+                                this.currentYear++;
+                            }
+                            this.render();
+                            this.attachEvents();
+                            this.updateNavigationButtons();
                         }
-                        this.render();
-                        this.attachEvents();
                     });
                 }
                 
@@ -263,29 +277,95 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (this.startDate && this.resetButton) {
                     // 至少有起租日被選擇，啟用重設按鈕
                     this.resetButton.disabled = false;
-                    this.resetButton.className = "border border-white bg-transparent text-white opacity-100 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-pointer hover:bg-white hover:text-black mb-4";
+                    this.resetButton.className = "border border-white bg-transparent text-white opacity-100 font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mb-4";
+                    this.resetButton.style.position = "relative";
+                    this.resetButton.style.overflow = "hidden";
                 } else if (this.resetButton) {
                     // 沒有日期被選擇，禁用重設按鈕
                     this.resetButton.disabled = true;
-                    this.resetButton.className = "border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed hover:bg-white hover:text-black mb-4";
+                    this.resetButton.className = "border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-not-allowed button-animated mb-4";
+                    this.resetButton.style.position = "relative";
+                    this.resetButton.style.overflow = "hidden";
                 }
             }
             
             attachResetEvent() {
                 if (this.resetButton) {
                     this.resetButton.addEventListener('click', () => {
-                        this.startDate = null;
-                        this.endDate = null;
-                        this.updateDisplay();
-                        this.render();
-                        this.attachEvents();
-                        this.updateButtonState();
+                        if (!this.resetButton.disabled) {
+                            // 先執行重設邏輯
+                            this.startDate = null;
+                            this.endDate = null;
+                            this.updateDisplay();
+                            this.render();
+                            this.attachEvents();
+                            this.updateButtonState();
+                            
+                            // 然後執行往下滑動畫
+                            const buttonFill = this.resetButton.querySelector('.button-bg-fill');
+                            if (buttonFill && window.gsap) {
+                                gsap.to(buttonFill, {
+                                    height: '0%',
+                                    duration: 0.5,
+                                    ease: "power2.out"
+                                });
+                                
+                                // 同時讓文字顏色恢復
+                                this.resetButton.classList.remove('white-text');
+                            }
+                        }
                     });
                 }
             }
             
             isSameDay(date1, date2) {
                 return date1.toDateString() === date2.toDateString();
+            }
+            
+            // 檢查是否可以往前導航
+            canNavigatePrevious() {
+                // 不能早於起始月份
+                const currentMonthIndex = this.currentYear * 12 + this.currentMonth;
+                const baseMonthIndex = this.baseYear * 12 + this.baseMonth;
+                return currentMonthIndex > baseMonthIndex;
+            }
+            
+            // 檢查是否可以往後導航
+            canNavigateNext() {
+                // 最多只能看到起始月份+2個月（因為顯示兩個月，所以當前月份最多是起始月份+2）
+                const currentMonthIndex = this.currentYear * 12 + this.currentMonth;
+                const baseMonthIndex = this.baseYear * 12 + this.baseMonth;
+                return currentMonthIndex < baseMonthIndex + 2; // 最多顯示到第4個月
+            }
+            
+            // 更新導航按鈕狀態
+            updateNavigationButtons() {
+                const prevButton = this.container.querySelector('#prev-month');
+                const nextButton = this.container.querySelector('#next-month');
+                
+                if (prevButton) {
+                    if (this.canNavigatePrevious()) {
+                        prevButton.disabled = false;
+                        prevButton.style.opacity = '1';
+                        prevButton.style.cursor = 'pointer';
+                    } else {
+                        prevButton.disabled = true;
+                        prevButton.style.opacity = '0.3';
+                        prevButton.style.cursor = 'not-allowed';
+                    }
+                }
+                
+                if (nextButton) {
+                    if (this.canNavigateNext()) {
+                        nextButton.disabled = false;
+                        nextButton.style.opacity = '1';
+                        nextButton.style.cursor = 'pointer';
+                    } else {
+                        nextButton.disabled = true;
+                        nextButton.style.opacity = '0.3';
+                        nextButton.style.cursor = 'not-allowed';
+                    }
+                }
             }
         }
         
