@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* ===== 通用樣式 ===== */
 
 /* 選取（反白）樣式 */
@@ -6,7 +8,166 @@
   color: black;
 }
 
-/* 基礎響應式調整 */
+/* 自定義checkbox樣式 */
+.custom-checkbox {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid white;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.custom-checkbox:checked {
+  background-color: white;
+  border-color: white;
+}
+
+.custom-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: black;
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: Inter, sans-serif;
+}
+
+/* ===== Toast 通用樣式 ===== */
+.toast, #notification {
+  position: fixed;
+  bottom: 7.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  color: black;
+  padding: 1rem 5rem;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease-out;
+}
+
+/* notification 專用的 padding 樣式 */
+#notification {
+  padding: 16px 80px;
+}
+
+.toast p {
+  font-size: 1rem;
+  font-family: 'Noto Sans TC', sans-serif;
+  line-height: 1.625;
+  text-align: center;
+  margin: 0;
+}
+
+.toast.error, #notification.error {
+  background-color: #ffd9e0 !important;
+}
+
+.toast.error p {
+  color: #ff4560 !important;
+}
+
+#notification.error {
+  color: #ff4560;
+}
+
+.toast.show, #notification.show {
+  opacity: 1;
+}
+
+/* ===== 手機版選單樣式 ===== */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: #000000 !important;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu.active {
+  opacity: 1;
+  visibility: visible;
+  background-color: #000000 !important;
+}
+
+/* 手機版選單動畫 */
+.menu-animate-enter {
+  overflow: hidden;
+}
+
+.menu-animate-enter-content {
+  transform: translateY(150%);
+  animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes menuSlideUp {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 選單項目動畫延遲 */
+.menu-animate-enter-content.menu-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.menu-animate-enter-content.menu-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.menu-animate-enter-content.menu-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.menu-animate-enter-content.menu-delay-4 {
+  animation-delay: 0.4s;
+}
+
+.menu-animate-enter-content.menu-delay-5 {
+  animation-delay: 0.5s;
+}
+
+.menu-animate-enter-content.menu-delay-6 {
+  animation-delay: 0.6s;
+}
+
+/* ===== 響應式設計樣式 ===== */
+
+/* 標題文字樣式 */
+.main-title {
+  min-width: max-content;
+  position: relative;
+  z-index: 10;
+  width: max-content;
+}
+
+/* 標題容器樣式 */
+.title-container {
+  overflow: visible !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* 大型桌面 (1200px以下) */
+@media (max-width: 1200px) {
+  .main-title {
+    font-size: 2.5rem; /* text-4xl */
+  }
+}
+
+/* 平板和手機 (767px以下) */
 @media (max-width: 767px) {
   /* 防止水平滾動 */
   * {
@@ -21,6 +182,32 @@
   /* 確保手機版完全隱藏 LOGIN 按鈕 */
   #login-btn {
     display: none !important;
+  }
+  
+  /* 標題響應式樣式 */
+  .main-title {
+    font-size: 2rem;
+    white-space: normal;
+    line-height: 1.2;
+    max-width: 100%;
+  }
+  
+  /* 手機版內容佈局 */
+  .mobile-content-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100%;
+    padding: 2rem 1.5rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  .mobile-content-layout p {
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
   
   /* Footer 在手機版的調整 */
@@ -46,6 +233,47 @@
     max-width: 100vw;
     overflow-x: hidden;
   }
+  
+  /* 手機版 Toast 樣式 */
+  .toast, #notification {
+    bottom: 5vh !important;
+    left: 3% !important;
+    right: 3% !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
+  .toast p {
+    font-size: 0.875rem !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* 小型手機 (640px以下) */
+@media (max-width: 640px) {
+  .main-title {
+    font-size: 1.75rem; /* text-2xl */
+  }
+  
+  .mobile-content-layout {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* 超小型手機 (480px以下) */
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 1.5rem;
+  }
+  
+  .mobile-content-layout {
+    padding: 1rem 0.75rem;
+  }
 }
 
 /* 確保大於768px時隱藏手機版選單 */
@@ -53,4 +281,82 @@
   .mobile-menu { 
     display: none !important; 
   }
+}
+
+/* ===== LOGIN 按鈕全域樣式 ===== */
+
+/* LOGIN 按鈕基本樣式 */
+.login-btn {
+  padding: 1.5px 10px !important;
+  padding-right: 8px !important;
+}
+
+/* 手機版 LOGIN 按鈕縮小 */
+@media (max-width: 768px) {
+  .login-btn {
+    padding: 1px 8px !important;
+    padding-right: 6px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .login-btn .arrow-container {
+    width: 0.8em;
+    height: 0.8em;
+  }
+  
+  .login-btn .arrow-icon {
+    width: 0.6em;
+    height: 0.6em;
+  }
+}
+
+/* 按鈕動畫樣式 */
+.button-animated {
+  transition: color 0.5s ease;
+}
+
+.button-animated.white-text {
+  color: black;
+}
+
+/* 只在桌面版顯示 hover 效果 */
+@media (hover: hover) and (pointer: fine) {
+  .login-btn:hover .arrow-icon {
+    filter: brightness(0); /* hover 時變黑色 */
+  }
+}
+
+/* 手機版按鈕禁用 hover 動畫 */
+@media (max-width: 767px) {
+  .button-animated:hover .button-bg-fill {
+    height: 0% !important;
+  }
+  
+  .button-animated:hover {
+    color: white !important;
+  }
+  
+  .button-animated.white-text {
+    color: white !important;
+  }
+}
+
+/* 全局隱藏滾動條但保持滾動功能 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 } 

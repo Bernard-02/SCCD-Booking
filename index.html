@@ -23,21 +23,19 @@
     <script src="js/ui-animations.js"></script>
     <script src="js/mobile-menu.js"></script>
     <script src="js/cart-sync.js"></script>
-    
-    <!-- 引入外部CSS文件 -->
-    <link rel="stylesheet" href="css/common.css">
-    <link rel="stylesheet" href="css/arrows.css">
-    <link rel="stylesheet" href="css/buttons.css">
-    <link rel="stylesheet" href="css/mobile-menu.css">
-    <link rel="stylesheet" href="css/copyright.css">
-    <link rel="stylesheet" href="css/animations.css">
-    
 
+    <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/animations.css" />
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6 header-animate">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
+      <div
+        class="container mx-auto flex justify-between items-center px-6 md:px-4"
+      >
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -65,7 +63,7 @@
             </ul>
           </nav>
         </div>
-        
+
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
@@ -77,18 +75,38 @@
             href="login.html"
             id="login-btn"
             class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
+            style="position: relative; overflow: hidden"
+          >
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+                border-radius: 30px;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
-          
+
           <!-- 手機版 CART 按鈕 -->
           <a
             href="rental-list.html"
@@ -96,9 +114,12 @@
             class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
             >(<span id="mobile-cart-count">0</span>) CART</a
           >
-          
+
           <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+          <button
+            class="md:hidden font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-btn"
+          >
             <span class="text-white" id="menu-btn-text">MENU</span>
           </button>
         </div>
@@ -107,69 +128,113 @@
 
     <main class="flex-grow">
       <!-- 桌面版佈局 -->
-      <div class="container mx-auto px-6 md:px-4 h-full overflow-visible hidden md:grid md:grid-cols-3 md:grid-rows-5">
+      <div
+        class="container mx-auto px-6 md:px-4 h-full overflow-visible hidden md:grid md:grid-cols-3 md:grid-rows-5"
+      >
         <!-- 標題 - 第三行第一列，跨越兩列 -->
-        <div class="md:col-start-1 md:col-span-2 md:row-start-3 flex items-center title-container">
+        <div
+          class="md:col-start-1 md:col-span-2 md:row-start-3 flex items-center title-container"
+        >
           <div class="animate-enter overflow-visible">
-            <h1 class="main-title text-6xl font-medium mb-6 animate-enter-content text-left whitespace-nowrap overflow-visible">
+            <h1
+              class="main-title text-6xl font-medium mb-6 animate-enter-content text-left whitespace-nowrap overflow-visible"
+            >
               <span class="title-text">媒傳系專屬租借資源平台</span>
             </h1>
           </div>
         </div>
-        
+
         <!-- 段落和按鈕 - 第四行第三列 -->
         <div class="md:col-start-3 md:row-start-4 flex flex-col items-start">
           <div class="animate-enter">
-            <p class="max-w-xl text-base mb-8 animate-enter-content delay-1 text-left">
+            <p
+              class="max-w-xl text-base mb-8 animate-enter-content delay-1 text-left"
+            >
               歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
             </p>
           </div>
           <div class="animate-enter">
-            <a href="booking.html" class="animate-enter-content delay-2" style="display: inline-block;">
+            <a
+              href="booking.html"
+              class="animate-enter-content delay-2"
+              style="display: inline-block"
+            >
               <button
                 id="start-rental-btn"
                 class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 inline-block cursor-pointer button-animated"
-                style="min-width: 200px; position: relative; overflow: hidden;"
+                style="min-width: 200px; position: relative; overflow: hidden"
               >
-                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                <span style="position: relative; z-index: 2;">開始租借</span>
+                <div
+                  class="button-bg-fill"
+                  style="
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 0;
+                    background-color: white;
+                    z-index: 1;
+                  "
+                ></div>
+                <span style="position: relative; z-index: 2">開始租借</span>
               </button>
             </a>
           </div>
         </div>
       </div>
-      
+
       <!-- 手機版佈局 -->
       <div class="md:hidden mobile-content-layout">
         <div class="animate-enter overflow-visible mb-8">
-          <h1 class="main-title text-3xl sm:text-4xl font-medium animate-enter-content text-center">
+          <h1
+            class="main-title text-3xl sm:text-4xl font-medium animate-enter-content text-center"
+          >
             <span class="title-text">媒傳系專屬租借資源平台</span>
           </h1>
         </div>
-        
+
         <div class="animate-enter mb-8 px-6">
-          <p class="text-sm mb-8 animate-enter-content delay-1 text-center max-w-sm">
+          <p
+            class="text-sm mb-8 animate-enter-content delay-1 text-center max-w-sm"
+          >
             歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
           </p>
         </div>
-        
+
         <div class="animate-enter">
-          <a href="booking.html" class="animate-enter-content delay-2" style="display: inline-block;">
+          <a
+            href="booking.html"
+            class="animate-enter-content delay-2"
+            style="display: inline-block"
+          >
             <button
               id="mobile-start-rental-btn"
               class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-6 sm:px-8 inline-block cursor-pointer button-animated"
-              style="min-width: 160px; position: relative; overflow: hidden;"
+              style="min-width: 160px; position: relative; overflow: hidden"
             >
-              <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-              <span style="position: relative; z-index: 2;">開始租借</span>
+              <div
+                class="button-bg-fill"
+                style="
+                  position: absolute;
+                  bottom: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 0;
+                  background-color: white;
+                  z-index: 1;
+                "
+              ></div>
+              <span style="position: relative; z-index: 2">開始租借</span>
             </button>
           </a>
         </div>
       </div>
     </main>
 
-        <footer class="pt-4 pb-8 fade-in">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+    <footer class="pt-4 pb-8 fade-in">
+      <div
+        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
         <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
@@ -178,8 +243,16 @@
             >TO SCCD
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -189,8 +262,16 @@
             >ABOUT
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -198,8 +279,12 @@
         <div class="copyright text-xs md:text-right">
           <p>
             <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >Copyright © 2025 111</span
+              >屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >All rights reserved.</span
+              >
             </span>
             <span class="copyright-easter-egg" id="easter-egg-text">
               <!-- 彩蛋文字將由JavaScript生成 -->
@@ -211,21 +296,25 @@
 
     <!-- 手機版選單 -->
     <div class="mobile-menu md:hidden" id="mobile-menu">
-      
       <!-- Header區域 -->
       <div class="py-6 px-6">
         <div class="flex justify-between items-center">
           <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+            <div
+              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
+            >
               SCCD
             </div>
           </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+          <button
+            class="font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-close"
+          >
             <span class="text-white">CLOSE</span>
           </button>
         </div>
       </div>
-      
+
       <!-- 選單項目 -->
       <div class="flex-grow px-6">
         <nav>
@@ -254,55 +343,73 @@
           </ul>
         </nav>
       </div>
-      
+
       <!-- Footer區域 -->
-              <div class="pt-4 pb-8 px-6">
-          <div class="flex flex-col text-sm">
-            <div class="flex flex-col space-y-2 mb-2 items-start">
-              <div class="menu-animate-enter">
-                <a
-                  href="https://sccd.usc.edu.tw/"
-                  target="_blank"
-                  class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
-                  >TO SCCD
-                  <div class="arrow-container">
-                    <div class="arrow-icons-wrapper">
-                      <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                      <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    </div>
+      <div class="pt-4 pb-8 px-6">
+        <div class="flex flex-col text-sm">
+          <div class="flex flex-col space-y-2 mb-2 items-start">
+            <div class="menu-animate-enter">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
+                >TO SCCD
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
-                </a>
-              </div>
-              <div class="menu-animate-enter">
-                <a
-                  href="about.html"
-                  class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
-                  >ABOUT
-                  <div class="arrow-container">
-                    <div class="arrow-icons-wrapper">
-                      <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                      <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    </div>
-                  </div>
-                </a>
-              </div>
+                </div>
+              </a>
             </div>
             <div class="menu-animate-enter">
-              <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
-                <p>
-                  <span class="copyright-original">
-                    <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                    <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
-                  </span>
-                </p>
-              </div>
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
+                >ABOUT
+                <div class="arrow-container">
+                  <div class="arrow-icons-wrapper">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div
+              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+            >
+              <p>
+                <span class="copyright-original">
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >All rights reserved.</span
+                  >
+                </span>
+              </p>
             </div>
           </div>
         </div>
+      </div>
     </div>
-
-
-
-    <script src="script.js" defer></script>
   </body>
 </html>

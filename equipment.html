@@ -12,353 +12,30 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css">
-      <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-  <script src="cart-manager.js"></script>
-  <script src="js/common.js"></script>
-  <!-- 新的外部JavaScript文件 -->
-  <script src="js/copyright-easter-egg.js"></script>
-  <script src="js/button-animations.js"></script>
-  <script src="js/ui-animations.js"></script>
-  <script src="js/equipment-filter.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <script src="cart-manager.js"></script>
+    <script src="js/common.js"></script>
+    <!-- 新的外部JavaScript文件 -->
+    <script src="js/copyright-easter-egg.js"></script>
+    <script src="js/button-animations.js"></script>
+    <script src="js/ui-animations.js"></script>
+    <script src="js/equipment-filter.js"></script>
+    <script src="js/equipment.js"></script>
+
     <!-- 引入外部CSS文件 -->
-    <link rel="stylesheet" href="css/common.css">
-    <link rel="stylesheet" href="css/arrows.css">
-    <link rel="stylesheet" href="css/buttons.css">
-    <link rel="stylesheet" href="css/mobile-menu.css">
-    <link rel="stylesheet" href="css/copyright.css">
-    <link rel="stylesheet" href="css/breadcrumb.css">
-    <link rel="stylesheet" href="css/animations.css">
-    
-    <style>
-      
-
-      
-      /* 設備卡片進場動畫 - 只在桌面版 */
-      @media (min-width: 768px) {
-        .equipment-card {
-          opacity: 0;
-          transform: translateY(50px);
-          transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-        
-        .equipment-card.animate-in {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        
-
-        
-        /* 篩選器hover邏輯 */
-        .filter-group:hover .filter-button {
-          opacity: 0.3;
-        }
-        
-        .filter-group:hover .filter-button:hover {
-          opacity: 1 !important;
-        }
-        
-        .filter-group:hover .filter-button.filter-active {
-          opacity: 1;
-        }
-      }
-      
-      /* 移除設備卡片點擊時的白框 */
-      .equipment-card a:focus,
-      .equipment-card a:active {
-        outline: none !important;
-        border: none !important;
-      }
-      
-      /* 提示訊息樣式 */
-      .toast {
-        position: fixed;
-        bottom: 7.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: white;
-        color: black;
-        padding: 1rem 5rem;
-        z-index: 50;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.3s ease-out;
-      }
-      
-      .toast p {
-        font-size: 1rem;
-        font-family: 'Noto Sans TC', sans-serif;
-        line-height: 1.625;
-        text-align: center;
-        margin: 0;
-      }
-      
-      /* 手機版選單樣式 */
-      .mobile-menu {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background-color: #000000 !important;
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s ease, visibility 0.5s ease;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .mobile-menu.active {
-        opacity: 1;
-        visibility: visible;
-        background-color: #000000 !important;
-      }
-      
-      /* 手機版選單動畫 */
-      .menu-animate-enter {
-        overflow: hidden;
-      }
-      
-      .menu-animate-enter-content {
-        transform: translateY(150%);
-        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-      }
-      
-      @keyframes menuSlideUp {
-        to {
-          transform: translateY(0);
-        }
-      }
-      
-      /* 選單項目動畫延遲 */
-      .menu-animate-enter-content.menu-delay-1 {
-        animation-delay: 0.1s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-2 {
-        animation-delay: 0.2s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-3 {
-        animation-delay: 0.3s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-4 {
-        animation-delay: 0.4s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-5 {
-        animation-delay: 0.5s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-6 {
-        animation-delay: 0.6s;
-      }
-      
-      /* 按鈕動畫樣式 */
-      .button-animated {
-        transition: color 0.5s ease;
-      }
-      
-      .button-animated.white-text {
-        color: black;
-      }
-      
-      /* 手機版搜尋列樣式 */
-      .mobile-search-container {
-        transition: opacity 0.3s ease;
-        position: sticky;
-        top: 0;
-        background-color: black;
-        z-index: 20;
-        padding: 1rem 0;
-      }
-      
-      .mobile-search-container.fade-out {
-        opacity: 0;
-      }
-      
-      /* Bottom Sheet 樣式 */
-      .bottom-sheet-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.6);
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-      }
-      
-      .bottom-sheet-overlay.active {
-        opacity: 1;
-        visibility: visible;
-      }
-      
-      .bottom-sheet {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background-color: black;
-        color: white;
-        border-radius: 16px 16px 0 0;
-        z-index: 1000;
-        transform: translateY(100%);
-        transition: transform 0.3s ease;
-        max-height: 80vh;
-        overflow: hidden;
-        touch-action: pan-y;
-      }
-      
-      .bottom-sheet.active {
-        transform: translateY(0);
-      }
-      
-      .bottom-sheet-handle {
-        width: 40px;
-        height: 1px;
-        background-color: white;
-        margin: 12px auto;
-        cursor: grab;
-      }
-      
-      .bottom-sheet-content {
-        padding: 0 1.5rem 2rem;
-        max-height: calc(80vh - 40px);
-        overflow-y: auto;
-      }
-      
-      .filter-section-divider {
-        height: 1px;
-        background-color: white;
-        margin: 1rem 0;
-      }
-      
-      /* 響應式佈局 */
-      @media (max-width: 767px) {
-        /* 防止水平滾動 */
-        * {
-          max-width: 100vw;
-        }
-        
-        /* 手機版隱藏桌面導航 */
-        .desktop-nav {
-          display: none;
-        }
-        
-        /* 確保手機版完全隱藏 LOGIN 按鈕 */
-        #login-btn {
-          display: none !important;
-        }
-        
-        /* 手機版設備卡片佈局 */
-        .mobile-equipment-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.5rem;
-          padding: 0 1.5rem 1rem;
-        }
-        
-        .mobile-equipment-card {
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .mobile-equipment-card .equipment-image {
-          aspect-ratio: 4/5;
-          overflow: hidden;
-          margin-bottom: 0.75rem;
-        }
-        
-        .mobile-equipment-card .equipment-info {
-          text-align: left;
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        }
-        
-        .mobile-equipment-card .equipment-details {
-          flex-grow: 1;
-        }
-        
-        .mobile-equipment-card .equipment-category {
-          font-size: 0.75rem;
-          color: #cccccc;
-          margin-bottom: 0.25rem;
-        }
-        
-        .mobile-equipment-card .equipment-name {
-          font-size: 0.875rem;
-          color: white;
-          font-weight: 500;
-        }
-        
-        .mobile-equipment-card .equipment-bookmark {
-          margin-left: 0.5rem;
-          flex-shrink: 0;
-        }
-        
-        /* Footer 在手機版的調整 */
-        footer .container {
-          max-width: 100vw;
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .container > div:first-child {
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .copyright {
-          text-align: left !important;
-        }
-        
-        /* 容器最大寬度限制 */
-        .container {
-          max-width: 100vw;
-          overflow-x: hidden;
-        }
-        
-        /* 手機版 Toast 樣式 */
-        .toast {
-          bottom: 5vh !important;
-          left: 3% !important;
-          right: 3% !important;
-          width: auto !important;
-          max-width: none !important;
-          transform: none !important;
-          padding: 0.75rem 1rem !important;
-        }
-        
-        .toast p {
-          font-size: 0.875rem !important;
-          line-height: 1.25 !important;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-        }
-      }
-      
-      /* 確保大於768px時隱藏手機版選單 */
-      @media (min-width: 768px) {
-        .mobile-menu { 
-          display: none !important; 
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/breadcrumb.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/equipment.css" />
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
+      <div
+        class="container mx-auto flex justify-between items-center px-6 md:px-4"
+      >
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -386,7 +63,7 @@
             </ul>
           </nav>
         </div>
-        
+
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
@@ -398,18 +75,38 @@
             href="login.html"
             id="login-btn"
             class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
+            style="position: relative; overflow: hidden"
+          >
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+                border-radius: 30px;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
-          
+
           <!-- 手機版 CART 按鈕 -->
           <a
             href="rental-list.html"
@@ -417,16 +114,21 @@
             class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
             >(<span id="mobile-cart-count">0</span>) CART</a
           >
-          
+
           <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+          <button
+            class="md:hidden font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-btn"
+          >
             <span class="text-white" id="menu-btn-text">MENU</span>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh] md:pt-[3vh] md:pb-[3vh]">
+    <main
+      class="flex-grow flex flex-col pt-[3vh] pb-[3vh] md:pt-[3vh] md:pb-[3vh]"
+    >
       <!-- Breadcrumb - 只在桌面版顯示 -->
       <nav class="breadcrumb hidden md:block">
         <a href="index.html" class="breadcrumb-item">首頁</a>
@@ -437,7 +139,7 @@
         <span class="breadcrumb-separator">/</span>
         <span class="breadcrumb-item">租借設備</span>
       </nav>
-      
+
       <!-- 桌面版佈局 -->
       <div class="w-full hidden md:flex px-[6%] flex-grow flex-col">
         <!-- 頁面標題 -->
@@ -453,13 +155,55 @@
         <div class="flex justify-between items-center mb-14">
           <!-- 左邊：篩選區塊 -->
           <div class="flex space-x-8 filter-group">
-            <button id="filter-all" class="text-base font-['Inter',_sans-serif] text-white transition-all font-bold cursor-pointer filter-active filter-button" data-category="all">查看全部</button>
-            <button id="filter-cables" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="線材">線材</button>
-            <button id="filter-lights" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="燈具">燈具</button>
-            <button id="filter-tables" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="展桌/畫板">展桌/畫板</button>
-            <button id="filter-av" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="視聽類">視聽類</button>
-            <button id="filter-tools" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="工具">工具</button>
-            <button id="filter-machines" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="機具">機具</button>
+            <button
+              id="filter-all"
+              class="text-base font-['Inter',_sans-serif] text-white transition-all font-bold cursor-pointer filter-active filter-button"
+              data-category="all"
+            >
+              查看全部
+            </button>
+            <button
+              id="filter-cables"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button"
+              data-category="線材"
+            >
+              線材
+            </button>
+            <button
+              id="filter-lights"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button"
+              data-category="燈具"
+            >
+              燈具
+            </button>
+            <button
+              id="filter-tables"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button"
+              data-category="展桌/畫板"
+            >
+              展桌/畫板
+            </button>
+            <button
+              id="filter-av"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button"
+              data-category="視聽類"
+            >
+              視聽類
+            </button>
+            <button
+              id="filter-tools"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button"
+              data-category="工具"
+            >
+              工具
+            </button>
+            <button
+              id="filter-machines"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button"
+              data-category="機具"
+            >
+              機具
+            </button>
           </div>
 
           <!-- 右邊：搜索和狀態篩選 -->
@@ -467,25 +211,37 @@
             <!-- 搜索區塊 -->
             <div class="flex flex-col relative">
               <div class="relative">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="searchInput"
-                  class="bg-transparent border-b border-white text-white placeholder-transparent focus:outline-none focus:border-gray-300 pb-1 pl-0 transition-all duration-200" 
+                  class="bg-transparent border-b border-white text-white placeholder-transparent focus:outline-none focus:border-gray-300 pb-1 pl-0 transition-all duration-200"
                   placeholder=""
-                >
-                <span 
+                  autocomplete="off"
+                />
+                <span
                   id="searchLabel"
                   class="absolute left-0 top-0 text-base font-['Inter',_sans-serif] font-medium uppercase tracking-wide pointer-events-none transition-all duration-200"
-                >SEARCH</span>
+                  >SEARCH</span
+                >
               </div>
             </div>
 
             <!-- 狀態切換 chip -->
             <div class="flex space-x-4">
-              <button id="status-available" class="bg-white text-black text-sm font-['Inter',_sans-serif] rounded-[30px] transition-colors cursor-pointer" style="padding: 2px 8px;" data-status="有現貨">
+              <button
+                id="status-available"
+                class="bg-white text-black text-sm font-['Inter',_sans-serif] rounded-[30px] transition-colors cursor-pointer"
+                style="padding: 2px 8px"
+                data-status="有現貨"
+              >
                 有現貨
               </button>
-              <button id="status-unavailable" class="border border-white text-white text-sm font-['Inter',_sans-serif] rounded-[30px] transition-colors hover:bg-white cursor-pointer hover:text-black" style="padding: 2px 8px;" data-status="已借出">
+              <button
+                id="status-unavailable"
+                class="border border-white text-white text-sm font-['Inter',_sans-serif] rounded-[30px] transition-colors hover:bg-white cursor-pointer hover:text-black"
+                style="padding: 2px 8px"
+                data-status="已借出"
+              >
                 已借出
               </button>
             </div>
@@ -496,360 +252,751 @@
         <div class="flex-grow overflow-y-auto">
           <div class="grid grid-cols-4 gap-16 pb-16" id="equipment-grid">
             <!-- 第一行產品卡片 -->
-            <div class="flex flex-col equipment-card" data-row="1" data-category="燈具" data-status="有現貨">
-              <a href="equipment-detail.html?id=speaker-clamp-light" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="1"
+              data-category="燈具"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=speaker-clamp-light"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <!-- 背景圖片 -->
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <!-- 右上角狀態標籤 -->
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">燈具</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">黑色喇叭夾燈</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    燈具
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    黑色喇叭夾燈
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="黑色喇叭夾燈">
-                </div>
-              </div>
-            </div>
-            
-            <div class="flex flex-col equipment-card" data-row="1" data-category="線材" data-status="有現貨">
-              <a href="equipment-detail.html?id=extension-cord" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
-                <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
-                </div>
-                
-                <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
-                <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
-                </div>
-              </a>
-              
-              <!-- 底部產品資訊（在框框外面） -->
-              <div class="flex justify-between items-start mt-5">
-                <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">線材</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">專業延長線</div>
-                </div>
-                <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="專業延長線">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="黑色喇叭夾燈"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="1" data-category="燈具" data-status="有現貨">
-              <a href="equipment-detail.html?id=led-light" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="1"
+              data-category="線材"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=extension-cord"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">燈具</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">LED補光燈</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    線材
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    專業延長線
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="LED補光燈">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="專業延長線"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="1" data-category="展桌/畫板" data-status="有現貨">
-              <a href="equipment-detail.html?id=folding-table" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="1"
+              data-category="燈具"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=led-light"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">展桌/畫板</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">折疊展示桌</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    燈具
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    LED補光燈
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="折疊展示桌">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="LED補光燈"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="flex flex-col equipment-card"
+              data-row="1"
+              data-category="展桌/畫板"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=folding-table"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
+                <div class="absolute inset-0">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
+
+                <!-- 頂部黑色到透明漸層 -->
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
+                <div class="absolute top-5 right-6 z-10">
+                  <span
+                    class="text-base font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
+                </div>
+              </a>
+
+              <!-- 底部產品資訊（在框框外面） -->
+              <div class="flex justify-between items-start mt-5">
+                <div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    展桌/畫板
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    折疊展示桌
+                  </div>
+                </div>
+                <div class="ml-2">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="折疊展示桌"
+                  />
                 </div>
               </div>
             </div>
 
             <!-- 第二行產品卡片 -->
-            <div class="flex flex-col equipment-card" data-row="2" data-category="視聽類" data-status="已借出">
-              <a href="equipment-detail.html?id=projector" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="2"
+              data-category="視聽類"
+              data-status="已借出"
+            >
+              <a
+                href="equipment-detail.html?id=projector"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #ff448a;">已借出</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #ff448a"
+                    >已借出</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">視聽類</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">便攜式投影機</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    視聽類
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    便攜式投影機
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="便攜式投影機">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="便攜式投影機"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="2" data-category="工具" data-status="有現貨">
-              <a href="equipment-detail.html?id=electric-screwdriver" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="2"
+              data-category="工具"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=electric-screwdriver"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">工具</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">電動螺絲起子</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    工具
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    電動螺絲起子
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="電動螺絲起子">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="電動螺絲起子"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="2" data-category="機具" data-status="有現貨">
-              <a href="equipment-detail.html?id=heat-gun" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="2"
+              data-category="機具"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=heat-gun"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">機具</div>
-                  <div class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">熱風槍</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    機具
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    熱風槍
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="熱風槍">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="熱風槍"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="2" data-category="線材" data-status="有現貨">
-              <a href="equipment-detail.html?id=hdmi-cable" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="2"
+              data-category="線材"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=hdmi-cable"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">線材</div>
-                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">HDMI傳輸線</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    線材
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    HDMI傳輸線
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="HDMI傳輸線">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="HDMI傳輸線"
+                  />
                 </div>
               </div>
             </div>
 
             <!-- 第三行產品卡片 -->
-            <div class="flex flex-col equipment-card" data-row="3" data-category="燈具" data-status="有現貨">
-              <a href="equipment-detail.html?id=ring-light" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="3"
+              data-category="燈具"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=ring-light"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-base font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">燈具</div>
-                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">環形補光燈</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    燈具
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    環形補光燈
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="環形補光燈">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="環形補光燈"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="3" data-category="展桌/畫板" data-status="已借出">
-              <a href="equipment-detail.html?id=professional-easel" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="3"
+              data-category="展桌/畫板"
+              data-status="已借出"
+            >
+              <a
+                href="equipment-detail.html?id=professional-easel"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #ff448a;">已借出</span>
+                  <span
+                    class="text-base font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #ff448a"
+                    >已借出</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">展桌/畫板</div>
-                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">專業畫板</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    展桌/畫板
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    專業畫板
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="專業畫板">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="專業畫板"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="3" data-category="視聽類" data-status="有現貨">
-              <a href="equipment-detail.html?id=wireless-microphone" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="3"
+              data-category="視聽類"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=wireless-microphone"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-base font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">視聽類</div>
-                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">無線麥克風</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    視聽類
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    無線麥克風
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="無線麥克風">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="無線麥克風"
+                  />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col equipment-card" data-row="3" data-category="工具" data-status="有現貨">
-              <a href="equipment-detail.html?id=utility-knife-set" class="relative overflow-hidden group cursor-pointer aspect-[4/5]">
+            <div
+              class="flex flex-col equipment-card"
+              data-row="3"
+              data-category="工具"
+              data-status="有現貨"
+            >
+              <a
+                href="equipment-detail.html?id=utility-knife-set"
+                class="relative overflow-hidden group cursor-pointer aspect-[4/5]"
+              >
                 <div class="absolute inset-0">
-                  <img src="Images/Extension Cord.jpg" alt="Equipment" class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110">
+                  <img
+                    src="Images/Extension Cord.jpg"
+                    alt="Equipment"
+                    class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
-                
+
                 <!-- 頂部黑色到透明漸層 -->
-                <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
-                
+                <div
+                  class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"
+                ></div>
+
                 <div class="absolute top-5 right-6 z-10">
-                  <span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">有現貨</span>
+                  <span
+                    class="text-base font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #00ff80"
+                    >有現貨</span
+                  >
                 </div>
               </a>
-              
+
               <!-- 底部產品資訊（在框框外面） -->
               <div class="flex justify-between items-start mt-5">
                 <div>
-                  <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc;">工具</div>
-                  <div class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1">美工刀組</div>
+                  <div
+                    class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                    style="color: #cccccc"
+                  >
+                    工具
+                  </div>
+                  <div
+                    class="text-lg font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                  >
+                    美工刀組
+                  </div>
                 </div>
                 <div class="ml-2">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="美工刀組">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="美工刀組"
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- 手機版佈局 -->
       <div class="w-full md:hidden flex flex-col flex-grow">
         <!-- 標題區域 -->
         <div class="px-6 mb-4">
-          <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium text-left">
+          <h1
+            class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium text-left"
+          >
             租借設備
           </h1>
         </div>
-        
+
         <!-- 搜尋列 -->
         <div class="mobile-search-container px-6" id="mobile-search">
           <div class="flex items-center justify-between px-6">
             <!-- 搜索區塊 -->
             <div class="flex flex-col relative flex-grow mr-4">
               <div class="relative">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="mobileSearchInput"
-                  class="bg-transparent border-b border-white text-white placeholder-transparent focus:outline-none focus:border-gray-300 pb-1 pl-0 transition-all duration-200 w-full" 
+                  class="bg-transparent border-b border-white text-white placeholder-transparent focus:outline-none focus:border-gray-300 pb-1 pl-0 transition-all duration-200 w-full"
                   placeholder=""
-                >
-                <span 
+                  autocomplete="off"
+                />
+                <span
                   id="mobileSearchLabel"
                   class="absolute left-0 top-0 text-sm font-['Inter',_sans-serif] font-normal uppercase tracking-wide pointer-events-none transition-all duration-200"
-                >SEARCH</span>
+                  >SEARCH</span
+                >
               </div>
             </div>
 
             <!-- 篩選器按鈕 -->
-            <button id="mobile-filters-btn" class="text-sm font-['Inter',_sans-serif] font-normal uppercase tracking-wide text-white">
+            <button
+              id="mobile-filters-btn"
+              class="text-sm font-['Inter',_sans-serif] font-normal uppercase tracking-wide text-white"
+            >
               FILTERS
             </button>
           </div>
         </div>
-        
+
         <!-- 手機版設備列表 -->
         <div class="flex-grow overflow-y-auto">
           <div class="mobile-equipment-grid" id="mobile-equipment-grid">
@@ -860,7 +1007,9 @@
     </main>
 
     <footer class="pt-4 pb-8">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+      <div
+        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
         <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
@@ -869,8 +1018,16 @@
             >TO SCCD
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -880,8 +1037,16 @@
             >ABOUT
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -889,8 +1054,12 @@
         <div class="copyright text-xs md:text-right">
           <p>
             <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >Copyright © 2025 111</span
+              >屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >All rights reserved.</span
+              >
             </span>
             <span class="copyright-easter-egg" id="easter-egg-text">
               <!-- 彩蛋文字將由JavaScript生成 -->
@@ -906,16 +1075,21 @@
       <div class="py-6 px-6">
         <div class="flex justify-between items-center">
           <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+            <div
+              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
+            >
               SCCD
             </div>
           </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+          <button
+            class="font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-close"
+          >
             <span class="text-white">CLOSE</span>
           </button>
         </div>
       </div>
-      
+
       <!-- 選單項目 -->
       <div class="flex-grow px-6">
         <nav>
@@ -944,7 +1118,7 @@
           </ul>
         </nav>
       </div>
-      
+
       <!-- Footer區域 -->
       <div class="pt-4 pb-8 px-6">
         <div class="flex flex-col text-sm">
@@ -957,8 +1131,16 @@
                 >TO SCCD
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
@@ -970,19 +1152,33 @@
                 >ABOUT
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+            <div
+              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+            >
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >All rights reserved.</span
+                  >
                 </span>
               </p>
             </div>
@@ -993,777 +1189,104 @@
 
     <!-- Bottom Sheet Overlay -->
     <div class="bottom-sheet-overlay" id="filters-overlay"></div>
-    
+
     <!-- Bottom Sheet 篩選器 -->
     <div class="bottom-sheet" id="filters-bottom-sheet">
       <div class="bottom-sheet-handle" id="bottom-sheet-handle"></div>
       <div class="bottom-sheet-content">
         <!-- 清除選項 -->
         <div class="mb-6">
-          <button id="clear-filters-btn" class="text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white text-left">
+          <button
+            id="clear-filters-btn"
+            class="text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white text-left"
+          >
             清除選項
           </button>
         </div>
-        
+
         <!-- 設備種類篩選 -->
         <div class="mb-6">
-          <h4 class="text-sm font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white">設備種類</h4>
+          <h4
+            class="text-sm font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white"
+          >
+            設備種類
+          </h4>
           <div class="grid grid-cols-2 gap-3">
-            <button class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-category="線材">線材</button>
-            <button class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-category="燈具">燈具</button>
-            <button class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-category="展桌/畫板">展桌/畫板</button>
-            <button class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-category="視聽類">視聽類</button>
-            <button class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-category="工具">工具</button>
-            <button class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-category="機具">機具</button>
+            <button
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-category="線材"
+            >
+              線材
+            </button>
+            <button
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-category="燈具"
+            >
+              燈具
+            </button>
+            <button
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-category="展桌/畫板"
+            >
+              展桌/畫板
+            </button>
+            <button
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-category="視聽類"
+            >
+              視聽類
+            </button>
+            <button
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-category="工具"
+            >
+              工具
+            </button>
+            <button
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-category="機具"
+            >
+              機具
+            </button>
           </div>
         </div>
 
-        
         <!-- 租借狀態篩選 -->
         <div class="mb-8">
-          <h4 class="text-sm font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white">租借狀態</h4>
+          <h4
+            class="text-sm font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white"
+          >
+            租借狀態
+          </h4>
           <div class="flex space-x-4">
-            <button id="mobile-status-available" class="text-sm font-['Noto_Sans_TC',_sans-serif] font-bold text-white" data-status="有現貨">
+            <button
+              id="mobile-status-available"
+              class="text-sm font-['Noto_Sans_TC',_sans-serif] font-bold text-white"
+              data-status="有現貨"
+            >
               有現貨
             </button>
-            <button id="mobile-status-unavailable" class="text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white" data-status="已借出">
+            <button
+              id="mobile-status-unavailable"
+              class="text-sm font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+              data-status="已借出"
+            >
               已借出
             </button>
           </div>
         </div>
-        
+
         <!-- 查看按鈕 -->
         <div class="flex justify-center">
-          <button id="apply-filters-btn" class="bg-transparent border border-white text-white py-3 text-sm font-['Inter',_sans-serif] font-normal" style="width: 200px;">
+          <button
+            id="apply-filters-btn"
+            class="bg-transparent border border-white text-white py-3 text-sm font-['Inter',_sans-serif] font-normal"
+            style="width: 200px"
+          >
             查看
           </button>
         </div>
       </div>
     </div>
-
-    <script src="script.js" defer></script>
-    <script>
-      // 手機版選單功能
-      document.addEventListener('DOMContentLoaded', function() {
-        // 初始化 CART 數量
-        if (typeof updateCartDisplay === 'function') {
-          updateCartDisplay();
-        }
-        
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuClose = document.getElementById('mobile-menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
-        
-        function openMenu() {
-          if (mobileMenu) {
-            mobileMenu.classList.add('active');
-            body.style.overflow = 'hidden'; // 防止背景滾動
-            
-            // 觸發選單動畫
-            triggerMenuAnimation();
-          }
-        }
-        
-        function triggerMenuAnimation() {
-          // 獲取所有動畫元素
-          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
-          
-          // 重置動畫
-          animatedElements.forEach(element => {
-            element.style.animation = 'none';
-            element.offsetHeight; // 強制重排
-            element.style.animation = null;
-          });
-        }
-        
-        function closeMenu() {
-          if (mobileMenu) {
-            mobileMenu.classList.remove('active');
-            body.style.overflow = ''; // 恢復滾動
-          }
-        }
-        
-        // 打開選單
-        if (mobileMenuBtn) {
-          mobileMenuBtn.addEventListener('click', openMenu);
-        }
-        
-        // 關閉選單
-        if (mobileMenuClose) {
-          mobileMenuClose.addEventListener('click', closeMenu);
-        }
-        
-        // 點擊選單項目時關閉選單
-        const mobileMenuLinks = mobileMenu ? mobileMenu.querySelectorAll('nav a') : [];
-        mobileMenuLinks.forEach(link => {
-          link.addEventListener('click', closeMenu);
-        });
-        
-        // 點擊背景關閉選單
-        if (mobileMenu) {
-          mobileMenu.addEventListener('click', function(event) {
-            if (event.target === mobileMenu) {
-              closeMenu();
-            }
-          });
-        }
-      });
-      
-      // 手機版搜尋列滾動效果
-      document.addEventListener('DOMContentLoaded', function() {
-        if (window.innerWidth <= 767) {
-          const mobileSearch = document.getElementById('mobile-search');
-          let lastScrollTop = 0;
-          
-          if (mobileSearch) {
-            window.addEventListener('scroll', function() {
-              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-              
-              if (scrollTop > lastScrollTop && scrollTop > 100) {
-                // 向下滾動 - fade out
-                mobileSearch.classList.add('fade-out');
-              } else {
-                // 向上滾動 - fade in
-                mobileSearch.classList.remove('fade-out');
-              }
-              
-              lastScrollTop = scrollTop;
-            });
-          }
-        }
-      });
-      
-      // 手機版篩選器 Bottom Sheet
-      document.addEventListener('DOMContentLoaded', function() {
-        // 僅在手機版執行
-        if (window.innerWidth > 767) {
-            return;
-        }
-    
-        const filtersBtn = document.getElementById('mobile-filters-btn');
-        const bottomSheet = document.getElementById('filters-bottom-sheet');
-        const overlay = document.getElementById('filters-overlay');
-        const applyBtn = document.getElementById('apply-filters-btn');
-        const clearBtn = document.getElementById('clear-filters-btn');
-        const categoryButtons = document.querySelectorAll('.mobile-filter-category');
-        const statusButtons = document.querySelectorAll('#mobile-status-available, #mobile-status-unavailable');
-        const handle = document.getElementById('bottom-sheet-handle');
-    
-        if (!filtersBtn || !bottomSheet || !overlay || !applyBtn || !handle) return;
-    
-        let selectedCategories = [];
-        let selectedStatus = '有現貨';
-    
-        // 從 DOM 更新篩選狀態
-        function updateStateFromDOM() {
-            selectedCategories = Array.from(categoryButtons)
-                .filter(btn => btn.classList.contains('font-bold'))
-                .map(btn => btn.dataset.category);
-            
-            const activeStatusBtn = Array.from(statusButtons).find(btn => btn.classList.contains('font-bold'));
-            if (activeStatusBtn) {
-                selectedStatus = activeStatusBtn.dataset.status;
-            }
-        }
-    
-        // 開啟與關閉 Bottom Sheet
-        function openBottomSheet() {
-            bottomSheet.classList.add('active');
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    
-        function closeBottomSheet() {
-            bottomSheet.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-            // 清除內聯 transform 樣式，讓 CSS 過渡效果生效
-            bottomSheet.style.transform = '';
-        }
-    
-        filtersBtn.addEventListener('click', openBottomSheet);
-        overlay.addEventListener('click', closeBottomSheet);
-        
-        applyBtn.addEventListener('click', () => {
-            updateStateFromDOM();
-            applyMobileFilters(selectedCategories, selectedStatus);
-            closeBottomSheet();
-        });
-    
-        // 篩選器按鈕邏輯
-        categoryButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const isSelected = this.classList.contains('font-bold');
-                this.classList.toggle('font-bold', !isSelected);
-                this.classList.toggle('font-normal', isSelected);
-            });
-        });
-    
-        statusButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                if (this.classList.contains('font-bold')) return;
-                statusButtons.forEach(btn => {
-                    btn.classList.remove('font-bold');
-                    btn.classList.add('font-normal');
-                });
-                this.classList.add('font-bold');
-                this.classList.remove('font-normal');
-            });
-        });
-        
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                categoryButtons.forEach(btn => {
-                    btn.classList.remove('font-bold');
-                    btn.classList.add('font-normal');
-                });
-                statusButtons.forEach(btn => {
-                    const isAvailable = btn.dataset.status === '有現貨';
-                    btn.classList.toggle('font-bold', isAvailable);
-                    btn.classList.toggle('font-normal', !isAvailable);
-                });
-            });
-        }
-    
-        // 拖曳功能
-        let isDragging = false;
-        let startY = 0;
-        let currentTranslateY = 0;
-    
-        const dragStart = (e) => {
-            isDragging = true;
-            startY = e.touches ? e.touches[0].clientY : e.clientY;
-            bottomSheet.style.transition = 'none'; // 拖曳時禁用過渡
-        };
-    
-        const dragMove = (e) => {
-            if (!isDragging) return;
-            const currentY = e.touches ? e.touches[0].clientY : e.clientY;
-            const deltaY = currentY - startY;
-            currentTranslateY = Math.max(0, deltaY); // 只允許向下拉
-            bottomSheet.style.transform = `translateY(${currentTranslateY}px)`;
-        };
-    
-        const dragEnd = () => {
-            if (!isDragging) return;
-            isDragging = false;
-            bottomSheet.style.transition = ''; // 重新啟用過渡
-            const sheetHeight = bottomSheet.offsetHeight;
-            if (currentTranslateY > sheetHeight * 0.3) {
-                closeBottomSheet(); // 如果拖曳超過30%則關閉
-            } else {
-                bottomSheet.style.transform = ''; // 否則彈回原位
-            }
-            currentTranslateY = 0;
-        };
-        
-        if (handle) {
-            handle.addEventListener('touchstart', dragStart, { passive: true });
-            handle.addEventListener('touchmove', dragMove, { passive: true });
-            handle.addEventListener('touchend', dragEnd);
-        }
-      });
-      
-      // 生成手機版設備卡片
-      function generateMobileEquipmentCards() {
-        const desktopCards = document.querySelectorAll('.equipment-card');
-        const mobileGrid = document.getElementById('mobile-equipment-grid');
-        
-        if (mobileGrid) {
-          mobileGrid.innerHTML = '';
-          
-          desktopCards.forEach(card => {
-            const category = card.getAttribute('data-category');
-            const status = card.getAttribute('data-status');
-            const link = card.querySelector('a');
-            const categoryElement = card.querySelector('.mt-5 .text-sm'); // Corrected selector
-            const nameElement = card.querySelector('.text-lg, .text-xl');
-            const imageElement = card.querySelector('a img');
-            
-            // Skip card if essential elements are missing to prevent errors
-            if (!link || !categoryElement || !nameElement || !imageElement) {
-              console.warn('Skipping a malformed equipment card during mobile generation.', card);
-              return;
-            }
-
-            const categoryText = categoryElement.textContent;
-            const nameText = nameElement.textContent;
-            const imgSrc = imageElement.src;
-            
-            const mobileCard = document.createElement('div');
-            mobileCard.className = 'mobile-equipment-card';
-            mobileCard.setAttribute('data-category', category);
-            mobileCard.setAttribute('data-status', status);
-            
-            mobileCard.innerHTML = `
-              <a href="${link.href}" class="equipment-image">
-                <img src="${imgSrc}" alt="Equipment" class="w-full h-full object-cover">
-              </a>
-              <div class="equipment-info">
-                <div class="equipment-details">
-                  <div class="equipment-category">${categoryText}</div>
-                  <div class="equipment-name">${nameText}</div>
-                </div>
-                <div class="equipment-bookmark">
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="${nameText}">
-                </div>
-              </div>
-            `;
-            
-            mobileGrid.appendChild(mobileCard);
-          });
-        }
-      }
-      
-      // 應用手機版篩選器
-      function applyMobileFilters(categories, status) {
-        const mobileCards = document.querySelectorAll('.mobile-equipment-card');
-        
-        mobileCards.forEach(card => {
-          const cardCategory = card.getAttribute('data-category');
-          const cardStatus = card.getAttribute('data-status');
-          
-          const categoryMatch = categories.length === 0 || categories.includes(cardCategory);
-          const statusMatch = cardStatus === status;
-          
-          if (categoryMatch && statusMatch) {
-            card.style.display = 'flex';
-          } else {
-            card.style.display = 'none';
-          }
-        });
-        
-        // 重新初始化收藏夾功能 - 已移除，改用事件委派
-        // initializeMobileBookmarks(); 
-      }
-      
-      // 手機版搜尋欄互動效果
-      document.addEventListener('DOMContentLoaded', function() {
-        const mobileSearchInput = document.getElementById('mobileSearchInput');
-        const mobileSearchLabel = document.getElementById('mobileSearchLabel');
-        
-        if (mobileSearchInput && mobileSearchLabel) {
-          // 當hover或focus時顯示cursor，label變灰並右移
-          function showCursor() {
-            mobileSearchLabel.style.color = '#d4d4d8'; // text-zinc-300
-            mobileSearchLabel.style.transform = 'translateX(8px)';
-          }
-          
-          // 當離開且沒有輸入時恢復原狀
-          function hideCursor() {
-            if (mobileSearchInput.value === '') {
-              mobileSearchLabel.style.color = '#ffffff';
-              mobileSearchLabel.style.transform = 'translateX(0)';
-            }
-          }
-          
-          // 當有輸入時隱藏label
-          function toggleLabel() {
-            if (mobileSearchInput.value !== '') {
-              mobileSearchLabel.style.display = 'none';
-            } else {
-              mobileSearchLabel.style.display = 'block';
-            }
-          }
-          
-          // 事件監聽器
-          mobileSearchInput.addEventListener('focus', showCursor);
-          mobileSearchInput.addEventListener('blur', hideCursor);
-          mobileSearchInput.addEventListener('input', toggleLabel);
-        }
-      });
-      
-      // 初始化手機版
-      document.addEventListener('DOMContentLoaded', function() {
-        if (window.innerWidth <= 767) {
-          generateMobileEquipmentCards();
-          // 預設顯示有現貨的項目
-          applyMobileFilters([], '有現貨');
-          
-          // 添加收藏夾功能到手機版卡片 - 已移除，改用事件委派
-          // initializeMobileBookmarks();
-        }
-      });
-      
-      // 初始化手機版收藏夾功能 - 已棄用
-      /* function initializeMobileBookmarks() { ... } */
-      
-      // Copyright 彩蛋效果 - 打字機風格 (只在桌面版)
-      document.addEventListener('DOMContentLoaded', function() {
-        const copyrightElement = document.querySelector('.copyright');
-        const originalElement = document.querySelector('.copyright-original');
-        const easterEggElement = document.getElementById('easter-egg-text');
-        
-        if (copyrightElement && originalElement && easterEggElement && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const originalText = originalElement.textContent;
-          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
-          const maxLength = Math.min(originalText.length, targetText.length);
-          const truncatedTarget = targetText.substring(0, maxLength);
-          
-          let isHovering = false;
-          let animationInterval = null;
-          let currentStep = 0;
-          let isAnimatingIn = false;
-          let isAnimatingOut = false;
-          
-          // 隨機字符池
-          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
-          
-          function getRandomChar() {
-            return randomChars[Math.floor(Math.random() * randomChars.length)];
-          }
-          
-          function generateRandomString(length) {
-            let result = '';
-            for (let i = 0; i < length; i++) {
-              result += getRandomChar();
-            }
-            return result;
-          }
-          
-          function animateToTarget() {
-            if (isAnimatingOut) return;
-            isAnimatingIn = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
-            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
-            
-            easterEggElement.textContent = generateRandomString(maxLength);
-            easterEggElement.style.opacity = '1';
-            originalElement.style.opacity = '0';
-            
-            animationInterval = setInterval(() => {
-              if (!isHovering || isAnimatingOut) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                return;
-              }
-              
-              currentStep++;
-              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
-              
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (i < revealedChars) {
-                  displayText += truncatedTarget[i] || ' ';
-                } else {
-                  displayText += getRandomChar();
-                }
-              }
-              
-              easterEggElement.textContent = displayText;
-              
-              if (revealedChars >= maxLength) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                easterEggElement.textContent = truncatedTarget;
-              }
-            }, 50);
-          }
-          
-          function animateToOriginal() {
-            // 立即停止任何正在進行的動畫
-            if (animationInterval) {
-              clearInterval(animationInterval);
-            }
-            
-            isAnimatingIn = false;
-            isAnimatingOut = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
-            
-            animationInterval = setInterval(() => {
-              currentStep++;
-              const progress = currentStep / totalSteps;
-              
-              if (progress >= 1) {
-                clearInterval(animationInterval);
-                easterEggElement.style.opacity = '0';
-                originalElement.style.opacity = '1';
-                isAnimatingOut = false;
-                animationInterval = null;
-                return;
-              }
-              
-              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
-                  displayText += getRandomChar();
-                } else {
-                  // 保持當前字符或目標字符
-                  const currentChar = easterEggElement.textContent[i];
-                  displayText += currentChar || getRandomChar();
-                }
-              }
-              easterEggElement.textContent = displayText;
-            }, 30);
-          }
-          
-          copyrightElement.addEventListener('mouseenter', () => {
-            isHovering = true;
-            if (animationInterval) clearInterval(animationInterval);
-            animateToTarget();
-          });
-          
-          copyrightElement.addEventListener('mouseleave', () => {
-            isHovering = false;
-            animateToOriginal();
-          });
-        }
-      });
-      
-      // 搜尋欄互動效果
-      document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchInput');
-        const searchLabel = document.getElementById('searchLabel');
-        
-        // 當hover或focus時顯示cursor，label變灰並右移
-        function showCursor() {
-          searchLabel.style.color = '#d4d4d8'; // text-zinc-300
-          searchLabel.style.transform = 'translateX(8px)';
-        }
-        
-        // 當離開且沒有輸入時恢復原狀
-        function hideCursor() {
-          if (searchInput.value === '') {
-            searchLabel.style.color = '#ffffff';
-            searchLabel.style.transform = 'translateX(0)';
-          }
-        }
-        
-        // 當有輸入時隱藏label
-        function toggleLabel() {
-          if (searchInput.value !== '') {
-            searchLabel.style.display = 'none';
-          } else {
-            searchLabel.style.display = 'block';
-          }
-        }
-        
-        // 事件監聽器
-        searchInput.addEventListener('mouseenter', showCursor);
-        searchInput.addEventListener('blur', hideCursor);
-        searchInput.addEventListener('mouseleave', function() {
-          if (document.activeElement !== searchInput) {
-            hideCursor();
-          }
-        });
-        searchInput.addEventListener('input', toggleLabel);
-      });
-      
-      // 設備卡片進場動畫
-      document.addEventListener('DOMContentLoaded', function() {
-        const equipmentCards = document.querySelectorAll('.equipment-card');
-        const animatedRows = new Set(); // 記錄已經動畫過的行
-        
-                 // 計算並設置每張卡片的行號
-         function calculateRowNumbers() {
-           if (window.innerWidth < 768) return; // 只在桌面版執行
-           
-           const visibleCards = Array.from(equipmentCards).filter(card => 
-             window.getComputedStyle(card).display !== 'none'
-           );
-           
-           // 強制重排以確保位置準確
-           visibleCards.forEach(card => card.offsetHeight);
-           
-           let currentRow = 0;
-           let lastTop = -1;
-           
-           visibleCards.forEach((card, index) => {
-             const rect = card.getBoundingClientRect();
-             const cardTop = Math.round(rect.top + window.scrollY);
-             
-             if (index > 0 && Math.abs(cardTop - lastTop) > 10) {
-               currentRow++;
-             }
-             
-             card.setAttribute('data-row', currentRow);
-             lastTop = cardTop;
-           });
-         }
-        
-        // 初始化行號並觸發所有動畫
-        setTimeout(() => {
-          calculateRowNumbers();
-          
-          // 觸發所有可見卡片的動畫
-          triggerAllVisibleAnimations();
-        }, 100);
-        
-        // 觸發所有可見卡片的進場動畫
-        function triggerAllVisibleAnimations() {
-          animatedRows.clear();
-          
-          // 獲取所有可見的行，按順序處理
-          const visibleCards = Array.from(equipmentCards).filter(card => 
-            window.getComputedStyle(card).display !== 'none'
-          );
-          
-          // 按行號分組
-          const rowGroups = {};
-          visibleCards.forEach(card => {
-            const row = parseInt(card.getAttribute('data-row'));
-            if (!rowGroups[row]) {
-              rowGroups[row] = [];
-            }
-            rowGroups[row].push(card);
-          });
-          
-          // 按行號順序觸發動畫
-          Object.keys(rowGroups).sort((a, b) => parseInt(a) - parseInt(b)).forEach((rowNumber, rowIndex) => {
-            const rowCards = rowGroups[rowNumber];
-            
-            // 每一行延遲300ms，行內卡片間隔150ms
-            rowCards.forEach((card, cardIndex) => {
-              setTimeout(() => {
-                card.classList.add('animate-in');
-              }, (rowIndex * 300) + (cardIndex * 150) + 200);
-            });
-            
-            animatedRows.add(parseInt(rowNumber));
-          });
-        }
-        
-        // 當篩選後重新計算行號和重新觸發動畫
-        window.recalculateRows = function() {
-          // 先等待300ms讓背景處理完成
-          setTimeout(() => {
-            calculateRowNumbers();
-            triggerAllVisibleAnimations();
-          }, 300);
-        };
-       });
-       
-       // 桌面版篩選功能已移至外部文件 equipment-filter.js
-       
-       // 收藏夾功能 - 已棄用
-       /* const bookmarkButtons = document.querySelectorAll('.bookmark-btn'); */
-       
-       // 顯示Toast提示
-       function showToast(message) {
-         // 檢查是否已有toast，如果有則移除
-         const existingToast = document.querySelector('.toast');
-         if (existingToast) {
-           existingToast.remove();
-         }
-         
-         // 創建新的toast
-         const toast = document.createElement('div');
-         toast.className = 'toast';
-         
-         // 創建內部的p元素
-         const p = document.createElement('p');
-         p.textContent = message;
-         toast.appendChild(p);
-         
-         document.body.appendChild(toast);
-         
-         // 檢查是否為手機版
-         const isMobile = window.innerWidth <= 767;
-         
-         if (isMobile) {
-           // 手機版動畫（已由CSS處理定位）
-           toast.style.opacity = '0';
-           toast.style.pointerEvents = 'none';
-           toast.style.transform = 'translateY(20px)';
-           
-           // 顯示通知（從底部浮上來的效果）
-           setTimeout(() => {
-             toast.style.opacity = '1';
-             toast.style.transform = 'translateY(0px)';
-           }, 50);
-           
-           // 2秒後開始消失動畫
-           setTimeout(() => {
-             toast.style.opacity = '0';
-             toast.style.transform = 'translateY(-10px)';
-           }, 2000);
-         } else {
-           // 桌面版動畫（原有邏輯）
-           toast.style.bottom = '7.5rem';
-           toast.style.left = '50%';
-           toast.style.transform = 'translateX(-50%) translateY(50px)';
-           toast.style.opacity = '0';
-           toast.style.pointerEvents = 'none';
-           
-           // 顯示通知（從底部浮上來的效果）
-           setTimeout(() => {
-             toast.style.opacity = '1';
-             toast.style.transform = 'translateX(-50%) translateY(0px)';
-           }, 50);
-           
-           // 2秒後開始消失動畫
-           setTimeout(() => {
-             toast.style.opacity = '0';
-             toast.style.transform = 'translateX(-50%) translateY(-10px)';
-           }, 2000);
-         }
-         
-         // 動畫完成後完全隱藏並移除
-         setTimeout(() => {
-           if (toast.parentNode) {
-             toast.parentNode.removeChild(toast);
-           }
-         }, 2500);
-       }
-       
-       // 為每個收藏夾按鈕添加點擊事件 - 已棄用
-       /* bookmarkButtons.forEach(button => { ... }); */
-       
-       // 全站統一收藏夾邏輯 (使用事件委派)
-       document.addEventListener('DOMContentLoaded', function() {
-         document.body.addEventListener('click', function(e) {
-           const bookmarkBtn = e.target.closest('.bookmark-btn');
-           if (bookmarkBtn) {
-             e.preventDefault();
-             e.stopPropagation();
-
-             const equipmentName = bookmarkBtn.getAttribute('data-equipment');
-             const isBookmarked = bookmarkBtn.src.includes('Fill');
-
-             if (isBookmarked) {
-               bookmarkBtn.src = 'Icons/Bookmark Sharp Regular.svg';
-               showToast(`${equipmentName}已從收藏夾中移除！`);
-             } else {
-               bookmarkBtn.src = 'Icons/Bookmark Sharp Fill.svg';
-               showToast(`${equipmentName}已加入收藏夾！`);
-             }
-           }
-         });
-       });
-       
-       // Login 按鈕動畫效果 - 只在桌面版
-       const loginBtn = document.getElementById('login-btn');
-       const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
-       
-       if (loginBtn && loginBtnFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-         loginBtn.addEventListener('mouseenter', function() {
-           gsap.to(loginBtnFill, {
-             height: '100%',
-             duration: 0.5,
-             ease: "power2.out"
-           });
-           
-           // 文字顏色變化
-           this.classList.add('white-text');
-         });
-         
-         loginBtn.addEventListener('mouseleave', function() {
-           gsap.to(loginBtnFill, {
-             height: '0%',
-             duration: 0.5,
-             ease: "power2.out"
-           });
-           
-           // 文字顏色恢復
-           this.classList.remove('white-text');
-         });
-       }
-    </script>
   </body>
 </html>

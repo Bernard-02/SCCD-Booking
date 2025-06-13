@@ -1,0 +1,110 @@
+/* Classroom 頁面特定樣式 */
+
+/* 展開式元件樣式 */
+.accordion-item {
+  border-bottom: 1px solid white;
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* 手機版 accordion 較小的高度 */
+@media (max-width: 767px) {
+  .accordion-header {
+    padding: 16px 0;
+  }
+  
+  .accordion-content.expanded {
+    padding-bottom: 16px;
+  }
+}
+
+.accordion-content {
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.accordion-content.expanded {
+  padding-bottom: 24px;
+}
+
+.expand-icon {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.accordion-content-inner {
+  opacity: 0;
+}
+
+
+
+/* 禁用按鈕樣式 */
+.button-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* 手機版響應式樣式調整 */
+@media (max-width: 767px) {
+  /* 手機版 accordion 佈局 - 已移除，使用main的padding */
+  
+  .mobile-accordion-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .mobile-accordion-image {
+    width: 100%;
+    order: 1;
+  }
+  
+  .mobile-accordion-text {
+    order: 2;
+  }
+  
+  .mobile-accordion-button {
+    order: 3;
+    align-self: flex-start;
+    margin-top: 0.5rem;
+  }
+  
+  /* 手機版文字大小調整 */
+  .mobile-price-text {
+    font-size: 1.25rem !important; /* xl */
+  }
+  
+  .mobile-description-text {
+    font-size: 0.875rem !important; /* sm */
+  }
+  
+  .mobile-label-text {
+    font-size: 0.75rem !important; /* xs */
+  }
+  
+  .mobile-button {
+    padding: 0.5rem 1.5rem !important; /* 更小的按鈕 */
+  }
+  
+  .mobile-button-text {
+    font-size: 1rem !important; /* base */
+  }
+  
+  .mobile-image-padding {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+} 

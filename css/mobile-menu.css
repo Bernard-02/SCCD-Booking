@@ -1,6 +1,4 @@
-/* ===== 手機版選單樣式 ===== */
-
-/* 手機版選單基礎樣式 */
+/* 手機版選單樣式 */
 .mobile-menu {
   position: fixed;
   top: 0;
@@ -20,6 +18,42 @@
   opacity: 1;
   visibility: visible;
   background-color: #000000 !important;
+}
+
+/* 響應式調整 */
+@media (max-width: 767px) {
+  /* 防止水平滾動 */
+  * {
+    max-width: 100vw;
+  }
+  
+  /* 手機版隱藏桌面導航 */
+  .desktop-nav {
+    display: none;
+  }
+  
+  /* Footer 在手機版的調整 */
+  footer .container {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  footer .container > div:first-child {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  footer .copyright {
+    text-align: left !important;
+  }
+  
+  /* 容器最大寬度限制 */
+  .container {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
 }
 
 /* 手機版選單動畫 */
@@ -61,4 +95,12 @@
 
 .menu-animate-enter-content.menu-delay-6 {
   animation-delay: 0.6s;
+}
+
+/* 手機版專用樣式 */
+@media (max-width: 767px) {
+  /* 確保手機版完全隱藏 LOGIN 按鈕 */
+  #login-btn {
+    display: none !important;
+  }
 } 

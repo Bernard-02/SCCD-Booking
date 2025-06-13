@@ -12,96 +12,36 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css">
-      <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-  <script src="cart-manager.js"></script>
-  <script src="js/common.js"></script>
-  <!-- 新的外部JavaScript文件 -->
-  <script src="js/copyright-easter-egg.js"></script>
-  <script src="js/button-animations.js"></script>
-  <script src="js/ui-animations.js"></script>
-  <script src="js/form-validation.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <script src="cart-manager.js"></script>
+    <script src="js/common.js"></script>
+    <!-- 新的外部JavaScript文件 -->
+    <script src="js/copyright-easter-egg.js"></script>
+    <script src="js/button-animations.js"></script>
+    <script src="js/mobile-menu.js"></script>
+    <script src="js/ui-animations.js"></script>
+    <script src="js/form-validation.js"></script>
+
     <!-- 引入外部CSS文件 -->
-    <link rel="stylesheet" href="css/common.css">
-    <link rel="stylesheet" href="css/arrows.css">
-    <link rel="stylesheet" href="css/buttons.css">
-    <link rel="stylesheet" href="css/mobile-menu.css">
-    <link rel="stylesheet" href="css/copyright.css">
-    <link rel="stylesheet" href="css/breadcrumb.css">
-    <link rel="stylesheet" href="css/forms.css">
-    <link rel="stylesheet" href="css/animations.css">
-    
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/mobile-menu.css" />
+    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/breadcrumb.css" />
+    <link rel="stylesheet" href="css/forms.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/login.css" />
+
     <style>
-
-      
-
-      
-
-      
-      /* 登入按鈕箭頭動畫 - 只在桌面版 */
-      .login-button {
-        position: relative;
-        overflow: hidden;
-      }
-      
-      .login-arrow-container {
-        position: relative;
-        width: 30px;
-        height: 22px;
-        margin-left: 14px;
-        overflow: hidden;
-      }
-      
-      .login-arrows-wrapper {
-        display: flex;
-        gap: 4px;
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateX(-34px);
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .login-button:hover .login-arrows-wrapper {
-          transform: translateX(0px);
-        }
-      }
-      
-      .custom-arrow {
-        width: 30px;
-        height: 22px;
-        flex-shrink: 0;
-      }
-      
-      .custom-arrow svg {
-        width: 100%;
-        height: 100%;
-      }
-      
-
-      
-      /* login頁面特有的手機版樣式 */
-      @media (max-width: 767px) {
-        /* 確保手機版完全隱藏 LOGIN 按鈕 */
-        #login-btn {
-          display: none !important;
-        }
-      }
-      
-
-      
-      /* 登入框專用樣式 */
-      .login-container {
-        background: rgba(50, 50, 50, 0.85);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
+      /* 頁面特定樣式 */
     </style>
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
+      <div
+        class="container mx-auto flex justify-between items-center px-6 md:px-4"
+      >
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -129,7 +69,7 @@
             </ul>
           </nav>
         </div>
-        
+
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
@@ -141,18 +81,38 @@
             href="login.html"
             id="login-btn"
             class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
+            style="position: relative; overflow: hidden"
+          >
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+                border-radius: 30px;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
-          
+
           <!-- 手機版 CART 按鈕 -->
           <a
             href="rental-list.html"
@@ -160,9 +120,12 @@
             class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
             >(<span id="mobile-cart-count">0</span>) CART</a
           >
-          
+
           <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+          <button
+            class="md:hidden font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-btn"
+          >
             <span class="text-white" id="menu-btn-text">MENU</span>
           </button>
         </div>
@@ -173,10 +136,14 @@
       <div class="w-full max-w-md px-8 md:px-6">
         <!-- 標題區域 -->
         <div class="mb-12 text-left">
-          <h1 class="text-xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white mb-2">
+          <h1
+            class="text-xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white mb-2"
+          >
             帳號登入
           </h1>
-          <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">
+          <p
+            class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+          >
             登入您的帳號
           </p>
         </div>
@@ -185,26 +152,28 @@
         <form id="login-form" novalidate>
           <!-- 帳號輸入框 -->
           <div class="input-group">
-            <input 
-              type="text" 
-              id="username" 
-              class="input-field" 
+            <input
+              type="text"
+              id="username"
+              class="input-field"
               placeholder=" "
               autocomplete="username"
-            >
+            />
             <label for="username" class="input-label">帳號</label>
-            <div class="error-message" id="username-error">請輸入帳號名稱！</div>
+            <div class="error-message" id="username-error">
+              請輸入帳號名稱！
+            </div>
           </div>
 
           <!-- 密碼輸入框 -->
           <div class="input-group">
-            <input 
-              type="password" 
-              id="password" 
-              class="input-field" 
+            <input
+              type="password"
+              id="password"
+              class="input-field"
               placeholder=" "
               autocomplete="current-password"
-            >
+            />
             <label for="password" class="input-label">密碼</label>
             <div class="error-message" id="password-error">請輸入密碼！</div>
           </div>
@@ -212,57 +181,129 @@
           <!-- 記住我和忘記密碼 -->
           <div class="flex items-center justify-between mb-8">
             <div class="flex items-center space-x-3">
-              <input type="checkbox" id="remember-me" class="custom-checkbox">
-              <label for="remember-me" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer">
+              <input type="checkbox" id="remember-me" class="custom-checkbox" />
+              <label
+                for="remember-me"
+                class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer"
+              >
                 記住我
               </label>
             </div>
-            
-            <a href="#forgot-password" class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer forgot-password">
+
+            <a
+              href="#forgot-password"
+              class="text-base font-['Noto_Sans_TC',_sans-serif] text-white cursor-pointer forgot-password"
+            >
               忘記密碼？
             </a>
           </div>
 
           <!-- 登入按鈕 -->
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             class="login-button border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer flex items-center justify-center button-animated mb-6"
-            style="width: 150px; position: relative; overflow: hidden;"
+            style="width: 150px; position: relative; overflow: hidden"
           >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-            <span style="position: relative; z-index: 2;">登入</span>
-            <div class="login-arrow-container" style="position: relative; z-index: 2;">
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">登入</span>
+            <div
+              class="login-arrow-container"
+              style="position: relative; z-index: 2"
+            >
               <div class="login-arrows-wrapper">
                 <div class="custom-arrow">
                   <svg viewBox="0 0 30 22">
                     <!-- 第一個箭頭 -->
-                    <line x1="4" y1="11" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
-                    <line x1="19" y1="5" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
-                    <line x1="19" y1="17" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                    <line
+                      x1="4"
+                      y1="11"
+                      x2="25"
+                      y2="11"
+                      stroke="currentColor"
+                      stroke-width="1"
+                    />
+                    <line
+                      x1="19"
+                      y1="5"
+                      x2="25"
+                      y2="11"
+                      stroke="currentColor"
+                      stroke-width="1"
+                    />
+                    <line
+                      x1="19"
+                      y1="17"
+                      x2="25"
+                      y2="11"
+                      stroke="currentColor"
+                      stroke-width="1"
+                    />
                   </svg>
                 </div>
                 <div class="custom-arrow">
                   <svg viewBox="0 0 30 22">
                     <!-- 第二個箭頭 -->
-                    <line x1="4" y1="11" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
-                    <line x1="19" y1="5" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
-                    <line x1="19" y1="17" x2="25" y2="11" stroke="currentColor" stroke-width="1"/>
+                    <line
+                      x1="4"
+                      y1="11"
+                      x2="25"
+                      y2="11"
+                      stroke="currentColor"
+                      stroke-width="1"
+                    />
+                    <line
+                      x1="19"
+                      y1="5"
+                      x2="25"
+                      y2="11"
+                      stroke="currentColor"
+                      stroke-width="1"
+                    />
+                    <line
+                      x1="19"
+                      y1="17"
+                      x2="25"
+                      y2="11"
+                      stroke="currentColor"
+                      stroke-width="1"
+                    />
                   </svg>
                 </div>
               </div>
             </div>
           </button>
-          
+
           <!-- 注冊提示文字 -->
-          <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-left" style="color: #cccccc;">
-            還沒有帳號嗎？<a href="#register" id="register-link" class="text-white cursor-pointer register-link">注冊一個</a>
+          <p
+            class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-left"
+            style="color: #cccccc"
+          >
+            還沒有帳號嗎？<a
+              href="#register"
+              id="register-link"
+              class="text-white cursor-pointer register-link"
+              >注冊一個</a
+            >
           </p>
         </form>
       </div>
     </main>
 
-            <footer class="pt-4 pb-8">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+    <footer class="pt-4 pb-8">
+      <div
+        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
         <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
@@ -271,8 +312,16 @@
             >TO SCCD
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -282,8 +331,16 @@
             >ABOUT
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -291,8 +348,12 @@
         <div class="copyright text-xs md:text-right">
           <p>
             <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >Copyright © 2025 111</span
+              >屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >All rights reserved.</span
+              >
             </span>
             <span class="copyright-easter-egg" id="easter-egg-text">
               <!-- 彩蛋文字將由JavaScript生成 -->
@@ -308,16 +369,21 @@
       <div class="py-6 px-6">
         <div class="flex justify-between items-center">
           <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+            <div
+              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
+            >
               SCCD
             </div>
           </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+          <button
+            class="font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-close"
+          >
             <span class="text-white">CLOSE</span>
           </button>
         </div>
       </div>
-      
+
       <!-- 選單項目 -->
       <div class="flex-grow px-6">
         <nav>
@@ -346,7 +412,7 @@
           </ul>
         </nav>
       </div>
-      
+
       <!-- Footer區域 -->
       <div class="pt-4 pb-8 px-6">
         <div class="flex flex-col text-sm">
@@ -359,8 +425,16 @@
                 >TO SCCD
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
@@ -372,19 +446,33 @@
                 >ABOUT
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+            <div
+              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+            >
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >All rights reserved.</span
+                  >
                 </span>
               </p>
             </div>
@@ -393,261 +481,6 @@
       </div>
     </div>
 
-    <script>
-      // 登入表單處理
-      document.addEventListener('DOMContentLoaded', function() {
-        // 初始化 CART 數量
-        if (typeof updateCartDisplay === 'function') {
-          updateCartDisplay();
-        }
-        
-        const form = document.getElementById('login-form');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const usernameError = document.getElementById('username-error');
-        const passwordError = document.getElementById('password-error');
-        
-        // 表單驗證功能已移至外部文件 form-validation.js
-        
-        // 按鈕動畫效果 - 只在桌面版
-        const button = document.querySelector('.login-button');
-        const buttonFill = button ? button.querySelector('.button-bg-fill') : null;
-        
-        if (button && buttonFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          button.addEventListener('mouseenter', function() {
-            gsap.to(buttonFill, {
-              height: '100%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色變化
-            this.classList.add('white-text');
-          });
-          
-          button.addEventListener('mouseleave', function() {
-            gsap.to(buttonFill, {
-              height: '0%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色恢復
-            this.classList.remove('white-text');
-          });
-        }
-        
-        // Login 按鈕動畫效果 - 只在桌面版
-        const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
-        
-        if (loginBtn && loginBtnFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          loginBtn.addEventListener('mouseenter', function() {
-            gsap.to(loginBtnFill, {
-              height: '100%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色變化
-            this.classList.add('white-text');
-          });
-          
-          loginBtn.addEventListener('mouseleave', function() {
-            gsap.to(loginBtnFill, {
-              height: '0%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色恢復
-            this.classList.remove('white-text');
-          });
-        }
-        
-        // 手機版選單功能
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuClose = document.getElementById('mobile-menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
-        
-        function openMenu() {
-          mobileMenu.classList.add('active');
-          body.style.overflow = 'hidden'; // 防止背景滾動
-          
-          // 觸發選單動畫
-          triggerMenuAnimation();
-        }
-        
-        function triggerMenuAnimation() {
-          // 獲取所有動畫元素
-          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
-          
-          // 重置動畫
-          animatedElements.forEach(element => {
-            element.style.animation = 'none';
-            element.offsetHeight; // 強制重排
-            element.style.animation = null;
-          });
-        }
-        
-        function closeMenu() {
-          mobileMenu.classList.remove('active');
-          body.style.overflow = ''; // 恢復滾動
-        }
-        
-        // 打開選單
-        if (mobileMenuBtn) {
-          mobileMenuBtn.addEventListener('click', openMenu);
-        }
-        
-        // 關閉選單
-        if (mobileMenuClose) {
-          mobileMenuClose.addEventListener('click', closeMenu);
-        }
-        
-        // 點擊選單項目時關閉選單
-        const mobileMenuLinks = mobileMenu ? mobileMenu.querySelectorAll('nav a') : [];
-        mobileMenuLinks.forEach(link => {
-          link.addEventListener('click', closeMenu);
-        });
-        
-        // 點擊背景關閉選單
-        if (mobileMenu) {
-          mobileMenu.addEventListener('click', function(event) {
-            if (event.target === mobileMenu) {
-              closeMenu();
-            }
-          });
-        }
-      });
-
-      // Copyright 彩蛋效果 - 只在桌面版啟用
-      document.addEventListener('DOMContentLoaded', function() {
-        const copyrightElement = document.querySelector('.copyright');
-        const originalElement = document.querySelector('.copyright-original');
-        const easterEggElement = document.getElementById('easter-egg-text');
-        
-        if (copyrightElement && originalElement && easterEggElement && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const originalText = originalElement.textContent;
-          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
-          const maxLength = Math.min(originalText.length, targetText.length);
-          const truncatedTarget = targetText.substring(0, maxLength);
-          
-          let isHovering = false;
-          let animationInterval = null;
-          let currentStep = 0;
-          let isAnimatingIn = false;
-          let isAnimatingOut = false;
-          
-          // 隨機字符池
-          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
-          
-          function getRandomChar() {
-            return randomChars[Math.floor(Math.random() * randomChars.length)];
-          }
-          
-          function generateRandomString(length) {
-            let result = '';
-            for (let i = 0; i < length; i++) {
-              result += getRandomChar();
-            }
-            return result;
-          }
-          
-          function animateToTarget() {
-            if (isAnimatingOut) return;
-            isAnimatingIn = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
-            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
-            
-            easterEggElement.textContent = generateRandomString(maxLength);
-            easterEggElement.style.opacity = '1';
-            originalElement.style.opacity = '0';
-            
-            animationInterval = setInterval(() => {
-              if (!isHovering || isAnimatingOut) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                return;
-              }
-              
-              currentStep++;
-              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
-              
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (i < revealedChars) {
-                  displayText += truncatedTarget[i] || ' ';
-                } else {
-                  displayText += getRandomChar();
-                }
-              }
-              
-              easterEggElement.textContent = displayText;
-              
-              if (revealedChars >= maxLength) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                easterEggElement.textContent = truncatedTarget;
-              }
-            }, 50);
-          }
-          
-          function animateToOriginal() {
-            // 立即停止任何正在進行的動畫
-            if (animationInterval) {
-              clearInterval(animationInterval);
-            }
-            
-            isAnimatingIn = false;
-            isAnimatingOut = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
-            
-            animationInterval = setInterval(() => {
-              currentStep++;
-              const progress = currentStep / totalSteps;
-              
-              if (progress >= 1) {
-                clearInterval(animationInterval);
-                easterEggElement.style.opacity = '0';
-                originalElement.style.opacity = '1';
-                isAnimatingOut = false;
-                animationInterval = null;
-                return;
-              }
-              
-              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
-                  displayText += getRandomChar();
-                } else {
-                  // 保持當前字符或目標字符
-                  const currentChar = easterEggElement.textContent[i];
-                  displayText += currentChar || getRandomChar();
-                }
-              }
-              easterEggElement.textContent = displayText;
-            }, 30);
-          }
-          
-          copyrightElement.addEventListener('mouseenter', () => {
-            isHovering = true;
-            if (animationInterval) clearInterval(animationInterval);
-            animateToTarget();
-          });
-          
-          copyrightElement.addEventListener('mouseleave', () => {
-            isHovering = false;
-            animateToOriginal();
-          });
-        }
-      });
-    </script>
+    <!-- 頁面專用腳本已移至外部文件 -->
   </body>
-</html> 
+</html>

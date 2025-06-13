@@ -10,6 +10,7 @@ function initButtonAnimations() {
   
   initStartRentalButton();
   initLoginButton();
+  initResetDateButton();
 }
 
 // 初始化「開始租借」按鈕動畫
@@ -32,6 +33,41 @@ function initStartRentalButton() {
   });
   
   button.addEventListener('mouseleave', function() {
+    gsap.to(buttonFill, {
+      height: '0%',
+      duration: 0.5,
+      ease: "power2.out"
+    });
+    
+    // 文字顏色恢復
+    this.classList.remove('white-text');
+  });
+}
+
+// 初始化重設日期按鈕動畫
+function initResetDateButton() {
+  const button = document.getElementById('reset-date-button');
+  if (!button) return;
+  
+  const buttonFill = button.querySelector('.button-bg-fill');
+  if (!buttonFill) return;
+  
+  button.addEventListener('mouseenter', function() {
+    // 只有在按鈕不是禁用狀態時才執行動畫
+    if (!this.disabled) {
+      gsap.to(buttonFill, {
+        height: '100%',
+        duration: 0.5,
+        ease: "power2.out"
+      });
+      
+      // 文字顏色變化
+      this.classList.add('white-text');
+    }
+  });
+  
+  button.addEventListener('mouseleave', function() {
+    // 始終執行離開動畫
     gsap.to(buttonFill, {
       height: '0%',
       duration: 0.5,

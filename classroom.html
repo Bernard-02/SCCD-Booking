@@ -12,491 +12,31 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css">
+
+    <!-- 引入模組化 CSS 文件 -->
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/breadcrumb.css" />
+    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/classroom.css" />
+
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
-    
-    <!-- 箭頭動畫樣式 -->
-    <style>
-      /* 選取（反白）樣式 */
-      ::selection {
-        background-color: #f7f7f7;
-        color: black;
-      }
-      
-      /* 箭頭動畫樣式 */
-      .arrow-link {
-        display: inline-flex;
-        align-items: center;
-        position: relative;
-      }
-      
-      .arrow-container {
-        position: relative;
-        width: 1em;
-        height: 1em;
-        overflow: hidden;
-        margin-left: 8px;
-      }
-      
-      .arrow-icons-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(0);
-      }
-      
-      .arrow-icon {
-        width: 0.8em;
-        height: 0.8em;
-        flex-shrink: 0;
-        filter: brightness(0) invert(1); /* 預設白色 */
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .arrow-link:hover .arrow-icons-wrapper {
-          transform: translateY(-1em);
-        }
-      }
-      
-      /* LOGIN 按鈕特殊樣式 */
-      .login-btn {
-        padding: 1.5px 10px !important;
-        padding-right: 8px !important;
-      }
-      
-      /* 手機版 LOGIN 按鈕縮小 */
-      @media (max-width: 768px) {
-        .login-btn {
-          padding: 1px 8px !important;
-          padding-right: 6px !important;
-          font-size: 0.75rem !important;
-        }
-        
-        .login-btn .arrow-container {
-          width: 0.8em;
-          height: 0.8em;
-        }
-        
-        .login-btn .arrow-icon {
-          width: 0.6em;
-          height: 0.6em;
-        }
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .login-btn:hover .arrow-icon {
-          filter: brightness(0); /* hover 時變黑色 */
-        }
-        
-        /* Footer 連結 hover 效果 */
-        .footer-link:hover {
-          opacity: 0.6;
-        }
-        
-        /* Header 導航連結 hover 效果 */
-        .nav-link:hover {
-          opacity: 0.6;
-        }
-      }
-      
-      /* Breadcrumb 樣式 - 只在桌面版顯示 */
-      .breadcrumb {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75rem; /* text-xs */
-        font-weight: 300; /* font-light */
-        color: white;
-        text-align: left;
-        margin-bottom: 1rem;
-        letter-spacing: 0.05em; /* tracking-wider */
-        position: absolute;
-        top: calc(3rem + 3vh);
-        left: 6%;
-        z-index: 10;
-      }
-      
-      /* 桌面版 breadcrumb hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .breadcrumb:hover .breadcrumb-item {
-          opacity: 0.6;
-        }
-        
-        .breadcrumb .breadcrumb-item:hover {
-          opacity: 1 !important;
-        }
-      }
-      
-      .breadcrumb .breadcrumb-item {
-        transition: opacity 0.3s ease;
-        cursor: pointer;
-      }
-      
-      .breadcrumb .breadcrumb-separator {
-        margin: 0 0.5rem;
-        opacity: 0.6;
-      }
-      
-      /* 手機版隱藏 breadcrumb */
-      @media (max-width: 767px) {
-        .breadcrumb {
-          display: none;
-        }
-      }
-      
-      /* 展開式元件樣式 */
-      .accordion-item {
-        border-bottom: 1px solid white;
-      }
-      
-      .accordion-item:last-child {
-        border-bottom: none;
-      }
-      
-      .accordion-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 24px 0;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-      
-      /* 手機版 accordion 較小的高度 */
-      @media (max-width: 767px) {
-        .accordion-header {
-          padding: 16px 0;
-        }
-        
-        .accordion-content.expanded {
-          padding-bottom: 16px;
-        }
-      }
-      
-      .accordion-content {
-        height: 0;
-        overflow: hidden;
-        padding: 0;
-      }
-      
-      .accordion-content.expanded {
-        padding-bottom: 24px;
-      }
-      
-      .expand-icon {
-        width: 30px;
-        height: 30px;
-        cursor: pointer;
-      }
-      
-      .accordion-content-inner {
-        opacity: 0;
-      }
-      
-      /* 通知樣式 - 參照 equipment-detail */
-      #notification {
-        position: fixed;
-        background-color: white;
-        color: black;
-        padding: 16px 80px;
-        z-index: 50;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.3s ease-out;
-        bottom: 7.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-      
-      #notification.error {
-        background-color: #ffd9e0;
-        color: #ff4560;
-      }
-      
-      #notification.show {
-        opacity: 1;
-      }
-      
-      /* 禁用按鈕樣式 */
-      .button-disabled {
-        opacity: 0.5 !important;
-        cursor: not-allowed !important;
-        pointer-events: none !important;
-      }
-      
-      /* 按鈕動畫樣式 */
-      .button-animated {
-        transition: color 0.5s ease;
-      }
-      
-      .button-animated.white-text {
-        color: black;
-      }
-      
-      /* Toast 提示訊息樣式 */
-      .toast {
-        position: fixed;
-        bottom: 7.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: white;
-        color: black;
-        padding: 1rem 5rem;
-        z-index: 50;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.3s ease-out;
-      }
-      
-      .toast p {
-        font-size: 1rem;
-        font-family: 'Noto Sans TC', sans-serif;
-        line-height: 1.625;
-        text-align: center;
-        margin: 0;
-      }
-      
-      /* Toast 錯誤樣式 */
-      .toast.error {
-        background-color: #ffd9e0 !important;
-      }
-      
-      .toast.error p {
-        color: #ff4560 !important;
-      }
-      
-      /* Copyright 彩蛋效果 */
-      .copyright {
-        position: relative;
-      }
-      
-      .copyright-original {
-        transition: none;
-      }
-      
-      .copyright-easter-egg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        white-space: nowrap;
-        opacity: 0;
-        font-family: 'Inter', sans-serif;
-        font-size: inherit;
-        letter-spacing: inherit;
-      }
-      
-      /* 手機版選單動畫 */
-      .menu-animate-enter {
-        overflow: hidden;
-      }
-      
-      .menu-animate-enter-content {
-        transform: translateY(150%);
-        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-      }
-      
-      @keyframes menuSlideUp {
-        to {
-          transform: translateY(0);
-        }
-      }
-      
-      /* 選單項目動畫延遲 */
-      .menu-animate-enter-content.menu-delay-1 {
-        animation-delay: 0.1s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-2 {
-        animation-delay: 0.2s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-3 {
-        animation-delay: 0.3s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-4 {
-        animation-delay: 0.4s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-5 {
-        animation-delay: 0.5s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-6 {
-        animation-delay: 0.6s;
-      }
+    <script src="js/common.js"></script>
 
-      /* 手機版選單樣式 */
-      .mobile-menu {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background-color: #000000 !important;
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s ease, visibility 0.5s ease;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .mobile-menu.active {
-        opacity: 1;
-        visibility: visible;
-        background-color: #000000 !important;
-      }
-      
-      /* 響應式佈局 */
-      @media (max-width: 767px) {
-        /* 防止水平滾動 */
-        * {
-          max-width: 100vw;
-        }
-        
-        /* 手機版隱藏桌面導航 */
-        .desktop-nav {
-          display: none;
-        }
-        
-        /* 手機版 accordion 佈局 - 已移除，使用main的padding */
-        
-        .mobile-accordion-content {
-          flex-direction: column;
-          gap: 1rem;
-        }
-        
-        .mobile-accordion-image {
-          width: 100%;
-          order: 1;
-        }
-        
-        .mobile-accordion-text {
-          order: 2;
-        }
-        
-        .mobile-accordion-button {
-          order: 3;
-          align-self: flex-start;
-          margin-top: 0.5rem;
-        }
-        
-        /* 手機版文字大小調整 */
-        .mobile-price-text {
-          font-size: 1.25rem !important; /* xl */
-        }
-        
-        .mobile-description-text {
-          font-size: 0.875rem !important; /* sm */
-        }
-        
-        .mobile-label-text {
-          font-size: 0.75rem !important; /* xs */
-        }
-        
-        .mobile-button {
-          padding: 0.5rem 1.5rem !important; /* 更小的按鈕 */
-        }
-        
-        .mobile-button-text {
-          font-size: 1rem !important; /* base */
-        }
-        
-        .mobile-image-padding {
-          padding-top: 1rem;
-          padding-bottom: 1rem;
-        }
-        
-        /* 手機版 Toast 樣式 */
-        .toast {
-          bottom: 5vh !important; /* 畫面80%以下的位置 */
-          left: 3% !important;
-          right: 3% !important;
-          width: auto !important;
-          max-width: none !important;
-          transform: none !important;
-          padding: 0.75rem 1rem !important; /* 減少padding讓它只有一行 */
-        }
-        
-        .toast p {
-          font-size: 0.875rem !important; /* sm size */
-          line-height: 1.25 !important; /* 較緊湊的行高 */
-          white-space: nowrap !important; /* 強制一行顯示 */
-          overflow: hidden !important;
-          text-overflow: ellipsis !important; /* 如果文字太長就顯示... */
-        }
-        
-        /* 手機版錯誤toast樣式 */
-        .toast.error {
-          background-color: #ffd9e0 !important;
-        }
-        
-        .toast.error p {
-          color: #ff4560 !important;
-        }
-        
-        /* Footer 在手機版的調整 */
-        footer .container {
-          max-width: 100vw;
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .container > div:first-child {
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .copyright {
-          text-align: left !important;
-        }
-        
-        /* 容器最大寬度限制 */
-        .container {
-          max-width: 100vw;
-          overflow-x: hidden;
-        }
-        
-        /* 手機版主要內容佈局 */
-        .mobile-main-content {
-          padding: 1rem;
-          flex-direction: column;
-          gap: 2rem;
-        }
-        
-        .mobile-title-section {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-      }
-      
-      /* 確保大於768px時隱藏手機版選單 */
-      @media (min-width: 768px) {
-        .mobile-menu { 
-          display: none !important; 
-        }
-      }
-      
-      /* 手機版專用樣式 */
-      @media (max-width: 767px) {
-        /* 確保手機版完全隱藏 LOGIN 按鈕 */
-        #login-btn {
-          display: none !important;
-        }
-      }
-    </style>
+    <!-- 引入模組化 JavaScript 文件 -->
+    <script src="js/mobile-menu.js" defer></script>
+    <script src="js/copyright-easter-egg.js" defer></script>
+    <script src="js/button-animations.js" defer></script>
+    <script src="js/cart-sync.js" defer></script>
+    <script src="js/classroom.js" defer></script>
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
+      <div
+        class="container mx-auto flex justify-between items-center px-6 md:px-4"
+      >
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -524,7 +64,7 @@
             </ul>
           </nav>
         </div>
-        
+
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
@@ -536,18 +76,38 @@
             href="login.html"
             id="login-btn"
             class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
+            style="position: relative; overflow: hidden"
+          >
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+                border-radius: 30px;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
-          
+
           <!-- 手機版 CART 按鈕 -->
           <a
             href="rental-list.html"
@@ -555,9 +115,12 @@
             class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
             >(<span id="mobile-cart-count">0</span>) CART</a
           >
-          
+
           <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+          <button
+            class="md:hidden font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-btn"
+          >
             <span class="text-white" id="menu-btn-text">MENU</span>
           </button>
         </div>
@@ -577,44 +140,88 @@
         <span class="breadcrumb-separator">/</span>
         <span class="breadcrumb-item">教室</span>
       </nav>
-      
+
       <!-- 桌面版佈局 -->
       <div class="w-full px-[6%] flex-grow flex-col hidden md:flex">
         <!-- 頁面標題 -->
         <div class="mb-6">
-          <h1 class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2">
+          <h1
+            class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2"
+          >
             租借教室
           </h1>
         </div>
-        
+
         <div class="flex gap-35 flex-grow">
           <!-- 左側：教室列表 -->
           <div class="flex-1">
             <!-- A503 教室 -->
             <div class="accordion-item">
               <div class="accordion-header" onclick="toggleAccordion('a503')">
-                <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
-                <svg class="expand-icon plus" id="icon-a503" viewBox="0 0 30 30">
-                  <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                  <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+                <h2
+                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+                >
+                  A503 教室
+                </h2>
+                <svg
+                  class="expand-icon plus"
+                  id="icon-a503"
+                  viewBox="0 0 30 30"
+                >
+                  <line
+                    x1="5"
+                    y1="15"
+                    x2="25"
+                    y2="15"
+                    stroke="white"
+                    stroke-width="1"
+                  />
+                  <line
+                    x1="15"
+                    y1="5"
+                    x2="15"
+                    y2="25"
+                    stroke="white"
+                    stroke-width="1"
+                  />
                 </svg>
               </div>
               <div class="accordion-content" id="content-a503">
                 <div class="accordion-content-inner space-y-8">
                   <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                    <div
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                      style="color: #00ff80"
+                    >
+                      可租借
+                    </div>
                   </div>
                   <div class="space-y-2">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"
+                      >
+                        押金
+                      </div>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="A503 教室">
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
+                      >
+                        NT5,000
+                      </div>
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                        data-equipment="A503 教室"
+                      />
                     </div>
                   </div>
                   <div>
-                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                    <p
+                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"
+                    >
                       A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
                     </p>
                   </div>
@@ -625,28 +232,70 @@
             <!-- A507 教室 -->
             <div class="accordion-item">
               <div class="accordion-header" onclick="toggleAccordion('a507')">
-                <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
-                <svg class="expand-icon plus" id="icon-a507" viewBox="0 0 30 30">
-                  <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                  <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+                <h2
+                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+                >
+                  A507 教室
+                </h2>
+                <svg
+                  class="expand-icon plus"
+                  id="icon-a507"
+                  viewBox="0 0 30 30"
+                >
+                  <line
+                    x1="5"
+                    y1="15"
+                    x2="25"
+                    y2="15"
+                    stroke="white"
+                    stroke-width="1"
+                  />
+                  <line
+                    x1="15"
+                    y1="5"
+                    x2="15"
+                    y2="25"
+                    stroke="white"
+                    stroke-width="1"
+                  />
                 </svg>
               </div>
               <div class="accordion-content" id="content-a507">
                 <div class="accordion-content-inner space-y-8">
                   <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                    <div
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                      style="color: #00ff80"
+                    >
+                      可租借
+                    </div>
                   </div>
                   <div class="space-y-2">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"
+                      >
+                        押金
+                      </div>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="A507 教室">
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
+                      >
+                        NT5,000
+                      </div>
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                        data-equipment="A507 教室"
+                      />
                     </div>
                   </div>
                   <div>
-                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                    <p
+                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"
+                    >
                       A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
                     </p>
                   </div>
@@ -657,28 +306,70 @@
             <!-- A508 教室 -->
             <div class="accordion-item">
               <div class="accordion-header" onclick="toggleAccordion('a508')">
-                <h2 class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
-                <svg class="expand-icon plus" id="icon-a508" viewBox="0 0 30 30">
-                  <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                  <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+                <h2
+                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+                >
+                  A508 教室
+                </h2>
+                <svg
+                  class="expand-icon plus"
+                  id="icon-a508"
+                  viewBox="0 0 30 30"
+                >
+                  <line
+                    x1="5"
+                    y1="15"
+                    x2="25"
+                    y2="15"
+                    stroke="white"
+                    stroke-width="1"
+                  />
+                  <line
+                    x1="15"
+                    y1="5"
+                    x2="15"
+                    y2="25"
+                    stroke="white"
+                    stroke-width="1"
+                  />
                 </svg>
               </div>
               <div class="accordion-content" id="content-a508">
                 <div class="accordion-content-inner space-y-8">
                   <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #00ff80;">可租借</div>
+                    <div
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
+                      style="color: #00ff80"
+                    >
+                      可租借
+                    </div>
                   </div>
                   <div class="space-y-2">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金</div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"
+                      >
+                        押金
+                      </div>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn" data-equipment="A508 教室">
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
+                      >
+                        NT5,000
+                      </div>
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                        data-equipment="A508 教室"
+                      />
                     </div>
                   </div>
                   <div>
-                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
+                    <p
+                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"
+                    >
                       A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
                     </p>
                   </div>
@@ -690,64 +381,154 @@
           <!-- 右側：教室圖片和按鈕 -->
           <div class="flex-1">
             <div>
-              <img id="classroom-image" src="Images/A503.png" alt="教室圖片" class="w-full aspect-[16/9] object-cover">
-              <button id="add-classroom-btn" class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer mt-12 button-animated" style="width: 200px; position: relative; overflow: hidden;" onclick="addClassroomToCart()">
-                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                <span style="position: relative; z-index: 2;">加入清單</span>
+              <img
+                id="classroom-image"
+                src="Images/A503.png"
+                alt="教室圖片"
+                class="w-full aspect-[16/9] object-cover"
+              />
+              <button
+                id="add-classroom-btn"
+                class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer mt-12 button-animated"
+                style="width: 200px; position: relative; overflow: hidden"
+                onclick="addClassroomToCart()"
+              >
+                <div
+                  class="button-bg-fill"
+                  style="
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 0;
+                    background-color: white;
+                    z-index: 1;
+                  "
+                ></div>
+                <span style="position: relative; z-index: 2">加入清單</span>
               </button>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- 手機版佈局 -->
       <div class="w-full md:hidden flex-grow flex flex-col px-6">
         <!-- 標題區域 -->
         <div class="text-center">
-          <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
+          <h1
+            class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
+          >
             租借教室
           </h1>
         </div>
-        
+
         <!-- 教室列表 -->
         <div class="flex-1">
           <!-- A503 教室 -->
           <div class="accordion-item">
             <div class="accordion-header" onclick="toggleAccordion('a503')">
-              <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A503 教室</h2>
-              <svg class="expand-icon plus" id="icon-a503-mobile" viewBox="0 0 30 30">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              <h2
+                class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+              >
+                A503 教室
+              </h2>
+              <svg
+                class="expand-icon plus"
+                id="icon-a503-mobile"
+                viewBox="0 0 30 30"
+              >
+                <line
+                  x1="5"
+                  y1="15"
+                  x2="25"
+                  y2="15"
+                  stroke="white"
+                  stroke-width="1"
+                />
+                <line
+                  x1="15"
+                  y1="5"
+                  x2="15"
+                  y2="25"
+                  stroke="white"
+                  stroke-width="1"
+                />
               </svg>
             </div>
             <div class="accordion-content" id="content-a503-mobile">
-              <div class="accordion-content-inner mobile-accordion-content flex">
+              <div
+                class="accordion-content-inner mobile-accordion-content flex"
+              >
                 <div class="mobile-accordion-image mobile-image-padding">
-                  <img src="Images/A503.png" alt="A503 教室" class="w-full aspect-[16/9] object-cover">
+                  <img
+                    src="Images/A503.png"
+                    alt="A503 教室"
+                    class="w-full aspect-[16/9] object-cover"
+                  />
                 </div>
                 <div class="mobile-accordion-text space-y-4">
                   <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text" style="color: #00ff80;">可租借</div>
+                    <div
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text"
+                      style="color: #00ff80"
+                    >
+                      可租借
+                    </div>
                   </div>
                   <div class="space-y-2">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text">押金</div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text"
+                      >
+                        押金
+                      </div>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn" data-equipment="A503 教室">
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text"
+                      >
+                        NT5,000
+                      </div>
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn"
+                        data-equipment="A503 教室"
+                      />
                     </div>
                   </div>
                   <div>
-                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text">
+                    <p
+                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text"
+                    >
                       A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
                     </p>
                   </div>
                 </div>
                 <div class="mobile-accordion-button">
-                  <button class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button" style="position: relative; overflow: hidden;" onclick="addClassroomToCart()">
-                    <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                    <span class="mobile-button-text" style="position: relative; z-index: 2;">加入清單</span>
+                  <button
+                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button"
+                    style="position: relative; overflow: hidden"
+                    onclick="addClassroomToCart()"
+                  >
+                    <div
+                      class="button-bg-fill"
+                      style="
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 0;
+                        background-color: white;
+                        z-index: 1;
+                      "
+                    ></div>
+                    <span
+                      class="mobile-button-text"
+                      style="position: relative; z-index: 2"
+                      >加入清單</span
+                    >
                   </button>
                 </div>
               </div>
@@ -757,40 +538,107 @@
           <!-- A507 教室 -->
           <div class="accordion-item">
             <div class="accordion-header" onclick="toggleAccordion('a507')">
-              <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A507 教室</h2>
-              <svg class="expand-icon plus" id="icon-a507-mobile" viewBox="0 0 30 30">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              <h2
+                class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+              >
+                A507 教室
+              </h2>
+              <svg
+                class="expand-icon plus"
+                id="icon-a507-mobile"
+                viewBox="0 0 30 30"
+              >
+                <line
+                  x1="5"
+                  y1="15"
+                  x2="25"
+                  y2="15"
+                  stroke="white"
+                  stroke-width="1"
+                />
+                <line
+                  x1="15"
+                  y1="5"
+                  x2="15"
+                  y2="25"
+                  stroke="white"
+                  stroke-width="1"
+                />
               </svg>
             </div>
             <div class="accordion-content" id="content-a507-mobile">
-              <div class="accordion-content-inner mobile-accordion-content flex">
+              <div
+                class="accordion-content-inner mobile-accordion-content flex"
+              >
                 <div class="mobile-accordion-image mobile-image-padding">
-                  <img src="Images/A507.png" alt="A507 教室" class="w-full aspect-[16/9] object-cover">
+                  <img
+                    src="Images/A507.png"
+                    alt="A507 教室"
+                    class="w-full aspect-[16/9] object-cover"
+                  />
                 </div>
                 <div class="mobile-accordion-text space-y-4">
                   <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text" style="color: #00ff80;">可租借</div>
+                    <div
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text"
+                      style="color: #00ff80"
+                    >
+                      可租借
+                    </div>
                   </div>
                   <div class="space-y-2">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text">押金</div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text"
+                      >
+                        押金
+                      </div>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn" data-equipment="A507 教室">
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text"
+                      >
+                        NT5,000
+                      </div>
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn"
+                        data-equipment="A507 教室"
+                      />
                     </div>
                   </div>
                   <div>
-                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text">
+                    <p
+                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text"
+                    >
                       A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
                     </p>
                   </div>
                 </div>
                 <div class="mobile-accordion-button">
-                  <button class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button" style="position: relative; overflow: hidden;" onclick="addClassroomToCart()">
-                    <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                    <span class="mobile-button-text" style="position: relative; z-index: 2;">加入清單</span>
+                  <button
+                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button"
+                    style="position: relative; overflow: hidden"
+                    onclick="addClassroomToCart()"
+                  >
+                    <div
+                      class="button-bg-fill"
+                      style="
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 0;
+                        background-color: white;
+                        z-index: 1;
+                      "
+                    ></div>
+                    <span
+                      class="mobile-button-text"
+                      style="position: relative; z-index: 2"
+                      >加入清單</span
+                    >
                   </button>
                 </div>
               </div>
@@ -800,40 +648,107 @@
           <!-- A508 教室 -->
           <div class="accordion-item">
             <div class="accordion-header" onclick="toggleAccordion('a508')">
-              <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">A508 教室</h2>
-              <svg class="expand-icon plus" id="icon-a508-mobile" viewBox="0 0 30 30">
-                <line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>
-                <line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>
+              <h2
+                class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+              >
+                A508 教室
+              </h2>
+              <svg
+                class="expand-icon plus"
+                id="icon-a508-mobile"
+                viewBox="0 0 30 30"
+              >
+                <line
+                  x1="5"
+                  y1="15"
+                  x2="25"
+                  y2="15"
+                  stroke="white"
+                  stroke-width="1"
+                />
+                <line
+                  x1="15"
+                  y1="5"
+                  x2="15"
+                  y2="25"
+                  stroke="white"
+                  stroke-width="1"
+                />
               </svg>
             </div>
             <div class="accordion-content" id="content-a508-mobile">
-              <div class="accordion-content-inner mobile-accordion-content flex">
+              <div
+                class="accordion-content-inner mobile-accordion-content flex"
+              >
                 <div class="mobile-accordion-image mobile-image-padding">
-                  <img src="Images/A508.jpg" alt="A508 教室" class="w-full aspect-[16/9] object-cover">
+                  <img
+                    src="Images/A508.jpg"
+                    alt="A508 教室"
+                    class="w-full aspect-[16/9] object-cover"
+                  />
                 </div>
                 <div class="mobile-accordion-text space-y-4">
                   <div>
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text" style="color: #00ff80;">可租借</div>
+                    <div
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text"
+                      style="color: #00ff80"
+                    >
+                      可租借
+                    </div>
                   </div>
                   <div class="space-y-2">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text">押金</div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text"
+                      >
+                        押金
+                      </div>
                     </div>
                     <div class="flex items-center justify-between">
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text">NT5,000</div>
-                      <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn" data-equipment="A508 教室">
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text"
+                      >
+                        NT5,000
+                      </div>
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn"
+                        data-equipment="A508 教室"
+                      />
                     </div>
                   </div>
                   <div>
-                    <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text">
+                    <p
+                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text"
+                    >
                       A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
                     </p>
                   </div>
                 </div>
                 <div class="mobile-accordion-button">
-                  <button class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button" style="position: relative; overflow: hidden;" onclick="addClassroomToCart()">
-                    <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                    <span class="mobile-button-text" style="position: relative; z-index: 2;">加入清單</span>
+                  <button
+                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button"
+                    style="position: relative; overflow: hidden"
+                    onclick="addClassroomToCart()"
+                  >
+                    <div
+                      class="button-bg-fill"
+                      style="
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 0;
+                        background-color: white;
+                        z-index: 1;
+                      "
+                    ></div>
+                    <span
+                      class="mobile-button-text"
+                      style="position: relative; z-index: 2"
+                      >加入清單</span
+                    >
                   </button>
                 </div>
               </div>
@@ -845,11 +760,16 @@
 
     <!-- 通知元件 -->
     <div id="notification">
-      <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
+      <p
+        id="notification-text"
+        class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"
+      ></p>
     </div>
 
     <footer class="pt-4 pb-8">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+      <div
+        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
         <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
@@ -858,8 +778,16 @@
             >TO SCCD
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -869,8 +797,16 @@
             >ABOUT
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -878,8 +814,12 @@
         <div class="copyright text-xs md:text-right">
           <p>
             <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >Copyright © 2025 111</span
+              >屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >All rights reserved.</span
+              >
             </span>
             <span class="copyright-easter-egg" id="easter-egg-text">
               <!-- 彩蛋文字將由JavaScript生成 -->
@@ -895,16 +835,21 @@
       <div class="py-6 px-6">
         <div class="flex justify-between items-center">
           <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+            <div
+              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
+            >
               SCCD
             </div>
           </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+          <button
+            class="font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-close"
+          >
             <span class="text-white">CLOSE</span>
           </button>
         </div>
       </div>
-      
+
       <!-- 選單項目 -->
       <div class="flex-grow px-6">
         <nav>
@@ -933,7 +878,7 @@
           </ul>
         </nav>
       </div>
-      
+
       <!-- Footer區域 -->
       <div class="pt-4 pb-8 px-6">
         <div class="flex flex-col text-sm">
@@ -946,8 +891,16 @@
                 >TO SCCD
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
@@ -959,19 +912,33 @@
                 >ABOUT
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+            <div
+              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+            >
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >All rights reserved.</span
+                  >
                 </span>
               </p>
             </div>
@@ -979,757 +946,5 @@
         </div>
       </div>
     </div>
-
-    <script>
-      let currentSelectedClassroom = 'a503';
-      let classroomErrorCounts = {}; // 追蹤每個教室的錯誤通知次數
-      
-      // 教室圖片對應
-      const classroomImages = {
-        'a503': 'Images/A503.png',
-        'a507': 'Images/A507.png',
-        'a508': 'Images/A508.jpg'
-      };
-      
-      // 教室資料
-      const classroomData = {
-        'a503': {
-          id: 'classroom-a503',
-          name: 'A503 教室',
-          category: 'classroom',
-          deposit: 5000,
-          image: 'Images/A503.png'
-        },
-        'a507': {
-          id: 'classroom-a507',
-          name: 'A507 教室', 
-          category: 'classroom',
-          deposit: 5000,
-          image: 'Images/A507.png'
-        },
-        'a508': {
-          id: 'classroom-a508',
-          name: 'A508 教室',
-          category: 'classroom', 
-          deposit: 5000,
-          image: 'Images/A508.jpg'
-        }
-      };
-      
-      function toggleAccordion(classroomId) {
-        // 如果點擊的是已經打開的教室，就關閉它
-        if (currentSelectedClassroom === classroomId) {
-          closeAccordion(classroomId);
-          currentSelectedClassroom = null;
-          updateButtonState();
-          return;
-        }
-        
-        // 關閉當前打開的教室
-        if (currentSelectedClassroom) {
-          closeAccordion(currentSelectedClassroom);
-        }
-        
-        // 延遲打開新選擇的教室，讓關閉動畫先完成
-        setTimeout(() => {
-          openAccordion(classroomId);
-          currentSelectedClassroom = classroomId;
-          updateClassroomImage(classroomId);
-          updateButtonState();
-        }, 200);
-      }
-      
-      function openAccordion(classroomId) {
-        // 桌面版元素
-        const content = document.getElementById(`content-${classroomId}`);
-        const contentInner = content ? content.querySelector('.accordion-content-inner') : null;
-        const icon = document.getElementById(`icon-${classroomId}`);
-        
-        // 手機版元素
-        const contentMobile = document.getElementById(`content-${classroomId}-mobile`);
-        const contentInnerMobile = contentMobile ? contentMobile.querySelector('.accordion-content-inner') : null;
-        const iconMobile = document.getElementById(`icon-${classroomId}-mobile`);
-        
-        // 處理桌面版
-        if (content && contentInner && icon) {
-          // 先設置內容顯示以計算高度
-          gsap.set(contentInner, { opacity: 0 });
-          content.classList.add('expanded');
-          gsap.set(content, { height: 'auto' });
-          const autoHeight = content.offsetHeight;
-          gsap.set(content, { height: 0 });
-          
-          // 使用GSAP動畫展開
-          const tl = gsap.timeline();
-          tl.to(content, {
-            height: autoHeight,
-            duration: 0.5,
-            ease: "power2.out",
-            onComplete: () => {
-              gsap.set(content, { height: 'auto' });
-            }
-          })
-          .to(contentInner, {
-            opacity: 1,
-            duration: 0.3,
-            ease: "power2.out"
-          }, "-=0.2");
-          
-          // 改變圖標為 "-"
-          icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>';
-          icon.classList.remove('plus');
-        }
-        
-        // 處理手機版
-        if (contentMobile && contentInnerMobile && iconMobile) {
-          // 先設置內容顯示以計算高度
-          gsap.set(contentInnerMobile, { opacity: 0 });
-          contentMobile.classList.add('expanded');
-          gsap.set(contentMobile, { height: 'auto' });
-          const autoHeightMobile = contentMobile.offsetHeight;
-          gsap.set(contentMobile, { height: 0 });
-          
-          // 使用GSAP動畫展開
-          const tl = gsap.timeline();
-          tl.to(contentMobile, {
-            height: autoHeightMobile,
-            duration: 0.5,
-            ease: "power2.out",
-            onComplete: () => {
-              gsap.set(contentMobile, { height: 'auto' });
-            }
-          })
-          .to(contentInnerMobile, {
-            opacity: 1,
-            duration: 0.3,
-            ease: "power2.out"
-          }, "-=0.2");
-          
-          // 改變圖標為 "-"
-          iconMobile.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>';
-          iconMobile.classList.remove('plus');
-        }
-      }
-      
-      function closeAccordion(classroomId) {
-        // 桌面版元素
-        const content = document.getElementById(`content-${classroomId}`);
-        const contentInner = content ? content.querySelector('.accordion-content-inner') : null;
-        const icon = document.getElementById(`icon-${classroomId}`);
-        
-        // 手機版元素
-        const contentMobile = document.getElementById(`content-${classroomId}-mobile`);
-        const contentInnerMobile = contentMobile ? contentMobile.querySelector('.accordion-content-inner') : null;
-        const iconMobile = document.getElementById(`icon-${classroomId}-mobile`);
-        
-        // 處理桌面版
-        if (content && contentInner && icon) {
-          // 使用GSAP動畫收起
-          const tl = gsap.timeline();
-          tl.to(contentInner, {
-            opacity: 0,
-            duration: 0.2,
-            ease: "power2.out"
-          })
-          .to(content, {
-            height: 0,
-            duration: 0.4,
-            ease: "power2.out",
-            onComplete: () => {
-              content.classList.remove('expanded');
-            }
-          }, "-=0.1");
-          
-          // 改變圖標為 "+"
-          icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/><line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>';
-          icon.classList.add('plus');
-        }
-        
-        // 處理手機版
-        if (contentMobile && contentInnerMobile && iconMobile) {
-          // 使用GSAP動畫收起
-          const tl = gsap.timeline();
-          tl.to(contentInnerMobile, {
-            opacity: 0,
-            duration: 0.2,
-            ease: "power2.out"
-          })
-          .to(contentMobile, {
-            height: 0,
-            duration: 0.4,
-            ease: "power2.out",
-            onComplete: () => {
-              contentMobile.classList.remove('expanded');
-            }
-          }, "-=0.1");
-          
-          // 改變圖標為 "+"
-          iconMobile.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/><line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>';
-          iconMobile.classList.add('plus');
-        }
-      }
-      
-      function updateClassroomImage(classroomId) {
-        const image = document.getElementById('classroom-image');
-        image.src = classroomImages[classroomId];
-        image.alt = `${classroomId.toUpperCase()} 教室`;
-      }
-      
-      function updateButtonState() {
-        const button = document.getElementById('add-classroom-btn');
-        
-        if (!currentSelectedClassroom) {
-          // 沒有選中教室時，按鈕可用
-          button.classList.remove('button-disabled');
-          return;
-        }
-        
-        const cart = window.cartManager.getCart();
-        const classroom = classroomData[currentSelectedClassroom];
-        const isClassroomInCart = cart.find(item => item.id === classroom.id);
-        const errorCount = classroomErrorCounts[currentSelectedClassroom] || 0;
-        
-        // 只有當前教室已在購物車中且錯誤次數達到2次時才禁用
-        if (isClassroomInCart && errorCount >= 2) {
-          button.classList.add('button-disabled');
-        } else {
-          button.classList.remove('button-disabled');
-        }
-      }
-      
-      function addClassroomToCart() {
-        const button = document.getElementById('add-classroom-btn');
-        
-        // 檢查按鈕是否已被禁用
-        if (button.classList.contains('button-disabled')) {
-          return;
-        }
-        
-        if (!currentSelectedClassroom) {
-          showNotification('請先選擇一間教室！', 'error');
-          return;
-        }
-        
-        const classroom = classroomData[currentSelectedClassroom];
-        const cart = window.cartManager.getCart();
-        
-        // 檢查當前選中的教室是否已經在購物車中
-        const existingClassroom = cart.find(item => item.id === classroom.id);
-        
-        if (existingClassroom) {
-          // 增加當前教室的錯誤計數
-          classroomErrorCounts[currentSelectedClassroom] = (classroomErrorCounts[currentSelectedClassroom] || 0) + 1;
-          showNotification('教室只有一個啦...不能重複添加！', 'error');
-          
-          // 更新按鈕狀態
-          updateButtonState();
-          return;
-        }
-        
-        // 如果教室不在購物車中，可以正常添加
-        const success = window.cartManager.addToCart({
-          id: classroom.id,
-          name: classroom.name,
-          category: classroom.category,
-          deposit: classroom.deposit,
-          mainImage: classroom.image
-        });
-        
-        if (success) {
-          showNotification(`${classroom.name}已成功加入租借清單！`);
-          // 成功添加後更新按鈕狀態
-          updateButtonState();
-        }
-      }
-      
-      function showNotification(message, type = 'success') {
-        // 使用和showToast一樣的邏輯
-        // 檢查是否已有toast，如果有則移除
-        const existingToast = document.querySelector('.toast');
-        if (existingToast) {
-          existingToast.remove();
-        }
-        
-        // 創建新的toast
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        
-        // 如果是錯誤類型，添加錯誤樣式
-        if (type === 'error') {
-          toast.classList.add('error');
-        }
-        
-        // 創建內部的p元素
-        const p = document.createElement('p');
-        p.textContent = message;
-        toast.appendChild(p);
-        
-        document.body.appendChild(toast);
-        
-        // 檢查是否為手機版
-        const isMobile = window.innerWidth <= 767;
-        
-        if (isMobile) {
-          // 手機版動畫（已由CSS處理定位）
-          toast.style.opacity = '0';
-          toast.style.pointerEvents = 'none';
-          toast.style.transform = 'translateY(20px)';
-          
-          // 顯示通知（從底部浮上來的效果）
-          setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateY(0px)';
-          }, 50);
-          
-          // 2秒後開始消失動畫
-          setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-10px)';
-          }, 2000);
-        } else {
-          // 桌面版動畫（原有邏輯）
-          toast.style.bottom = '7.5rem';
-          toast.style.left = '50%';
-          toast.style.transform = 'translateX(-50%) translateY(50px)';
-          toast.style.opacity = '0';
-          toast.style.pointerEvents = 'none';
-          
-          // 顯示通知（從底部浮上來的效果）
-          setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateX(-50%) translateY(0px)';
-          }, 50);
-          
-          // 2秒後開始消失動畫
-          setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(-50%) translateY(-10px)';
-          }, 2000);
-        }
-        
-        // 動畫完成後完全隱藏並移除
-        setTimeout(() => {
-          if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-          }
-        }, 2500);
-      }
-      
-      // 初始化：默認展開 A503
-      document.addEventListener('DOMContentLoaded', function() {
-        openAccordion('a503');
-        
-        // 手機版選單功能
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuClose = document.getElementById('mobile-menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
-        
-        function openMenu() {
-          mobileMenu.classList.add('active');
-          body.style.overflow = 'hidden'; // 防止背景滾動
-          
-          // 觸發選單動畫
-          triggerMenuAnimation();
-        }
-        
-        function triggerMenuAnimation() {
-          // 獲取所有動畫元素
-          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
-          
-          // 重置動畫
-          animatedElements.forEach(element => {
-            element.style.animation = 'none';
-            element.offsetHeight; // 強制重排
-            element.style.animation = null;
-          });
-        }
-        
-        function closeMenu() {
-          mobileMenu.classList.remove('active');
-          body.style.overflow = ''; // 恢復滾動
-        }
-        
-        // 打開選單
-        if (mobileMenuBtn) {
-          mobileMenuBtn.addEventListener('click', openMenu);
-        }
-        
-        // 關閉選單
-        if (mobileMenuClose) {
-          mobileMenuClose.addEventListener('click', closeMenu);
-        }
-        
-        // 點擊選單項目時關閉選單
-        const mobileMenuLinks = mobileMenu ? mobileMenu.querySelectorAll('nav a') : [];
-        mobileMenuLinks.forEach(link => {
-          link.addEventListener('click', closeMenu);
-        });
-        
-        // 點擊背景關閉選單
-        if (mobileMenu) {
-          mobileMenu.addEventListener('click', function(event) {
-            if (event.target === mobileMenu) {
-              closeMenu();
-            }
-          });
-        }
-        
-        // 為圖標添加hover效果 - 只在桌面版
-        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const icons = document.querySelectorAll('.expand-icon');
-          icons.forEach(icon => {
-            icon.addEventListener('mouseenter', function() {
-              if (this.classList.contains('plus')) {
-                gsap.to(this, {
-                  rotation: 90,
-                  duration: 0.3,
-                  ease: "power2.out"
-                });
-              }
-            });
-            
-            icon.addEventListener('mouseleave', function() {
-              if (this.classList.contains('plus')) {
-                gsap.to(this, {
-                  rotation: 0,
-                  duration: 0.3,
-                  ease: "power2.out"
-                });
-              }
-            });
-          });
-        }
-        
-        // 按鈕動畫效果 - 只在桌面版
-        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const button = document.getElementById('add-classroom-btn');
-          const buttonFill = button.querySelector('.button-bg-fill');
-          
-          button.addEventListener('mouseenter', function() {
-            // 不包含disabled類時才執行動畫
-            if (!this.classList.contains('button-disabled')) {
-              gsap.to(buttonFill, {
-                height: '100%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色變化
-              this.classList.add('white-text');
-            }
-          });
-          
-          button.addEventListener('mouseleave', function() {
-            // 不包含disabled類時才執行動畫
-            if (!this.classList.contains('button-disabled')) {
-              gsap.to(buttonFill, {
-                height: '0%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色恢復
-              this.classList.remove('white-text');
-            }
-          });
-        }
-        
-        // Login 按鈕動畫效果 - 只在桌面版
-        const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
-        
-        if (loginBtn && loginBtnFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          loginBtn.addEventListener('mouseenter', function() {
-            gsap.to(loginBtnFill, {
-              height: '100%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色變化
-            this.classList.add('white-text');
-          });
-          
-          loginBtn.addEventListener('mouseleave', function() {
-            gsap.to(loginBtnFill, {
-              height: '0%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色恢復
-            this.classList.remove('white-text');
-          });
-        }
-      });
-
-      // Copyright 彩蛋效果 - 打字機風格 - 只在桌面版啟用
-      document.addEventListener('DOMContentLoaded', function() {
-        const copyrightElement = document.querySelector('.copyright');
-        const originalElement = document.querySelector('.copyright-original');
-        const easterEggElement = document.getElementById('easter-egg-text');
-        
-        if (copyrightElement && originalElement && easterEggElement && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const originalText = originalElement.textContent;
-          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
-          const maxLength = Math.min(originalText.length, targetText.length);
-          const truncatedTarget = targetText.substring(0, maxLength);
-          
-          let isHovering = false;
-          let animationInterval = null;
-          let currentStep = 0;
-          let isAnimatingIn = false;
-          let isAnimatingOut = false;
-          
-          // 隨機字符池
-          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
-          
-          function getRandomChar() {
-            return randomChars[Math.floor(Math.random() * randomChars.length)];
-          }
-          
-          function generateRandomString(length) {
-            let result = '';
-            for (let i = 0; i < length; i++) {
-              result += getRandomChar();
-            }
-            return result;
-          }
-          
-          function animateToTarget() {
-            if (isAnimatingOut) return;
-            isAnimatingIn = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
-            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
-            
-            easterEggElement.textContent = generateRandomString(maxLength);
-            easterEggElement.style.opacity = '1';
-            originalElement.style.opacity = '0';
-            
-            animationInterval = setInterval(() => {
-              if (!isHovering || isAnimatingOut) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                return;
-              }
-              
-              currentStep++;
-              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
-              
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (i < revealedChars) {
-                  displayText += truncatedTarget[i] || ' ';
-                } else {
-                  displayText += getRandomChar();
-                }
-              }
-              
-              easterEggElement.textContent = displayText;
-              
-              if (revealedChars >= maxLength) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                easterEggElement.textContent = truncatedTarget;
-              }
-            }, 50);
-          }
-          
-          function animateToOriginal() {
-            // 立即停止任何正在進行的動畫
-            if (animationInterval) {
-              clearInterval(animationInterval);
-            }
-            
-            isAnimatingIn = false;
-            isAnimatingOut = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
-            
-            animationInterval = setInterval(() => {
-              currentStep++;
-              const progress = currentStep / totalSteps;
-              
-              if (progress >= 1) {
-                clearInterval(animationInterval);
-                easterEggElement.style.opacity = '0';
-                originalElement.style.opacity = '1';
-                isAnimatingOut = false;
-                animationInterval = null;
-                return;
-              }
-              
-              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
-                  displayText += getRandomChar();
-                } else {
-                  // 保持當前字符或目標字符
-                  const currentChar = easterEggElement.textContent[i];
-                  displayText += currentChar || getRandomChar();
-                }
-              }
-              easterEggElement.textContent = displayText;
-            }, 30);
-          }
-          
-          copyrightElement.addEventListener('mouseenter', () => {
-            isHovering = true;
-            if (animationInterval) clearInterval(animationInterval);
-            animateToTarget();
-          });
-          
-          copyrightElement.addEventListener('mouseleave', () => {
-            isHovering = false;
-            animateToOriginal();
-          });
-        }
-      });
-      
-      // 收藏夾功能
-      const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
-      
-      // 顯示Toast提示
-      function showToast(message) {
-        // 檢查是否已有toast，如果有則移除
-        const existingToast = document.querySelector('.toast');
-        if (existingToast) {
-          existingToast.remove();
-        }
-        
-        // 創建新的toast
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        
-        // 創建內部的p元素
-        const p = document.createElement('p');
-        p.textContent = message;
-        toast.appendChild(p);
-        
-        document.body.appendChild(toast);
-        
-        // 檢查是否為手機版
-        const isMobile = window.innerWidth <= 767;
-        
-        if (isMobile) {
-          // 手機版動畫（已由CSS處理定位）
-          toast.style.opacity = '0';
-          toast.style.pointerEvents = 'none';
-          toast.style.transform = 'translateY(20px)';
-          
-          // 顯示通知（從底部浮上來的效果）
-          setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateY(0px)';
-          }, 50);
-          
-          // 2秒後開始消失動畫
-          setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-10px)';
-          }, 2000);
-        } else {
-          // 桌面版動畫（原有邏輯）
-          toast.style.bottom = '7.5rem';
-          toast.style.left = '50%';
-          toast.style.transform = 'translateX(-50%) translateY(50px)';
-          toast.style.opacity = '0';
-          toast.style.pointerEvents = 'none';
-          
-          // 顯示通知（從底部浮上來的效果）
-          setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateX(-50%) translateY(0px)';
-          }, 50);
-          
-          // 2秒後開始消失動畫
-          setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(-50%) translateY(-10px)';
-          }, 2000);
-        }
-        
-        // 動畫完成後完全隱藏並移除
-        setTimeout(() => {
-          if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-          }
-        }, 2500);
-      }
-      
-      // 為每個收藏夾按鈕添加點擊事件
-      bookmarkButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          const equipmentName = this.getAttribute('data-equipment');
-          const isBookmarked = this.src.includes('Fill');
-          
-          if (isBookmarked) {
-            // 如果已收藏，切換回空心
-            this.src = 'Icons/Bookmark Sharp Regular.svg';
-            showToast(`${equipmentName}已從收藏夾中移除！`);
-          } else {
-            // 如果未收藏，切換為填色
-            this.src = 'Icons/Bookmark Sharp Fill.svg';
-            showToast(`${equipmentName}已加入收藏夾！`);
-          }
-        });
-      });
-      
-      // 更新手機版購物車數量
-      function updateMobileCartCount() {
-        const mobileCartCount = document.getElementById('mobile-cart-count');
-        const cartCount = document.getElementById('cart-count');
-        if (mobileCartCount && cartCount) {
-          mobileCartCount.textContent = cartCount.textContent;
-        }
-      }
-      
-      // 購物車數字同步設置
-      function setupCartSync() {
-        const cartCountElement = document.getElementById('cart-count');
-        const mobileCartCountElement = document.getElementById('mobile-cart-count');
-        
-        if (cartCountElement && mobileCartCountElement) {
-          // 使用 MutationObserver 監聽變化
-          const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-              if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                updateMobileCartCount();
-              }
-            });
-          });
-          
-          observer.observe(cartCountElement, { 
-            childList: true, 
-            characterData: true, 
-            subtree: true 
-          });
-          
-          // 定期檢查同步
-          setInterval(updateMobileCartCount, 500);
-          
-          // 頁面載入時立即同步
-          updateMobileCartCount();
-        }
-      }
-      
-      // 初始化購物車同步
-      setupCartSync();
-      
-      // 當 cartManager 準備好時也重新同步
-      if (typeof window !== 'undefined') {
-        window.addEventListener('cartUpdated', updateMobileCartCount);
-      }
-    </script>
-
-    <script src="script.js" defer></script>
   </body>
-</html> 
+</html>

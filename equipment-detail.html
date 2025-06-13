@@ -12,346 +12,34 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
-    
-    <!-- 箭頭動畫樣式 -->
-    <style>
-      /* 箭頭動畫樣式 */
-      .arrow-link {
-        display: inline-flex;
-        align-items: center;
-        position: relative;
-      }
-      
-      .arrow-container {
-        position: relative;
-        width: 1em;
-        height: 1em;
-        overflow: hidden;
-        margin-left: 8px;
-      }
-      
-      .arrow-icons-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(0);
-      }
-      
-      .arrow-icon {
-        width: 0.8em;
-        height: 0.8em;
-        flex-shrink: 0;
-        filter: brightness(0) invert(1); /* 預設白色 */
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .arrow-link:hover .arrow-icons-wrapper {
-          transform: translateY(-1em);
-        }
-        
-        .login-btn:hover .arrow-icon {
-          filter: brightness(0); /* hover 時變黑色 */
-        }
-        
-        /* Footer 連結 hover 效果 */
-        .footer-link:hover {
-          opacity: 0.6;
-        }
-        
-        /* Header 導航連結 hover 效果 */
-        .nav-link:hover {
-          opacity: 0.6;
-        }
-      }
-      
-      /* LOGIN 按鈕特殊樣式 */
-      .login-btn {
-        padding: 1.5px 10px !important;
-        padding-right: 8px !important;
-      }
-      
-      /* 手機版 LOGIN 按鈕縮小 */
-      @media (max-width: 768px) {
-        .login-btn {
-          padding: 1px 8px !important;
-          padding-right: 6px !important;
-          font-size: 0.75rem !important;
-        }
-        
-        .login-btn .arrow-container {
-          width: 0.8em;
-          height: 0.8em;
-        }
-        
-        .login-btn .arrow-icon {
-          width: 0.6em;
-          height: 0.6em;
-        }
-      }
-      
-      /* Breadcrumb 樣式 */
-      .breadcrumb {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75rem; /* text-xs */
-        font-weight: 300; /* font-light */
-        color: white;
-        text-align: left;
-        margin-bottom: 1rem;
-        letter-spacing: 0.05em; /* tracking-wider */
-        position: absolute;
-        top: calc(3rem + 3vh);
-        left: 6%;
-        z-index: 10;
-      }
-      
-      /* 桌面版 breadcrumb hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .breadcrumb:hover .breadcrumb-item {
-          opacity: 0.6;
-        }
-        
-        .breadcrumb .breadcrumb-item:hover {
-          opacity: 1 !important;
-        }
-      }
-      
-      .breadcrumb .breadcrumb-item {
-        transition: opacity 0.3s ease;
-        cursor: pointer;
-      }
-      
-      .breadcrumb .breadcrumb-separator {
-        margin: 0 0.5rem;
-        opacity: 0.6;
-      }
-      
-      /* Copyright 彩蛋效果 */
-      .copyright {
-        position: relative;
-      }
-      
-      .copyright-original {
-        transition: none;
-      }
-      
-      .copyright-easter-egg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        white-space: nowrap;
-        opacity: 0;
-        font-family: 'Inter', sans-serif;
-        font-size: inherit;
-        letter-spacing: inherit;
-      }
-      
-      /* Toast 提示訊息樣式 */
-      .toast {
-        position: fixed;
-        bottom: 7.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: white;
-        color: black;
-        padding: 1rem 5rem;
-        z-index: 50;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.3s ease-out;
-      }
-      
-      .toast p {
-        font-size: 1rem;
-        font-family: 'Noto Sans TC', sans-serif;
-        line-height: 1.625;
-        text-align: center;
-        margin: 0;
-      }
+    <script src="js/common.js"></script>
 
-      /* Toast 錯誤樣式 */
-      .toast.error {
-        background-color: #ffd9e0 !important;
-      }
-      
-      .toast.error p {
-        color: #ff4560 !important;
-      }
-      
-      /* 圖片hover提示樣式 */
-      .image-tooltip {
-        position: fixed;
-        background-color: rgba(0, 0, 0, 0.4);
-        color: white;
-        padding: 4px 6px;
-        font-size: 0.8rem;
-        font-family: 'Noto Sans TC', sans-serif;
-        font-weight: 400;
-        z-index: 1000;
-        pointer-events: none;
-        opacity: 0;
-        white-space: nowrap;
-      }
-      
-      /* 按鈕動畫樣式 */
-      .button-animated {
-        transition: color 0.5s ease;
-      }
-      
-      .button-animated.white-text {
-        color: black;
-      }
-      
-      /* 手機版選單動畫 */
-      .menu-animate-enter {
-        overflow: hidden;
-      }
-      
-      .menu-animate-enter-content {
-        transform: translateY(150%);
-        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-      }
-      
-      @keyframes menuSlideUp {
-        to {
-          transform: translateY(0);
-        }
-      }
-      
-      /* 選單項目動畫延遲 */
-      .menu-animate-enter-content.menu-delay-1 {
-        animation-delay: 0.1s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-2 {
-        animation-delay: 0.2s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-3 {
-        animation-delay: 0.3s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-4 {
-        animation-delay: 0.4s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-5 {
-        animation-delay: 0.5s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-6 {
-        animation-delay: 0.6s;
-      }
-      
-      /* 手機版選單樣式 */
-      .mobile-menu {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background-color: #000000 !important;
-        z-index: 999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s ease, visibility 0.5s ease;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .mobile-menu.active {
-        opacity: 1;
-        visibility: visible;
-        background-color: #000000 !important;
-      }
-      
-      /* 手機版樣式 */
-      @media (max-width: 767px) {
-        /* 防止水平滾動 */
-        * {
-          max-width: 100vw;
-        }
+    <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/breadcrumb.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/equipment-detail.css" />
 
-        /* 手機版隱藏桌面導航 */
-        .desktop-nav {
-          display: none;
-        }
+    <!-- 載入設備數據 -->
+    <script src="equipment-data.js"></script>
 
-        /* 手機版隱藏桌面麵包屑 */
-        .breadcrumb {
-            display: none;
-        }
-
-        /* Footer 在手機版的調整 */
-        footer .container {
-          max-width: 100vw;
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .container > div:first-child {
-          flex-direction: column;
-          gap: 0.5rem;
-          align-items: flex-start;
-        }
-        
-        footer .copyright {
-          text-align: left !important;
-        }
-
-        /* 容器最大寬度限制 */
-        .container {
-          max-width: 100vw;
-          overflow-x: hidden;
-        }
-
-        /* 手機版 Toast 樣式 */
-        .toast {
-          bottom: 5vh !important; /* 畫面80%以下的位置 */
-          left: 3% !important;
-          right: 3% !important;
-          width: auto !important;
-          max-width: none !important;
-          transform: none !important;
-          padding: 0.75rem 1rem !important; /* 減少padding讓它只有一行 */
-        }
-        
-        .toast p {
-          font-size: 0.875rem !important; /* sm size */
-          line-height: 1.25 !important; /* 較緊湊的行高 */
-          white-space: nowrap !important; /* 強制一行顯示 */
-          overflow: hidden !important;
-          text-overflow: ellipsis !important; /* 如果文字太長就顯示... */
-        }
-      }
-      
-      /* 確保大於768px時隱藏手機版選單 */
-      @media (min-width: 768px) {
-        .mobile-menu { 
-          display: none !important; 
-        }
-      }
-      
-      /* 手機版專用樣式 */
-      @media (max-width: 767px) {
-        /* 確保手機版完全隱藏 LOGIN 按鈕 */
-        #login-btn {
-          display: none !important;
-        }
-      }
-    </style>
+    <!-- 引入模組化 JavaScript 文件 -->
+    <script src="js/mobile-menu.js" defer></script>
+    <script src="js/copyright-easter-egg.js" defer></script>
+    <script src="js/button-animations.js" defer></script>
+    <script src="js/cart-sync.js" defer></script>
+    <script src="js/equipment-detail.js" defer></script>
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen">
     <header class="py-6">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
+      <div
+        class="container mx-auto flex justify-between items-center px-6 md:px-4"
+      >
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -379,7 +67,7 @@
             </ul>
           </nav>
         </div>
-        
+
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
@@ -391,18 +79,38 @@
             href="login.html"
             id="login-btn"
             class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
+            style="position: relative; overflow: hidden"
+          >
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+                border-radius: 30px;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
-          
+
           <!-- 手機版 CART 按鈕 -->
           <a
             href="rental-list.html"
@@ -410,9 +118,12 @@
             class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
             >(<span id="mobile-cart-count">0</span>) CART</a
           >
-          
+
           <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+          <button
+            class="md:hidden font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-btn"
+          >
             <span class="text-white" id="menu-btn-text">MENU</span>
           </button>
         </div>
@@ -431,77 +142,173 @@
           <span class="breadcrumb-separator">/</span>
           <a href="equipment.html" class="breadcrumb-item">租借設備</a>
           <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-item" id="breadcrumb-equipment-name">設備名稱</span>
+          <span class="breadcrumb-item" id="breadcrumb-equipment-name"
+            >設備名稱</span
+          >
         </nav>
 
-        <div class="flex flex-col md:grid md:grid-cols-2 md:gap-50 w-full px-6 md:px-0 md:w-4/5 md:items-center md:mt-12">
+        <div
+          class="flex flex-col md:grid md:grid-cols-2 md:gap-50 w-full px-6 md:px-0 md:w-4/5 md:items-center md:mt-12"
+        >
           <!-- MOBILE -->
           <div class="flex flex-col w-full block md:hidden">
             <div class="w-full">
-              <div class="aspect-square w-full cursor-pointer js-equipment-image-container">
-                <img class="w-full h-full object-cover js-main-image" src="" alt="設備圖片">
+              <div
+                class="aspect-square w-full cursor-pointer js-equipment-image-container"
+              >
+                <img
+                  class="w-full h-full object-cover js-main-image"
+                  src=""
+                  alt="設備圖片"
+                />
               </div>
             </div>
             <div class="w-full flex flex-col justify-center mt-8">
               <div class="flex flex-col">
-                <div class="mb-2"><span class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"></span></div>
-                <div class="mb-1"><span class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"></span></div>
-                <h1 class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-6 js-equipment-name"></h1>
+                <div class="mb-2">
+                  <span
+                    class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"
+                  ></span>
+                </div>
+                <div class="mb-1">
+                  <span
+                    class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"
+                  ></span>
+                </div>
+                <h1
+                  class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-6 js-equipment-name"
+                ></h1>
                 <div class="grid grid-cols-2 gap-8 mb-6">
                   <div>
-                    <div class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1">設備數量</div>
-                    <div class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"></div>
+                    <div
+                      class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
+                    >
+                      設備數量
+                    </div>
+                    <div
+                      class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"
+                    ></div>
                   </div>
                   <div>
-                    <div class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1">押金</div>
-                    <div class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"></div>
+                    <div
+                      class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
+                    >
+                      押金
+                    </div>
+                    <div
+                      class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"
+                    ></div>
                   </div>
                 </div>
-                <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed js-equipment-description"></p>
+
                 <div class="flex items-center gap-6 mt-8">
-                  <button class="flex-grow border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-2 text-base cursor-pointer button-animated js-add-to-cart-btn" style="position: relative; overflow: hidden;">
-                    <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                    <span style="position: relative; z-index: 2;">加入清單</span>
+                  <button
+                    class="flex-grow border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-2 text-base cursor-pointer button-animated js-add-to-cart-btn"
+                    style="position: relative; overflow: hidden"
+                  >
+                    <div
+                      class="button-bg-fill"
+                      style="
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 0;
+                        background-color: white;
+                        z-index: 1;
+                      "
+                    ></div>
+                    <span style="position: relative; z-index: 2">加入清單</span>
                   </button>
-                  <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-5 h-5 cursor-pointer transition-opacity flex-shrink-0 js-bookmark-btn" data-equipment="">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-5 h-5 cursor-pointer transition-opacity flex-shrink-0 js-bookmark-btn"
+                    data-equipment=""
+                  />
                 </div>
               </div>
             </div>
           </div>
-          
+
           <!-- DESKTOP -->
           <div class="hidden md:contents">
             <div class="flex justify-end h-full items-center">
-              <div class="aspect-[4/5] w-4/5 cursor-pointer js-equipment-image-container">
-                <img class="w-full h-full object-cover js-main-image" src="" alt="設備圖片">
+              <div
+                class="aspect-[4/5] w-4/5 cursor-pointer js-equipment-image-container"
+              >
+                <img
+                  class="w-full h-full object-cover js-main-image"
+                  src=""
+                  alt="設備圖片"
+                />
               </div>
             </div>
             <div class="w-4/5 flex flex-col justify-center h-full">
-              <div class="aspect-[4/5] flex flex-col justify-between">
+              <div class="flex flex-col justify-center gap-20">
                 <div>
-                  <div class="mb-4"><span class="text-base font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"></span></div>
-                  <div class="flex items-start justify-between mb-3">
-                    <span class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"></span>
-                    <div class="ml-2"><img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity js-bookmark-btn" data-equipment=""></div>
+                  <div class="mb-4">
+                    <span
+                      class="text-base font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"
+                    ></span>
                   </div>
-                  <h1 class="text-3xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-8 js-equipment-name"></h1>
+                  <div class="flex items-start justify-between mb-3">
+                    <span
+                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"
+                    ></span>
+                    <div class="ml-2">
+                      <img
+                        src="Icons/Bookmark Sharp Regular.svg"
+                        alt="Bookmark"
+                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity js-bookmark-btn"
+                        data-equipment=""
+                      />
+                    </div>
+                  </div>
+                  <h1
+                    class="text-3xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-8 js-equipment-name"
+                  ></h1>
                   <div class="grid grid-cols-2 gap-8">
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">設備數量</div>
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"></div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2"
+                      >
+                        設備數量
+                      </div>
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"
+                      ></div>
                     </div>
                     <div>
-                      <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">押金</div>
-                      <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"></div>
+                      <div
+                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2"
+                      >
+                        押金
+                      </div>
+                      <div
+                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"
+                      ></div>
                     </div>
                   </div>
-                  <hr class="border-white my-10">
-                  <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed js-equipment-description"></p>
                 </div>
-                <div class="flex items-end">
-                  <button class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated js-add-to-cart-btn" style="width: 200px; position: relative; overflow: hidden;">
-                    <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                    <span style="position: relative; z-index: 2;">加入清單</span>
+                <div class="flex items-center justify-start">
+                  <button
+                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated js-add-to-cart-btn"
+                    style="width: 200px; position: relative; overflow: hidden"
+                  >
+                    <div
+                      class="button-bg-fill"
+                      style="
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 0;
+                        background-color: white;
+                        z-index: 1;
+                      "
+                    ></div>
+                    <span style="position: relative; z-index: 2">加入清單</span>
                   </button>
                 </div>
               </div>
@@ -512,16 +319,29 @@
     </main>
 
     <!-- 圖片放大覆蓋層 -->
-    <div id="image-overlay" class="fixed inset-0 bg-black bg-opacity-5 items-center justify-center z-50 hidden">
-      <div class="relative w-full h-full flex items-center justify-center" style="padding: 6vh 3vw;">
-        <img id="enlarged-image" src="" alt="放大圖片" class="max-h-full w-auto object-contain">
+    <div
+      id="image-overlay"
+      class="fixed inset-0 bg-black bg-opacity-75 items-center justify-center z-50 hidden"
+    >
+      <div
+        class="relative w-full h-full flex items-center justify-center"
+        style="padding: 6vh 3vw"
+      >
+        <img
+          id="enlarged-image"
+          src=""
+          alt="放大圖片"
+          class="max-h-full w-auto object-contain"
+        />
       </div>
     </div>
 
     <!-- 加入清單通知 (現在由JS動態生成) -->
 
     <footer class="pt-4 pb-8">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+      <div
+        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
         <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
@@ -530,8 +350,16 @@
             >TO SCCD
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -541,8 +369,16 @@
             >ABOUT
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -550,8 +386,12 @@
         <div class="copyright text-xs md:text-right">
           <p>
             <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >Copyright © 2025 111</span
+              >屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >All rights reserved.</span
+              >
             </span>
             <span class="copyright-easter-egg" id="easter-egg-text">
               <!-- 彩蛋文字將由JavaScript生成 -->
@@ -567,16 +407,21 @@
       <div class="py-6 px-6">
         <div class="flex justify-between items-center">
           <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+            <div
+              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
+            >
               SCCD
             </div>
           </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+          <button
+            class="font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-close"
+          >
             <span class="text-white">CLOSE</span>
           </button>
         </div>
       </div>
-      
+
       <!-- 選單項目 -->
       <div class="flex-grow px-6">
         <nav>
@@ -605,7 +450,7 @@
           </ul>
         </nav>
       </div>
-      
+
       <!-- Footer區域 -->
       <div class="pt-4 pb-8 px-6">
         <div class="flex flex-col text-sm">
@@ -618,8 +463,16 @@
                 >TO SCCD
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
@@ -631,19 +484,33 @@
                 >ABOUT
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+            <div
+              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+            >
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >All rights reserved.</span
+                  >
                 </span>
               </p>
             </div>
@@ -651,536 +518,5 @@
         </div>
       </div>
     </div>
-
-    <!-- 載入設備數據 -->
-    <script src="equipment-data.js"></script>
-    <script>
-      // Copyright 彩蛋效果 - 打字機風格
-      document.addEventListener('DOMContentLoaded', function() {
-        const copyrightElement = document.querySelector('.copyright');
-        const originalElement = document.querySelector('.copyright-original');
-        const easterEggElement = document.getElementById('easter-egg-text');
-        
-        if (copyrightElement && originalElement && easterEggElement) {
-          const originalText = originalElement.textContent;
-          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
-          const maxLength = Math.min(originalText.length, targetText.length);
-          const truncatedTarget = targetText.substring(0, maxLength);
-          
-          let isHovering = false;
-          let animationInterval = null;
-          let currentStep = 0;
-          let isAnimatingIn = false;
-          let isAnimatingOut = false;
-          
-          // 隨機字符池
-          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
-          
-          function getRandomChar() {
-            return randomChars[Math.floor(Math.random() * randomChars.length)];
-          }
-          
-          function generateRandomString(length) {
-            let result = '';
-            for (let i = 0; i < length; i++) {
-              result += getRandomChar();
-            }
-            return result;
-          }
-          
-          function animateToTarget() {
-            if (isAnimatingOut) return;
-            isAnimatingIn = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
-            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
-            
-            easterEggElement.textContent = generateRandomString(maxLength);
-            easterEggElement.style.opacity = '1';
-            originalElement.style.opacity = '0';
-            
-            animationInterval = setInterval(() => {
-              if (!isHovering || isAnimatingOut) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                return;
-              }
-              
-              currentStep++;
-              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
-              
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (i < revealedChars) {
-                  displayText += truncatedTarget[i] || ' ';
-                } else {
-                  displayText += getRandomChar();
-                }
-              }
-              
-              easterEggElement.textContent = displayText;
-              
-              if (revealedChars >= maxLength) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                easterEggElement.textContent = truncatedTarget;
-              }
-            }, 50);
-          }
-          
-          function animateToOriginal() {
-            // 立即停止任何正在進行的動畫
-            if (animationInterval) {
-              clearInterval(animationInterval);
-            }
-            
-            isAnimatingIn = false;
-            isAnimatingOut = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
-            
-            animationInterval = setInterval(() => {
-              currentStep++;
-              const progress = currentStep / totalSteps;
-              
-              if (progress >= 1) {
-                clearInterval(animationInterval);
-                easterEggElement.style.opacity = '0';
-                originalElement.style.opacity = '1';
-                isAnimatingOut = false;
-                animationInterval = null;
-                return;
-              }
-              
-              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
-                  displayText += getRandomChar();
-                } else {
-                  // 保持當前字符或目標字符
-                  const currentChar = easterEggElement.textContent[i];
-                  displayText += currentChar || getRandomChar();
-                }
-              }
-              easterEggElement.textContent = displayText;
-            }, 30);
-          }
-          
-          copyrightElement.addEventListener('mouseenter', () => {
-            isHovering = true;
-            if (animationInterval) clearInterval(animationInterval);
-            animateToTarget();
-          });
-          
-          copyrightElement.addEventListener('mouseleave', () => {
-            isHovering = false;
-            animateToOriginal();
-          });
-        }
-        
-        // 初始化設備頁面
-        initializeEquipmentPage();
-      });
-      
-      // 設備詳情頁面邏輯
-      function initializeEquipmentPage() {
-        // 從URL參數獲取設備ID
-        const urlParams = new URLSearchParams(window.location.search);
-        const equipmentId = urlParams.get('id');
-        
-        if (!equipmentId) {
-          // 如果沒有設備ID，重定向到設備列表
-          window.location.href = 'equipment.html';
-          return;
-        }
-        
-        // 獲取設備數據
-        const equipment = getEquipmentById(equipmentId);
-        
-        if (!equipment) {
-          // 如果找不到設備，顯示錯誤或重定向
-          alert('找不到該設備信息');
-          window.location.href = 'equipment.html';
-          return;
-        }
-        
-        // 更新頁面內容
-        updateEquipmentDisplay(equipment);
-        
-        // 設置圖片放大功能
-        setupImageEnlargement();
-        
-        // 設置加入清單功能
-        setupAddToCart();
-        
-        // 設置收藏夾功能
-        setupBookmark();
-        
-        // 設置按鈕動畫
-        setupButtonAnimation();
-      }
-      
-      function updateEquipmentDisplay(equipment) {
-        // 更新頁面標題
-        document.getElementById('page-title').textContent = `${equipment.name} - SCCD 媒傳系平台`;
-        
-        // 更新主要圖片
-        document.querySelectorAll('.js-main-image').forEach(el => {
-          el.src = equipment.mainImage || equipment.image;
-          el.alt = equipment.name;
-        });
-        
-        // 更新設備信息
-        document.querySelectorAll('.js-equipment-status').forEach(el => {
-          el.textContent = equipment.status;
-          el.style.color = equipment.statusColor;
-        });
-        document.querySelectorAll('.js-equipment-category').forEach(el => el.textContent = equipment.category);
-        document.querySelectorAll('.js-equipment-name').forEach(el => el.textContent = equipment.name);
-        document.querySelectorAll('.js-equipment-quantity').forEach(el => el.textContent = equipment.quantity);
-        document.querySelectorAll('.js-equipment-deposit').forEach(el => el.textContent = `NT ${equipment.deposit}`);
-        document.querySelectorAll('.js-equipment-description').forEach(el => el.textContent = equipment.description);
-        
-        // 更新breadcrumb中的設備名稱
-        document.getElementById('breadcrumb-equipment-name').textContent = equipment.name;
-        
-        // 設置bookmark按鈕的設備名稱
-        document.querySelectorAll('.js-bookmark-btn').forEach(el => el.setAttribute('data-equipment', equipment.name));
-      }
-      
-      function setupImageEnlargement() {
-        const imageContainers = document.querySelectorAll('.js-equipment-image-container');
-        const overlay = document.getElementById('image-overlay');
-        const enlargedImage = document.getElementById('enlarged-image');
-        
-        // 創建或獲取 tooltip 元素
-        let tooltip = document.querySelector('.image-tooltip');
-        if (!tooltip && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-            tooltip = document.createElement('div');
-            tooltip.className = 'image-tooltip';
-            tooltip.textContent = '點擊放大檢視';
-            document.body.appendChild(tooltip);
-            gsap.set(tooltip, { x: 0, y: 0, opacity: 0 });
-        }
-
-        imageContainers.forEach(container => {
-            const mainImage = container.querySelector('.js-main-image');
-            if (!mainImage) return;
-
-            if (tooltip) {
-                const showTooltip = () => gsap.to(tooltip, { opacity: 1, duration: 0.2, ease: "power2.out" });
-                const hideTooltip = () => gsap.to(tooltip, { opacity: 0, duration: 0.2, ease: "power2.out" });
-                const moveTooltip = (e) => {
-                    const tooltipWidth = tooltip.offsetWidth;
-                    const x = e.clientX - (tooltipWidth / 2);
-                    const y = e.clientY - 20;
-                    gsap.to(tooltip, { x: x, y: y, duration: 0.3, ease: "power2.out" });
-                };
-                container.addEventListener('mouseenter', showTooltip);
-                container.addEventListener('mouseleave', hideTooltip);
-                container.addEventListener('mousemove', moveTooltip);
-            }
-
-            container.addEventListener('click', function() {
-                enlargedImage.src = mainImage.src;
-                enlargedImage.alt = mainImage.alt;
-                overlay.classList.remove('hidden');
-                overlay.classList.add('flex');
-                document.body.style.overflow = 'hidden';
-                if (tooltip) gsap.to(tooltip, { opacity: 0, duration: 0.2, ease: "power2.out" });
-            });
-        });
-
-        if (overlay) {
-            overlay.addEventListener('click', function(e) {
-                if (e.target === overlay || e.target === enlargedImage.parentElement) {
-                    overlay.classList.add('hidden');
-                    overlay.classList.remove('flex');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-        }
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) {
-                overlay.classList.add('hidden');
-                overlay.classList.remove('flex');
-                document.body.style.overflow = 'auto';
-            }
-        });
-      }
-      
-      function setupAddToCart() {
-        document.querySelectorAll('.js-add-to-cart-btn').forEach(addBtn => {
-          addBtn.addEventListener('click', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const equipmentId = urlParams.get('id');
-            const equipment = getEquipmentById(equipmentId);
-            
-            if (equipment) {
-              const success = window.cartManager.addToCart(equipment);
-              if (success) {
-                showToast(`${equipment.name}已成功加入租借清單！`);
-              }
-            }
-          });
-        });
-      }
-      
-      function showToast(message, type = 'success') {
-        // 檢查是否已有toast，如果有則移除
-        const existingToast = document.querySelector('.toast');
-        if (existingToast) {
-          existingToast.remove();
-        }
-        
-        // 創建新的toast
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        if (type === 'error') {
-          toast.classList.add('error');
-        }
-        
-        // 創建內部的p元素
-        const p = document.createElement('p');
-        p.textContent = message;
-        toast.appendChild(p);
-        
-        document.body.appendChild(toast);
-        
-        // 檢查是否為手機版
-        const isMobile = window.innerWidth <= 767;
-        
-        if (isMobile) {
-          // 手機版動畫（已由CSS處理定位）
-          toast.style.opacity = '0';
-          toast.style.pointerEvents = 'none';
-          toast.style.transform = 'translateY(20px)';
-          
-          // 顯示通知（從底部浮上來的效果）
-          setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateY(0px)';
-          }, 50);
-          
-          // 2秒後開始消失動畫
-          setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-10px)';
-          }, 2000);
-        } else {
-          // 桌面版動畫（原有邏輯）
-          toast.style.bottom = '7.5rem';
-          toast.style.left = '50%';
-          toast.style.transform = 'translateX(-50%) translateY(50px)';
-          toast.style.opacity = '0';
-          toast.style.pointerEvents = 'none';
-          
-          // 顯示通知（從底部浮上來的效果）
-          setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateX(-50%) translateY(0px)';
-          }, 50);
-          
-          // 2秒後開始消失動畫
-          setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(-50%) translateY(-10px)';
-          }, 2000);
-        }
-        
-        // 動畫完成後完全隱藏並移除
-        setTimeout(() => {
-          if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-          }
-        }, 2500);
-      }
-      
-      // 收藏夾功能
-      function setupBookmark() {
-        document.querySelectorAll('.js-bookmark-btn').forEach(bookmarkBtn => {
-          bookmarkBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const equipmentName = this.getAttribute('data-equipment');
-            const isBookmarked = this.src.includes('Fill');
-            const newSrc = isBookmarked ? 'Icons/Bookmark Sharp Regular.svg' : 'Icons/Bookmark Sharp Fill.svg';
-            const message = isBookmarked ? `${equipmentName}已從收藏夾中移除！` : `${equipmentName}已加入收藏夾！`;
-
-            // 同步更新所有書籤圖標
-            document.querySelectorAll('.js-bookmark-btn').forEach(btn => btn.src = newSrc);
-            
-            showToast(message);
-          });
-        });
-      }
-      
-      // 按鈕動畫效果
-      function setupButtonAnimation() {
-        // 只在桌面版啟用 hover 動畫
-        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          document.querySelectorAll('.js-add-to-cart-btn.button-animated').forEach(button => {
-            const buttonFill = button.querySelector('.button-bg-fill');
-            if (buttonFill) {
-              button.addEventListener('mouseenter', function() {
-                gsap.to(buttonFill, {
-                  height: '100%',
-                  duration: 0.5,
-                  ease: "power2.out"
-                });
-                this.classList.add('white-text');
-              });
-              
-              button.addEventListener('mouseleave', function() {
-                gsap.to(buttonFill, {
-                  height: '0%',
-                  duration: 0.5,
-                  ease: "power2.out"
-                });
-                this.classList.remove('white-text');
-              });
-            }
-          });
-        }
-      }
-      
-      // 手機版選單功能
-      document.addEventListener('DOMContentLoaded', function() {
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuClose = document.getElementById('mobile-menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
-
-        function openMenu() {
-          if (mobileMenu) {
-            mobileMenu.classList.add('active');
-            body.style.overflow = 'hidden';
-            triggerMenuAnimation();
-          }
-        }
-
-        function triggerMenuAnimation() {
-          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
-          animatedElements.forEach(element => {
-            element.style.animation = 'none';
-            element.offsetHeight;
-            element.style.animation = null;
-          });
-        }
-
-        function closeMenu() {
-          if (mobileMenu) {
-            mobileMenu.classList.remove('active');
-            body.style.overflow = '';
-          }
-        }
-
-        if (mobileMenuBtn) {
-          mobileMenuBtn.addEventListener('click', openMenu);
-        }
-        
-        if (mobileMenuClose) {
-          mobileMenuClose.addEventListener('click', closeMenu);
-        }
-
-        const mobileMenuLinks = mobileMenu ? mobileMenu.querySelectorAll('nav a, .footer-link') : [];
-        mobileMenuLinks.forEach(link => {
-          link.addEventListener('click', closeMenu);
-        });
-
-        if (mobileMenu) {
-          mobileMenu.addEventListener('click', function(event) {
-            if (event.target === mobileMenu) {
-              closeMenu();
-            }
-          });
-        }
-      });
-      
-      // 頁面初始化
-      document.addEventListener('DOMContentLoaded', function() {
-        // Login 按鈕動畫效果 - 只在桌面版
-        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const loginBtn = document.getElementById('login-btn');
-          const loginBtnFill = loginBtn ? loginBtn.querySelector('.button-bg-fill') : null;
-          
-          if (loginBtn && loginBtnFill) {
-            loginBtn.addEventListener('mouseenter', function() {
-              gsap.to(loginBtnFill, {
-                height: '100%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色變化
-              this.classList.add('white-text');
-            });
-            
-            loginBtn.addEventListener('mouseleave', function() {
-              gsap.to(loginBtnFill, {
-                height: '0%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色恢復
-              this.classList.remove('white-text');
-            });
-          }
-        }
-        
-        // 更新手機版購物車數量
-        function updateMobileCartCount() {
-          const mobileCartCount = document.getElementById('mobile-cart-count');
-          const cartCount = document.getElementById('cart-count');
-          if (mobileCartCount && cartCount) {
-            mobileCartCount.textContent = cartCount.textContent;
-          }
-        }
-        
-        // 購物車數字同步設置
-        function setupCartSync() {
-          const cartCountElement = document.getElementById('cart-count');
-          const mobileCartCountElement = document.getElementById('mobile-cart-count');
-          
-          if (cartCountElement && mobileCartCountElement) {
-            // 使用 MutationObserver 監聽變化
-            const observer = new MutationObserver(function(mutations) {
-              mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                  updateMobileCartCount();
-                }
-              });
-            });
-            
-            observer.observe(cartCountElement, { 
-              childList: true, 
-              characterData: true, 
-              subtree: true 
-            });
-            
-            // 定期檢查同步
-            setInterval(updateMobileCartCount, 500);
-            
-            // 頁面載入時立即同步
-            updateMobileCartCount();
-          }
-        }
-        
-        // 初始化購物車同步
-        setupCartSync();
-        
-        // 當 cartManager 準備好時也重新同步
-        if (typeof window !== 'undefined') {
-          window.addEventListener('cartUpdated', updateMobileCartCount);
-        }
-      });
-
-    </script>
   </body>
-</html> 
+</html>

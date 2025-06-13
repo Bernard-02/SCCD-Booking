@@ -12,334 +12,34 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="datepicker.css">
-      <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-  <script src="cart-manager.js"></script>
-  <script src="js/common.js"></script>
-  <!-- 新的外部JavaScript文件 -->
-  <script src="js/copyright-easter-egg.js"></script>
-  <script src="js/button-animations.js"></script>
-  <script src="js/ui-animations.js"></script>
-    
+    <link rel="stylesheet" href="css/datepicker.css" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <script src="cart-manager.js"></script>
+
+    <!-- 引入模組化 JavaScript 文件 -->
+    <script src="js/common.js" defer></script>
+    <script src="js/mobile-menu.js" defer></script>
+    <script src="js/copyright-easter-egg.js" defer></script>
+    <script src="js/button-animations.js" defer></script>
+    <script src="js/cart-sync.js" defer></script>
+    <script src="js/date-picker.js" defer></script>
+    <script src="js/ui-animations.js" defer></script>
+    <script src="js/booking.js" defer></script>
+
     <!-- 引入外部CSS文件 -->
-    <link rel="stylesheet" href="css/common.css">
-    <link rel="stylesheet" href="css/arrows.css">
-    <link rel="stylesheet" href="css/buttons.css">
-    <link rel="stylesheet" href="css/mobile-menu.css">
-    <link rel="stylesheet" href="css/copyright.css">
-    <link rel="stylesheet" href="css/breadcrumb.css">
-    <link rel="stylesheet" href="css/animations.css">
-    
-    <style>
-      
-      /* 頁面特有樣式 - 不移除，因為這些是booking.html特有的響應式樣式 */
-      
-      /* 獨立手機版選單覆蓋樣式 - booking頁面特有 */
-      .mobile-menu {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background-color: #000000 !important;
-        z-index: 9999 !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        transition: opacity 0.5s ease, visibility 0.5s ease !important;
-        display: flex !important;
-        flex-direction: column !important;
-        overflow-y: auto !important;
-        box-sizing: border-box !important;
-      }
-      
-      .mobile-menu.active {
-        opacity: 1 !important;
-        visibility: visible !important;
-      }
-      
-      /* 確保手機版選單內容不會被其他樣式影響 */
-      .mobile-menu * {
-        box-sizing: border-box;
-        max-width: none !important;
-      }
-      
-      .mobile-menu .py-6 {
-        padding-top: 1.5rem !important;
-        padding-bottom: 1.5rem !important;
-      }
-      
-      .mobile-menu .px-6 {
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-      }
-      
-      /* booking頁面手機版特有樣式調整 */
-      @media (max-width: 767px) {
-        /* 主要內容區域調整 */
-        main {
-          max-width: 100vw;
-          overflow-x: hidden;
-        }
-        
-        /* 手機版標題樣式 */
-        .mobile-title {
-          font-size: 1.875rem !important; /* text-3xl */
-          margin-top: 1rem !important;
-        }
-        
-        /* 確保桌面版標題在手機版不顯示 */
-        @media (max-width: 767px) {
-          .desktop-title {
-            display: none;
-          }
-        }
-        
-        /* 桌面版標題樣式 */
-        @media (min-width: 768px) {
-          /* 確保手機版標題在桌面版不顯示 */
-          .mobile-title {
-            display: none;
-          }
-        }
-        
-        /* 手機版按鈕區域調整 */
-        main button {
-          width: 100% !important;
-          max-width: 280px;
-        }
-      }
-      
-      /* Breadcrumb 樣式 */
-      .breadcrumb {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75rem; /* text-xs */
-        font-weight: 300; /* font-light */
-        color: white;
-        text-align: left;
-        margin-bottom: 1rem;
-        letter-spacing: 0.05em; /* tracking-wider */
-        position: absolute;
-        top: calc(3rem + 3vh);
-        left: 6%;
-        z-index: 10;
-      }
-      
-      @media (max-width: 767px) {
-        .breadcrumb {
-          display: none; /* 手機版隱藏 breadcrumb */
-        }
-      }
-      
-      .breadcrumb:hover .breadcrumb-item {
-        opacity: 0.6;
-      }
-      
-      .breadcrumb .breadcrumb-item {
-        transition: opacity 0.3s ease;
-        cursor: pointer;
-      }
-      
-      .breadcrumb .breadcrumb-item:hover {
-        opacity: 1 !important;
-      }
-      
-      .breadcrumb .breadcrumb-separator {
-        margin: 0 0.5rem;
-        opacity: 0.6;
-      }
-      
-      /* 按鈕動畫樣式 */
-      .button-animated {
-        transition: color 0.5s ease;
-      }
-      
-      .button-animated.white-text {
-        color: black;
-      }
-      
-      /* Copyright 彩蛋效果 */
-      .copyright {
-        position: relative;
-      }
-      
-      .copyright-original {
-        transition: none;
-      }
-      
-      .copyright-easter-egg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        white-space: nowrap;
-        opacity: 0;
-        font-family: 'Inter', sans-serif;
-        font-size: inherit;
-        letter-spacing: inherit;
-      }
-      
-      /* 隱藏滾動條但保持滾動功能 */
-      .hide-scrollbar {
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE and Edge */
-      }
-      
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none; /* Chrome, Safari and Opera */
-      }
-      
-      /* 手機版選單動畫 */
-      .menu-animate-enter {
-        overflow: hidden;
-      }
-      
-      .menu-animate-enter-content {
-        transform: translateY(150%);
-        animation: menuSlideUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-      }
-      
-      @keyframes menuSlideUp {
-        to {
-          transform: translateY(0);
-        }
-      }
-      
-      /* 選單項目動畫延遲 */
-      .menu-animate-enter-content.menu-delay-1 {
-        animation-delay: 0.1s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-2 {
-        animation-delay: 0.2s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-3 {
-        animation-delay: 0.3s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-4 {
-        animation-delay: 0.4s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-5 {
-        animation-delay: 0.5s;
-      }
-      
-      .menu-animate-enter-content.menu-delay-6 {
-        animation-delay: 0.6s;
-      }
-      
-      /* 手機版月份日曆樣式 */
-      .month-calendar {
-        width: 100%;
-        flex-shrink: 0;
-      }
-      
-      .month-title {
-        text-align: center;
-        font-size: 1rem; /* 手機版 */
-        font-weight: 500;
-        margin-bottom: 1rem;
-        color: white;
-      }
-      
-      /* 桌面版月份標題字體大小 */
-      @media (min-width: 768px) {
-        .month-title {
-          font-size: 1.5rem;
-        }
-      }
-      
-      .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-        row-gap: 12px;
-      }
-      
-      .calendar-date {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.875rem;
-        color: white;
-        cursor: pointer;
-        border-radius: 50%;
-        transition: all 0.2s ease;
-        margin: 0 auto;
-        position: relative;
-      }
-      
-      .calendar-date:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
-      
-      .calendar-date.selected {
-        background-color: white;
-        color: black;
-      }
-      
-      .calendar-date.start-date {
-        background-color: white;
-        color: black;
-        border-radius: 50%;
-      }
-      
-      .calendar-date.end-date {
-        background-color: white;
-        color: black;
-        border-radius: 50%;
-      }
-      
-      .calendar-date.in-range {
-        border: 1px solid white;
-        background-color: transparent;
-        color: white;
-      }
-      
-      .calendar-date.today::after {
-        content: '';
-        position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 4px;
-        height: 4px;
-        background-color: white;
-        border-radius: 50%;
-      }
-      
-      .calendar-date.today.start-date::after,
-      .calendar-date.today.end-date::after {
-        background-color: black;
-      }
-      
-      .calendar-date.disabled {
-        color: #666;
-        cursor: not-allowed;
-      }
-      
-      .calendar-date.other-month {
-        color: #666;
-      }
-      
-      /* 手機版專用樣式 */
-      @media (max-width: 767px) {
-        /* 確保手機版完全隱藏 LOGIN 按鈕 */
-        #login-btn {
-          display: none !important;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/breadcrumb.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/booking.css" />
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
     <header class="py-6">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
+      <div
+        class="container mx-auto flex justify-between items-center px-6 md:px-4"
+      >
         <div class="flex items-center">
           <a href="index.html" class="logo-link mr-10">
             <div class="font-['Inter',_sans-serif] logo text-base font-medium">
@@ -367,7 +67,7 @@
             </ul>
           </nav>
         </div>
-        
+
         <div class="flex items-center space-x-5">
           <a
             href="rental-list.html"
@@ -379,18 +79,38 @@
             href="login.html"
             id="login-btn"
             class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
+            style="position: relative; overflow: hidden"
+          >
+            <div
+              class="button-bg-fill"
+              style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                background-color: white;
+                z-index: 1;
+                border-radius: 30px;
+              "
+            ></div>
+            <span style="position: relative; z-index: 2">LOG IN</span>
+            <div class="arrow-container" style="position: relative; z-index: 2">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
-          
+
           <!-- 手機版 CART 按鈕 -->
           <a
             href="rental-list.html"
@@ -398,9 +118,12 @@
             class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
             >(<span id="mobile-cart-count">0</span>) CART</a
           >
-          
+
           <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
+          <button
+            class="md:hidden font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-btn"
+          >
             <span class="text-white" id="menu-btn-text">MENU</span>
           </button>
         </div>
@@ -414,10 +137,12 @@
         <span class="breadcrumb-separator">/</span>
         <span class="breadcrumb-item">租借日期</span>
       </nav>
-      
+
       <!-- 桌面版佈局 -->
       <div class="w-full px-[6%] flex-grow hidden md:flex">
-        <div class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8">
+        <div
+          class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8"
+        >
           <div>
             <h1
               class="desktop-title text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2"
@@ -438,7 +163,7 @@
               </h2>
               <p
                 id="display-start-date"
-                class="text-4xl font-['Inter',_sans-serif] text-white tracking-wide "
+                class="text-4xl font-['Inter',_sans-serif] text-white tracking-wide"
               >
                 ---- / -- / --
               </p>
@@ -452,7 +177,7 @@
               </h2>
               <p
                 id="display-end-date"
-                class="text-4xl font-['Inter',_sans-serif] text-white tracking-wide "
+                class="text-4xl font-['Inter',_sans-serif] text-white tracking-wide"
               >
                 ---- / -- / --
               </p>
@@ -462,11 +187,22 @@
               id="reset-date-button"
               type="button"
               class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-not-allowed button-animated mb-4"
-              style="width: 200px; position: relative; overflow: hidden;"
+              style="width: 200px; position: relative; overflow: hidden"
               disabled
             >
-              <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-              <span style="position: relative; z-index: 2;">重設日期</span>
+              <div
+                class="button-bg-fill"
+                style="
+                  position: absolute;
+                  bottom: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 0;
+                  background-color: white;
+                  z-index: 1;
+                "
+              ></div>
+              <span style="position: relative; z-index: 2">重設日期</span>
             </button>
 
             <button
@@ -481,57 +217,99 @@
           </div>
         </div>
 
-        <div id="date-picker-container" class="flex items-stretch min-h-[400px]">
-          </div>
+        <div
+          id="date-picker-container"
+          class="flex items-stretch min-h-[400px]"
+        ></div>
       </div>
-      
-            <!-- 手機版佈局 -->
+
+      <!-- 手機版佈局 -->
       <div class="md:hidden w-full h-full flex flex-col">
         <!-- 第一部分：標題和敘述文字 - 固定 -->
         <div class="px-6 pb-2 text-center flex-shrink-0">
-          <h1 class="mobile-title text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white">
+          <h1
+            class="mobile-title text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white"
+          >
             租借日期
           </h1>
           <p class="text-sm font-['Inter',_sans-serif] text-white">
             選擇你想租借的日期
           </p>
         </div>
-        
+
         <!-- 第二部分：日期顯示和星期標題 - 固定 -->
         <div class="px-6 py-4 flex-shrink-0">
           <!-- 日期顯示 - 分成2列 -->
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="text-left pl-4">
-              <h2 class="text-sm font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2">
+              <h2
+                class="text-sm font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2"
+              >
                 起租日
               </h2>
-              <p id="mobile-display-start-date" class="text-lg font-['Inter',_sans-serif] text-white tracking-wide">
+              <p
+                id="mobile-display-start-date"
+                class="text-lg font-['Inter',_sans-serif] text-white tracking-wide"
+              >
                 ---- / -- / --
               </p>
             </div>
 
             <div class="text-left pl-4">
-              <h2 class="text-sm font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2">
+              <h2
+                class="text-sm font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2"
+              >
                 歸還日
               </h2>
-              <p id="mobile-display-end-date" class="text-lg font-['Inter',_sans-serif] text-white tracking-wide">
+              <p
+                id="mobile-display-end-date"
+                class="text-lg font-['Inter',_sans-serif] text-white tracking-wide"
+              >
                 ---- / -- / --
               </p>
             </div>
           </div>
-          
+
           <!-- 星期標題 -->
           <div class="grid grid-cols-7 gap-1">
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">日</div>
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">一</div>
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">二</div>
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">三</div>
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">四</div>
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">五</div>
-            <div class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1">六</div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              日
+            </div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              一
+            </div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              二
+            </div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              三
+            </div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              四
+            </div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              五
+            </div>
+            <div
+              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
+            >
+              六
+            </div>
           </div>
         </div>
-        
+
         <!-- 第三部分：日曆 - 可滑動，填滿剩餘空間 -->
         <div class="px-6 flex-1 min-h-0">
           <!-- 滑動月份容器 -->
@@ -541,7 +319,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 第四部分：按鈕 - 固定 -->
         <div class="px-4 pt-6 flex-shrink-0">
           <div class="flex gap-4">
@@ -549,7 +327,7 @@
               id="mobile-reset-date-button"
               type="button"
               class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 text-sm cursor-not-allowed"
-              style="width: 120px;"
+              style="width: 120px"
               disabled
             >
               重設日期
@@ -559,7 +337,7 @@
               id="mobile-confirm-date-button"
               type="button"
               class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-sm cursor-not-allowed hover:opacity-60"
-              style="width: 120px;"
+              style="width: 120px"
               disabled
             >
               確定日期
@@ -570,7 +348,9 @@
     </main>
 
     <footer class="pt-4 pb-8">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
+      <div
+        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
+      >
         <div class="flex space-x-6 md:mb-0 hidden md:flex">
           <a
             href="https://sccd.usc.edu.tw/"
@@ -579,8 +359,16 @@
             >TO SCCD
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -590,8 +378,16 @@
             >ABOUT
             <div class="arrow-container">
               <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
+                <img
+                  src="Icons/Small Arrow UpRight.svg"
+                  alt="Arrow"
+                  class="arrow-icon"
+                />
               </div>
             </div>
           </a>
@@ -599,16 +395,20 @@
         <div class="copyright text-xs md:text-right">
           <p>
             <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >Copyright © 2025 111</span
+              >屆系學會
+              <span class="font-['Inter',_sans-serif] uppercase"
+                >All rights reserved.</span
+              >
             </span>
             <span class="copyright-easter-egg" id="easter-egg-text">
               <!-- 彩蛋文字將由JavaScript生成 -->
             </span>
           </p>
         </div>
-              </div>
-      </footer>
+      </div>
+    </footer>
 
     <!-- 獨立手機版選單 -->
     <div class="mobile-menu" id="mobile-menu">
@@ -616,16 +416,21 @@
       <div class="py-6 px-6">
         <div class="flex justify-between items-center">
           <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
+            <div
+              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
+            >
               SCCD
             </div>
           </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
+          <button
+            class="font-['Inter',_sans-serif] text-base"
+            id="mobile-menu-close"
+          >
             <span class="text-white">CLOSE</span>
           </button>
         </div>
       </div>
-      
+
       <!-- 選單項目 -->
       <div class="flex-grow px-6">
         <nav>
@@ -654,7 +459,7 @@
           </ul>
         </nav>
       </div>
-      
+
       <!-- Footer區域 -->
       <div class="pt-4 pb-8 px-6">
         <div class="flex flex-col text-sm">
@@ -667,8 +472,16 @@
                 >TO SCCD
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
@@ -680,19 +493,33 @@
                 >ABOUT
                 <div class="arrow-container">
                   <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
+                    <img
+                      src="Icons/Small Arrow UpRight.svg"
+                      alt="Arrow"
+                      class="arrow-icon"
+                    />
                   </div>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+            <div
+              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+            >
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >All rights reserved.</span
+                  >
                 </span>
               </p>
             </div>
@@ -700,544 +527,5 @@
         </div>
       </div>
     </div>
-
-    <script>
-      // Copyright 彩蛋效果 - 打字機風格
-      document.addEventListener('DOMContentLoaded', function() {
-        // 初始化 CART 數量
-        if (typeof updateCartDisplay === 'function') {
-          updateCartDisplay();
-        }
-        
-        const copyrightElement = document.querySelector('.copyright');
-        const originalElement = document.querySelector('.copyright-original');
-        const easterEggElement = document.getElementById('easter-egg-text');
-        
-        if (copyrightElement && originalElement && easterEggElement) {
-          const originalText = originalElement.textContent;
-          const targetText = "SHIH CHIEN COMMUNICATIONS DESIGN";
-          const maxLength = Math.min(originalText.length, targetText.length);
-          const truncatedTarget = targetText.substring(0, maxLength);
-          
-          let isHovering = false;
-          let animationInterval = null;
-          let currentStep = 0;
-          let isAnimatingIn = false;
-          let isAnimatingOut = false;
-          
-          // 隨機字符池
-          const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*?~+=_|\\/<>[]{}';
-          
-          function getRandomChar() {
-            return randomChars[Math.floor(Math.random() * randomChars.length)];
-          }
-          
-          function generateRandomString(length) {
-            let result = '';
-            for (let i = 0; i < length; i++) {
-              result += getRandomChar();
-            }
-            return result;
-          }
-          
-          function animateToTarget() {
-            if (isAnimatingOut) return;
-            isAnimatingIn = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(2000 / 50); // 2秒，每50ms一步
-            const charsToReveal = Math.ceil(maxLength / totalSteps * 4); // 每步顯示的字符數
-            
-            easterEggElement.textContent = generateRandomString(maxLength);
-            easterEggElement.style.opacity = '1';
-            originalElement.style.opacity = '0';
-            
-            animationInterval = setInterval(() => {
-              if (!isHovering || isAnimatingOut) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                return;
-              }
-              
-              currentStep++;
-              const revealedChars = Math.min(Math.floor(currentStep * charsToReveal), maxLength);
-              
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (i < revealedChars) {
-                  displayText += truncatedTarget[i] || ' ';
-                } else {
-                  displayText += getRandomChar();
-                }
-              }
-              
-              easterEggElement.textContent = displayText;
-              
-              if (revealedChars >= maxLength) {
-                clearInterval(animationInterval);
-                isAnimatingIn = false;
-                easterEggElement.textContent = truncatedTarget;
-              }
-            }, 50);
-          }
-          
-          function animateToOriginal() {
-            // 立即停止任何正在進行的動畫
-            if (animationInterval) {
-              clearInterval(animationInterval);
-            }
-            
-            isAnimatingIn = false;
-            isAnimatingOut = true;
-            currentStep = 0;
-            
-            const totalSteps = Math.ceil(300 / 30); // 0.3秒，每30ms一步
-            
-            animationInterval = setInterval(() => {
-              currentStep++;
-              const progress = currentStep / totalSteps;
-              
-              if (progress >= 1) {
-                clearInterval(animationInterval);
-                easterEggElement.style.opacity = '0';
-                originalElement.style.opacity = '1';
-                isAnimatingOut = false;
-                animationInterval = null;
-                return;
-              }
-              
-              // 逐漸將當前顯示的文字變成隨機字符，最後回到原始狀態
-              let displayText = '';
-              for (let i = 0; i < maxLength; i++) {
-                if (Math.random() < progress * 0.8) { // 80%機率變成隨機字符
-                  displayText += getRandomChar();
-                } else {
-                  // 保持當前字符或目標字符
-                  const currentChar = easterEggElement.textContent[i];
-                  displayText += currentChar || getRandomChar();
-                }
-              }
-              easterEggElement.textContent = displayText;
-            }, 30);
-          }
-          
-          // 只在桌面版啟用 copyright hover 效果
-          if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-            copyrightElement.addEventListener('mouseenter', () => {
-              isHovering = true;
-              if (animationInterval) clearInterval(animationInterval);
-              animateToTarget();
-            });
-            
-            copyrightElement.addEventListener('mouseleave', () => {
-              isHovering = false;
-              animateToOriginal();
-            });
-          }
-        }
-        
-        // 按鈕動畫效果
-        function setupButtonAnimation() {
-          const button = document.getElementById('reset-date-button');
-          const buttonFill = button.querySelector('.button-bg-fill');
-          
-          button.addEventListener('mouseenter', function() {
-            if (!this.disabled) {
-              gsap.to(buttonFill, {
-                height: '100%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色變化
-              this.classList.add('white-text');
-            }
-          });
-          
-          button.addEventListener('mouseleave', function() {
-            if (!this.disabled) {
-              gsap.to(buttonFill, {
-                height: '0%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色恢復
-              this.classList.remove('white-text');
-            }
-          });
-        }
-        
-        // 初始化按鈕動畫
-        setupButtonAnimation();
-        
-
-        
-        // Login 按鈕動畫效果
-        const loginBtn = document.getElementById('login-btn');
-        const loginBtnFill = loginBtn.querySelector('.button-bg-fill');
-        
-        loginBtn.addEventListener('mouseenter', function() {
-          gsap.to(loginBtnFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          
-          // 文字顏色變化
-          this.classList.add('white-text');
-        });
-        
-        loginBtn.addEventListener('mouseleave', function() {
-          gsap.to(loginBtnFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          
-          // 文字顏色恢復
-          this.classList.remove('white-text');
-        });
-        
-        // 手機版選單功能
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenuClose = document.getElementById('mobile-menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
-        
-        // 同步手機版和桌面版日期顯示
-        function syncDateDisplays() {
-          const startDate = document.getElementById('display-start-date');
-          const endDate = document.getElementById('display-end-date');
-          const mobileStartDate = document.getElementById('mobile-display-start-date');
-          const mobileEndDate = document.getElementById('mobile-display-end-date');
-          
-          if (startDate && mobileStartDate) {
-            mobileStartDate.textContent = startDate.textContent;
-          }
-          if (endDate && mobileEndDate) {
-            mobileEndDate.textContent = endDate.textContent;
-          }
-        }
-        
-        // 監聽日期變化
-        const observer = new MutationObserver(syncDateDisplays);
-        const startDateElement = document.getElementById('display-start-date');
-        const endDateElement = document.getElementById('display-end-date');
-        
-        if (startDateElement) {
-          observer.observe(startDateElement, { childList: true, subtree: true });
-        }
-        if (endDateElement) {
-          observer.observe(endDateElement, { childList: true, subtree: true });
-        }
-        
-        // 初始同步
-        syncDateDisplays();
-        
-        // 手機版日期選擇器類別（參考桌面版邏輯）
-        class MobileDatePicker {
-          constructor() {
-            this.startDate = null;
-            this.endDate = null;
-            this.today = new Date();
-            this.today.setHours(0, 0, 0, 0);
-            
-            // 月份名稱
-            this.monthNames = [
-              '一月', '二月', '三月', '四月', '五月', '六月',
-              '七月', '八月', '九月', '十月', '十一月', '十二月'
-            ];
-            
-            this.init();
-          }
-          
-          init() {
-            this.generateCalendar();
-            this.updateDisplay();
-            this.updateButtonState();
-            this.attachEvents();
-          }
-          
-          generateCalendar() {
-            const calendarSlider = document.getElementById('mobile-calendar-slider');
-            if (!calendarSlider) return;
-            
-            const currentDate = new Date();
-            const currentMonth = currentDate.getMonth();
-            const currentYear = currentDate.getFullYear();
-            
-            // 清空現有內容
-            calendarSlider.innerHTML = '';
-            
-            // 生成當月及往後3個月的日曆（總共4個月）
-            for (let i = 0; i <= 3; i++) {
-              const monthDate = new Date(currentYear, currentMonth + i, 1);
-              const monthCalendar = this.createMonthCalendar(monthDate);
-              calendarSlider.appendChild(monthCalendar);
-            }
-          }
-          
-          createMonthCalendar(monthDate) {
-            const monthContainer = document.createElement('div');
-            monthContainer.className = 'month-calendar';
-            
-            const year = monthDate.getFullYear();
-            const month = monthDate.getMonth();
-            
-            // 月份標題
-            const monthTitle = document.createElement('div');
-            monthTitle.className = 'month-title font-["Inter",_sans-serif] text-center text-lg font-medium mb-4 text-white';
-            monthTitle.textContent = `${year}年${this.monthNames[month]}`;
-            
-            // 日曆網格
-            const calendarGrid = document.createElement('div');
-            calendarGrid.className = 'calendar-grid';
-            
-            // 獲取該月第一天是星期幾（0=星期日）
-            const firstDay = new Date(year, month, 1).getDay();
-            // 獲取該月有多少天
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            // 填充空白日期（不顯示上個月日期）
-            for (let i = 0; i < firstDay; i++) {
-              const dateElement = document.createElement('div');
-              dateElement.className = 'calendar-date';
-              calendarGrid.appendChild(dateElement);
-            }
-            
-            // 填充當月日期
-            for (let day = 1; day <= daysInMonth; day++) {
-              const dateElement = document.createElement('div');
-              const currentDate = new Date(year, month, day);
-              
-              dateElement.className = 'calendar-date';
-              dateElement.textContent = day;
-              
-              // 添加data屬性
-              dateElement.dataset.year = year;
-              dateElement.dataset.month = month;
-              dateElement.dataset.day = day;
-              
-              // 檢查是否是今天
-              if (currentDate.getTime() === this.today.getTime()) {
-                dateElement.classList.add('today');
-              }
-              
-                             // 檢查是否是過去的日期
-               const isPastDate = currentDate < this.today;
-               
-               // 檢查是否超過30天範圍（如果已選擇起租日）
-               let isOutOfRange = false;
-               if (this.startDate && !this.endDate) {
-                 const daysDifference = Math.ceil((currentDate - this.startDate) / (1000 * 60 * 60 * 24));
-                 isOutOfRange = daysDifference > 30;
-               }
-               
-               if (isPastDate || isOutOfRange) {
-                 dateElement.classList.add('disabled');
-               } else {
-                 // 添加點擊事件
-                 dateElement.addEventListener('click', () => {
-                   this.selectDate(year, month, day);
-                 });
-               }
-               
-               // 為選擇狀態添加樣式
-               if (this.startDate && this.isSameDay(currentDate, this.startDate)) {
-                 dateElement.classList.add('start-date');
-               } else if (this.endDate && this.isSameDay(currentDate, this.endDate)) {
-                 dateElement.classList.add('end-date');
-               } else if (this.startDate && this.endDate && 
-                          currentDate > this.startDate && currentDate < this.endDate) {
-                 dateElement.classList.add('in-range');
-               }
-              
-              calendarGrid.appendChild(dateElement);
-            }
-            
-            monthContainer.appendChild(monthTitle);
-            monthContainer.appendChild(calendarGrid);
-            
-            return monthContainer;
-          }
-          
-          selectDate(year, month, day) {
-            const clickedDate = new Date(year, month, day);
-            
-            // 使用與桌面版相同的邏輯
-            if (this.startDate && this.endDate) {
-              // 已經有完整範圍，重新開始選擇起租日
-              this.startDate = clickedDate;
-              this.endDate = null;
-            } else if (!this.startDate) {
-              // 沒有起租日，設置起租日
-              this.startDate = clickedDate;
-              this.endDate = null;
-            } else if (clickedDate >= this.startDate) {
-              // 檢查日期範圍是否超過30天
-              const daysDifference = Math.ceil((clickedDate - this.startDate) / (1000 * 60 * 60 * 24));
-              
-              if (daysDifference <= 30) {
-                // 有起租日且範圍在30天內，設置歸還日
-                this.endDate = clickedDate;
-              } else {
-                // 超過30天，不執行任何動作
-                return;
-              }
-            } else {
-              // 如果選擇的日期早於起租日，重新設置起租日
-              this.startDate = clickedDate;
-              this.endDate = null;
-            }
-            
-                         this.updateDisplay();
-             this.generateCalendar(); // 重新生成日曆以顯示30天限制
-             this.updateButtonState();
-          }
-          
-          updateDisplay() {
-            const formatDate = (date) => {
-              if (!date) return "---- / -- / --";
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              return `${year}/${month}/${day}`;
-            };
-            
-            const startDateElement = document.getElementById('mobile-display-start-date');
-            const endDateElement = document.getElementById('mobile-display-end-date');
-            
-            if (startDateElement) {
-              startDateElement.textContent = formatDate(this.startDate);
-            }
-            if (endDateElement) {
-              endDateElement.textContent = formatDate(this.endDate);
-            }
-            
-            // 同步更新桌面版顯示
-            const desktopStartDate = document.getElementById('display-start-date');
-            const desktopEndDate = document.getElementById('display-end-date');
-            if (desktopStartDate) {
-              desktopStartDate.textContent = formatDate(this.startDate);
-            }
-            if (desktopEndDate) {
-              desktopEndDate.textContent = formatDate(this.endDate);
-            }
-          }
-          
-          
-          
-          updateButtonState() {
-            const resetButton = document.getElementById('mobile-reset-date-button');
-            const confirmButton = document.getElementById('mobile-confirm-date-button');
-            
-            // 重設按鈕狀態
-            if (this.startDate && resetButton) {
-              resetButton.disabled = false;
-              resetButton.classList.remove('opacity-30', 'cursor-not-allowed');
-              resetButton.classList.add('cursor-pointer', 'opacity-100');
-            } else if (resetButton) {
-              resetButton.disabled = true;
-              resetButton.classList.add('opacity-30', 'cursor-not-allowed');
-              resetButton.classList.remove('cursor-pointer', 'opacity-100');
-            }
-            
-            // 確定按鈕狀態
-            if (this.startDate && this.endDate && confirmButton) {
-              confirmButton.disabled = false;
-              confirmButton.classList.remove('opacity-30', 'cursor-not-allowed');
-              confirmButton.classList.add('cursor-pointer', 'opacity-100');
-            } else if (confirmButton) {
-              confirmButton.disabled = true;
-              confirmButton.classList.add('opacity-30', 'cursor-not-allowed');
-              confirmButton.classList.remove('cursor-pointer', 'opacity-100');
-            }
-          }
-          
-          attachEvents() {
-            const resetButton = document.getElementById('mobile-reset-date-button');
-            const confirmButton = document.getElementById('mobile-confirm-date-button');
-            
-            if (resetButton) {
-              resetButton.addEventListener('click', () => {
-                if (!resetButton.disabled) {
-                                   this.startDate = null;
-                 this.endDate = null;
-                 this.updateDisplay();
-                 this.generateCalendar(); // 重新生成日曆以移除30天限制
-                 this.updateButtonState();
-                }
-              });
-            }
-            
-            if (confirmButton) {
-              confirmButton.addEventListener('click', () => {
-                if (!confirmButton.disabled && this.startDate && this.endDate) {
-                  // 跳轉到下一頁
-                  window.location.href = 'bookingresources.html';
-                }
-              });
-            }
-          }
-          
-          isSameDay(date1, date2) {
-            return date1.getTime() === date2.getTime();
-          }
-        }
-        
-        // 初始化手機版日期選擇器
-        const mobileDatePicker = new MobileDatePicker();
-
-        
-
-        
-        function openMenu() {
-          mobileMenu.classList.add('active');
-          body.style.overflow = 'hidden'; // 防止背景滾動
-          
-          // 觸發選單動畫
-          triggerMenuAnimation();
-        }
-        
-        function triggerMenuAnimation() {
-          // 獲取所有動畫元素
-          const animatedElements = mobileMenu.querySelectorAll('.menu-animate-enter-content');
-          
-          // 重置動畫
-          animatedElements.forEach(element => {
-            element.style.animation = 'none';
-            element.offsetHeight; // 強制重排
-            element.style.animation = null;
-          });
-        }
-        
-        function closeMenu() {
-          mobileMenu.classList.remove('active');
-          body.style.overflow = ''; // 恢復滾動
-        }
-        
-        // 打開選單
-        mobileMenuBtn.addEventListener('click', openMenu);
-        
-        // 關閉選單
-        mobileMenuClose.addEventListener('click', closeMenu);
-        
-        // 點擊選單項目時關閉選單
-        const mobileMenuLinks = mobileMenu.querySelectorAll('nav a');
-        mobileMenuLinks.forEach(link => {
-          link.addEventListener('click', closeMenu);
-        });
-        
-        // 點擊背景關閉選單
-        mobileMenu.addEventListener('click', function(event) {
-          if (event.target === mobileMenu) {
-            closeMenu();
-          }
-        });
-      });
-    </script>
-
-    <script src="script.js" defer></script>
   </body>
 </html>

@@ -1,0 +1,120 @@
+/* ===== 租借收據頁面專用樣式 ===== */
+
+/* 下載按鈕動畫樣式 */
+.download-container {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  overflow: hidden;
+}
+
+.download-icons-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(-60px);
+}
+
+.download-icon {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+/* 租借收據特定樣式 */
+.main-container {
+  height: calc(100vh - 200px); /* 扣除header(約80px)和footer(約120px)的高度 */
+  overflow: hidden;
+}
+
+.rental-summary-section {
+  height: 100%; /* 確保右側摘要區域佔滿主容器高度 */
+}
+
+.equipment-scroll-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0; /* 允許flex項目縮小 */
+}
+
+.equipment-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.equipment-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.equipment-scroll-area::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+.equipment-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 移除最後一個項目的邊框 */
+.summary-item:last-child {
+  border-bottom: none !important;
+}
+
+/* 桌面版確保body不會出現滾動條 */
+@media (min-width: 768px) {
+  body {
+    overflow: hidden;
+  }
+}
+
+/* 響應式調整 */
+@media (max-width: 767px) {
+  /* 手機版主容器調整 */
+  .main-container {
+    height: auto;
+    min-height: calc(100vh - 140px); /* 最小高度扣除header和footer */
+    overflow: visible;
+  }
+  
+  /* 手機版滾動條樣式 */
+  .main-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .main-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .main-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
+  }
+  
+  /* 手機版4區塊佈局 */
+  .mobile-section {
+    width: 100%;
+    padding: 1.5rem 0;
+  }
+  
+  .mobile-section:first-child {
+    padding-top: 1rem;
+  }
+  
+  .mobile-section:last-child {
+    padding-bottom: 2rem;
+  }
+  
+  /* 手機版下載按鈕隱藏 */
+  .download-btn {
+    display: none;
+  }
+}
+
+/* 只在桌面版顯示 hover 效果 */
+@media (hover: hover) and (pointer: fine) {
+  /* 下載按鈕 hover 效果 - 只在桌面版 */
+  .download-btn:hover .download-icons-wrapper {
+    transform: translateY(0);
+  }
+} 

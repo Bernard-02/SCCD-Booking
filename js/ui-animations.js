@@ -23,7 +23,7 @@ class EquipmentCardAnimations {
       setTimeout(() => {
         this.calculateRowNumbers();
         this.triggerAllVisibleAnimations();
-      }, 300);
+      }, 100);
     };
   }
   
@@ -57,6 +57,14 @@ class EquipmentCardAnimations {
   // 觸發所有可見卡片的進場動畫
   triggerAllVisibleAnimations() {
     this.animatedRows.clear();
+    
+    // 先重置所有卡片的動畫狀態
+    this.equipmentCards.forEach(card => {
+      card.classList.remove('animate-in');
+      // 移除內聯樣式，讓CSS的默認樣式生效
+      card.style.opacity = '';
+      card.style.transform = '';
+    });
     
     // 獲取所有可見的行，按順序處理
     const visibleCards = Array.from(this.equipmentCards).filter(card => 
