@@ -24,7 +24,7 @@ function initStartRentalButton() {
   button.addEventListener('mouseenter', function() {
     gsap.to(buttonFill, {
       height: '100%',
-      duration: 0.5,
+      duration: 0.3,
       ease: "power2.out"
     });
     
@@ -35,7 +35,7 @@ function initStartRentalButton() {
   button.addEventListener('mouseleave', function() {
     gsap.to(buttonFill, {
       height: '0%',
-      duration: 0.5,
+      duration: 0.3,
       ease: "power2.out"
     });
     
@@ -57,7 +57,7 @@ function initResetDateButton() {
     if (!this.disabled) {
       gsap.to(buttonFill, {
         height: '100%',
-        duration: 0.5,
+        duration: 0.3,
         ease: "power2.out"
       });
       
@@ -70,7 +70,7 @@ function initResetDateButton() {
     // 始終執行離開動畫
     gsap.to(buttonFill, {
       height: '0%',
-      duration: 0.5,
+      duration: 0.3,
       ease: "power2.out"
     });
     
@@ -90,7 +90,7 @@ function initLoginButton() {
   loginBtn.addEventListener('mouseenter', function() {
     gsap.to(loginBtnFill, {
       height: '100%',
-      duration: 0.5,
+      duration: 0.3,
       ease: "power2.out"
     });
     
@@ -101,7 +101,7 @@ function initLoginButton() {
   loginBtn.addEventListener('mouseleave', function() {
     gsap.to(loginBtnFill, {
       height: '0%',
-      duration: 0.5,
+      duration: 0.3,
       ease: "power2.out"
     });
     
@@ -113,23 +113,69 @@ function initLoginButton() {
 // 初始化 Login 頁面特殊按鈕動畫
 function initLoginPageButton() {
   const loginButton = document.querySelector('.login-button');
-  if (!loginButton) return;
-  
-  const arrowWrapper = loginButton.querySelector('.login-arrows-wrapper');
-  if (!arrowWrapper) return;
-  
-  // 只在桌面版顯示 hover 效果
-  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  if (!loginButton) {
+    console.log('Login button not found');
     return;
   }
   
-  loginButton.addEventListener('mouseenter', function() {
-    arrowWrapper.style.transform = 'translateX(0px)';
-  });
+  const buttonFill = loginButton.querySelector('.button-bg-fill');
+  const arrowsWrapper = loginButton.querySelector('.login-arrows-wrapper');
   
-  loginButton.addEventListener('mouseleave', function() {
-    arrowWrapper.style.transform = 'translateX(-34px)';
-  });
+  if (!buttonFill) {
+    console.log('Button fill element not found');
+    return;
+  }
+  
+  // 檢查GSAP是否載入
+  if (typeof gsap === 'undefined') {
+    console.warn('GSAP not loaded for login button');
+    return;
+  }
+  
+  // 只在桌面版啟用動畫
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    loginButton.addEventListener('mouseenter', function() {
+      // 背景填充動畫 - 與 index.html 開始租借按鈕完全相同
+      gsap.to(buttonFill, {
+        height: '100%',
+        duration: 0.3,
+        ease: "power2.out"
+      });
+      
+      // 文字顏色變化
+      this.classList.add('white-text');
+      
+      // 箭頭滑動動畫 - 從右往左滑動
+      if (arrowsWrapper) {
+        gsap.to(arrowsWrapper, {
+          transform: 'translateX(0px)',
+          duration: 1,
+          ease: "cubic-bezier(0.4, 0, 0.2, 1)"
+        });
+      }
+    });
+    
+    loginButton.addEventListener('mouseleave', function() {
+      // 背景填充動畫 - 與 index.html 開始租借按鈕完全相同
+      gsap.to(buttonFill, {
+        height: '0%',
+        duration: 0.3,
+        ease: "power2.out"
+      });
+      
+      // 文字顏色恢復
+      this.classList.remove('white-text');
+      
+      // 箭頭復位動畫 - 回到原始位置
+      if (arrowsWrapper) {
+        gsap.to(arrowsWrapper, {
+          transform: 'translateX(-34px)',
+          duration: 1,
+          ease: "cubic-bezier(0.4, 0, 0.2, 1)"
+        });
+      }
+    });
+  }
 }
 
 // 全域函數
@@ -139,5 +185,9 @@ window.initLoginPageButton = initLoginPageButton;
 // 自動初始化
 document.addEventListener('DOMContentLoaded', function() {
   initButtonAnimations();
-  initLoginPageButton();
+  
+  // 延遲初始化login頁面按鈕，確保DOM完全加載
+  setTimeout(() => {
+    initLoginPageButton();
+  }, 100);
 }); 

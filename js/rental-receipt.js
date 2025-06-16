@@ -58,13 +58,37 @@ function generateRentalInfo() {
     });
   }
 
-  // 設定當前日期和歸還日期（假設租借3天）
-  const today = new Date();
-  const returnDate = new Date(today);
-  returnDate.setDate(today.getDate() + 3);
+  // 從 localStorage 讀取選擇的租借日期
+  let startDate, endDate;
   
-  const startDate = formatDate(today);
-  const endDate = formatDate(returnDate);
+  const savedDates = localStorage.getItem('selectedRentalDates');
+  if (savedDates) {
+    try {
+      const dateData = JSON.parse(savedDates);
+      const startDateObj = new Date(dateData.startDate);
+      const endDateObj = new Date(dateData.endDate);
+      
+      startDate = formatDate(startDateObj);
+      endDate = formatDate(endDateObj);
+    } catch (error) {
+      console.error('無法解析保存的日期資料:', error);
+      // 回退到預設日期（當前日期+3天）
+      const today = new Date();
+      const returnDate = new Date(today);
+      returnDate.setDate(today.getDate() + 3);
+      
+      startDate = formatDate(today);
+      endDate = formatDate(returnDate);
+    }
+  } else {
+    // 如果沒有保存的日期，使用預設日期（當前日期+3天）
+    const today = new Date();
+    const returnDate = new Date(today);
+    returnDate.setDate(today.getDate() + 3);
+    
+    startDate = formatDate(today);
+    endDate = formatDate(returnDate);
+  }
   
   // 更新租借日期 - 手機版和桌面版
   const mobileRentalDates = document.getElementById('rental-dates');
@@ -134,8 +158,8 @@ function loadEquipmentSummary() {
 // 創建摘要項目元素 (桌面版)
 function createSummaryItem(item) {
   const div = document.createElement('div');
-  div.className = 'summary-item flex items-center border-b border-white';
-  div.style.cssText = 'height: 150px; padding: 1rem 0;';
+  div.className = 'summary-item flex items-center';
+  div.style.cssText = 'height: 150px;';
   
   div.innerHTML = `
     <!-- 設備圖片 -->

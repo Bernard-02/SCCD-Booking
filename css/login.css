@@ -17,15 +17,7 @@
 .login-arrows-wrapper {
   display: flex;
   gap: 4px;
-  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateX(-34px);
-}
-
-/* 只在桌面版顯示 hover 效果 */
-@media (hover: hover) and (pointer: fine) {
-  .login-button:hover .login-arrows-wrapper {
-    transform: translateX(0px);
-  }
 }
 
 .custom-arrow {
@@ -38,8 +30,6 @@
   width: 100%;
   height: 100%;
 }
-
-
 
 /* 登入框專用樣式 */
 .login-container {

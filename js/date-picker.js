@@ -234,14 +234,21 @@ class MobileDatePicker {
       });
     }
     
-    if (confirmButton) {
-      confirmButton.addEventListener('click', () => {
-        if (!confirmButton.disabled && this.startDate && this.endDate) {
-          // 跳轉到下一頁
-          window.location.href = 'bookingresources.html';
-        }
-      });
-    }
+      if (confirmButton) {
+    confirmButton.addEventListener('click', () => {
+      if (!confirmButton.disabled && this.startDate && this.endDate) {
+        // 保存選擇的日期到 localStorage
+        const rentalDateData = {
+          startDate: this.startDate.toISOString(),
+          endDate: this.endDate.toISOString()
+        };
+        localStorage.setItem('selectedRentalDates', JSON.stringify(rentalDateData));
+        
+        // 跳轉到下一頁
+        window.location.href = 'bookingresources.html';
+      }
+    });
+  }
   }
   
   isSameDay(date1, date2) {

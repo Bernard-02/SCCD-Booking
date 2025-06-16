@@ -7,8 +7,8 @@ class DesktopFilter {
     this.statusButtons = document.querySelectorAll('#status-available, #status-unavailable');
     this.equipmentCards = document.querySelectorAll('.equipment-card');
     this.searchInput = document.getElementById('searchInput');
-    this.currentCategory = 'all';
-    this.currentStatus = '有現貨';
+    this.currentCategory = 'all'; // 預設顯示所有類別
+    this.currentStatus = '有現貨'; // 預設只顯示有現貨的設備
     this.currentSearchText = '';
     this.init();
   }
@@ -204,7 +204,7 @@ class DesktopFilter {
       const equipmentName = nameElement ? nameElement.textContent.toLowerCase() : '';
       
       const categoryMatch = this.currentCategory === 'all' || cardCategory === this.currentCategory;
-      const statusMatch = cardStatus === this.currentStatus;
+      const statusMatch = cardStatus === this.currentStatus; // 狀態必須精確匹配
       const searchMatch = this.currentSearchText === '' || equipmentName.includes(this.currentSearchText);
       
       if (categoryMatch && statusMatch && searchMatch) {
@@ -231,6 +231,11 @@ class DesktopFilter {
         window.recalculateRows();
       }
     }, 50);
+  }
+  
+  // 公用方法：重新應用當前篩選
+  applyFilters() {
+    this.startEnterAnimation();
   }
 }
 
@@ -436,7 +441,15 @@ window.MobileFilter = MobileFilter;
 document.addEventListener('DOMContentLoaded', function() {
   // 檢查是否在設備頁面
   if (document.querySelector('.equipment-card')) {
-    new DesktopFilter();
-    new MobileFilter();
+    // 等待設備數據準備完成後再初始化篩選器
+    function waitForEquipmentData() {
+      if (window.equipmentDataReady) {
+        window.desktopFilter = new DesktopFilter();
+        window.mobileFilter = new MobileFilter();
+      } else {
+        setTimeout(waitForEquipmentData, 100);
+      }
+    }
+    waitForEquipmentData();
   }
 }); 

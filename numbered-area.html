@@ -729,6 +729,16 @@
         'pillar': []
       };
       
+      // 存儲已加入購物車的區塊（按區域分類）
+      let cartBlocks = {
+        'courtyard': [],
+        'corridor': [],
+        'front-balcony': [],
+        'back-balcony': [],
+        'glass-wall': [],
+        'pillar': []
+      };
+      
       // 區域資料
       const areaData = {
         'courtyard': {
@@ -896,27 +906,49 @@
           svg.classList.add('no-scale');
         }
         
-        // 重新設置SVG點擊事件
-        setTimeout(() => {
-          setupSVGClickEvents();
-          
-          // 示範：設置一些格子為已預訂狀態
-          const bookedBlocks = getBookedBlocksForArea(currentSelectedArea);
-          bookedBlocks.forEach(blockName => {
-            const cell = document.getElementById(blockName);
-            if (cell) {
-              cell.classList.add('booked');
+        // 確保SVG完全載入後再設置點擊事件和狀態
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            setupSVGClickEvents();
+            
+            // 設置已提交訂單的格子為已預訂狀態（紅色）
+            submittedBlocks[currentSelectedArea].forEach(blockName => {
+              const cell = document.getElementById(blockName);
+              if (cell) {
+                cell.classList.add('booked');
+              }
+            });
+            
+            // 示範：設置一些格子為已預訂狀態（可選，用於測試）
+            const demoBookedBlocks = getBookedBlocksForArea(currentSelectedArea);
+            demoBookedBlocks.forEach(blockName => {
+              const cell = document.getElementById(blockName);
+              if (cell) {
+                cell.classList.add('booked');
+              }
+            });
+            
+            // 恢復已選擇的區塊視覺狀態
+            selectedBlockNames.forEach(blockName => {
+              const cell = document.getElementById(blockName);
+              if (cell && !cell.classList.contains('booked')) {
+                cell.classList.add('selected');
+              }
+            });
+            
+            // 恢復已加入購物車的區塊視覺狀態（綠色）
+            if (cartBlocks[currentSelectedArea] && cartBlocks[currentSelectedArea].length > 0) {
+              console.log(`恢復區域 ${currentSelectedArea} 的購物車格子:`, cartBlocks[currentSelectedArea]);
+              cartBlocks[currentSelectedArea].forEach(blockName => {
+                const cell = document.getElementById(blockName);
+                if (cell && !cell.classList.contains('booked')) {
+                  cell.classList.add('selected');
+                  // console.log(`格子 ${blockName} 已設為綠色 (購物車狀態)`);
+                }
+              });
             }
-          });
-          
-          // 恢復已選擇的區塊視覺狀態
-          selectedBlockNames.forEach(blockName => {
-            const cell = document.getElementById(blockName);
-            if (cell && !cell.classList.contains('booked')) {
-              cell.classList.add('selected');
-            }
-          });
-        }, 100);
+          }, 50);
+        });
       }
       
       function getSVGDataForArea(areaId) {
@@ -1128,6 +1160,14 @@
         const gridCells = document.querySelectorAll('.grid-cell');
         const tooltip = document.getElementById('grid-tooltip');
         
+        // 如果沒有找到格子元素，延遲重試
+        if (gridCells.length === 0) {
+          setTimeout(() => {
+            setupSVGClickEvents();
+          }, 50);
+          return;
+        }
+        
         gridCells.forEach(cell => {
           // 點擊事件
           cell.addEventListener('click', function() {
@@ -1164,9 +1204,30 @@
       function handleBlockClick(blockName) {
         const cell = document.getElementById(blockName);
         
+        // 調試用：輸出當前狀態（可在生產環境中移除）
+        // console.log('點擊格子:', blockName);
+        
         // 檢查是否已被預訂（這裡可以設置一些預訂的格子用於示範）
         if (cell.classList.contains('booked')) {
           showNotification(`${blockName} 已被預訂！`, 'error');
+          return;
+        }
+        
+        // 使用購物車管理器檢查是否已在購物車中
+        if (window.cartManager && window.cartManager.isBlockInCart(currentSelectedArea, blockName)) {
+          showNotification(`${blockName} 已在租借清單中！`, 'error');
+          return;
+        }
+        
+        // 檢查本地購物車記錄（雙重保險）
+        if (cartBlocks[currentSelectedArea] && cartBlocks[currentSelectedArea].includes(blockName)) {
+          showNotification(`${blockName} 已在租借清單中！`, 'error');
+          return;
+        }
+        
+        // 檢查是否已提交訂單
+        if (submittedBlocks[currentSelectedArea] && submittedBlocks[currentSelectedArea].includes(blockName)) {
+          showNotification(`${blockName} 已提交訂單！`, 'error');
           return;
         }
         
@@ -1175,10 +1236,12 @@
           // 如果已選中，則取消選中
           selectedBlockNames.splice(index, 1);
           cell.classList.remove('selected');
+          // console.log('取消選中:', blockName);
         } else {
           // 如果未選中，則添加到選中列表
           selectedBlockNames.push(blockName);
           cell.classList.add('selected');
+          // console.log('新增選中:', blockName);
         }
         
         updateSelectedBlocks();
@@ -1228,10 +1291,10 @@
           return;
         }
         
-        // 清除所有選中的格子
+        // 清除所有選中的格子（但不影響已在購物車中的格子）
         selectedBlockNames.forEach(blockName => {
           const cell = document.getElementById(blockName);
-          if (cell) {
+          if (cell && !cartBlocks[currentSelectedArea].includes(blockName)) {
             cell.classList.remove('selected');
           }
         });
@@ -1280,6 +1343,18 @@
           return;
         }
         
+        // 使用購物車管理器檢查重複格子
+        if (window.cartManager) {
+          const duplicateBlocks = selectedBlockNames.filter(blockName => 
+            window.cartManager.isBlockInCart(currentSelectedArea, blockName)
+          );
+          
+          if (duplicateBlocks.length > 0) {
+            showNotification(`以下格子已在租借清單中：${duplicateBlocks.join(', ')}`, 'error');
+            return;
+          }
+        }
+        
         const area = areaData[currentSelectedArea];
         const totalDeposit = selectedBlockNames.length * area.deposit;
         const blockList = selectedBlockNames.join(', ');
@@ -1291,27 +1366,26 @@
           category: area.category,
           deposit: totalDeposit,
           mainImage: area.image,
-          blocks: selectedBlockNames.slice() // 複製數組
+          blocks: selectedBlockNames.slice(), // 複製數組
+          areaKey: currentSelectedArea // 添加區域鍵值以便後續識別
         };
         
         const success = window.cartManager.addToCart(cartItem);
         
         if (success) {
           showNotification(`${area.name}區域 ${blockList} 已成功加入租借清單！`);
-          // 清空選擇
+          
+          // 將選中的區塊加入購物車記錄
+          cartBlocks[currentSelectedArea] = cartBlocks[currentSelectedArea].concat(selectedBlockNames);
+          
+          // 清空當前選擇（但保持購物車中的格子為綠色）
           selectedBlocks = [];
           selectedBlockNames = [];
           
-          // 清空當前區域的記錄
+          // 清空當前區域的選擇記錄
           if (currentSelectedArea) {
             areaSelections[currentSelectedArea] = [];
           }
-          
-          // 清除視覺選擇狀態
-          const selectedCells = document.querySelectorAll('.grid-cell.selected');
-          selectedCells.forEach(cell => {
-            cell.classList.remove('selected');
-          });
           
           updateSelectedBlocks();
         }
@@ -1394,15 +1468,107 @@
         // 加入清單按鈕已經有 CSS hover 效果，不需要額外 JavaScript 動畫
       }
       
+      // 監聽購物車變化
+      function syncCartState(shouldUpdateDisplay = true) {
+        if (window.cartManager) {
+          // 使用購物車管理器的新 API 獲取所有區域格子狀態
+          const areaBlocks = window.cartManager.getAllAreaBlocks();
+          
+          // 重置所有購物車狀態
+          Object.keys(cartBlocks).forEach(areaKey => {
+            cartBlocks[areaKey] = [];
+          });
+          
+          // 更新本地狀態
+          Object.keys(areaBlocks).forEach(areaKey => {
+            if (cartBlocks[areaKey]) {
+              cartBlocks[areaKey] = [...areaBlocks[areaKey]];
+            }
+          });
+          
+          // console.log('同步購物車狀態完成:', cartBlocks);
+          
+          // 只在需要時更新當前區域的視覺狀態
+          if (shouldUpdateDisplay && currentSelectedArea) {
+            updateAreaDisplay();
+          }
+        }
+      }
+      
+      // 添加已提交訂單的區塊管理
+      let submittedBlocks = {
+        'courtyard': [],
+        'corridor': [],
+        'front-balcony': [],
+        'back-balcony': [],
+        'glass-wall': [],
+        'pillar': []
+      };
+      
+      // 模擬訂單提交後的狀態更新（實際使用時需要替換為後端API調用）
+      function handleOrderSubmission() {
+        // 將購物車中的區塊移至已提交狀態
+        Object.keys(cartBlocks).forEach(areaKey => {
+          submittedBlocks[areaKey] = submittedBlocks[areaKey].concat(cartBlocks[areaKey]);
+        });
+        
+        // 清空購物車狀態
+        Object.keys(cartBlocks).forEach(areaKey => {
+          cartBlocks[areaKey] = [];
+        });
+      }
+      
       // 初始化：默認展開中庭
       document.addEventListener('DOMContentLoaded', function() {
-        openAccordion('courtyard');
-        updateAreaDisplay();
+        // 先設置默認選中的區域
+        currentSelectedArea = 'courtyard';
+        console.log('初始化：設置默認區域為', currentSelectedArea);
         
-        // 恢復默認區域的選擇狀態
-        selectedBlockNames = [...areaSelections['courtyard']];
-        selectedBlocks = [...selectedBlockNames];
-        updateSelectedBlocks();
+        openAccordion('courtyard');
+        
+        // 確保手風琴動畫完成後再載入區域顯示
+        setTimeout(() => {
+          // 先載入區域顯示
+          updateAreaDisplay();
+          
+          // 然後同步購物車狀態並更新視覺效果
+          setTimeout(() => {
+            syncCartState(false); // 不觸發重複的 updateAreaDisplay()
+            
+            // 手動恢復購物車中格子的綠色狀態
+            if (cartBlocks[currentSelectedArea] && cartBlocks[currentSelectedArea].length > 0) {
+              console.log('手動恢復購物車格子狀態:', cartBlocks[currentSelectedArea]);
+              cartBlocks[currentSelectedArea].forEach(blockName => {
+                const cell = document.getElementById(blockName);
+                if (cell && !cell.classList.contains('booked')) {
+                  cell.classList.add('selected');
+                }
+              });
+            }
+            
+            // 恢復默認區域的選擇狀態
+            selectedBlockNames = [...areaSelections['courtyard']];
+            selectedBlocks = [...selectedBlockNames];
+            updateSelectedBlocks();
+            
+            console.log('初始化完成，當前區域:', currentSelectedArea);
+            console.log('初始化完成，購物車狀態:', cartBlocks);
+          }, 100);
+        }, 600); // 等待手風琴展開動畫完成 (0.5s + 0.1s buffer)
+        
+        // 監聽購物車變化事件
+        window.addEventListener('cartUpdated', function(event) {
+          console.log('購物車更新事件觸發');
+          syncCartState(true); // 觸發視覺更新
+        });
+        
+        // 監聽跨頁面購物車變化
+        window.addEventListener('storage', function(event) {
+          if (event.key === 'sccd-rental-cart') {
+            console.log('跨頁面購物車變化檢測');
+            syncCartState(true); // 觸發視覺更新
+          }
+        });
         
         setupButtonAnimations(); // 初始化按鈕動畫
         
@@ -1432,15 +1598,42 @@
           });
         }
         
-        // 示範用：添加一些測試按鈕來模擬區塊點擊
-        // 這些可以在實際實作時移除
+        // 開發用功能：提供測試函數
+        window.testFunctions = {
+          // 模擬訂單提交
+          submitOrder: function() {
+            handleOrderSubmission();
+            updateAreaDisplay();
+            showNotification('訂單已提交！購物車中的區塊現在變為紅色狀態。');
+          },
+          
+          // 重置所有狀態
+          resetAll: function() {
+            Object.keys(cartBlocks).forEach(key => cartBlocks[key] = []);
+            Object.keys(submittedBlocks).forEach(key => submittedBlocks[key] = []);
+            Object.keys(areaSelections).forEach(key => areaSelections[key] = []);
+            selectedBlocks = [];
+            selectedBlockNames = [];
+            updateAreaDisplay();
+            updateSelectedBlocks();
+            showNotification('所有狀態已重置！');
+          },
+          
+          // 查看當前狀態
+          showStatus: function() {
+            console.log('購物車狀態：', cartBlocks);
+            console.log('已提交訂單：', submittedBlocks);
+            console.log('當前選擇：', selectedBlockNames);
+          }
+        };
+        
+        // 示範用：添加一些測試信息
         setTimeout(() => {
-          console.log('頁面載入完成。由於使用img標籤載入SVG，無法直接操作內部元素。');
-          console.log('要讓SVG內部元素可點擊，請使用以下方法之一：');
-          console.log('1. 使用 <object> 標籤：<object data="Area/Square Area.svg" type="image/svg+xml"></object>');
-          console.log('2. 使用 <embed> 標籤：<embed src="Area/Square Area.svg" type="image/svg+xml">');
-          console.log('3. 直接將SVG代碼嵌入HTML中');
-          console.log('然後可以使用 simulateBlockClick("A1") 來測試功能');
+          console.log('頁面載入完成！');
+          console.log('可用的測試功能：');
+          console.log('- testFunctions.submitOrder() // 模擬提交訂單');
+          console.log('- testFunctions.resetAll() // 重置所有狀態');
+          console.log('- testFunctions.showStatus() // 查看當前狀態');
         }, 1000);
       });
 

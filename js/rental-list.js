@@ -89,9 +89,6 @@ function createEquipmentItem(item) {
   const div = document.createElement('div');
   div.className = 'equipment-card';
   
-  // 檢查是否為教室
-  const isClassroom = item.category === 'classroom';
-  
   div.innerHTML = `
     <!-- 設備圖片 -->
     <div class="relative mb-6 image-container">
@@ -118,11 +115,11 @@ function createEquipmentItem(item) {
         </div>
         
         <div class="flex items-center justify-start space-x-3 mt-4">
-          <svg class="quantity-btn ${item.quantity === 1 || isClassroom ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="${isClassroom ? '' : `decreaseQuantity('${item.id}')`}" style="width: 20px; height: 20px;">
+          <svg class="quantity-btn ${item.quantity === 1 ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="decreaseQuantity('${item.id}')" style="width: 20px; height: 20px;">
             <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
           </svg>
           <span class="text-base font-['Inter',_sans-serif] font-normal text-white min-w-[1.5rem] text-center" data-quantity="${item.quantity}" data-equipment-id="${item.id}">${item.quantity}</span>
-          <svg class="quantity-btn ${isClassroom ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="${isClassroom ? '' : `increaseQuantity('${item.id}')`}" style="width: 20px; height: 20px;">
+          <svg class="quantity-btn" viewBox="0 0 20 20" onclick="increaseQuantity('${item.id}')" style="width: 20px; height: 20px;">
             <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
             <line x1="10" y1="4" x2="10" y2="16" stroke="white" stroke-width="1"/>
           </svg>
@@ -139,7 +136,7 @@ function createEquipmentItem(item) {
 function increaseQuantity(equipmentId) {
   const cart = window.cartManager.getCart();
   const item = cart.find(item => item.id === equipmentId);
-  if (item && item.category !== 'classroom') {
+  if (item) {
     window.cartManager.updateQuantity(equipmentId, item.quantity + 1);
   }
 }
@@ -148,7 +145,7 @@ function increaseQuantity(equipmentId) {
 function decreaseQuantity(equipmentId) {
   const cart = window.cartManager.getCart();
   const item = cart.find(item => item.id === equipmentId);
-  if (item && item.quantity > 1 && item.category !== 'classroom') {
+  if (item && item.quantity > 1) {
     window.cartManager.updateQuantity(equipmentId, item.quantity - 1);
   }
 }

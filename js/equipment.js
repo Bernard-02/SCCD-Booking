@@ -1,5 +1,90 @@
 /* ===== Equipment 頁面專用 JavaScript ===== */
 
+// 設備 ID 對應映射表（HTML中的順序對應data.js中的ID）
+const EQUIPMENT_ID_MAP = [
+    'speaker-clamp-light',    // 第一個卡片：黑色喇叭夾燈
+    'extension-cord',         // 第二個卡片：三孔六座延長線
+    'led-light',              // 第三個卡片：長桿筒狀夾燈
+    'folding-table',          // 第四個卡片：H字牆
+    'projector',              // 第五個卡片：便攜式投影機
+    'electric-screwdriver',   // 第六個卡片：鋁梯
+    'heat-gun',               // 第七個卡片：雷射切割機
+    'hdmi-cable',             // 第八個卡片：品字電源線
+    'ring-light',             // 第九個卡片：米家檯燈
+    'professional-easel',     // 第十個卡片：專業畫板
+    'wireless-microphone',    // 第十一個卡片：電腦螢幕
+    'utility-knife-set'       // 第十二個卡片：大型購物推車
+];
+
+// 更新設備卡片名稱
+async function updateEquipmentCardNames() {
+    if (!window.cartManager || !window.cartManager.isEquipmentLoaded) {
+        if (window.cartManager) {
+            await window.cartManager.init();
+        } else {
+            console.warn('Cart manager not available');
+            return;
+        }
+    }
+
+    const equipmentCards = document.querySelectorAll('.equipment-card');
+    
+    equipmentCards.forEach((card, index) => {
+        const equipmentId = EQUIPMENT_ID_MAP[index];
+        const equipmentData = window.cartManager.getEquipmentById(equipmentId);
+        
+        if (equipmentData) {
+            // 更新卡片名稱
+            const nameElement = card.querySelector('.text-lg');
+            if (nameElement) {
+                nameElement.textContent = equipmentData.name;
+            }
+            
+            // 更新類別
+            const categoryElement = card.querySelector('.text-sm[style*="color: #cccccc"]');
+            if (categoryElement) {
+                categoryElement.textContent = equipmentData.category;
+            }
+            
+            // 更新狀態顯示 - 動態狀態
+            const availableQty = window.cartManager.getAvailableQuantity(equipmentData.id);
+            const displayStatus = availableQty <= 0 ? '已借出' : '有現貨';
+            const displayColor = availableQty <= 0 ? '#ff448a' : '#00ff80';
+            
+            const statusElement = card.querySelector('span[style*="color: #00ff80"], span[style*="color: #ff448a"]');
+            if (statusElement) {
+                statusElement.textContent = displayStatus;
+                statusElement.style.color = displayColor;
+            }
+            
+            // 更新data-category和data-status屬性
+            card.setAttribute('data-category', equipmentData.category);
+            card.setAttribute('data-status', displayStatus);
+            
+            // 更新圖片
+            const imageElement = card.querySelector('img');
+            if (imageElement && equipmentData.mainImage) {
+                imageElement.src = equipmentData.mainImage;
+                imageElement.alt = equipmentData.name;
+            }
+            
+            // 更新書籤的 data-equipment 屬性
+            const bookmarkBtn = card.querySelector('.bookmark-btn');
+            if (bookmarkBtn) {
+                bookmarkBtn.setAttribute('data-equipment', equipmentData.name);
+            }
+            
+            // 更新連結的href
+            const linkElement = card.querySelector('a');
+            if (linkElement) {
+                linkElement.href = `equipment-detail.html?id=${equipmentId}`;
+            }
+        } else {
+            console.warn(`Equipment data not found for ID: ${equipmentId}`);
+        }
+    });
+}
+
 // 手機版搜尋列滾動效果
 function initMobileSearchScrollEffect() {
   if (window.innerWidth <= 767) {
@@ -163,22 +248,37 @@ function generateMobileEquipmentCards() {
   if (mobileGrid) {
     mobileGrid.innerHTML = '';
     
-    desktopCards.forEach(card => {
+    desktopCards.forEach((card, index) => {
       const category = card.getAttribute('data-category');
       const status = card.getAttribute('data-status');
       const link = card.querySelector('a');
-      const categoryElement = card.querySelector('.mt-5 .text-sm');
-      const nameElement = card.querySelector('.text-lg, .text-xl');
       const imageElement = card.querySelector('a img');
       
+      // 從設備管理器獲取最新的設備資料
+      const equipmentId = EQUIPMENT_ID_MAP[index];
+      let categoryText = category;
+      let nameText = '設備名稱';
+      
+      if (equipmentId && window.cartManager && window.cartManager.isEquipmentLoaded) {
+        const equipmentData = window.cartManager.getEquipmentById(equipmentId);
+        if (equipmentData) {
+          categoryText = equipmentData.category;
+          nameText = equipmentData.name;
+        }
+      } else {
+        // 如果無法從設備管理器獲取，則從 DOM 獲取
+        const categoryElement = card.querySelector('.mt-5 .text-sm');
+        const nameElement = card.querySelector('.text-lg, .text-xl');
+        if (categoryElement) categoryText = categoryElement.textContent;
+        if (nameElement) nameText = nameElement.textContent;
+      }
+      
       // Skip card if essential elements are missing to prevent errors
-      if (!link || !categoryElement || !nameElement || !imageElement) {
+      if (!link || !imageElement) {
         console.warn('Skipping a malformed equipment card during mobile generation.', card);
         return;
       }
 
-      const categoryText = categoryElement.textContent;
-      const nameText = nameElement.textContent;
       const imgSrc = imageElement.src;
       
       const mobileCard = document.createElement('div');
@@ -475,16 +575,65 @@ function showToast(message) {
   }, 2500);
 }
 
-
+// 監聽庫存變化，實時更新設備列表狀態
+function setupInventoryUpdateListener() {
+    let updateTimeout;
+    
+    function performUpdate() {
+        // 清除之前的更新計時器，避免重複執行
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(async () => {
+            await updateEquipmentCardNames();
+            
+            // 重新生成手機版卡片（如果在手機版）
+            if (window.innerWidth <= 767) {
+                generateMobileEquipmentCards();
+                // 重新應用當前篩選狀態
+                const currentStatus = document.querySelector('#mobile-status-available.font-bold') ? '有現貨' : '已借出';
+                const selectedCategories = Array.from(document.querySelectorAll('.mobile-filter-category.font-bold'))
+                    .map(btn => btn.dataset.category);
+                applyMobileFilters(selectedCategories, currentStatus);
+            }
+            
+            // 重新應用當前篩選（延遲確保狀態更新完成）
+            setTimeout(() => {
+                if (window.desktopFilter) {
+                    window.desktopFilter.applyFilters();
+                }
+            }, 100);
+        }, 200); // 200ms防抖
+    }
+    
+    // 監聽購物車變化事件
+    window.addEventListener('cartUpdated', performUpdate);
+    
+    // 監聽localStorage變化（跨頁面同步）
+    window.addEventListener('storage', async (event) => {
+        if (event.key === 'sccd-rental-cart') {
+            // 重新載入購物車管理器
+            if (window.cartManager) {
+                await window.cartManager.init();
+                performUpdate();
+            }
+        }
+    });
+}
 
 // 主要初始化函數
-function initEquipmentPage() {
+async function initEquipmentPage() {
+  // 首先初始化購物車管理器並更新設備卡片名稱（動態狀態）
+  await updateEquipmentCardNames();
+  
   initMobileSearchScrollEffect();
   initMobileFilters();
   initMobileSearchInteraction();
   initMobileVersion();
   initSearchInteraction();
   initEquipmentCardAnimations();
+  setupInventoryUpdateListener();
+  
+  // 設定標誌表示設備數據已準備完成
+  window.equipmentDataReady = true;
 }
 
 // 全域函數

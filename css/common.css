@@ -341,6 +341,11 @@
   }
 }
 
+/* 桌面版確保登入按鈕動畫正常 - 移除CSS過渡效果，讓GSAP完全控制 */
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  /* 移除transition，避免與GSAP動畫衝突 */
+}
+
 /* 全局隱藏滾動條但保持滾動功能 */
 * {
   scrollbar-width: none; /* Firefox */

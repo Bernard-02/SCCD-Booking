@@ -7,7 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 設備詳情頁面邏輯
-function initializeEquipmentPage() {
+async function initializeEquipmentPage() {
+  // 初始化購物車管理器
+  await window.cartManager.init();
+  
   // 從URL參數獲取設備ID
   const urlParams = new URLSearchParams(window.location.search);
   const equipmentId = urlParams.get('id');
@@ -19,7 +22,7 @@ function initializeEquipmentPage() {
   }
   
   // 獲取設備數據
-  const equipment = getEquipmentById(equipmentId);
+  const equipment = window.cartManager.getEquipmentById(equipmentId);
   
   if (!equipment) {
     // 如果找不到設備，顯示錯誤或重定向
@@ -35,12 +38,13 @@ function initializeEquipmentPage() {
   setupImageEnlargement();
   
   // 設置加入清單功能
-  setupAddToCart();
-  
-
+  setupAddToCart(equipmentId);
   
   // 設置按鈕動畫
   setupButtonAnimation();
+  
+  // 設置庫存監聽器
+  setupInventoryListener(equipmentId);
 }
 
 function updateEquipmentDisplay(equipment) {
@@ -53,14 +57,24 @@ function updateEquipmentDisplay(equipment) {
     el.alt = equipment.name;
   });
   
-  // 更新設備信息
+  // 更新設備信息 - 動態狀態
+  const availableQty = window.cartManager.getAvailableQuantity(equipment.id);
+  const displayStatus = availableQty <= 0 ? '已借出' : '有現貨';
+  const displayColor = availableQty <= 0 ? '#ff448a' : '#00ff80';
+  
   document.querySelectorAll('.js-equipment-status').forEach(el => {
-    el.textContent = equipment.status;
-    el.style.color = equipment.statusColor;
+    el.textContent = displayStatus;
+    el.style.color = displayColor;
   });
   document.querySelectorAll('.js-equipment-category').forEach(el => el.textContent = equipment.category);
   document.querySelectorAll('.js-equipment-name').forEach(el => el.textContent = equipment.name);
-  document.querySelectorAll('.js-equipment-quantity').forEach(el => el.textContent = equipment.quantity);
+  
+  // 使用動態計算的可用庫存數量
+  document.querySelectorAll('.js-equipment-quantity').forEach(el => {
+    const availableQty = window.cartManager.getAvailableQuantity(equipment.id);
+    el.textContent = availableQty;
+  });
+  
   document.querySelectorAll('.js-equipment-deposit').forEach(el => el.textContent = `NT ${equipment.deposit}`);
   document.querySelectorAll('.js-equipment-description').forEach(el => el.textContent = equipment.description);
   
@@ -69,6 +83,9 @@ function updateEquipmentDisplay(equipment) {
   
   // 設置bookmark按鈕的設備名稱
   document.querySelectorAll('.js-bookmark-btn').forEach(el => el.setAttribute('data-equipment', equipment.name));
+  
+  // 更新按鈕狀態
+  updateAddToCartButton(equipment);
 }
 
 function setupImageEnlargement() {
@@ -133,28 +150,92 @@ function setupImageEnlargement() {
   });
 }
 
-function setupAddToCart() {
+function setupAddToCart(equipmentId) {
   document.querySelectorAll('.js-add-to-cart-btn').forEach(addBtn => {
     addBtn.addEventListener('click', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const equipmentId = urlParams.get('id');
-      const equipment = getEquipmentById(equipmentId);
+      if (this.disabled) return; // 如果按鈕被禁用，直接返回
       
-      if (equipment) {
-        const success = window.cartManager.addToCart(equipment);
-        if (success) {
-          if (window.showToast) {
-            window.showToast(`${equipment.name}已成功加入租借清單！`);
-          }
+      const equipment = window.cartManager.getEquipmentById(equipmentId);
+      
+      if (!equipment) {
+        if (window.showToast) {
+          window.showToast('設備資料載入錯誤！');
+        }
+        return;
+      }
+      
+      // 使用購物車管理器添加到購物車（自動處理庫存）
+      const success = window.cartManager.addToCart(equipment);
+      
+      if (success) {
+        // 立即更新購物車顯示
+        window.cartManager.updateCartDisplay();
+        
+        // 更新頁面顯示
+        updateEquipmentDisplay(equipment);
+        
+        if (window.showToast) {
+          window.showToast(`${equipment.name}已成功加入租借清單！`);
+        }
+      } else {
+        if (window.showToast) {
+          window.showToast(`${equipment.name}庫存不足或已達上限！`);
         }
       }
     });
   });
 }
 
-// showToast 函數現在由 common.js 提供
+// 更新加入清單按鈕狀態
+function updateAddToCartButton(equipment) {
+  if (!equipment) return;
+  
+  const hasStock = window.cartManager.hasStock(equipment.id);
+  const availableQuantity = window.cartManager.getAvailableQuantity(equipment.id);
+  
+  document.querySelectorAll('.js-add-to-cart-btn').forEach(button => {
+    if (!hasStock || availableQuantity <= 0) {
+      // 禁用按鈕，但不更改文字
+      button.disabled = true;
+      button.style.opacity = '0.5';
+      button.style.cursor = 'not-allowed';
+      button.style.pointerEvents = 'none';
+    } else {
+      // 啟用按鈕
+      button.disabled = false;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
+      button.style.pointerEvents = 'auto';
+    }
+  });
+}
 
-
+// 設置庫存監聽器
+function setupInventoryListener(equipmentId) {
+  // 監聽購物車變化事件
+  window.addEventListener('cartUpdated', (event) => {
+    // 重新獲取最新的設備數據
+    const equipment = window.cartManager.getEquipmentById(equipmentId);
+    if (equipment) {
+      // 更新顯示
+      updateEquipmentDisplay(equipment);
+    }
+  });
+  
+  // 監聽localStorage變化（跨頁面同步）
+  window.addEventListener('storage', async (event) => {
+    if (event.key === 'sccd-rental-cart') {
+      // 重新載入購物車管理器
+      if (window.cartManager) {
+        await window.cartManager.init();
+        const equipment = window.cartManager.getEquipmentById(equipmentId);
+        if (equipment) {
+          updateEquipmentDisplay(equipment);
+        }
+      }
+    }
+  });
+}
 
 // 按鈕動畫效果
 function setupButtonAnimation() {
@@ -164,21 +245,25 @@ function setupButtonAnimation() {
       const buttonFill = button.querySelector('.button-bg-fill');
       if (buttonFill) {
         button.addEventListener('mouseenter', function() {
-          gsap.to(buttonFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          this.classList.add('white-text');
+          if (!this.disabled) {
+            gsap.to(buttonFill, {
+              height: '100%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            this.classList.add('white-text');
+          }
         });
         
         button.addEventListener('mouseleave', function() {
-          gsap.to(buttonFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          this.classList.remove('white-text');
+          if (!this.disabled) {
+            gsap.to(buttonFill, {
+              height: '0%',
+              duration: 0.5,
+              ease: "power2.out"
+            });
+            this.classList.remove('white-text');
+          }
         });
       }
     });

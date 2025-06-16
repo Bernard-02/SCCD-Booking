@@ -237,6 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.updateDisplay();
                 this.render();
                 this.attachEvents();
+                this.updateNavigationButtons(); // 確保導航按鈕狀態正確更新
             }
             
             updateDisplay() {
@@ -264,6 +265,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     
                     // 移除舊的事件監聽器並添加新的
                     this.confirmButton.onclick = () => {
+                        // 保存選擇的日期到 localStorage
+                        if (this.startDate && this.endDate) {
+                            const rentalDateData = {
+                                startDate: this.startDate.toISOString(),
+                                endDate: this.endDate.toISOString()
+                            };
+                            localStorage.setItem('selectedRentalDates', JSON.stringify(rentalDateData));
+                        }
                         window.location.href = 'bookingresources.html';
                     };
                 } else if (this.confirmButton) {
@@ -300,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             this.render();
                             this.attachEvents();
                             this.updateButtonState();
+                            this.updateNavigationButtons(); // 確保導航按鈕狀態正確更新
                             
                             // 然後執行往下滑動畫
                             const buttonFill = this.resetButton.querySelector('.button-bg-fill');
