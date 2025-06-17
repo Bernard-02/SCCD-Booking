@@ -807,19 +807,32 @@
         
         // 延遲打開新選擇的區域
         setTimeout(() => {
-          // 保存當前區域的選擇狀態
+          // 保存當前區域的選擇狀態（排除已在購物車中的格子）
           if (currentSelectedArea) {
-            areaSelections[currentSelectedArea] = [...selectedBlockNames];
+            const currentCartBlocks = cartBlocks[currentSelectedArea] || [];
+            const availableSelections = selectedBlockNames.filter(blockName => 
+              !currentCartBlocks.includes(blockName)
+            );
+            areaSelections[currentSelectedArea] = [...availableSelections];
           }
           
           openAccordion(areaId);
           currentSelectedArea = areaId;
           updateAreaDisplay();
           
-          // 恢復新區域的選擇狀態
-          selectedBlockNames = [...areaSelections[areaId]];
-          selectedBlocks = [...selectedBlockNames]; // 保持同步
-          updateSelectedBlocks();
+          // 先恢復購物車中格子的視覺狀態
+          setTimeout(() => {
+            restoreCartBlocksVisualState();
+            
+            // 然後恢復新區域的選擇狀態（排除已在購物車中的格子）
+            const cartBlocksInNewArea = cartBlocks[areaId] || [];
+            const availableSelections = areaSelections[areaId].filter(blockName => 
+              !cartBlocksInNewArea.includes(blockName)
+            );
+            selectedBlockNames = [...availableSelections];
+            selectedBlocks = [...selectedBlockNames]; // 保持同步
+            updateSelectedBlocks();
+          }, 50);
         }, 200);
       }
       
@@ -909,6 +922,7 @@
         // 確保SVG完全載入後再設置點擊事件和狀態
         requestAnimationFrame(() => {
           setTimeout(() => {
+            console.log(`開始設置區域 ${currentSelectedArea} 的格子狀態`);
             setupSVGClickEvents();
             
             // 設置已提交訂單的格子為已預訂狀態（紅色）
@@ -916,6 +930,7 @@
               const cell = document.getElementById(blockName);
               if (cell) {
                 cell.classList.add('booked');
+                console.log(`格子 ${blockName} 設為已提交狀態 (紅色)`);
               }
             });
             
@@ -925,6 +940,7 @@
               const cell = document.getElementById(blockName);
               if (cell) {
                 cell.classList.add('booked');
+                console.log(`格子 ${blockName} 設為示範預訂狀態 (紅色)`);
               }
             });
             
@@ -933,20 +949,14 @@
               const cell = document.getElementById(blockName);
               if (cell && !cell.classList.contains('booked')) {
                 cell.classList.add('selected');
+                console.log(`格子 ${blockName} 恢復選中狀態 (綠色)`);
               }
             });
             
             // 恢復已加入購物車的區塊視覺狀態（綠色）
-            if (cartBlocks[currentSelectedArea] && cartBlocks[currentSelectedArea].length > 0) {
-              console.log(`恢復區域 ${currentSelectedArea} 的購物車格子:`, cartBlocks[currentSelectedArea]);
-              cartBlocks[currentSelectedArea].forEach(blockName => {
-                const cell = document.getElementById(blockName);
-                if (cell && !cell.classList.contains('booked')) {
-                  cell.classList.add('selected');
-                  // console.log(`格子 ${blockName} 已設為綠色 (購物車狀態)`);
-                }
-              });
-            }
+            console.log('準備恢復購物車格子視覺狀態...');
+            restoreCartBlocksVisualState();
+            console.log(`區域 ${currentSelectedArea} 格子狀態設置完成`);
           }, 50);
         });
       }
@@ -1471,27 +1481,58 @@
       // 監聽購物車變化
       function syncCartState(shouldUpdateDisplay = true) {
         if (window.cartManager) {
-          // 使用購物車管理器的新 API 獲取所有區域格子狀態
-          const areaBlocks = window.cartManager.getAllAreaBlocks();
+          // 使用購物車管理器的 API 獲取所有區域格子狀態
+          const areaBlocksArray = window.cartManager.getAllAreaBlocks();
           
           // 重置所有購物車狀態
           Object.keys(cartBlocks).forEach(areaKey => {
             cartBlocks[areaKey] = [];
           });
           
-          // 更新本地狀態
-          Object.keys(areaBlocks).forEach(areaKey => {
+          // 將數組轉換為按區域分組的對象
+          areaBlocksArray.forEach(blockInfo => {
+            const { areaKey, blockName } = blockInfo;
             if (cartBlocks[areaKey]) {
-              cartBlocks[areaKey] = [...areaBlocks[areaKey]];
+              cartBlocks[areaKey].push(blockName);
             }
           });
           
-          // console.log('同步購物車狀態完成:', cartBlocks);
+          console.log('同步購物車狀態完成:', cartBlocks);
           
           // 只在需要時更新當前區域的視覺狀態
           if (shouldUpdateDisplay && currentSelectedArea) {
             updateAreaDisplay();
           }
+        }
+      }
+      
+      // 恢復購物車中格子的視覺狀態
+      function restoreCartBlocksVisualState() {
+        if (!currentSelectedArea) {
+          console.log('沒有當前選中區域，跳過視覺狀態恢復');
+          return;
+        }
+        
+        const cartBlocksInCurrentArea = cartBlocks[currentSelectedArea] || [];
+        
+        if (cartBlocksInCurrentArea.length > 0) {
+          console.log(`恢復區域 ${currentSelectedArea} 的購物車格子:`, cartBlocksInCurrentArea);
+          
+          cartBlocksInCurrentArea.forEach(blockName => {
+            const cell = document.getElementById(blockName);
+            if (cell) {
+              if (cell.classList.contains('booked')) {
+                console.log(`格子 ${blockName} 已被預訂，跳過視覺恢復`);
+              } else {
+                cell.classList.add('selected');
+                console.log(`格子 ${blockName} 已恢復為綠色 (購物車狀態)`);
+              }
+            } else {
+              console.log(`找不到格子元素: ${blockName}`);
+            }
+          });
+        } else {
+          console.log(`區域 ${currentSelectedArea} 沒有購物車格子需要恢復`);
         }
       }
       
@@ -1518,55 +1559,81 @@
         });
       }
       
+      // 等待購物車管理器準備就緒
+      function waitForCartManager() {
+        return new Promise((resolve) => {
+          const checkCartManager = () => {
+            if (window.cartManager && typeof window.cartManager.getAllAreaBlocks === 'function') {
+              resolve();
+            } else {
+              setTimeout(checkCartManager, 50);
+            }
+          };
+          checkCartManager();
+        });
+      }
+      
       // 初始化：默認展開中庭
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', async function() {
+        // 等待購物車管理器準備就緒
+        await waitForCartManager();
+        console.log('購物車管理器已準備就緒');
+        
         // 先設置默認選中的區域
         currentSelectedArea = 'courtyard';
         console.log('初始化：設置默認區域為', currentSelectedArea);
+        
+        // 立即同步購物車狀態（在展開動畫之前）
+        syncCartState(false);
         
         openAccordion('courtyard');
         
         // 確保手風琴動畫完成後再載入區域顯示
         setTimeout(() => {
-          // 先載入區域顯示
+          // 載入區域顯示
           updateAreaDisplay();
           
-          // 然後同步購物車狀態並更新視覺效果
+          // 再次確保購物車狀態正確同步和視覺恢復
           setTimeout(() => {
-            syncCartState(false); // 不觸發重複的 updateAreaDisplay()
-            
             // 手動恢復購物車中格子的綠色狀態
-            if (cartBlocks[currentSelectedArea] && cartBlocks[currentSelectedArea].length > 0) {
-              console.log('手動恢復購物車格子狀態:', cartBlocks[currentSelectedArea]);
-              cartBlocks[currentSelectedArea].forEach(blockName => {
-                const cell = document.getElementById(blockName);
-                if (cell && !cell.classList.contains('booked')) {
-                  cell.classList.add('selected');
-                }
-              });
-            }
+            restoreCartBlocksVisualState();
             
-            // 恢復默認區域的選擇狀態
-            selectedBlockNames = [...areaSelections['courtyard']];
+            // 恢復默認區域的選擇狀態（排除已在購物車中的格子）
+            const availableSelections = areaSelections['courtyard'].filter(blockName => 
+              !cartBlocks['courtyard'].includes(blockName)
+            );
+            selectedBlockNames = [...availableSelections];
             selectedBlocks = [...selectedBlockNames];
             updateSelectedBlocks();
             
             console.log('初始化完成，當前區域:', currentSelectedArea);
             console.log('初始化完成，購物車狀態:', cartBlocks);
-          }, 100);
+          }, 150);
         }, 600); // 等待手風琴展開動畫完成 (0.5s + 0.1s buffer)
         
         // 監聽購物車變化事件
         window.addEventListener('cartUpdated', function(event) {
           console.log('購物車更新事件觸發');
-          syncCartState(true); // 觸發視覺更新
+          syncCartState(false); // 先同步狀態
+          // 延遲一點確保DOM更新完成後恢復視覺狀態
+          setTimeout(() => {
+            restoreCartBlocksVisualState();
+          }, 100);
         });
         
         // 監聽跨頁面購物車變化
         window.addEventListener('storage', function(event) {
           if (event.key === 'sccd-rental-cart') {
-            console.log('跨頁面購物車變化檢測');
-            syncCartState(true); // 觸發視覺更新
+            console.log('跨頁面購物車變化檢測，準備同步狀態...');
+            // 延遲一點讓其他頁面的變更完全寫入
+            setTimeout(() => {
+              syncCartState(false); // 先同步狀態
+              // 再延遲一點確保DOM更新完成後恢復視覺狀態
+              setTimeout(() => {
+                console.log('執行跨頁面視覺狀態恢復...');
+                restoreCartBlocksVisualState();
+              }, 150);
+            }, 50);
           }
         });
         
@@ -1624,6 +1691,28 @@
             console.log('購物車狀態：', cartBlocks);
             console.log('已提交訂單：', submittedBlocks);
             console.log('當前選擇：', selectedBlockNames);
+            console.log('當前區域：', currentSelectedArea);
+          },
+          
+          // 強制同步購物車狀態
+          forceSync: function() {
+            console.log('強制同步購物車狀態...');
+            syncCartState(false);
+            setTimeout(() => {
+              restoreCartBlocksVisualState();
+              console.log('強制同步完成');
+            }, 100);
+          },
+          
+          // 測試購物車管理器
+          testCartManager: function() {
+            if (window.cartManager) {
+              console.log('購物車管理器可用');
+              const allBlocks = window.cartManager.getAllAreaBlocks();
+              console.log('購物車中的所有區域格子：', allBlocks);
+            } else {
+              console.log('購物車管理器不可用');
+            }
           }
         };
         

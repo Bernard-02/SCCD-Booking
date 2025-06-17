@@ -166,11 +166,14 @@ class CartManager {
   
   // === 通用購物車操作 ===
   
-  // 通用添加到購物車方法（支援設備和area）
+  // 通用添加到購物車方法（支援設備、area和教室）
   addToCart(item) {
     if (item.category === 'area') {
       // area邏輯保持不變
       return this.addAreaToCart(item);
+    } else if (item.category === 'classroom') {
+      // 教室邏輯
+      return this.addClassroomToCart(item);
     } else {
       // 設備邏輯
       return this.addEquipmentToCart(item);
@@ -199,6 +202,16 @@ class CartManager {
     
     if (!item) {
       return false;
+    }
+    
+    // 如果是教室，不允許修改數量（只能刪除）
+    if (item.category === 'classroom') {
+      if (newQuantity <= 0) {
+        return this.removeFromCart(itemId);
+      } else {
+        console.warn('教室不允許修改數量');
+        return false;
+      }
     }
     
     // 如果是設備，使用設備專用方法
@@ -237,6 +250,34 @@ class CartManager {
   // 獲取購物車物品列表
   getCartItems() {
     return this.getCart();
+  }
+  
+  // === 教室相關功能 ===
+  
+  // 添加教室到購物車
+  addClassroomToCart(classroomItem) {
+    const cart = this.getCart();
+    const existingItem = cart.find(item => item.id === classroomItem.id);
+    
+    if (existingItem) {
+      // 教室不能重複添加，返回 false
+      console.warn('教室已存在於購物車中:', classroomItem.id);
+      return false;
+    } else {
+      // 新增教室項目
+      cart.push({
+        id: classroomItem.id,
+        name: classroomItem.name,
+        category: 'classroom',
+        deposit: classroomItem.deposit,
+        image: classroomItem.mainImage || classroomItem.image,
+        quantity: 1
+      });
+    }
+    
+    this.saveCart(cart);
+    console.log(`${classroomItem.name} 已加入購物車`);
+    return true;
   }
   
   // === Area相關功能（保留現有邏輯） ===

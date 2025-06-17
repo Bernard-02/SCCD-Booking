@@ -2,6 +2,16 @@
 
 /* ===== 通用樣式 ===== */
 
+/* 統一容器樣式 */
+.container {
+  width: 100%;
+  max-width: 2000px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(1.2rem, 7vw, 6.5rem);
+  padding-right: clamp(1.2rem, 7vw, 6.5rem);
+}
+
 /* 選取（反白）樣式 */
 ::selection {
   background-color: #f7f7f7;
@@ -230,7 +240,6 @@
   
   /* 容器最大寬度限制 */
   .container {
-    max-width: 100vw;
     overflow-x: hidden;
   }
   

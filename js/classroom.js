@@ -261,6 +261,9 @@ function addClassroomToCart() {
     showNotification(`${classroom.name}已成功加入租借清單！`);
     // 成功添加後更新按鈕狀態
     updateButtonState();
+  } else {
+    // 添加失敗（可能是系統錯誤）
+    showNotification('添加失敗，請重試！', 'error');
   }
 }
 
@@ -268,6 +271,12 @@ function showNotification(message, type = 'success') {
   // 使用全域的 showToast 函數
   if (window.showToast) {
     window.showToast(message, type);
+  } else if (window.showBookmarkToast) {
+    // 回退到 showBookmarkToast
+    window.showBookmarkToast(message, type);
+  } else {
+    // 最後回退到 alert
+    alert(message);
   }
 }
 
