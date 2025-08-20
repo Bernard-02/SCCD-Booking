@@ -1,4 +1,4 @@
-/* ===== 進場動畫樣式 ===== */
+/* ===== 通用動畫效果 ===== */
 
 /* Header 進場動畫 */
 .header-animate {
@@ -25,42 +25,65 @@
   }
 }
 
-/* 滑動上來動畫 */
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+/* ===== 通用浮現動畫效果 ===== */
+/* 基於手機選單的浮出效果，統一所有文字和內容的進場動畫 */
+
+.float-up-container {
+  overflow: hidden;
 }
 
-/* 滑動進場動畫類 */
-.slide-up {
-  animation: slideUp 0.8s ease forwards;
+.float-up {
+  transform: translateY(150%);
+  animation: floatUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
-/* ===== Index 頁面主要內容進場動畫 ===== */
-/* 進入動畫樣式 */
+/* 兼容舊的動畫類別 */
 .animate-enter {
   overflow: hidden;
 }
 
 .animate-enter-content {
   transform: translateY(150%);
-  animation: slideUpMain 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: floatUp 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   animation-delay: 0.5s;
 }
 
-@keyframes slideUpMain {
+@keyframes floatUp {
   to {
     transform: translateY(0);
   }
 }
 
-/* 為不同元素添加延遲 */
+/* 浮現動畫的延遲效果，用於分層動畫 */
+.float-up-delay-1, .animate-enter-content.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.float-up-delay-2, .animate-enter-content.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.float-up-delay-3, .animate-enter-content.delay-3 {
+  animation-delay: 0.3s;
+}
+
+.float-up-delay-4 {
+  animation-delay: 0.4s;
+}
+
+.float-up-delay-5 {
+  animation-delay: 0.5s;
+}
+
+.float-up-delay-6 {
+  animation-delay: 0.6s;
+}
+
+.float-up-delay-7 {
+  animation-delay: 0.7s;
+}
+
+/* 兼容舊的延遲 */
 .animate-enter-content.delay-1 {
   animation-delay: 0.7s;
 }
@@ -73,23 +96,65 @@
   animation-delay: 1.1s;
 }
 
+/* 快速版本 - 較短的動畫時間，適合較小的文字元素 */
+.float-up-fast {
+  transform: translateY(150%);
+  animation: floatUp 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* 慢速版本 - 較長的動畫時間，適合大標題 */
+.float-up-slow {
+  transform: translateY(150%);
+  animation: floatUp 1.6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* ===== 日曆動畫樣式 ===== */
+
+/* 日曆從右到左進場動畫 */
+.calendar-fade-in {
+  opacity: 0;
+  transform: translateX(100px);
+  animation: calendarSlideInFromRight 1.2s ease forwards;
+  animation-delay: 0.9s;
+}
+
+@keyframes calendarSlideInFromRight {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ===== 卡片動畫樣式 ===== */
 
-/* 卡片進場動畫 - 只在桌面版 */
+/* 桌面版卡片進場動畫 */
 @media (min-width: 768px) {
   .card-slide-in {
     opacity: 0;
     transform: translateX(100px);
     animation: slideInFromRight 1s ease forwards;
     transition: border-color 0.3s ease;
+    padding: 2rem;
   }
   
-  .card-slide-in:nth-child(1) {
-    animation-delay: 0.2s;
+  /* 確保 in-cart 卡片動畫期間不受其他樣式影響 */
+  .classroom-card.in-cart.card-slide-in:not(.animation-complete) {
+    opacity: 0 !important;
   }
   
-  .card-slide-in:nth-child(2) {
-    animation-delay: 0.4s;
+  /* 卡片動畫延遲 */
+  .card-slide-in:nth-child(1),
+  .classroom-card-1.card-slide-in {
+    animation-delay: 0.5s;
+  }
+  
+  .card-slide-in:nth-child(2),
+  .classroom-card-2.card-slide-in {
+    animation-delay: 0.7s;
+  }
+  
+  .classroom-card-3.card-slide-in {
+    animation-delay: 0.9s;
   }
   
   .card-slide-in:hover {
@@ -97,6 +162,10 @@
   }
   
   @keyframes slideInFromRight {
+    from {
+      opacity: 0;
+      transform: translateX(100px);
+    }
     to {
       opacity: 1;
       transform: translateX(0);
@@ -115,7 +184,8 @@
   }
 }
 
-/* 手機版卡片佈局和動畫 */
+/* ===== 手機版動畫 ===== */
+
 @media (max-width: 767px) {
   /* 手機版卡片佈局 */
   .mobile-cards-layout {
@@ -169,4 +239,9 @@
   }
 }
 
- 
+/* ===== Equipment Filter Fade-in ===== */
+.equipment-filter-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards;
+  animation-delay: 0.3s;
+}

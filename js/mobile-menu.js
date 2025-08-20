@@ -16,12 +16,18 @@ class MobileMenu {
   }
   
   bindEvents() {
-    // 打開選單
+    // 打開/關閉選單（同一個按鈕）
     if (this.mobileMenuBtn) {
-      this.mobileMenuBtn.addEventListener('click', () => this.openMenu());
+      this.mobileMenuBtn.addEventListener('click', () => {
+        if (this.mobileMenu.classList.contains('active')) {
+          this.closeMenu();
+        } else {
+          this.openMenu();
+        }
+      });
     }
     
-    // 關閉選單
+    // 關閉選單（如果有獨立的 close 按鈕）
     if (this.mobileMenuClose) {
       this.mobileMenuClose.addEventListener('click', () => this.closeMenu());
     }
@@ -44,6 +50,9 @@ class MobileMenu {
     this.mobileMenu.classList.add('active');
     this.body.style.overflow = 'hidden'; // 防止背景滾動
     
+    // 更換按鈕文字為 (CLOSE)
+    this.updateMenuButtonText('(CLOSE)');
+    
     // 觸發選單動畫
     this.triggerMenuAnimation();
   }
@@ -51,6 +60,18 @@ class MobileMenu {
   closeMenu() {
     this.mobileMenu.classList.remove('active');
     this.body.style.overflow = ''; // 恢復滾動
+    
+    // 恢復按鈕文字為 (MENU)
+    this.updateMenuButtonText('(MENU)');
+  }
+  
+  updateMenuButtonText(text) {
+    if (this.mobileMenuBtn) {
+      const menuTexts = this.mobileMenuBtn.querySelectorAll('.menu-text, .menu-text-hidden');
+      menuTexts.forEach(element => {
+        element.textContent = text;
+      });
+    }
   }
   
   triggerMenuAnimation() {

@@ -1,9 +1,27 @@
 /* ===== 租借清單頁面專用樣式 ===== */
 
+/* 主要容器高度設定 */
+#equipment-list {
+  min-height: calc(100vh - 200px); /* 確保有足夠的最小高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 設備網格容器樣式 */
+.equipment-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  min-height: 0; /* 允許內容收縮 */
+}
+
 /* SVG 按鈕樣式 */
 .quantity-btn {
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  z-index: 2;
 }
 
 .quantity-btn.disabled {
@@ -12,72 +30,16 @@
   pointer-events: none;
 }
 
-/* 租借摘要層級 */
-.rental-summary {
-  position: fixed;  
-  bottom: 60px; /* 為footer留出更多空間 */
-  left: 0;
-  right: 0;
-  z-index: 20;
-  background-color: black;
-  padding: 1.5rem 6%;
-}
 
-/* 桌面版租借摘要佈局 */
-.rental-summary-desktop {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
 
-/* 手機版租借摘要佈局 */
-.rental-summary-mobile {
-  display: none;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Footer 固定在底部 */
+/* Footer 樣式 */
 footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 15; /* 確保footer在租借摘要之上 */
-  background-color: black;
+  background-color: transparent;
 }
 
-/* 確保整個頁面不能滾動，只有主要區域可以滾動 */
-html, body {
-  height: 100%;
-  overflow: hidden;
-}
 
-/* 主要滑動區域 */
-.main-scroll-area {
-  height: calc(100vh - 240px); /* 扣除header和footer+summary高度 */
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 20px; /* 桌面版預設值，手機版由 JS 動態調整 */
-}
 
-.main-scroll-area::-webkit-scrollbar {
-  width: 6px;
-}
 
-.main-scroll-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.main-scroll-area::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
-}
-
-.main-scroll-area::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
 
 /* 空清單提示樣式 */
 .empty-message-container {
@@ -92,6 +54,38 @@ html, body {
   display: none;
 }
 
+/* 設備卡片樣式 */
+.equipment-card {
+  position: relative;
+  background: transparent;
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+/* 圖片容器 hover 效果 */
+.equipment-card .image-container {
+  position: relative;
+  cursor: pointer;
+}
+
+.equipment-card .image-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.equipment-card .image-container:hover::before {
+  opacity: 1;
+}
+
 /* 刪除按鈕樣式 */
 .remove-btn {
   width: 20px;
@@ -102,6 +96,7 @@ html, body {
   right: 6%;
   opacity: 0;
   transition: opacity 0.3s ease;
+  z-index: 2;
 }
 
 .remove-btn svg {
@@ -122,14 +117,8 @@ html, body {
   font-size: 0.75rem;
   letter-spacing: 0.05em;
   width: auto;
-}
-
-/* 設備卡片樣式 */
-.equipment-card {
   position: relative;
-  background: transparent;
-  padding: 0.5rem;
-  transition: all 0.3s ease;
+  z-index: 2;
 }
 
 /* 淡出動畫樣式 */
@@ -145,24 +134,9 @@ html, body {
     display: none; /* 手機版隱藏桌面版的 X 按鈕 */
   }
   
-  .mobile-delete-btn {
-    display: block;
-    background: transparent;
-    border: none;
-    color: white;
-    padding: 0;
-    text-align: left;
-    margin-top: 0.5rem;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    width: auto;
-  }
-
+  /* 手機版網格佈局 */
   .equipment-grid {
-    display: flex;
-    flex-direction: column;
+    grid-template-columns: 1fr; /* 手機版單欄顯示 */
     gap: 1rem;
   }
 
@@ -181,7 +155,7 @@ html, body {
     margin-bottom: 0 !important;
   }
 
-  .equipment-card .image-container .w-full.h-96 {
+  .equipment-card .image-container .w-full.h-84 {
     height: 100%;
   }
 
@@ -194,25 +168,9 @@ html, body {
     padding-bottom: 0.5rem;
   }
   
-  /* 手機版租借摘要調整 */
-  .rental-summary {
-    padding: 1rem 1.5rem 0.5rem;
-    bottom: 60px; /* 調整為更適合手機版的距離 */
-  }
-  
-  /* 手機版租借摘要佈局切換 */
-  .rental-summary-desktop {
-    display: none;
-  }
-  
-  .rental-summary-mobile {
-    display: flex;
-  }
-  
-  /* 手機版主要滑動區域調整 */
-  .main-scroll-area {
-    height: calc(100vh - 280px); /* 手機版調整高度 */
-    padding-bottom: 10px; /* 為手機版租借摘要留出空間，減少底部空白 */
+  /* 手機版容器高度調整 */
+  #equipment-list {
+    min-height: auto;
   }
 }
 
@@ -223,8 +181,18 @@ html, body {
     opacity: 0.7;
   }
   
-  /* 設備卡片 hover 效果 */
+  /* 設備卡片 hover 效果 - 僅用於顯示刪除按鈕 */
   .equipment-card:hover .remove-btn {
     opacity: 1;
   }
+}
+
+/* 禁用狀態下的按鈕樣式 */
+button:disabled .hero-cta-wrapper:hover .hero-cta-text,
+button:disabled .hero-cta-wrapper:hover .hero-cta-hidden {
+  transform: none !important;
+}
+
+button:disabled .hero-cta-wrapper {
+  pointer-events: none;
 } 

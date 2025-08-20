@@ -391,13 +391,37 @@ class CartManager {
     if (mobileCartCount) {
       mobileCartCount.textContent = totalQuantity;
     }
+    
+    // 更新 hover 時隱藏的數量（第二層）
+    this.updateMirrorCounts(totalQuantity);
+  }
+  
+  // 更新 hover 時隱藏的數量
+  updateMirrorCounts(quantity) {
+    // 重建桌面版 menu-text-hidden 的完整結構
+    const desktopCartHidden = document.querySelector('a[href="rental-list.html"] .menu-text-hidden');
+    if (desktopCartHidden) {
+      desktopCartHidden.innerHTML = `((<span class="cart-count-mirror">${quantity}</span>) CART)`;
+    }
+    
+    // 重建手機版 menu-text-hidden 的完整結構
+    const mobileCartHidden = document.querySelector('.mobile-nav a[href="rental-list.html"] .menu-text-hidden');
+    if (mobileCartHidden) {
+      mobileCartHidden.innerHTML = `((<span class="mobile-cart-count-mirror">${quantity}</span>) CART)`;
+    }
   }
   
   // 通知變更
   notifyChange() {
+    const cart = this.getCart();
+    const totalQuantity = this.getTotalQuantity();
+    
     // 發送自定義事件
     window.dispatchEvent(new CustomEvent('cartUpdated', {
-      detail: { cart: this.getCart() }
+      detail: { 
+        cart: cart,
+        totalQuantity: totalQuantity
+      }
     }));
   }
 }

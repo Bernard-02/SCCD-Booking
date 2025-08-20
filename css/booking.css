@@ -24,29 +24,10 @@
     overflow-x: hidden;
   }
   
-  /* 手機版標題樣式 */
-  .mobile-title {
-    font-size: 1.875rem !important; /* text-3xl */
-    margin-top: 1rem !important;
-  }
-  
-  /* 確保桌面版標題在手機版不顯示 */
-  .desktop-title {
-    display: none;
-  }
-  
-  /* 手機版按鈕區域調整 */
-  main button {
+  /* 手機版按鈕區域調整 - 只影響特定的按鈕 */
+  main button:not([id*="reset"]):not([id*="confirm"]) {
     width: 100% !important;
     max-width: 280px;
-  }
-}
-
-/* 桌面版標題樣式 */
-@media (min-width: 768px) {
-  /* 確保手機版標題在桌面版不顯示 */
-  .mobile-title {
-    display: none;
   }
 }
 
@@ -60,102 +41,372 @@
   display: none; /* Chrome, Safari and Opera */
 }
 
-/* ===== 日曆樣式 ===== */
+/* ===== 整合自 datepicker.css 的樣式 ===== */
 
-/* 手機版月份日曆樣式 */
-.month-calendar {
-  width: 100%;
-  flex-shrink: 0;
+/* 主容器 - 填滿整個div */
+.custom-datepicker {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 月份導航區域 */
+.datepicker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0 2rem 0;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.month-navigation {
+    display: flex;
+    gap: 3rem;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    transform: translateX(calc(-(100% / 7) * 0.5)); /* 向左偏移0.5個星期格，對齊到"三"的中心 */
 }
 
 .month-title {
-  text-align: center;
-  font-size: 1rem; /* 手機版 */
-  font-weight: 500;
-  margin-bottom: 1rem;
-  color: white;
-}
-
-/* 桌面版月份標題字體大小 */
-@media (min-width: 768px) {
-  .month-title {
     font-size: 1.5rem;
-  }
+    font-weight: 500;
+    color: white;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  row-gap: 12px;
+.nav-arrow {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
-.calendar-date {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  color: white;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  margin: 0 auto;
-  position: relative;
+.nav-arrow .arrow-text { 
+    font-size: 1.25rem; 
+    line-height: 1;
+    user-select: none;
+    transition: transform 0.3s ease;
 }
 
-.calendar-date:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+/* 讓左側箭頭以文字方向相反（利用旋轉）*/
+.nav-arrow.prev .arrow-text {
+    transform: rotate(180deg);
+    display: inline-block;
 }
 
-.calendar-date.selected {
-  background-color: white;
-  color: black;
+/* 隱藏的點擊區域 */
+.nav-arrow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    cursor: pointer;
+    z-index: 1;
 }
 
-.calendar-date.start-date {
-  background-color: white;
-  color: black;
-  border-radius: 50%;
+/* 禁用的導航按鈕 */
+.nav-arrow:disabled,
+.nav-arrow.opacity-30 {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
-.calendar-date.end-date {
-  background-color: white;
-  color: black;
-  border-radius: 50%;
+.nav-arrow:disabled:hover .arrow-text,
+.nav-arrow.opacity-30:hover .arrow-text {
+    transform: none;
 }
 
-.calendar-date.in-range {
-  border: 1px solid white;
-  background-color: transparent;
-  color: white;
+.nav-arrow.prev:disabled:hover .arrow-text,
+.nav-arrow.prev.opacity-30:hover .arrow-text {
+    transform: rotate(180deg);
 }
 
-.calendar-date.today::after {
-  content: '';
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  background-color: white;
-  border-radius: 50%;
+/* Hover 動畫效果 - 向上移動 */
+.nav-arrow:hover .arrow-text {
+    transform: translateY(-100%);
 }
 
-.calendar-date.today.start-date::after,
-.calendar-date.today.end-date::after {
-  background-color: black;
+.nav-arrow.prev:hover .arrow-text {
+    transform: rotate(180deg) translateY(-100%);
 }
 
-.calendar-date.disabled {
-  color: #666;
-  cursor: not-allowed;
+/* 雙月曆容器 - 填滿剩餘空間 */
+.calendars-container {
+    display: flex;
+    gap: 3rem;
+    height: 100%;
+    width: 100%;
+    flex-grow: 1;
 }
 
-.calendar-date.other-month {
-  color: #666;
+/* 單個月曆 - 填滿可用空間 */
+.calendar-month {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+/* 星期標題 - 更寬的間距 */
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 16px;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.weekday {
+    text-align: center;
+    font-weight: 500;
+    font-size: 1rem;
+    color: white;
+    padding: 0.5rem 0;
+}
+
+/* 日期網格 - 填滿剩餘高度 */
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 16px;
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
+}
+
+/* 過去的日期 - 灰色且不可互動 */
+.text-gray-500 {
+    color: #777777 !important;
+    cursor: default !important;
+}
+
+.text-gray-500:hover {
+    transform: none !important;
+}
+
+.text-gray-500 .date-number-text,
+.text-gray-500 .date-number-hidden {
+    color: #777777 !important;
+}
+
+/* === 日期數字互動樣式 === */
+.date-number-wrapper {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.date-number-text {
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.date-number-hidden {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+/* Hover 動畫效果 */
+.cursor-pointer:hover .date-number-text {
+    transform: translateY(-100%);
+}
+
+.cursor-pointer:hover .date-number-hidden {
+    transform: translateY(-100%);
+}
+
+/* 起租日選擇狀態 - 左半部綠色橫線 */
+.cursor-pointer.start-date {
+    position: relative;
+}
+
+.cursor-pointer.start-date::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* 當只有起租日時（沒有歸還日），只顯示左半邊 */
+.cursor-pointer.start-date.only-start::after {
+    width: 50%;
+}
+
+.cursor-pointer.start-date .date-number-text,
+.cursor-pointer.start-date .date-number-hidden {
+    color: #00FF80;
+}
+
+/* 歸還日選擇狀態 - 完整綠色橫線 */
+.cursor-pointer.end-date {
+    position: relative;
+}
+
+.cursor-pointer.end-date::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0; /* 從左邊開始 */
+    width: 100%; /* 完整橫線 */
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.cursor-pointer.end-date .date-number-text,
+.cursor-pointer.end-date .date-number-hidden {
+    color: #00FF80;
+}
+
+/* 範圍內的日期 - 完整綠色橫線 */
+.cursor-pointer.in-range {
+    position: relative;
+}
+
+.cursor-pointer.in-range::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* Hover 預覽效果 - 50% 透明度 */
+.cursor-pointer.hover-preview {
+    position: relative;
+}
+
+.cursor-pointer.hover-preview::before {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: rgba(0, 255, 128, 0.5); /* 50% 透明度的綠色 */
+    z-index: 0;
+    transform: translateY(-50%);
+}
+
+/* 起租日的 hover 預覽效果 - 只顯示右半邊 */
+.cursor-pointer.start-date.hover-preview::before {
+    left: 50%;
+    width: 50%;
+}
+
+/* 同一天起租日 hover 預覽效果 - 右半邊 50% 透明度 */
+.cursor-pointer.same-day-hover-preview {
+    position: relative;
+}
+
+.cursor-pointer.same-day-hover-preview::before {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 50%; /* 從中間開始 */
+    width: 50%; /* 只填充右半部 */
+    height: 6px;
+    background-color: rgba(0, 255, 128, 0.5); /* 50% 透明度的綠色 */
+    z-index: 0;
+    transform: translateY(-50%);
+}
+
+/* 起租日選擇了歸還日後的完整橫線 */
+.cursor-pointer.complete-line::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.cursor-pointer.complete-line .date-number-text,
+.cursor-pointer.complete-line .date-number-hidden {
+    color: #00FF80;
+}
+
+/* 同一天選擇狀態 - 完整綠色橫線 */
+.cursor-pointer.same-day-selected {
+    position: relative;
+}
+
+.cursor-pointer.same-day-selected::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%; /* 完整橫線 */
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.cursor-pointer.same-day-selected .date-number-text,
+.cursor-pointer.same-day-selected .date-number-hidden {
+    color: #00FF80;
+}
+
+/* ===== 按鈕狀態樣式 ===== */
+
+/* 按鈕禁用狀態 */
+.opacity-30 {
+    opacity: 0.3;
+}
+
+.opacity-100 {
+    opacity: 1;
+}
+
+/* 游標樣式 */
+.cursor-not-allowed {
+    cursor: not-allowed;
+}
+
+.cursor-pointer {
+    cursor: pointer;
 }
 
  

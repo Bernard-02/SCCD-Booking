@@ -13,18 +13,21 @@
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="css/arrows.css" />
+
     <link rel="stylesheet" href="css/breadcrumb.css" />
-    <link rel="stylesheet" href="css/copyright.css" />
+
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
+    <link rel="stylesheet" href="css/typography.css" />
+    <link rel="stylesheet" href="css/animations.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="cart-manager.js"></script>
-    <script src="js/mobile-menu.js"></script>
-    <script src="js/button-animations.js"></script>
-    <script src="js/copyright-easter-egg.js"></script>
+    <script src="js/common.js"></script>
     <script src="js/cart-sync.js"></script>
+    <script src="js/mobile-menu.js"></script>
+
+    <script src="js/copyright-easter-egg.js"></script>
     
     <!-- 箭頭動畫樣式 -->
     <style>
@@ -65,9 +68,10 @@
       }
       
       .accordion-content {
-        height: 0;
+        max-height: 0;
         overflow: hidden;
         padding: 0;
+        transition: max-height 0.35s ease;
       }
       
       .accordion-content.expanded {
@@ -83,6 +87,82 @@
       .accordion-content-inner {
         opacity: 0;
         margin-top: 16px; /* 押金群組往下移動 */
+        transition: opacity 0.25s ease;
+      }
+      
+      .accordion-content.expanded .accordion-content-inner {
+        opacity: 1;
+        transition-delay: 0.1s;
+      }
+      
+      /* 左側欄位固定保留捲軸空間，避免版面抖動 */
+      .left-pane-scroll {
+        scrollbar-gutter: stable both-edges;
+      }
+
+      /* 區域卡片樣式 */
+      .area-card {
+        transition: border-color 0.3s ease;
+      }
+      .area-card:hover {
+        border-color: transparent;
+      }
+      .area-card.selected {
+        border-color: #00ff80 !important;
+      }
+      .area-card.selected:hover {
+        border-color: #00ff80 !important;
+      }
+      .area-card.selected .area-bg {
+        opacity: 1 !important;
+      }
+      .area-card.selected .area-gradient {
+        opacity: 1 !important;
+      }
+      .area-card.selected .area-deposit {
+        opacity: 1 !important;
+      }
+      
+      /* 新的區域項目樣式 */
+      .area-item {
+        transition: all 0.3s ease;
+        position: relative;
+      }
+      
+      /* 橫線樣式 */
+      .area-divider {
+        height: 1px;
+        background-color: white;
+        transition: all 0.3s ease;
+      }
+      
+      /* Hover 效果 */
+      .area-item:hover .area-deposit {
+        opacity: 1 !important;
+        transform: translateY(0);
+      }
+      
+      .area-item:hover .area-divider {
+        height: 6px;
+        background-color: #00ff80;
+      }
+      
+      /* Select 效果 */
+      .area-item.selected .area-deposit {
+        opacity: 1 !important;
+        transform: translateY(0);
+      }
+      
+      .area-item.selected .area-divider {
+        height: 6px;
+        background-color: #00ff80;
+      }
+      
+      /* 押金文字的初始狀態和動畫 */
+      .area-deposit {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
       }
       
       /* 地圖區域樣式 */
@@ -91,8 +171,9 @@
         align-items: center; /* 垂直居中對齊 */
         justify-content: center; /* 水平居中對齊 */
         height: 100%;
-        padding: 0;
         overflow: hidden;
+        background: transparent;
+        position: relative;
       }
       
       /* 玻璃牆和柱子的特殊滾動容器 */
@@ -228,7 +309,7 @@
         background-color: white;
         color: black;
         font-family: 'Inter', sans-serif;
-        font-size: 0.75rem; /* 從text-sm改為text-xs */
+        font-size: 0.75rem; /* 從text-breadcrumbm改為text-xs */
         font-weight: 400;
         padding: 3px 8px; /* 減少上下padding */
         border-radius: 0; /* 移除倒角 */
@@ -260,316 +341,262 @@
     </style>
   </head>
 
-  <body class="bg-black text-white flex flex-col h-screen">
-    <header class="py-6">
-      <div class="container mx-auto flex justify-between items-center px-6 md:px-4">
-        <div class="flex items-center">
-          <a href="index.html" class="logo-link mr-10">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
-              SCCD
-            </div>
+  <body class="bg-black text-white h-screen overflow-hidden flex flex-col">
+    <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
+      <div class="container">
+        <div class="flex justify-between items-center">
+          <a href="index.html" class="font-['Inter',_sans-serif] font-medium text-white text-header">
+            SCCD
           </a>
 
           <!-- 桌面版導航 -->
-          <nav class="desktop-nav">
-            <ul class="flex space-x-10">
-              <li>
-                <a
-                  href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >BOOKING</a
-                >
-              </li>
-              <li>
-                <a
-                  href="resources.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >RESOURCES</a
-                >
-              </li>
-            </ul>
-          </nav>
-        </div>
-        <div class="flex items-center space-x-5">
-          <a
-            href="rental-list.html"
-            id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
-            >(<span id="cart-count">0</span>) CART</a
-          >
-          <a
-            href="login.html"
-            id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden;"
-            >
-            <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1; border-radius: 30px;"></div>
-            <span style="position: relative; z-index: 2;">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2;">
-              <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+          <nav class="flex items-center header-menu desktop-nav nav-gap">
+            <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper active">
+                <span class="menu-text">(BOOKING)</span>
+                <span class="menu-text-hidden">(BOOKING)</span>
               </div>
-            </div>
-          </a>
-          
-          <!-- 手機版 CART 按鈕 -->
-          <a
-            href="rental-list.html"
-            id="mobile-cart-link"
-            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
-            >(<span id="mobile-cart-count">0</span>) CART</a
-          >
-          
-          <!-- 手機版選單按鈕 -->
-          <button class="md:hidden font-['Inter',_sans-serif] text-base" id="mobile-menu-btn">
-            <span class="text-white" id="menu-btn-text">MENU</span>
-          </button>
+            </a>
+            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">((<span id="cart-count">0</span>) CART)</span>
+                <span class="menu-text-hidden">((<span class="cart-count-mirror">0</span>) CART)</span>
+              </div>
+            </a>
+            <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(LOGIN)</span>
+                <span class="menu-text-hidden">(LOGIN)</span>
+              </div>
+            </a>
+          </nav>
+
+          <!-- 手機版導航 -->
+          <nav class="flex items-center mobile-nav mobile-nav-gap">
+            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">((<span id="mobile-cart-count">0</span>) CART)</span>
+                <span class="menu-text-hidden">((<span class="mobile-cart-count-mirror">0</span>) CART)</span>
+              </div>
+            </a>
+            <button id="mobile-menu-btn" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(MENU)</span>
+                <span class="menu-text-hidden">(MENU)</span>
+              </div>
+            </button>
+          </nav>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex flex-col pt-[3vh] pb-[2vh] overflow-hidden">
-      <!-- Breadcrumb - 只在桌面版顯示 -->
-      <nav class="breadcrumb hidden md:block">
-        <a href="index.html" class="breadcrumb-item">首頁</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="booking.html" class="breadcrumb-item">租借日期</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="bookingresources.html" class="breadcrumb-item">租借資源</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="space.html" class="breadcrumb-item">租借空間</a>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-item">A5F編號區</span>
-      </nav>
-      
-      <!-- 桌面版佈局 -->
-      <div class="w-full px-[6%] flex-grow flex-col overflow-hidden hidden md:flex">
-        <!-- 頁面標題 -->
-        <div class="mb-6">
-          <h1 class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2">
-            A5F編號區
-          </h1>
+    <main class="flex-1 pt-20 pb-4">
+      <div class="container h-full flex flex-col">
+        <!-- 上方：Breadcrumb + 標題 -->
+        <div class="flex-shrink-0">
+          <div class="text-left hidden md:block" style="padding-bottom: 1.08rem;">
+            <nav class="breadcrumb-inline">
+              <a href="index.html" class="breadcrumb-item text-breadcrumb">首頁</a>
+              <span class="breadcrumb-separator text-breadcrumb">/</span>
+              <a href="booking.html" class="breadcrumb-item text-breadcrumb">租借日期</a>
+              <span class="breadcrumb-separator text-breadcrumb">/</span>
+              <a href="bookingresources.html" class="breadcrumb-item text-breadcrumb">租借資源</a>
+              <span class="breadcrumb-separator text-breadcrumb">/</span>
+              <a href="space.html" class="breadcrumb-item text-breadcrumb">租借空間</a>
+              <span class="breadcrumb-separator text-breadcrumb">/</span>
+              <span class="breadcrumb-item text-breadcrumb">A5F編號區</span>
+            </nav>
+          </div>
+          <h1 class="hidden md:block font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-6">A5F編號區</h1>
         </div>
-        
-        <div class="flex gap-6 flex-grow overflow-hidden"> <!-- 減少gap讓SVG更大 -->
-          <!-- 左側：區域列表 -->
-          <div class="w-1/5 overflow-y-auto"> <!-- 增加左側padding -->
-            <!-- 中庭 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('courtyard')">
-                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">中庭</h2>
-                <svg class="expand-icon plus" id="icon-courtyard" viewBox="0 0 24 24">
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-courtyard">
-                <div class="accordion-content-inner space-y-4">
-                  <div class="space-y-2">
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                      中庭區域適合展覽和大型活動，空間開闊，採光良好。
-                    </p>
+
+        <!-- 下方：主要內容 -->
+        <div class="flex-1 min-h-0 overflow-hidden">
+          <!-- 左中右三個區塊 -->
+          <div class="hidden md:flex h-full gap-20">
+            <!-- 左側：區域列表 25% -->
+            <div class="basis-[25%] min-w-0 min-h-0 left-pane">
+              <div class="left-fixed h-full">
+                <div class="left-pane-scroll h-full overflow-y-auto">
+                  <div class="space-y-0">
+                    <!-- 中庭 -->
+                    <div id="area-card-courtyard" class="relative cursor-pointer area-item" onclick="selectAreaCard('courtyard')">
+                      <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">中庭</div>
+                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">ATRIUM</div>
+                        </div>
+                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
+                          <div class="flex flex-col items-end gap-1">
+                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="area-divider mt-1"></div>
+                    </div>
+
+                    <!-- 走廊 -->
+                    <div id="area-card-corridor" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('corridor')">
+                      <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">走廊</div>
+                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">CORRIDOR</div>
+                        </div>
+                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
+                          <div class="flex flex-col items-end gap-1">
+                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="area-divider mt-1"></div>
+                    </div>
+
+                    <!-- 前陽台 -->
+                    <div id="area-card-front-balcony" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('front-balcony')">
+                      <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">前陽台</div>
+                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">FRONT TERRACE</div>
+                        </div>
+                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
+                          <div class="flex flex-col items-end gap-1">
+                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="area-divider mt-1"></div>
+                    </div>
+
+                    <!-- 後陽台 -->
+                    <div id="area-card-back-balcony" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('back-balcony')">
+                      <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">後陽台</div>
+                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">BACK TERRACE</div>
+                        </div>
+                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
+                          <div class="flex flex-col items-end gap-1">
+                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 2,000</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="area-divider mt-1"></div>
+                    </div>
+
+                    <!-- 玻璃牆 -->
+                    <div id="area-card-glass-wall" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('glass-wall')">
+                      <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">玻璃牆</div>
+                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">GLASS WALL</div>
+                        </div>
+                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
+                          <div class="flex flex-col items-end gap-1">
+                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="area-divider mt-1"></div>
+                    </div>
+
+                    <!-- 柱子 -->
+                    <div id="area-card-pillar" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('pillar')">
+                      <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">柱子</div>
+                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">PILLAR</div>
+                        </div>
+                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
+                          <div class="flex flex-col items-end gap-1">
+                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
+                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="area-divider mt-1"></div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- 走廊 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('corridor')">
-                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">走廊</h2>
-                <svg class="expand-icon plus" id="icon-corridor" viewBox="0 0 24 24">
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-corridor">
-                <div class="accordion-content-inner space-y-4">
-                  <div class="space-y-2">
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                      走廊區域適合小型展示和作品陳列，人流量大。
-                    </p>
-                  </div>
-                </div>
+            
+            <!-- 中間：地圖區域 50% -->
+            <div class="basis-[50%] min-w-0 min-h-0 overflow-hidden">
+              <div class="map-container p-5" id="map-container">
+                <!-- SVG將由JavaScript動態載入 -->
               </div>
             </div>
 
-            <!-- 前陽台 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('front-balcony')">
-                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">前陽台</h2>
-                <svg class="expand-icon plus" id="icon-front-balcony" viewBox="0 0 24 24">
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-front-balcony">
-                <div class="accordion-content-inner space-y-4">
-                  <div class="space-y-2">
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                      前陽台擁有絕佳視野，適合戶外展示和活動。
-                    </p>
-                  </div>
+            <!-- 右側：資訊（上）與按鈕（下） 25% -->
+            <div class="basis-[25%] min-w-0 min-h-0 flex flex-col overflow-hidden pb-4">
+              <!-- 上：狀態指示器 -->
+              <div class="status-indicators">
+                <div class="status-item">
+                  <div class="status-box status-available"></div>
+                  <span class="text-[1.125rem] font-['Noto_Sans_TC',_sans-serif] text-white">可租借</span>
+                </div>
+                <div class="status-item">
+                  <div class="status-box status-booked"></div>
+                  <span class="text-[1.125rem] font-['Noto_Sans_TC',_sans-serif] text-white">已借出</span>
+                </div>
+                <div class="status-item">
+                  <div class="status-box status-selected"></div>
+                  <span class="text-[1.125rem] font-['Noto_Sans_TC',_sans-serif] text-white">已選擇</span>
                 </div>
               </div>
-            </div>
 
-            <!-- 後陽台 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('back-balcony')">
-                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">後陽台</h2>
-                <svg class="expand-icon plus" id="icon-back-balcony" viewBox="0 0 24 24">
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-back-balcony">
-                <div class="accordion-content-inner space-y-4">
-                  <div class="space-y-2">
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT2,000</div>
+              <!-- 下：租借資訊 + 按鈕 -->
+              <div class="space-y-6 mt-auto">
+                <!-- 租借資訊 -->
+                <div class="space-y-6">
+                  <div>
+                    <div class="text-small-title font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">租借區塊</div>
+                    <div id="selected-blocks" class="text-content font-['Inter',_sans-serif] font-normal text-white tracking-wide">--</div>
                   </div>
                   <div>
-                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                      後陽台環境相對安靜，適合需要專注的創作活動。
-                    </p>
+                    <div class="text-small-title font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">押金總額</div>
+                    <div id="total-deposit" class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT 0</div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- 玻璃牆 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('glass-wall')">
-                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">玻璃牆</h2>
-                <svg class="expand-icon plus" id="icon-glass-wall" viewBox="0 0 24 24">
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-glass-wall">
-                <div class="accordion-content-inner space-y-4">
-                  <div class="space-y-2">
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                      玻璃牆區域展示效果佳，適合視覺作品展出。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 柱子 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('pillar')">
-                <h2 class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium">柱子</h2>
-                <svg class="expand-icon plus" id="icon-pillar" viewBox="0 0 24 24">
-                  <line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>
-                  <line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-pillar">
-                <div class="accordion-content-inner space-y-4">
-                  <div class="space-y-2">
-                    <div class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                    <div class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT1,000</div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed">
-                      柱子區域適合立體作品展示和裝置藝術。
-                    </p>
-                  </div>
+                <!-- 按鈕區域 -->
+                <div class="flex gap-4">
+                  <a href="#" id="clear-btn" class="font-['Inter',_sans-serif] uppercase text-button inline-block" style="color: #777777;" data-disabled="true" onclick="clearSelection(); return false;">
+                    <div class="hero-cta-wrapper">
+                      <span class="hero-cta-text">(CLEAR)</span>
+                      <span class="hero-cta-hidden">(CLEAR)</span>
+                    </div>
+                  </a>
+                  <a href="#" id="add-area-btn" class="font-['Inter',_sans-serif] uppercase text-button inline-block" style="color: #777777;" data-disabled="true" onclick="addAreaToCart(); return false;">
+                    <div class="hero-cta-wrapper">
+                      <span class="hero-cta-text">(ADD)</span>
+                      <span class="hero-cta-hidden">(ADD)</span>
+                    </div>
+                  </a>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- 中間：地圖區域 -->
-          <!-- 📍 SPACING CONTROL: 這裡是第二部分右移距離控制 - 調整 ml-4 的數值 -->
-          <div class="flex-3 overflow-hidden ml-4"> <!-- 增加中間部分的比例 -->
-            <div class="map-container" id="map-container">
-              <!-- SVG將由JavaScript動態載入 -->
-            </div>
-          </div>
-
-          <!-- 右側：資訊和按鈕 -->
-          <!-- 📍 SPACING CONTROL: 這裡是第三部分右移距離控制 - 調整 ml-12 的數值 -->
-          <div class="w-1/5 flex flex-col ml-8"> <!-- 減少右側寬度和間距 -->
-            <!-- 狀態指示器 -->
-            <div class="status-indicators">
-              <div class="status-item">
-                <div class="status-box status-available"></div>
-                <span class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">可租借</span>
-              </div>
-              <div class="status-item">
-                <div class="status-box status-booked"></div>
-                <span class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">已借出</span>
-              </div>
-              <div class="status-item">
-                <div class="status-box status-selected"></div>
-                <span class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">已選擇</span>
-              </div>
-            </div>
-
-            <div class="flex-grow"></div>
-
-            <!-- 租借資訊 -->
-            <div class="space-y-6 mb-12"> <!-- 增加底部間距讓按鈕更靠近footer -->
-              <!-- 租借區塊 -->
-              <div>
-                <div class="text-base font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">租借區塊</div>
-                <div id="selected-blocks" class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">--</div>
-              </div>
-
-              <!-- 押金總額 -->
-              <div>
-                <div class="text-base font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">押金總額</div>
-                <div id="total-deposit" class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT0</div>
-              </div>
-            </div>
-
-            <!-- 按鈕區域 -->
-            <div class="flex gap-4"> <!-- 使用flex布局和gap -->
-              <button id="clear-btn" class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 text-lg cursor-not-allowed button-animated flex-1" style="position: relative; overflow: hidden;" disabled onclick="clearSelection()">
-                <div class="button-bg-fill" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 0; background-color: white; z-index: 1;"></div>
-                <span style="position: relative; z-index: 2;">清除</span>
-              </button>
-              <button id="add-area-btn" class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-lg cursor-not-allowed hover:opacity-60 flex-1" disabled onclick="addAreaToCart()">
-                加入清單
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
-      
-      <!-- 手機版佈局 -->
-      <div class="w-full md:hidden flex-grow flex flex-col">
-        <!-- 標題區域 -->
-        <div class="mobile-title-section">
-          <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
-            A5F編號區
-          </h1>
-        </div>
-        
-        <!-- 暫時內容 -->
-        <div class="flex-grow flex items-center justify-center">
-          <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
+
+        <!-- 手機版佈局 -->
+        <div class="md:hidden h-full flex flex-col">
+          <!-- 標題區域 -->
+          <div class="mobile-title-section">
+            <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
+              A5F編號區
+            </h1>
+          </div>
+          
+          <!-- 暫時內容 -->
+          <div class="flex-grow flex items-center justify-center">
+            <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
+          </div>
         </div>
       </div>
     </main>
@@ -582,130 +609,96 @@
       <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
     </div>
 
-            <footer class="pt-4 pb-8">
-      <div class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm">
-        <div class="flex space-x-6 md:mb-0 hidden md:flex">
-          <a
-            href="https://sccd.usc.edu.tw/"
-            target="_blank"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >TO SCCD
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+    <footer class="bg-transparent footer-main">
+      <div class="container">
+        <div class="hidden md:flex justify-between items-center">
+          <div class="flex items-center footer-gap">
+            <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(TO SCCD)</span>
+                <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
-            </div>
-          </a>
-          <a
-            href="about.html"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >ABOUT
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
+            </a>
+            <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(ABOUT)</span>
+                <span class="menu-text-hidden">(ABOUT)</span>
               </div>
-            </div>
-          </a>
-        </div>
-        <div class="copyright text-xs md:text-right">
-          <p>
-            <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
-            </span>
-            <span class="copyright-easter-egg" id="easter-egg-text">
-              <!-- 彩蛋文字將由JavaScript生成 -->
-            </span>
-          </p>
+            </a>
+          </div>
+          <div class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header">
+            <p>
+              <span class="copyright-original">
+                <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+                <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+              </span>
+              <span class="copyright-easter-egg" id="easter-egg-text">
+                <!-- 彩蛋文字將由JavaScript生成 -->
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
 
-    <!-- 手機版選單 -->
+    <!-- 手機版選單（樣式同 space.html） -->
     <div class="mobile-menu md:hidden" id="mobile-menu">
-      <!-- Header區域 -->
-      <div class="py-6 px-6">
-        <div class="flex justify-between items-center">
-          <a href="index.html" class="logo-link">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium text-white">
-              SCCD
-            </div>
-          </a>
-          <button class="font-['Inter',_sans-serif] text-base" id="mobile-menu-close">
-            <span class="text-white">CLOSE</span>
-          </button>
-        </div>
-      </div>
-      
-      <!-- 選單項目 -->
-      <div class="flex-grow px-6">
-        <nav>
-          <ul class="flex flex-col space-y-4">
-            <li class="menu-animate-enter">
-              <a
-                href="booking.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
-                >BOOKING</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="resources.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
-                >RESOURCES</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="login.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
-                >LOG IN</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </div>
-      
-      <!-- Footer區域 -->
-      <div class="pt-4 pb-8 px-6">
-        <div class="flex flex-col text-sm">
-          <div class="flex flex-col space-y-2 mb-2 items-start">
-            <div class="menu-animate-enter">
-              <a
-                href="https://sccd.usc.edu.tw/"
-                target="_blank"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
-                >TO SCCD
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="menu-animate-enter">
-              <a
-                href="about.html"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
-                >ABOUT
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                    <img src="Icons/Small Arrow UpRight.svg" alt="Arrow" class="arrow-icon">
-                  </div>
+      <div class="mobile-menu-content">
+        <!-- 導航項目 -->
+        <div class="flex flex-col items-start menu-gap flex-grow">
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-1">
+              <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper active">
+                  <span class="menu-text">(BOOKING)</span>
+                  <span class="menu-text-hidden">(BOOKING)</span>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div class="copyright text-xs menu-animate-enter-content menu-delay-6">
+            <div class="menu-animate-enter-content menu-delay-2">
+              <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(LOGIN)</span>
+                  <span class="menu-text-hidden">(LOGIN)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-3">
+              <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-4">
+              <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copyright 在底部 -->
+        <div class="menu-animate-enter mobile-menu-content-bottom">
+          <div class="menu-animate-enter-content menu-delay-5">
+            <div class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header">
               <p>
                 <span class="copyright-original">
                   <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+                </span>
+                <span class="copyright-easter-egg" id="mobile-menu-easter-egg-text">
+                  <!-- 彩蛋文字將由JavaScript生成 -->
                 </span>
               </p>
             </div>
@@ -754,40 +747,40 @@
           name: '走廊',
           category: 'area',
           deposit: 1000,
-          image: 'Area/A5F Numbered Area_Square.svg',
-          mapImage: 'Area/A5F Numbered Area_Square.svg'
+          image: 'Area/A5F Numbered Area_Corridor.svg',
+          mapImage: 'Area/A5F Numbered Area_Corridor.svg'
         },
         'front-balcony': {
           id: 'area-front-balcony',
           name: '前陽台',
           category: 'area',
           deposit: 1000,
-          image: 'Area/A5F Numbered Area_Square.svg',
-          mapImage: 'Area/A5F Numbered Area_Square.svg'
+          image: 'Area/A5F Numbered Area_Front Terrace.svg',
+          mapImage: 'Area/A5F Numbered Area_Front Terrace.svg'
         },
         'back-balcony': {
           id: 'area-back-balcony',
           name: '後陽台',
           category: 'area',
           deposit: 2000,
-          image: 'Area/A5F Numbered Area_Square.svg',
-          mapImage: 'Area/A5F Numbered Area_Square.svg'
+          image: 'Area/A5F Numbered Area_Back Terrace.svg',
+          mapImage: 'Area/A5F Numbered Area_Back Terrace.svg'
         },
         'glass-wall': {
           id: 'area-glass-wall',
           name: '玻璃牆',
           category: 'area',
           deposit: 1000,
-          image: 'Area/A5F Numbered Area_Square.svg',
-          mapImage: 'Area/A5F Numbered Area_Square.svg'
+          image: 'Area/A5F Numbered Area_Glass Wall.svg',
+          mapImage: 'Area/A5F Numbered Area_Glass Wall.svg'
         },
         'pillar': {
           id: 'area-pillar',
           name: '柱子',
           category: 'area',
           deposit: 1000,
-          image: 'Area/A5F Numbered Area_Square.svg',
-          mapImage: 'Area/A5F Numbered Area_Square.svg'
+          image: 'Area/A5F Numbered Area_Pillar.svg',
+          mapImage: 'Area/A5F Numbered Area_Pillar.svg'
         }
       };
       
@@ -838,70 +831,98 @@
       
       function openAccordion(areaId) {
         const content = document.getElementById(`content-${areaId}`);
-        const contentInner = content.querySelector('.accordion-content-inner');
         const icon = document.getElementById(`icon-${areaId}`);
         
-        // 先設置內容顯示以計算高度
-        gsap.set(contentInner, { opacity: 0 });
-        content.classList.add('expanded'); // 添加expanded類別以獲得正確的padding
-        gsap.set(content, { height: 'auto' });
-        const autoHeight = content.offsetHeight;
-        gsap.set(content, { height: 0 });
+        // 設置為展開：用 scrollHeight 作為 max-height 目標
+        content.classList.add('expanded');
+        const target = content.scrollHeight;
+        content.style.maxHeight = target + 'px';
         
-        // 使用GSAP動畫展開
-        const tl = gsap.timeline();
-        tl.to(content, {
-          height: autoHeight,
-          duration: 0.5,
-          ease: "power2.out",
-          onComplete: () => {
-            gsap.set(content, { height: 'auto' }); // 設置為auto以適應內容變化
-          }
-        })
-        .to(contentInner, {
-          opacity: 1,
-          duration: 0.3,
-          ease: "power2.out"
-        }, "-=0.2");
-        
-        // 改變圖標為 "-"
+        // 圖標變 "-"
         icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>';
         icon.classList.remove('plus');
       }
       
       function closeAccordion(areaId) {
         const content = document.getElementById(`content-${areaId}`);
-        const contentInner = content.querySelector('.accordion-content-inner');
         const icon = document.getElementById(`icon-${areaId}`);
         
-        // 使用GSAP動畫收起
-        const tl = gsap.timeline();
-        tl.to(contentInner, {
-          opacity: 0,
-          duration: 0.2,
-          ease: "power2.out"
-        })
-        .to(content, {
-          height: 0,
-          duration: 0.4,
-          ease: "power2.out",
-          onComplete: () => {
-            content.classList.remove('expanded'); // 動畫完成後移除expanded類別
-          }
-        }, "-=0.1");
+        // 收起：將 max-height 設為 0
+        content.style.maxHeight = '0px';
+        content.classList.remove('expanded');
         
-        // 改變圖標為 "+"
+        // 圖標變 "+"
         icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/><line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>';
         icon.classList.add('plus');
       }
+
+      // 區域卡片選擇（取代手風琴）
+      function clearAreaCardSelections() {
+        const cards = document.querySelectorAll('.area-item');
+        cards.forEach(card => card.classList.remove('selected'));
+      }
+
+      function selectAreaCard(areaId) {
+        // 如果點擊的是已經選中的區域，則取消選擇
+        if (currentSelectedArea === areaId) {
+          clearAreaCardSelections();
+          currentSelectedArea = null;
+          updateAreaDisplay();
+          return;
+        }
+        
+        // 保存當前區域的選擇狀態（排除已在購物車中的格子）
+        if (currentSelectedArea) {
+          const currentCartBlocks = cartBlocks[currentSelectedArea] || [];
+          const availableSelections = selectedBlockNames.filter(blockName =>
+            !currentCartBlocks.includes(blockName)
+          );
+          areaSelections[currentSelectedArea] = [...availableSelections];
+        }
+
+        // 視覺選中卡片（互斥）
+        clearAreaCardSelections();
+        const cardEl = document.getElementById(`area-card-${areaId}`);
+        if (cardEl) {
+          cardEl.classList.add('selected');
+        }
+
+        // 更新當前區域
+        currentSelectedArea = areaId;
+
+        // 更新中間地圖/格子狀態
+        updateAreaDisplay();
+
+        // 恢復購物車與選擇狀態（排除已在購物車的格子）
+        setTimeout(() => {
+          restoreCartBlocksVisualState();
+          const cartBlocksInNewArea = cartBlocks[areaId] || [];
+          const availableSelections = (areaSelections[areaId] || []).filter(blockName =>
+            !cartBlocksInNewArea.includes(blockName)
+          );
+          selectedBlockNames = [...availableSelections];
+          selectedBlocks = [...selectedBlockNames];
+          updateSelectedBlocks();
+        }, 50);
+      }
       
-      function updateAreaDisplay() {
+      // 新的穩定SVG載入機制
+      async function updateAreaDisplay() {
         if (!currentSelectedArea) {
+          // 如果沒有選擇區域，清空中間區域
+          const mapContainer = document.getElementById('map-container');
+          mapContainer.innerHTML = '';
           return;
         }
         
         const mapContainer = document.getElementById('map-container');
-        const svgData = getSVGDataForArea(currentSelectedArea);
+        const area = areaData[currentSelectedArea];
+        
+        if (!area || !area.mapImage) {
+          console.warn(`區域 ${currentSelectedArea} 沒有對應的地圖檔案`);
+          mapContainer.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-base font-[\'Noto_Sans_TC\',_sans-serif] font-normal text-white">地圖載入中...</p></div>';
+          return;
+        }
         
         // 為玻璃牆和柱子設置滾動容器
         if (currentSelectedArea === 'glass-wall' || currentSelectedArea === 'pillar') {
@@ -910,247 +931,114 @@
           mapContainer.classList.remove('scrollable');
         }
         
-        // 動態更新SVG內容
-        mapContainer.innerHTML = svgData.svg;
+        try {
+          // 使用fetch載入SVG檔案
+          const response = await fetch(area.mapImage);
+          if (!response.ok) {
+            throw new Error(`載入SVG失敗: ${response.status}`);
+          }
+          
+          const svgText = await response.text();
+          
+          // 清理和準備SVG內容
+          const cleanedSVG = prepareSVGForInteraction(svgText, currentSelectedArea);
+          
+          // 載入SVG到容器
+          mapContainer.innerHTML = cleanedSVG;
+          
+          // 等待DOM更新完成後設置交互
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          console.log(`開始設置區域 ${currentSelectedArea} 的格子狀態`);
+          setupSVGClickEvents();
+          
+          // 設置各種格子狀態
+          setupGridStates();
+          
+          console.log(`區域 ${currentSelectedArea} SVG載入和設置完成`);
+          
+        } catch (error) {
+          console.error(`載入區域 ${currentSelectedArea} 的SVG時發生錯誤:`, error);
+          mapContainer.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-base font-[\'Noto_Sans_TC\',_sans-serif] font-normal text-white">地圖載入失敗，請重試</p></div>';
+        }
+      }
+      
+      // 準備SVG以支持交互功能
+      function prepareSVGForInteraction(svgText, areaId) {
+        // 創建一個臨時DOM來解析SVG
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, 'image/svg+xml');
+        const svg = doc.documentElement;
         
-        // 為玻璃牆和柱子的SVG添加no-scale class
-        const svg = mapContainer.querySelector('#area-map');
-        if (svg && (currentSelectedArea === 'glass-wall' || currentSelectedArea === 'pillar')) {
+        // 設置SVG的基本屬性
+        svg.setAttribute('id', 'area-map');
+        svg.classList.add('map-svg');
+        
+        // 為玻璃牆和柱子添加特殊縮放類
+        if (areaId === 'glass-wall' || areaId === 'pillar') {
           svg.classList.add('no-scale');
         }
         
-        // 確保SVG完全載入後再設置點擊事件和狀態
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            console.log(`開始設置區域 ${currentSelectedArea} 的格子狀態`);
-            setupSVGClickEvents();
-            
-            // 設置已提交訂單的格子為已預訂狀態（紅色）
-            submittedBlocks[currentSelectedArea].forEach(blockName => {
-              const cell = document.getElementById(blockName);
-              if (cell) {
-                cell.classList.add('booked');
-                console.log(`格子 ${blockName} 設為已提交狀態 (紅色)`);
-              }
-            });
-            
-            // 示範：設置一些格子為已預訂狀態（可選，用於測試）
-            const demoBookedBlocks = getBookedBlocksForArea(currentSelectedArea);
-            demoBookedBlocks.forEach(blockName => {
-              const cell = document.getElementById(blockName);
-              if (cell) {
-                cell.classList.add('booked');
-                console.log(`格子 ${blockName} 設為示範預訂狀態 (紅色)`);
-              }
-            });
-            
-            // 恢復已選擇的區塊視覺狀態
-            selectedBlockNames.forEach(blockName => {
-              const cell = document.getElementById(blockName);
-              if (cell && !cell.classList.contains('booked')) {
-                cell.classList.add('selected');
-                console.log(`格子 ${blockName} 恢復選中狀態 (綠色)`);
-              }
-            });
-            
-            // 恢復已加入購物車的區塊視覺狀態（綠色）
-            console.log('準備恢復購物車格子視覺狀態...');
-            restoreCartBlocksVisualState();
-            console.log(`區域 ${currentSelectedArea} 格子狀態設置完成`);
-          }, 50);
-        });
-      }
-      
-      function getSVGDataForArea(areaId) {
-        const svgConfigs = {
-          'courtyard': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 499.93 836.04" xmlns="http://www.w3.org/2000/svg">
-              <g id="Square">
-                <rect class="grid-cell" id="A10" x="38.12" y="87.5" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A11" x="38.12" y="31.52" width="55" height="40" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B11" x="109.48" y="31.52" width="55" height="40" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C11" x="180.83" y="31.52" width="55" height="40" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D11" x="252.18" y="31.52" width="55" height="40" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E11" x="323.53" y="31.52" width="55" height="40" style="fill: #898989;"/>
-                <rect class="grid-cell" id="F6" x="445.07" y="31.43" width="25" height="96.03" style="fill: #898989;"/>
-                <rect class="grid-cell" id="F5" x="445.07" y="173.14" width="25" height="96.03" style="fill: #898989;"/>
-                <rect class="grid-cell" id="F4" x="445.07" y="314.86" width="25" height="96.03" style="fill: #898989;"/>
-                <rect class="grid-cell" id="F3" x="445.07" y="456.57" width="25" height="96.03" style="fill: #898989;"/>
-                <rect class="grid-cell" id="F2" x="445.07" y="598.29" width="25" height="96.03" style="fill: #898989;"/>
-                <rect class="grid-cell" id="F1" x="445.07" y="740" width="25" height="96.03" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B10" x="109.48" y="87.5" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C10" x="180.83" y="87.5" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D10" x="252.18" y="87.5" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E10" x="323.53" y="87.5" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A9" x="38.12" y="158.53" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A8" x="38.12" y="229.57" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A7" x="38.12" y="300.61" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B9" x="109.48" y="158.53" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C9" x="180.83" y="158.53" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D9" x="252.18" y="158.53" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E9" x="323.53" y="158.53" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B8" x="109.48" y="229.57" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C8" x="180.83" y="229.57" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D8" x="252.18" y="229.57" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E8" x="323.53" y="229.57" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B7" x="109.48" y="300.61" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C7" x="180.83" y="300.61" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D7" x="252.18" y="300.61" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E7" x="323.53" y="300.61" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B6" x="109.48" y="371.65" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C6" x="180.83" y="371.65" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D6" x="252.18" y="371.65" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E6" x="323.53" y="371.65" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B5" x="109.48" y="442.68" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C5" x="180.83" y="442.68" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D5" x="252.18" y="442.68" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E5" x="323.53" y="442.68" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B4" x="109.48" y="513.72" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C4" x="180.83" y="513.72" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D4" x="252.18" y="513.72" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E4" x="323.53" y="513.72" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B3" x="109.48" y="584.76" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B2" x="109.48" y="655.8" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="B1" x="109.48" y="726.83" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A4" x="38.12" y="513.72" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A3" x="38.12" y="584.76" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A2" x="38.12" y="655.8" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="A1" x="38.12" y="726.83" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="C3" x="180.83" y="584.76" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="D3" x="252.18" y="584.76" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E3" x="323.53" y="584.76" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E2" x="323.53" y="655.8" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="E1" x="323.53" y="726.83" width="55" height="55" style="fill: #898989;"/>
-                <polygon class="grid-cell" id="A6" points="38.13 371.65 38.13 414.29 50.48 414.29 50.48 426.65 93.13 426.65 93.13 371.65 38.13 371.65" style="fill: #898989;"/>
-                <polygon class="grid-cell" id="A5" points="50.48 442.68 50.48 455.04 38.13 455.04 38.13 497.68 93.13 497.68 93.13 442.68 50.48 442.68" style="fill: #898989;"/>
-                
-                <text transform="translate(59.54 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">A</tspan></text>
-                <text transform="translate(1.45 56.42)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">11</tspan></text>
-                <text transform="translate(0 119.89)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">10</tspan></text>
-                <text transform="translate(4.19 190.93)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">9</tspan></text>
-                <text transform="translate(4.26 261.97)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">8</tspan></text>
-                <text transform="translate(4.67 333.01)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">7</tspan></text>
-                <text transform="translate(4.19 404.04)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">6</tspan></text>
-                <text transform="translate(4.34 475.08)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">5</tspan></text>
-                <text transform="translate(4.03 546.12)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">4</tspan></text>
-                <text transform="translate(4.08 617.16)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">3</tspan></text>
-                <text transform="translate(4.36 688.19)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">2</tspan></text>
-                <text transform="translate(5.63 759.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">1</tspan></text>
-                <text transform="translate(488.53 84.34)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">6</tspan></text>
-                <text transform="translate(488.67 226.06)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">5</tspan></text>
-                <text transform="translate(488.37 367.77)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">4</tspan></text>
-                <text transform="translate(488.42 509.49)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">3</tspan></text>
-                <text transform="translate(488.7 651.2)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">2</tspan></text>
-                <text transform="translate(489.97 792.92)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">1</tspan></text>
-                <text transform="translate(131.12 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">B</tspan></text>
-                <text transform="translate(201.78 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">C</tspan></text>
-                <text transform="translate(273.2 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">D</tspan></text>
-                <text transform="translate(345.64 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">E</tspan></text>
-                <text transform="translate(452.29 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">F</tspan></text>
-              </g>
-            </svg>`
-          },
-          'corridor': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 459.1 855.74" xmlns="http://www.w3.org/2000/svg">
-              <g id="Corridor">
-                <text transform="translate(58.41 15.54)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">G</tspan></text>
-                <text transform="translate(129.79 15.54)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">H</tspan></text>
-                <rect class="grid-cell" id="G10" x="37.6" y="32.88" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="G9" x="37.6" y="106.11" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="G8" x="37.6" y="179.35" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="G7" x="37.6" y="252.58" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="G6" x="37.6" y="325.81" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="G5" x="37.6" y="399.04" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H9" x="112.1" y="106.11" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H8" x="112.1" y="179.35" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H7" x="112.1" y="252.58" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H6" x="112.1" y="325.81" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H3" x="112.1" y="545.51" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H2" x="112.1" y="618.74" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="H1" x="112.1" y="691.97" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="J3" x="404.1" y="766.4" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="J2" x="330.87" y="766.4" width="55" height="55" style="fill: #898989;"/>
-                <rect class="grid-cell" id="J1" x="257.64" y="766.4" width="55" height="55" style="fill: #898989;"/>
-                <polygon class="grid-cell" id="H5" points="167.1 399.14 167.1 441.78 154.74 441.78 154.74 454.14 112.1 454.14 112.1 399.14 167.1 399.14" style="fill: #898989;"/>
-                <polygon class="grid-cell" id="H4" points="154.74 472.27 154.74 484.63 167.1 484.63 167.1 527.27 112.1 527.27 112.1 472.27 154.74 472.27" style="fill: #898989;"/>
-                <polygon class="grid-cell" id="H10" points="154.74 32.88 154.74 45.24 167.1 45.24 167.1 87.88 112.1 87.88 112.1 32.88 154.74 32.88" style="fill: #898989;"/>
-                <text transform="translate(0 65.28)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">10</tspan></text>
-                <text transform="translate(4.19 138.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">9</tspan></text>
-                <text transform="translate(4.26 211.74)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">8</tspan></text>
-                <text transform="translate(4.67 284.98)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">7</tspan></text>
-                <text transform="translate(4.19 358.21)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">6</tspan></text>
-                <text transform="translate(4.33 431.44)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">5</tspan></text>
-                <text transform="translate(4.03 504.67)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">4</tspan></text>
-                <text transform="translate(4.08 577.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">3</tspan></text>
-                <text transform="translate(4.36 651.14)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">2</tspan></text>
-                <text transform="translate(5.62 724.37)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">1</tspan></text>
-                <text transform="translate(276.07 849.99)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">J1</tspan></text>
-                <text transform="translate(348.04 849.99)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">J2</tspan></text>
-                <text transform="translate(420.99 849.99)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">J3</tspan></text>
-              </g>
-            </svg>`
-          },
-          'front-balcony': {
-            svg: `<svg id="area-map" class="map-svg" viewBox="0 0 511.81 762.8" xmlns="http://www.w3.org/2000/svg">
-              <g id="Front_Terrace">
-                <rect class="grid-cell" id="K3" x="0" y="30.34" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K2" x="0" y="187.3" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K1" x="0" y="344.25" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K6" x="135.72" y="187.3" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K5" x="135.72" y="344.25" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K4" x="135.72" y="501.2" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K9" x="271.44" y="344.25" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K8" x="271.44" y="501.2" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K10" x="407.17" y="501.2" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="K7" x="271.44" y="658.15" width="104.65" height="104.65" style="fill: #898989;"/>
-                
-                <text transform="translate(40.73 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K3</tspan></text>
-                <text transform="translate(41.3 172.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K2</tspan></text>
-                <text transform="translate(176.57 172.23)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K6</tspan></text>
-                <text transform="translate(42.57 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K1</tspan></text>
-                <text transform="translate(176.71 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K5</tspan></text>
-                <text transform="translate(312.29 329.51)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K9</tspan></text>
-                <text transform="translate(176.55 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K4</tspan></text>
-                <text transform="translate(312.28 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K8</tspan></text>
-                <text transform="translate(312.69 646.9)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K7</tspan></text>
-                <text transform="translate(443.67 487.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">K10</tspan></text>
-              </g>
-            </svg>`
-          },
-          'back-balcony': {
-            svg: `<svg id="area-map" class="map-svg" data-area="back-balcony" viewBox="0 0 210.95 452.03" xmlns="http://www.w3.org/2000/svg">
-              <g id="Back_Terrace">
-                <rect class="grid-cell" id="L3" x="0" y="33.48" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="L2" x="0" y="190.43" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="L1" x="0" y="347.38" width="104.65" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="L6" x="127.64" y="33.48" width="83.31" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="L5" x="127.64" y="190.43" width="83.31" height="104.65" style="fill: #898989;"/>
-                <rect class="grid-cell" id="L4" x="127.64" y="347.38" width="83.31" height="104.65" style="fill: #898989;"/>
-                
-                <text transform="translate(41.53 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L3</tspan></text>
-                <text transform="translate(158.62 15.55)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L6</tspan></text>
-                <text transform="translate(41.82 173.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L2</tspan></text>
-                <text transform="translate(158.76 173.57)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L5</tspan></text>
-                <text transform="translate(43.49 330.66)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0" style="letter-spacing: -.05em;">L</tspan><tspan x="9.31" y="0" style="letter-spacing: 0em;">1</tspan></text>
-                <text transform="translate(158.45 330.66)" style="fill: #fff; font-family: Inter-Regular, Inter; font-size: 18px;"><tspan x="0" y="0">L4</tspan></text>
-              </g>
-            </svg>`
-          },
-          'glass-wall': {
-            svg: `<div class="flex items-center justify-center h-full">
-              <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
-            </div>`
-          },
-          'pillar': {
-            svg: `<div class="flex items-center justify-center h-full">
-              <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
-            </div>`
-          }
-        };
+        // 為後陽台添加特殊縮放屬性
+        if (areaId === 'back-balcony') {
+          svg.setAttribute('data-area', 'back-balcony');
+        }
         
-        return svgConfigs[areaId] || svgConfigs['courtyard'];
+        // 尋找所有可點擊的矩形和多邊形元素
+        const clickableElements = svg.querySelectorAll('rect[id], polygon[id]');
+        
+        clickableElements.forEach(element => {
+          // 只為有ID且ID不是特殊元素的添加格子類
+          const id = element.getAttribute('id');
+          if (id && !id.includes('Layer') && !id.includes('_Terrace') && !id.includes('Corridor') && !id.includes('Square')) {
+            element.classList.add('grid-cell');
+            element.classList.add('clickable-area');
+          }
+        });
+        
+        // 返回處理後的SVG字符串
+        return new XMLSerializer().serializeToString(svg);
       }
       
+      // 設置格子狀態
+      function setupGridStates() {
+        // 設置已提交訂單的格子為已預訂狀態（紅色）
+        if (submittedBlocks[currentSelectedArea]) {
+          submittedBlocks[currentSelectedArea].forEach(blockName => {
+            const cell = document.getElementById(blockName);
+            if (cell) {
+              cell.classList.add('booked');
+              console.log(`格子 ${blockName} 設為已提交狀態 (紅色)`);
+            }
+          });
+        }
+        
+        // 示範：設置一些格子為已預訂狀態（可選，用於測試）
+        const demoBookedBlocks = getBookedBlocksForArea(currentSelectedArea);
+        demoBookedBlocks.forEach(blockName => {
+          const cell = document.getElementById(blockName);
+          if (cell) {
+            cell.classList.add('booked');
+            console.log(`格子 ${blockName} 設為示範預訂狀態 (紅色)`);
+          }
+        });
+        
+        // 恢復已選擇的區塊視覺狀態
+        selectedBlockNames.forEach(blockName => {
+          const cell = document.getElementById(blockName);
+          if (cell && !cell.classList.contains('booked')) {
+            cell.classList.add('selected');
+            console.log(`格子 ${blockName} 恢復選中狀態 (綠色)`);
+          }
+        });
+        
+        // 恢復已加入購物車的區塊視覺狀態（綠色）
+        console.log('準備恢復購物車格子視覺狀態...');
+        restoreCartBlocksVisualState();
+      }
+      
+      // 載入預設的預訂狀態區塊
       function getBookedBlocksForArea(areaId) {
         // 為不同區域設置不同的預訂狀態示範
         const bookedBlocks = {
@@ -1165,44 +1053,77 @@
         return bookedBlocks[areaId] || [];
       }
       
+      // 改進的SVG事件設置，更穩定可靠
       function setupSVGClickEvents() {
-        // 為每個格子添加點擊事件
-        const gridCells = document.querySelectorAll('.grid-cell');
+        const gridCells = document.querySelectorAll('.grid-cell, .clickable-area');
         const tooltip = document.getElementById('grid-tooltip');
+        
+        console.log(`找到 ${gridCells.length} 個可點擊格子`);
         
         // 如果沒有找到格子元素，延遲重試
         if (gridCells.length === 0) {
+          console.warn('未找到可點擊格子，1秒後重試...');
           setTimeout(() => {
             setupSVGClickEvents();
-          }, 50);
+          }, 1000);
           return;
         }
         
+        // 清理之前的事件監聽器
         gridCells.forEach(cell => {
-          // 點擊事件
-          cell.addEventListener('click', function() {
-            const blockName = this.id;
-            handleBlockClick(blockName);
-          });
-          
-          // Hover事件 - 顯示tooltip
-          cell.addEventListener('mouseenter', function(e) {
-            const blockName = this.id;
-            tooltip.textContent = blockName;
-            tooltip.classList.add('show');
-            updateTooltipPosition(e);
-          });
-          
-          // 滑鼠移動事件 - 更新tooltip位置
-          cell.addEventListener('mousemove', function(e) {
-            updateTooltipPosition(e);
-          });
-          
-          // 離開hover - 隱藏tooltip
-          cell.addEventListener('mouseleave', function() {
-            tooltip.classList.remove('show');
-          });
+          const newCell = cell.cloneNode(true);
+          cell.parentNode.replaceChild(newCell, cell);
         });
+        
+        // 重新選取所有格子並設置事件
+        const freshCells = document.querySelectorAll('.grid-cell, .clickable-area');
+        
+        freshCells.forEach(cell => {
+          const blockId = cell.getAttribute('id');
+          
+          // 確保格子有有效的ID
+          if (!blockId || blockId.includes('Layer') || blockId.includes('_')) {
+            return;
+          }
+          
+          console.log(`為格子 ${blockId} 設置事件監聽器`);
+          
+          // 點擊事件
+          cell.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log(`格子 ${blockId} 被點擊`);
+            handleBlockClick(blockId);
+          });
+          
+          // 只在桌面版顯示tooltip hover效果
+          if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            // Hover事件 - 顯示tooltip
+            cell.addEventListener('mouseenter', function(e) {
+              if (tooltip) {
+                tooltip.textContent = blockId;
+                tooltip.classList.add('show');
+                updateTooltipPosition(e);
+              }
+            });
+            
+            // 滑鼠移動事件 - 更新tooltip位置
+            cell.addEventListener('mousemove', function(e) {
+              if (tooltip) {
+                updateTooltipPosition(e);
+              }
+            });
+            
+            // 離開hover - 隱藏tooltip
+            cell.addEventListener('mouseleave', function() {
+              if (tooltip) {
+                tooltip.classList.remove('show');
+              }
+            });
+          }
+        });
+        
+        console.log(`成功為 ${freshCells.length} 個格子設置事件監聽器`);
       }
       
       function updateTooltipPosition(e) {
@@ -1265,16 +1186,14 @@
         
         if (selectedBlockNames.length === 0) {
           selectedBlocksElement.textContent = '--';
-          totalDepositElement.textContent = 'NT0';
+          totalDepositElement.textContent = 'NT 0';
           
-          // 兩個按鈕都禁用
-          addButton.disabled = true;
-          addButton.classList.add('opacity-30', 'cursor-not-allowed');
-          addButton.classList.remove('opacity-100', 'cursor-pointer');
+          // 兩個按鈕都禁用 - #777777 但可以 hover
+          addButton.style.color = '#777777';
+          addButton.setAttribute('data-disabled', 'true');
           
-          clearButton.disabled = true;
-          clearButton.classList.add('opacity-30', 'cursor-not-allowed');
-          clearButton.classList.remove('opacity-100', 'cursor-pointer');
+          clearButton.style.color = '#777777';
+          clearButton.setAttribute('data-disabled', 'true');
         } else {
           selectedBlocksElement.textContent = selectedBlockNames.join(', ');
           
@@ -1283,21 +1202,20 @@
           const totalDeposit = selectedBlockNames.length * (area ? area.deposit : 1000);
           totalDepositElement.textContent = `NT${totalDeposit.toLocaleString()}`;
           
-          // 兩個按鈕都啟用
-          addButton.disabled = false;
-          addButton.classList.remove('opacity-30', 'cursor-not-allowed');
-          addButton.classList.add('opacity-100', 'cursor-pointer');
+          // 兩個按鈕都啟用 - 白色且可點擊
+          addButton.style.color = 'white';
+          addButton.removeAttribute('data-disabled');
           
-          clearButton.disabled = false;
-          clearButton.classList.remove('opacity-30', 'cursor-not-allowed');
-          clearButton.classList.add('opacity-100', 'cursor-pointer');
+          clearButton.style.color = 'white';
+          clearButton.removeAttribute('data-disabled');
         }
       }
       
       function clearSelection() {
         const clearButton = document.getElementById('clear-btn');
         
-        if (clearButton.disabled) {
+        // 檢查是否被禁用
+        if (clearButton.getAttribute('data-disabled') === 'true') {
           return;
         }
         
@@ -1348,7 +1266,8 @@
       function addAreaToCart() {
         const button = document.getElementById('add-area-btn');
         
-        if (button.disabled || !currentSelectedArea || selectedBlockNames.length === 0) {
+        // 檢查是否被禁用
+        if (button.getAttribute('data-disabled') === 'true' || !currentSelectedArea || selectedBlockNames.length === 0) {
           showNotification('請先選擇區塊！', 'error');
           return;
         }
@@ -1405,40 +1324,46 @@
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notification-text');
         
-        // 設置通知內容
-        notificationText.textContent = message;
-        
-        // 根據類型設置樣式
-        if (type === 'error') {
-          notification.classList.add('error');
+        if (notification && notificationText) {
+          notificationText.textContent = message;
+          
+          // 清除之前的動畫類別和樣式
+          notification.classList.remove('show', 'fade-out', 'error');
+          notification.style.display = 'block';
+          notification.style.bottom = 'auto';
+          notification.style.left = 'auto';
+          notification.style.transform = 'none';
+          notification.style.opacity = '';
+          notification.style.pointerEvents = '';
+          
+          // 根據類型設置樣式
+          if (type === 'error') {
+            notification.classList.add('error');
+          }
+          
+          // 統一使用白色背景
+          notification.style.backgroundColor = 'white';
+          notification.style.color = 'black';
+          
+          // 短暫延遲後顯示（確保 CSS 過渡效果正常）
+          setTimeout(() => {
+            notification.classList.add('show');
+          }, 10);
+          
+          // 3秒後開始 fade out 動畫
+          setTimeout(() => {
+            notification.classList.remove('show');
+            notification.classList.add('fade-out');
+            
+            // fade out 動畫完成後隱藏元素
+            setTimeout(() => {
+              notification.style.display = 'none';
+              notification.classList.remove('fade-out', 'error');
+            }, 300);
+          }, 3000);
         } else {
-          notification.classList.remove('error');
+          console.log(`Notification: ${message} (${type})`);
         }
-        
-        // 重置位置和透明度
-        notification.style.bottom = '7.5rem';
-        notification.style.left = '50%';
-        notification.style.transform = 'translateX(-50%) translateY(50px)';
-        notification.style.opacity = '0';
-        notification.style.pointerEvents = 'none';
-        
-        // 顯示通知
-        setTimeout(() => {
-          notification.style.opacity = '1';
-          notification.style.transform = 'translateX(-50%) translateY(0px)';
-        }, 50);
-        
-        // 2秒後消失
-        setTimeout(() => {
-          notification.style.opacity = '0';
-          notification.style.transform = 'translateX(-50%) translateY(-10px)';
-        }, 2000);
-        
-        // 完全隱藏
-        setTimeout(() => {
-          notification.style.pointerEvents = 'none';
-          notification.classList.remove('error');
-        }, 2500);
       }
       
       // 按鈕動畫效果 - 只在桌面版
@@ -1573,43 +1498,22 @@
         });
       }
       
-      // 初始化：默認展開中庭
+      // 初始化：預設不選擇任何區域
       document.addEventListener('DOMContentLoaded', async function() {
         // 等待購物車管理器準備就緒
         await waitForCartManager();
         console.log('購物車管理器已準備就緒');
         
-        // 先設置默認選中的區域
-        currentSelectedArea = 'courtyard';
-        console.log('初始化：設置默認區域為', currentSelectedArea);
+        // 預設不選擇任何區域
+        currentSelectedArea = null;
+        console.log('初始化：預設不選擇任何區域');
         
-        // 立即同步購物車狀態（在展開動畫之前）
+        // 立即同步購物車狀態
         syncCartState(false);
-        
-        openAccordion('courtyard');
-        
-        // 確保手風琴動畫完成後再載入區域顯示
-        setTimeout(() => {
-          // 載入區域顯示
-          updateAreaDisplay();
-          
-          // 再次確保購物車狀態正確同步和視覺恢復
-          setTimeout(() => {
-            // 手動恢復購物車中格子的綠色狀態
-            restoreCartBlocksVisualState();
-            
-            // 恢復默認區域的選擇狀態（排除已在購物車中的格子）
-            const availableSelections = areaSelections['courtyard'].filter(blockName => 
-              !cartBlocks['courtyard'].includes(blockName)
-            );
-            selectedBlockNames = [...availableSelections];
-            selectedBlocks = [...selectedBlockNames];
-            updateSelectedBlocks();
-            
-            console.log('初始化完成，當前區域:', currentSelectedArea);
-            console.log('初始化完成，購物車狀態:', cartBlocks);
-          }, 150);
-        }, 600); // 等待手風琴展開動畫完成 (0.5s + 0.1s buffer)
+
+        // 不預設選擇任何卡片，等待用戶點擊
+        console.log('初始化完成，當前區域:', currentSelectedArea);
+        console.log('初始化完成，購物車狀態:', cartBlocks);
         
         // 監聽購物車變化事件
         window.addEventListener('cartUpdated', function(event) {
@@ -1713,6 +1617,37 @@
             } else {
               console.log('購物車管理器不可用');
             }
+          },
+          
+          // 測試所有區域的SVG載入
+          testAllAreas: async function() {
+            const areas = ['courtyard', 'corridor', 'front-balcony', 'back-balcony', 'glass-wall', 'pillar'];
+            console.log('開始測試所有區域的SVG載入...');
+            
+            for (const areaId of areas) {
+              console.log(`測試區域: ${areaId}`);
+              const oldArea = currentSelectedArea;
+              try {
+                // 模擬選擇區域
+                selectAreaCard(areaId);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 等待載入
+                
+                const mapContainer = document.getElementById('map-container');
+                const svg = mapContainer.querySelector('svg');
+                const clickableCells = mapContainer.querySelectorAll('.grid-cell, .clickable-area');
+                
+                console.log(`區域 ${areaId}: SVG載入${svg ? '成功' : '失敗'}, 找到 ${clickableCells.length} 個可點擊格子`);
+                
+                if (clickableCells.length > 0) {
+                  console.log(`區域 ${areaId} 格子ID列表:`, Array.from(clickableCells).map(cell => cell.id).filter(id => id));
+                }
+              } catch (error) {
+                console.error(`區域 ${areaId} 測試失敗:`, error);
+              }
+            }
+            
+            console.log('所有區域測試完成');
+            showNotification('所有區域測試完成，請查看控制台詳細結果');
           }
         };
         
@@ -1723,6 +1658,8 @@
           console.log('- testFunctions.submitOrder() // 模擬提交訂單');
           console.log('- testFunctions.resetAll() // 重置所有狀態');
           console.log('- testFunctions.showStatus() // 查看當前狀態');
+          console.log('- 點擊左側區域卡片來選擇區域（一次只能選擇一個）');
+          console.log('- 再次點擊已選擇的區域可以取消選擇');
         }, 1000);
       });
 

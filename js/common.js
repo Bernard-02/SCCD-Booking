@@ -320,38 +320,13 @@ class BookmarkUIManager {
     this.showBookmarkNotification(message);
   }
 
-  // 顯示收藏通知（多種降級選項）
+  // 顯示收藏通知
   showBookmarkNotification(message) {
-    console.log('準備顯示收藏通知:', message);
-    
-    // 嘗試多種通知方式
-    let notificationShown = false;
-    
-    // 方法1：使用我們的 showBookmarkToast
+    // 使用統一的 showBookmarkToast
     if (window.showBookmarkToast) {
-      try {
-        window.showBookmarkToast(message);
-        notificationShown = true;
-        console.log('使用 showBookmarkToast 顯示通知');
-      } catch (error) {
-        console.warn('showBookmarkToast 執行失敗:', error);
-      }
-    }
-    
-    // 方法2：使用 ToastManager（來自 ui-animations.js）
-    if (!notificationShown && window.ToastManager) {
-      try {
-        window.ToastManager.show(message);
-        notificationShown = true;
-        console.log('使用 ToastManager 顯示通知');
-      } catch (error) {
-        console.warn('ToastManager 執行失敗:', error);
-      }
-    }
-    
-    // 方法3：降級到 alert
-    if (!notificationShown) {
-      console.log('使用 alert 作為降級處理');
+      window.showBookmarkToast(message);
+    } else {
+      // 降級到 alert
       alert(message);
     }
   }
@@ -359,7 +334,6 @@ class BookmarkUIManager {
 
 // ===== 統一的Toast通知系統 =====
 function showBookmarkToast(message, type = 'success') {
-  console.log('showBookmarkToast 被調用:', message);
   
   // 檢查是否已有toast，如果有則移除
   const existingToast = document.querySelector('.toast');
@@ -370,9 +344,6 @@ function showBookmarkToast(message, type = 'success') {
   // 創建新的toast
   const toast = document.createElement('div');
   toast.className = 'toast';
-  if (type === 'error') {
-    toast.classList.add('error');
-  }
   
   // 創建內部的p元素
   const p = document.createElement('p');
@@ -381,55 +352,39 @@ function showBookmarkToast(message, type = 'success') {
   
   document.body.appendChild(toast);
   
-  // 檢查是否為手機版
-  const isMobile = window.innerWidth <= 767;
-  
-  if (isMobile) {
-    // 手機版動畫
-    toast.style.position = 'fixed';
-    toast.style.bottom = '2rem';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%) translateY(50px)';
-    toast.style.opacity = '0';
-    toast.style.pointerEvents = 'none';
-    toast.style.zIndex = '9999';
-    
-    setTimeout(() => {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateX(-50%) translateY(0px)';
-    }, 50);
-    
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(-10px)';
-    }, 2000);
+  // 設定顏色樣式
+  if (type === 'error') {
+    toast.classList.add('error');
+    // 錯誤樣式：粉色背景，紅色文字
+    toast.style.backgroundColor = 'var(--color-bg-toast-error)';
+    toast.style.color = 'var(--color-error)';
   } else {
-    // 桌面版動畫
-    toast.style.position = 'fixed';
-    toast.style.bottom = '7.5rem';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%) translateY(50px)';
-    toast.style.opacity = '0';
-    toast.style.pointerEvents = 'none';
-    toast.style.zIndex = '9999';
-    
-    setTimeout(() => {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateX(-50%) translateY(0px)';
-    }, 50);
-    
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(-10px)';
-    }, 2000);
+    // 成功樣式：白色背景，黑色文字
+    toast.style.backgroundColor = 'var(--color-bg-toast)';
+    toast.style.color = 'var(--color-primary)';
   }
   
-  // 移除toast
+  // 使用新的 toast 樣式（右上角滑入）
+  // 清除之前的動畫類別
+  toast.classList.remove('show', 'fade-out');
+  
+  // 短暫延遲後顯示（確保 CSS 過渡效果正常）
   setTimeout(() => {
-    if (toast.parentNode) {
-      toast.parentNode.removeChild(toast);
-    }
-  }, 2500);
+    toast.classList.add('show');
+  }, 10);
+  
+  // 3秒後開始 fade out 動畫
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.classList.add('fade-out');
+    
+    // fade out 動畫完成後移除元素
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
 }
 
 // ===== 初始化和全域變數 =====
@@ -438,29 +393,25 @@ function showBookmarkToast(message, type = 'success') {
 const bookmarkManager = new BookmarkManager();
 let bookmarkUIManager = null; // UI管理器延遲創建
 
-// 設置全域變數 - 使用不會衝突的名稱
+// 設置全域變數
 window.sccdBookmarkManager = bookmarkManager;
 window.showBookmarkToast = showBookmarkToast;
 
-// 也設置原本的名稱作為備份（可能被覆蓋）
+// 向後兼容
 window.bookmarkManager = bookmarkManager;
 window.showToast = showBookmarkToast;
 
 // 通用頁面初始化
 function initCommonFeatures() {
-  console.log('通用功能初始化開始');
-  
   // 創建UI管理器（此時DOM應該已經準備好）
   if (!bookmarkUIManager) {
     bookmarkUIManager = new BookmarkUIManager(bookmarkManager);
     window.sccdBookmarkUIManager = bookmarkUIManager;
     window.bookmarkUIManager = bookmarkUIManager;
   }
-  
-  console.log('通用功能初始化完成');
 }
 
-// 提供向後兼容的API
+// 向後兼容的API
 window.refreshBookmarkStates = function() {
   if (window.sccdBookmarkUIManager) {
     window.sccdBookmarkUIManager.updateAllButtons();
@@ -470,14 +421,77 @@ window.refreshBookmarkStates = function() {
 // 全域函數
 window.initCommonFeatures = initCommonFeatures;
 
-// 強制保護我們的函數不被覆蓋
-function protectFunctions() {
-  window.sccdBookmarkManager = bookmarkManager;
-  if (bookmarkUIManager) {
-    window.sccdBookmarkUIManager = bookmarkUIManager;
+// ===== Header Menu 滾動效果管理器 =====
+class HeaderMenuScrollManager {
+  constructor() {
+    this.lastScrollTop = 0;
+    this.menu = null;
+    this.isInitialized = false;
+    this.init();
   }
-  window.showBookmarkToast = showBookmarkToast;
+
+  init() {
+    // 確保不重複初始化
+    if (this.isInitialized) {
+      return;
+    }
+
+    // 檢查DOM是否已準備就緒
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        this.setup();
+      });
+    } else {
+      this.setup();
+    }
+  }
+
+  setup() {
+    // 尋找 header menu 元素
+    this.menu = document.querySelector('.header-menu');
+    
+    if (!this.menu) {
+      console.log('Header menu 元素未找到，跳過滾動效果初始化');
+      return;
+    }
+
+    // 設置滾動監聽器
+    window.addEventListener('scroll', () => {
+      this.handleScroll();
+    });
+
+    this.isInitialized = true;
+    console.log('Header menu 滾動效果已初始化');
+  }
+
+  handleScroll() {
+    if (!this.menu) return;
+
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    if (scrollTop > this.lastScrollTop) {
+      // 向下滾動 - fade out
+      this.menu.classList.add('fade-out');
+    } else {
+      // 向上滾動 - fade in
+      this.menu.classList.remove('fade-out');
+    }
+    
+    this.lastScrollTop = scrollTop;
+  }
+
+  // 手動重置滾動位置
+  reset() {
+    this.lastScrollTop = 0;
+    if (this.menu) {
+      this.menu.classList.remove('fade-out');
+    }
+  }
 }
+
+// 創建全域實例
+const headerMenuScrollManager = new HeaderMenuScrollManager();
+window.sccdHeaderMenuScrollManager = headerMenuScrollManager;
 
 // 自動初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -486,8 +500,5 @@ document.addEventListener('DOMContentLoaded', function() {
   // 確保DOM完全載入後再初始化
   setTimeout(() => {
     initCommonFeatures();
-    protectFunctions();
-    console.log('全域收藏夾管理系統初始化完成');
-    console.log('可用函數：window.sccdBookmarkManager, window.showBookmarkToast');
   }, 100);
 }); 

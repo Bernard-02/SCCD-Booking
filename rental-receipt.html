@@ -14,9 +14,9 @@
     />
     <!-- 外部 CSS 檔案 -->
     <link rel="stylesheet" href="css/common.css" />
-    <link rel="stylesheet" href="css/arrows.css" />
-    <link rel="stylesheet" href="css/copyright.css" />
+
     <link rel="stylesheet" href="css/mobile-menu.css" />
+    <link rel="stylesheet" href="css/typography.css" />
     <link rel="stylesheet" href="css/rental-receipt.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
@@ -25,539 +25,335 @@
     <!-- 外部 JavaScript 檔案 -->
     <script src="js/mobile-menu.js"></script>
     <script src="js/copyright-easter-egg.js"></script>
-    <script src="js/button-animations.js"></script>
+
     <script src="js/cart-sync.js"></script>
     <script src="js/rental-receipt.js"></script>
   </head>
 
-  <body class="bg-black text-white flex flex-col min-h-screen">
-    <header class="py-6">
-      <div
-        class="container mx-auto flex justify-between items-center px-6 md:px-4"
-      >
-        <div class="flex items-center">
-          <a href="index.html" class="logo-link mr-10">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
-              SCCD
-            </div>
+  <body class="bg-black text-white min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
+      <div class="container">
+        <div class="flex justify-between items-center">
+          <a
+            href="index.html"
+            class="font-['Inter',_sans-serif] font-medium text-white text-header"
+          >
+            SCCD
           </a>
 
           <!-- 桌面版導航 -->
-          <nav class="desktop-nav">
-            <ul class="flex space-x-10">
-              <li>
-                <a
-                  href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >BOOKING</a
-                >
-              </li>
-              <li>
-                <a
-                  href="resources.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >RESOURCES</a
-                >
-              </li>
-            </ul>
-          </nav>
-        </div>
-        <div class="flex items-center space-x-5">
-          <a
-            href="rental-list.html"
-            id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
-            >(<span id="cart-count">0</span>) CART</a
-          >
-          <a
-            href="login.html"
-            id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden"
-          >
-            <div
-              class="button-bg-fill"
-              style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 0;
-                background-color: white;
-                z-index: 1;
-                border-radius: 30px;
-              "
-            ></div>
-            <span style="position: relative; z-index: 2">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+          <nav class="flex items-center header-menu desktop-nav nav-gap">
+            <a
+              href="booking.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(BOOKING)</span>
+                <span class="menu-text-hidden">(BOOKING)</span>
               </div>
-            </div>
-          </a>
+            </a>
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="cart-count-mirror">0</span>) CART)</span
+                >
+              </div>
+            </a>
+            <a
+              href="login.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(LOGIN)</span>
+                <span class="menu-text-hidden">(LOGIN)</span>
+              </div>
+            </a>
+          </nav>
 
-          <!-- 手機版 CART 按鈕 -->
-          <a
-            href="rental-list.html"
-            id="mobile-cart-link"
-            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
-            >(<span id="mobile-cart-count">0</span>) CART</a
-          >
-
-          <!-- 手機版選單按鈕 -->
-          <button
-            class="md:hidden font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-btn"
-          >
-            <span class="text-white" id="menu-btn-text">MENU</span>
-          </button>
+          <!-- 手機版導航 -->
+          <nav class="flex items-center mobile-nav mobile-nav-gap">
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="mobile-cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="mobile-cart-count-mirror">0</span>)
+                  CART)</span
+                >
+              </div>
+            </a>
+            <button
+              id="mobile-menu-btn"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(MENU)</span>
+                <span class="menu-text-hidden">(MENU)</span>
+              </div>
+            </button>
+          </nav>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex flex-col py-4 md:h-full">
-      <div
-        class="w-full px-6 md:px-[6%] flex-grow flex flex-col md:flex-row main-container"
-      >
-        <!-- 桌面版佈局 -->
-        <div class="hidden md:flex w-full">
-          <!-- 左邊：租借資訊 -->
-          <div class="w-2/5 pr-12 flex flex-col">
-            <!-- 頁面標題和描述 -->
-            <div class="mb-16">
-              <h1
-                class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
-              >
-                租借收據
-              </h1>
-              <p class="text-base font-['Noto_Sans_TC',_sans-serif] text-white">
-                你已成功租借！請至系學會繳交押金完成租借手續
-              </p>
-            </div>
+    <!-- 主要內容區塊 -->
+    <main class="flex-1 pt-20">
+      <!-- 主要內容容器，遵循左右 padding -->
+      <div class="container">
+        <!-- 左右分欄佈局 -->
+        <div class="flex gap-16">
+          <!-- 左邊：租借收據 (40%) -->
+          <div class="w-2/5 pr-4">
+            <div class="sticky top-20 flex flex-col">
+              <!-- 頁面標題 -->
+              <div class="mb-8">
+                <h1
+                  class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4"
+                >
+                  租借收據
+                </h1>
+                <p
+                  class="text-content font-['Noto_Sans_TC',_sans-serif] text-white"
+                >
+                  這是你的租借收據，請至系學會繳交押金完成租借手續
+                </p>
+              </div>
 
-            <!-- 租借詳細資訊 -->
-            <div class="space-y-8 flex-grow mt-4">
-              <!-- 租借人 -->
-              <div>
+              <!-- 押金總額 -->
+              <div class="mb-8">
                 <div
-                  class="text-base font-['Inter',_sans-serif] mb-2"
+                  class="text-small-title font-['Inter',_sans-serif]"
                   style="color: #cccccc"
-                >
-                  租借人
-                </div>
-                <div
-                  id="borrower-name-desktop"
-                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white"
-                >
-                  阿志
-                </div>
-              </div>
-
-              <!-- 租借日期 -->
-              <div>
-                <div
-                  class="text-base font-['Inter',_sans-serif] mb-2"
-                  style="color: #cccccc"
-                >
-                  租借日期
-                </div>
-                <div
-                  id="rental-dates-desktop"
-                  class="text-2xl font-['Inter',_sans-serif] text-white tracking-normal uppercase"
-                ></div>
-              </div>
-
-              <!-- 租借號 -->
-              <div>
-                <div
-                  class="text-base font-['Inter',_sans-serif] mb-2"
-                  style="color: #cccccc"
-                >
-                  租借號
-                </div>
-                <div
-                  id="rental-number-desktop"
-                  class="text-2xl font-['Inter',_sans-serif] text-white tracking-normal uppercase"
-                ></div>
-              </div>
-
-              <!-- 租借條碼 -->
-              <div>
-                <div
-                  class="text-base font-['Inter',_sans-serif] mb-4"
-                  style="color: #cccccc"
-                >
-                  租借條碼
-                </div>
-                <div class="max-w-md">
-                  <svg id="barcode-desktop" class="w-full h-auto"></svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- 下載按鈕 -->
-            <div class="mt-auto">
-              <button
-                id="download-btn"
-                class="text-white hover:text-zinc-300 transition-colors cursor-pointer download-btn"
-              >
-                <div class="download-container">
-                  <div class="download-icons-wrapper">
-                    <img
-                      src="Icons/Download White.svg"
-                      alt="Download"
-                      class="download-icon"
-                    />
-                    <img
-                      src="Icons/Download White.svg"
-                      alt="Download"
-                      class="download-icon"
-                    />
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- 右邊：租借摘要 -->
-          <div class="w-3/5 pl-12 flex flex-col rental-summary-section">
-            <!-- 標題 -->
-            <div class="mb-6 flex-shrink-0">
-              <h2
-                class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium text-white"
-              >
-                租借摘要
-              </h2>
-            </div>
-
-            <!-- 可滾動的設備列表 -->
-            <div class="equipment-scroll-area">
-              <div id="equipment-summary-list">
-                <!-- 設備項目將動態載入 -->
-              </div>
-            </div>
-
-            <!-- 押金總額 -->
-            <div class="flex-shrink-0">
-              <div class="pt-2 text-right">
-                <div
-                  class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white mb-4"
                 >
                   押金總額
                 </div>
                 <div
                   id="total-deposit-amount"
-                  class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
+                  class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide"
                 >
-                  NT5,000
+                  NT 5,000
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- 手機版佈局 -->
-        <div class="flex md:hidden flex-col w-full">
-          <!-- 區塊1：標題 -->
-          <div
-            class="mobile-section flex flex-col items-center justify-center text-center"
-          >
-            <h1
-              class="text-2xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-3"
-            >
-              租借收據
-            </h1>
-            <p class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white">
-              你已成功租借！請至系學會繳交押金完成租借手續
-            </p>
-          </div>
-
-          <!-- 區塊2：資訊 -->
-          <div class="mobile-section flex gap-15">
-            <!-- 左邊：資訊grid -->
-            <div
-              class="grid gap-x-6 gap-y-4 flex-1"
-              style="grid-template-columns: auto 1fr"
-            >
-              <!-- 租借人 -->
-              <div
-                class="text-sm font-['Inter',_sans-serif]"
-                style="color: #cccccc"
-              >
-                租借人
-              </div>
-              <div
-                id="borrower-name"
-                class="text-sm font-['Noto_Sans_TC',_sans-serif] text-white text-left"
-              >
-                阿志
-              </div>
-
-              <!-- 租借日期 -->
-              <div
-                class="text-sm font-['Inter',_sans-serif]"
-                style="color: #cccccc"
-              >
-                租借日期
-              </div>
-              <div
-                id="rental-dates"
-                class="text-sm font-['Inter',_sans-serif] text-white tracking-normal uppercase text-left"
-              ></div>
-
-              <!-- 租借號 -->
-              <div
-                class="text-sm font-['Inter',_sans-serif]"
-                style="color: #cccccc"
-              >
-                租借號
-              </div>
-              <div
-                id="rental-number"
-                class="text-sm font-['Inter',_sans-serif] text-white tracking-normal uppercase text-left"
-              ></div>
-
-              <!-- 押金總額 -->
-              <div
-                class="text-sm font-['Inter',_sans-serif]"
-                style="color: #cccccc"
-              >
-                押金總額
-              </div>
-              <div
-                id="total-deposit-amount-mobile"
-                class="text-sm font-['Inter',_sans-serif] text-white text-left"
-              >
-                NT5,000
-              </div>
-            </div>
-
-            <!-- 右邊：下載按鈕 -->
-            <div class="flex items-center">
-              <button
-                id="download-btn-mobile"
-                class="text-white transition-colors cursor-pointer"
-              >
-                <div class="w-10 h-10">
-                  <img
-                    src="Icons/Download White.svg"
-                    alt="Download"
-                    class="w-full h-full"
-                  />
+              <!-- 租借詳細資訊 -->
+              <div class="space-y-4 flex-grow">
+                <!-- 租借人 -->
+                <div>
+                  <div
+                    class="text-small-title font-['Inter',_sans-serif]"
+                    style="color: #cccccc"
+                  >
+                    租借人
+                  </div>
+                  <div
+                    id="borrower-name-desktop"
+                    class="text-content font-['Noto_Sans_TC',_sans-serif] text-white"
+                  >
+                    阿志
+                  </div>
                 </div>
-              </button>
+
+                <!-- 租借日期 -->
+                <div>
+                  <div
+                    class="text-small-title font-['Inter',_sans-serif]"
+                    style="color: #cccccc"
+                  >
+                    租借日期
+                  </div>
+                  <div
+                    id="rental-dates-desktop"
+                    class="text-content font-['Inter',_sans-serif] text-white tracking-normal uppercase"
+                  ></div>
+                </div>
+
+                <!-- 租借號 -->
+                <div>
+                  <div
+                    class="text-small-title font-['Inter',_sans-serif]"
+                    style="color: #cccccc"
+                  >
+                    租借號
+                  </div>
+                  <div
+                    id="rental-number-desktop"
+                    class="text-content font-['Inter',_sans-serif] text-white tracking-normal uppercase"
+                  ></div>
+                </div>
+
+                <!-- 租借條碼 -->
+                <div>
+                  <div
+                    class="text-small-title font-['Inter',_sans-serif] mb-4"
+                    style="color: #cccccc"
+                  >
+                    租借條碼
+                  </div>
+                  <div class="max-w-md">
+                    <svg id="barcode-desktop" class="w-full h-auto"></svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 下載按鈕 -->
+              <div class="mt-auto">
+                <button
+                  id="download-receipt-btn"
+                  class="text-button font-['Inter',_sans-serif] uppercase text-white mt-16 rental-book-btn cursor-pointer"
+                >
+                  <div class="hero-cta-wrapper">
+                    <span class="hero-cta-text">(DOWNLOAD)</span>
+                    <span class="hero-cta-hidden">(DOWNLOAD)</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- 區塊3：設備 -->
-          <div class="mobile-section">
-            <div
-              class="text-sm font-['Inter',_sans-serif] mb-4"
-              style="color: #cccccc"
-            >
-              租借摘要
+          <!-- 右邊：租借摘要 (60%) -->
+          <div class="w-3/5">
+            <!-- 租借摘要標題 -->
+            <div class="mb-6">
+              <h2
+                class="text-medium-title font-['Noto_Sans_TC',_sans-serif] font-medium text-white"
+              >
+                租借摘要
+              </h2>
             </div>
-            <ul
-              id="equipment-summary-list-mobile"
-              class="grid grid-cols-1 gap-4"
-            >
+
+            <!-- 設備列表 -->
+            <div id="equipment-summary-list" class="space-y-0">
               <!-- 設備項目將動態載入 -->
-            </ul>
-          </div>
-
-          <!-- 區塊4：條碼 -->
-          <div
-            class="mobile-section flex flex-col items-center justify-center text-center"
-          >
-            <div
-              class="text-sm font-['Inter',_sans-serif] mb-4"
-              style="color: #cccccc"
-            >
-              租借條碼
-            </div>
-            <div class="px-8 max-w-xs">
-              <svg id="barcode" class="w-full h-auto"></svg>
             </div>
           </div>
         </div>
       </div>
     </main>
 
-    <footer class="pt-4 pb-8">
-      <div
-        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 mb-4 md:mb-0 hidden md:flex">
-          <a
-            href="https://sccd.usc.edu.tw/"
-            target="_blank"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >TO SCCD
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+    <!-- Footer -->
+    <footer class="footer-main">
+      <div class="container">
+        <!-- 桌面版 Footer -->
+        <div class="hidden md:flex justify-between items-center">
+          <div class="flex items-center footer-gap">
+            <a
+              href="https://sccd.usc.edu.tw/"
+              target="_blank"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(TO SCCD)</span>
+                <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
-            </div>
-          </a>
-          <a
-            href="about.html"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >ABOUT
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+            </a>
+            <a
+              href="about.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(ABOUT)</span>
+                <span class="menu-text-hidden">(ABOUT)</span>
               </div>
-            </div>
-          </a>
-        </div>
-        <div class="copyright text-xs md:text-right">
-          <p>
-            <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >Copyright © 2025 111</span
-              >屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >All rights reserved.</span
-              >
-            </span>
-            <span class="copyright-easter-egg" id="easter-egg-text">
-              <!-- 彩蛋文字將由JavaScript生成 -->
-            </span>
-          </p>
+            </a>
+          </div>
+          <div
+            class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header"
+          >
+            <p>
+              <span class="copyright-original">
+                <span class="font-['Inter',_sans-serif] uppercase"
+                  >Copyright © 2025 111</span
+                >屆系學會
+                <span class="font-['Inter',_sans-serif]"
+                  >All rights reserved.</span
+                >
+              </span>
+              <span class="copyright-easter-egg" id="easter-egg-text">
+                <!-- 彩蛋文字將由JavaScript生成 -->
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
 
-
-
     <!-- 手機版選單 -->
     <div class="mobile-menu md:hidden" id="mobile-menu">
-      <!-- Header區域 -->
-      <div class="py-6 px-6">
-        <div class="flex justify-between items-center">
-          <a href="index.html" class="logo-link">
-            <div
-              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
-            >
-              SCCD
-            </div>
-          </a>
-          <button
-            class="font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-close"
-          >
-            <span class="text-white">CLOSE</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 選單項目 -->
-      <div class="flex-grow px-6">
-        <nav>
-          <ul class="flex flex-col space-y-4">
-            <li class="menu-animate-enter">
+      <!-- 選單內容區域 -->
+      <div class="mobile-menu-content">
+        <!-- 導航項目 -->
+        <div class="flex flex-col items-start menu-gap flex-grow">
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-1">
               <a
                 href="booking.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
-                >BOOKING</a
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
               >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="resources.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
-                >RESOURCES</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="login.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
-                >LOG IN</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      <!-- Footer區域 -->
-      <div class="pt-4 pb-8 px-6">
-        <div class="flex flex-col text-sm">
-          <div class="flex flex-col space-y-2 mb-2 items-start">
-            <div class="menu-animate-enter">
-              <a
-                href="https://sccd.usc.edu.tw/"
-                target="_blank"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
-                >TO SCCD
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="menu-animate-enter">
-              <a
-                href="about.html"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
-                >ABOUT
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(BOOKING)</span>
+                  <span class="menu-text-hidden">(BOOKING)</span>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-2">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(LOGIN)</span>
+                  <span class="menu-text-hidden">(LOGIN)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-3">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-4">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copyright 在底部 -->
+        <div class="menu-animate-enter mobile-menu-content-bottom">
+          <div class="menu-animate-enter-content menu-delay-5">
             <div
-              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+              class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header"
             >
               <p>
                 <span class="copyright-original">
@@ -568,8 +364,12 @@
                     >All rights reserved.</span
                   >
                 </span>
-                <!-- 彩蛋文字將由JavaScript生成 -->
-                <span id="easter-egg-text" class="copyright-easter-egg"></span>
+                <span
+                  class="copyright-easter-egg"
+                  id="mobile-menu-easter-egg-text"
+                >
+                  <!-- 彩蛋文字將由JavaScript生成 -->
+                </span>
               </p>
             </div>
           </div>

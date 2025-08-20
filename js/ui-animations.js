@@ -138,9 +138,9 @@ class ToastManager {
 
 // 進場動畫通用函數 - 修復版本，不干擾CSS動畫
 function initPageAnimations() {
-  // 對於index頁面，動畫由CSS控制，JavaScript不需要干預
+  // 對於首頁，動畫由CSS控制，JavaScript不需要干預
   if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-    return; // index頁面的動畫完全由CSS處理
+    return; // 首頁的動畫完全由CSS處理
   }
   
   // 對於其他頁面，初始化各種動畫元素

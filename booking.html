@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SCCD 媒傳系平台</title>
+    <title>租借預約 - SCCD Booking</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,514 +12,536 @@
       href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Sans+TC:wght@100..900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/datepicker.css" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-    <script src="cart-manager.js"></script>
 
-    <!-- 引入模組化 JavaScript 文件 -->
-    <script src="js/common.js" defer></script>
-    <script src="js/mobile-menu.js" defer></script>
-    <script src="js/copyright-easter-egg.js" defer></script>
-    <script src="js/button-animations.js" defer></script>
-    <script src="js/cart-sync.js" defer></script>
-    <script src="js/date-picker.js" defer></script>
-    <script src="js/ui-animations.js" defer></script>
-    <script src="js/booking.js" defer></script>
+    <!-- 引入 copyright 相關文件 -->
+    <script src="js/copyright-easter-egg.js"></script>
 
-    <!-- 引入外部CSS文件 -->
+    <!-- 引入通用樣式 -->
     <link rel="stylesheet" href="css/common.css" />
-    <link rel="stylesheet" href="css/arrows.css" />
-    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/mobile-menu.css" />
+    <link rel="stylesheet" href="css/typography.css" />
+
+    <!-- 引入頁面特定樣式 -->
+    <link rel="stylesheet" href="css/booking.css" />
     <link rel="stylesheet" href="css/breadcrumb.css" />
     <link rel="stylesheet" href="css/animations.css" />
-    <link rel="stylesheet" href="css/booking.css" />
+
+    <!-- 引入通用 JS -->
+    <script src="cart-manager.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/cart-sync.js"></script>
+
+    <!-- 引入手機版選單 JS -->
+    <script src="js/mobile-menu.js"></script>
+
+    <!-- 引入日曆生成器 JS -->
+    <script src="js/calendar-generator.js"></script>
   </head>
 
-  <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
-    <header class="py-6">
-      <div
-        class="container mx-auto flex justify-between items-center px-6 md:px-4"
-      >
-        <div class="flex items-center">
-          <a href="index.html" class="logo-link mr-10">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
-              SCCD
-            </div>
+  <body class="bg-black text-white h-screen overflow-hidden flex flex-col">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
+      <div class="container">
+        <div class="flex justify-between items-center">
+          <a
+            href="index.html"
+            class="font-['Inter',_sans-serif] font-medium text-white text-header"
+          >
+            SCCD
           </a>
 
           <!-- 桌面版導航 -->
-          <nav class="desktop-nav">
-            <ul class="flex space-x-10">
-              <li>
-                <a
-                  href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >BOOKING</a
-                >
-              </li>
-              <li>
-                <a
-                  href="resources.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >RESOURCES</a
-                >
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        <div class="flex items-center space-x-5">
-          <a
-            href="rental-list.html"
-            id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
-            >(<span id="cart-count">0</span>) CART</a
-          >
-          <a
-            href="login.html"
-            id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden"
-          >
-            <div
-              class="button-bg-fill"
-              style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 0;
-                background-color: white;
-                z-index: 1;
-                border-radius: 30px;
-              "
-            ></div>
-            <span style="position: relative; z-index: 2">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+          <nav class="flex items-center header-menu desktop-nav nav-gap">
+            <a
+              href="booking.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper active">
+                <span class="menu-text">(BOOKING)</span>
+                <span class="menu-text-hidden">(BOOKING)</span>
               </div>
-            </div>
-          </a>
+            </a>
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="cart-count-mirror">0</span>) CART)</span
+                >
+              </div>
+            </a>
+            <a
+              href="login.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(LOGIN)</span>
+                <span class="menu-text-hidden">(LOGIN)</span>
+              </div>
+            </a>
+          </nav>
 
-          <!-- 手機版 CART 按鈕 -->
-          <a
-            href="rental-list.html"
-            id="mobile-cart-link"
-            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
-            >(<span id="mobile-cart-count">0</span>) CART</a
-          >
-
-          <!-- 手機版選單按鈕 -->
-          <button
-            class="md:hidden font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-btn"
-          >
-            <span class="text-white" id="menu-btn-text">MENU</span>
-          </button>
+          <!-- 手機版導航 -->
+          <nav class="flex items-center mobile-nav mobile-nav-gap">
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="mobile-cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="mobile-cart-count-mirror">0</span>)
+                  CART)</span
+                >
+              </div>
+            </a>
+            <button
+              id="mobile-menu-btn"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(MENU)</span>
+                <span class="menu-text-hidden">(MENU)</span>
+              </div>
+            </button>
+          </nav>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex pt-[3vh] pb-[1vh] md:pb-[3vh]">
-      <!-- Breadcrumb -->
-      <nav class="breadcrumb">
-        <a href="index.html" class="breadcrumb-item">首頁</a>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-item">租借日期</span>
-      </nav>
+    <!-- 主要內容區塊 -->
+    <main class="flex-1 pt-20">
+      <!-- 大容器包含左右 padding -->
+      <div class="container h-full">
+        <!-- 桌面版佈局：左右分割 -->
+        <div class="hidden md:flex h-full">
+          <!-- 左側：文字資訊區塊 -->
+          <div class="flex-shrink-0 w-[25%] flex flex-col">
+            <!-- 標題和描述 -->
+            <div>
+              <!-- Breadcrumb -->
+              <div class="float-up-container">
+                <div class="text-left float-up float-up-delay-1" style="padding-bottom: 1.08rem">
+                  <nav class="breadcrumb-inline">
+                    <a href="index.html" class="breadcrumb-item text-breadcrumb"
+                      >首頁</a
+                    >
+                    <span class="breadcrumb-separator text-breadcrumb">/</span>
+                    <span class="breadcrumb-item text-breadcrumb">租借日期</span>
+                  </nav>
+                </div>
+              </div>
 
-      <!-- 桌面版佈局 -->
-      <div class="w-full px-[6%] flex-grow hidden md:flex">
-        <div
-          class="md:w-1/3 lg:w-1/4 flex flex-col text-left justify-between md:mr-8"
-        >
-          <div>
-            <h1
-              class="desktop-title text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2"
-            >
-              租借日期
-            </h1>
-            <p class="text-base font-['Inter',_sans-serif] text-white mb-12">
-              選擇你想租借的日期
-            </p>
+              <div class="float-up-container">
+                <h1
+                  class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-6 float-up float-up-delay-2"
+                >
+                  租借日期
+                </h1>
+              </div>
+              
+              <div class="float-up-container">
+                <p
+                  class="font-['Inter',_sans-serif] text-white text-content float-up float-up-delay-4"
+                >
+                  選擇你想租借的日期
+                </p>
+              </div>
+            </div>
+
+            <!-- 日期顯示和按鈕 -->
+            <div class="mt-auto">
+              <div class="float-up-container">
+                <div class="mb-8 float-up float-up-delay-5">
+                  <h2
+                    class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title"
+                  >
+                    起租日
+                  </h2>
+                  <p
+                    id="display-start-date"
+                    class="font-['Inter',_sans-serif] text-white text-[2.5rem] tracking-tight"
+                  >
+                    ----/--/--
+                  </p>
+                </div>
+              </div>
+
+              <div class="float-up-container">
+                <div class="mb-8 float-up float-up-delay-6">
+                  <h2
+                    class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title"
+                  >
+                    歸還日
+                  </h2>
+                  <p
+                    id="display-end-date"
+                    class="font-['Inter',_sans-serif] text-white text-[2.5rem] tracking-tight"
+                  >
+                    ----/--/--
+                  </p>
+                </div>
+              </div>
+
+              <div class="float-up-container">
+                <div class="flex flex-col items-start float-up float-up-delay-7">
+                  <a
+                    href="#"
+                    id="reset-date-button"
+                    class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block"
+                  >
+                    <div class="hero-cta-wrapper">
+                      <span class="hero-cta-text">(RESET)</span>
+                      <span class="hero-cta-hidden">(RESET)</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#"
+                    id="confirm-date-button"
+                    class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block"
+                  >
+                    <div class="hero-cta-wrapper">
+                      <span class="hero-cta-text">(OKAY)</span>
+                      <span class="hero-cta-hidden">(OKAY)</span>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <div class="mb-8">
-              <h2
-                class="text-base font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2"
-              >
-                起租日
-              </h2>
-              <p
-                id="display-start-date"
-                class="text-4xl font-['Inter',_sans-serif] text-white tracking-wide"
-              >
-                ---- / -- / --
-              </p>
-            </div>
-
-            <div class="mb-8">
-              <h2
-                class="text-base font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2"
-              >
-                歸還日
-              </h2>
-              <p
-                id="display-end-date"
-                class="text-4xl font-['Inter',_sans-serif] text-white tracking-wide"
-              >
-                ---- / -- / --
-              </p>
-            </div>
-
-            <button
-              id="reset-date-button"
-              type="button"
-              class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-not-allowed button-animated mb-4"
-              style="width: 200px; position: relative; overflow: hidden"
-              disabled
+          <!-- 右側：日曆區塊 -->
+          <div class="flex-1 min-w-0 flex items-end">
+            <div
+              id="date-picker-container"
+              class="w-full overflow-hidden mt-[3rem] calendar-fade-in"
             >
+              <!-- 雙月份日曆結構 -->
+              <div class="w-full">
+                <!-- 左右兩個區塊，間距 3rem（gap-12） -->
+                <div class="flex gap-12">
+                  <!-- 左側月份 -->
+                  <div class="flex-1 min-w-0 flex flex-col">
+                    <!-- 上面：月份標題 -->
+                    <div class="flex justify-between items-center pb-8">
+                      <div class="flex items-center gap-4">
+                        <button
+                          class="nav-arrow prev text-white text-[2rem] select-none"
+                        >
+                          &lt;
+                        </button>
+                        <button
+                          class="nav-arrow next text-white text-[2rem] select-none"
+                        >
+                          &gt;
+                        </button>
+                      </div>
+                      <div
+                        class="text-white text-[2rem] font-normal font-['Inter',_sans-serif] pr-6"
+                      >
+                        <!-- 月份標題將由JavaScript生成 -->
+                      </div>
+                    </div>
+
+                    <!-- 下面：日期格子 -->
+                    <div class="grid grid-cols-7 grid-rows-6 w-full">
+                      <!-- 日期將由JavaScript動態生成 -->
+                    </div>
+                  </div>
+
+                  <!-- 右側月份 -->
+                  <div class="flex-1 min-w-0 flex flex-col">
+                    <!-- 上面：月份標題 -->
+                    <div class="flex justify-between items-center pb-8">
+                      <div></div>
+                      <div
+                        class="text-white text-[2rem] font-normal font-['Inter',_sans-serif] pr-6"
+                      >
+                        <!-- 月份標題將由JavaScript生成 -->
+                      </div>
+                    </div>
+
+                    <!-- 下面：日期格子 -->
+                    <div class="grid grid-cols-7 grid-rows-6 w-full">
+                      <!-- 日期將由JavaScript動態生成 -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手機版佈局 -->
+        <div class="md:hidden h-full flex flex-col">
+          <!-- 第一部分：標題和敘述文字 - 固定 -->
+          <div class="text-center flex-shrink-0 mb-6">
+            <div class="float-up-container">
+              <h1
+                class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4 float-up float-up-delay-1"
+              >
+                租借日期
+              </h1>
+            </div>
+            <div class="float-up-container">
+              <p class="font-['Inter',_sans-serif] text-white text-content float-up float-up-delay-3">
+                選擇你想租借的日期
+              </p>
+            </div>
+          </div>
+
+          <!-- 第二部分：日期顯示和星期標題 - 固定 -->
+          <div class="flex-shrink-0 mb-6">
+            <!-- 日期顯示 - 分成2列 -->
+            <div class="float-up-container">
+              <div class="grid grid-cols-2 gap-4 mb-6 float-up float-up-delay-4">
+                <div class="text-left">
+                  <h2
+                    class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title"
+                  >
+                    起租日
+                  </h2>
+                  <p
+                    id="mobile-display-start-date"
+                    class="font-['Inter',_sans-serif] text-white tracking-wide text-large-title"
+                  >
+                    ---- / -- / --
+                  </p>
+                </div>
+
+                <div class="text-left">
+                  <h2
+                    class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title"
+                  >
+                    歸還日
+                  </h2>
+                  <p
+                    id="mobile-display-end-date"
+                    class="font-['Inter',_sans-serif] text-white tracking-wide text-large-title"
+                  >
+                    ---- / -- / --
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 星期標題 -->
+            <div class="float-up-container">
+              <div class="grid grid-cols-7 gap-1 float-up float-up-delay-5">
               <div
-                class="button-bg-fill"
-                style="
-                  position: absolute;
-                  bottom: 0;
-                  left: 0;
-                  width: 100%;
-                  height: 0;
-                  background-color: white;
-                  z-index: 1;
-                "
-              ></div>
-              <span style="position: relative; z-index: 2">重設日期</span>
-            </button>
-
-            <button
-              id="confirm-date-button"
-              type="button"
-              class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-8 transition-all text-lg cursor-not-allowed hover:opacity-60"
-              style="width: 200px"
-              disabled
-            >
-              確定日期
-            </button>
-          </div>
-        </div>
-
-        <div
-          id="date-picker-container"
-          class="flex items-stretch min-h-[400px]"
-        ></div>
-      </div>
-
-      <!-- 手機版佈局 -->
-      <div class="md:hidden w-full h-full flex flex-col">
-        <!-- 第一部分：標題和敘述文字 - 固定 -->
-        <div class="px-6 pb-2 text-center flex-shrink-0">
-          <h1
-            class="mobile-title text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 text-white"
-          >
-            租借日期
-          </h1>
-          <p class="text-sm font-['Inter',_sans-serif] text-white">
-            選擇你想租借的日期
-          </p>
-        </div>
-
-        <!-- 第二部分：日期顯示和星期標題 - 固定 -->
-        <div class="px-6 py-4 flex-shrink-0">
-          <!-- 日期顯示 - 分成2列 -->
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="text-left pl-4">
-              <h2
-                class="text-sm font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2"
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
               >
-                起租日
-              </h2>
-              <p
-                id="mobile-display-start-date"
-                class="text-lg font-['Inter',_sans-serif] text-white tracking-wide"
+                Mon
+              </div>
+              <div
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
               >
-                ---- / -- / --
-              </p>
-            </div>
-
-            <div class="text-left pl-4">
-              <h2
-                class="text-sm font-['Inter',_sans-serif] font-medium text-zinc-300 uppercase tracking-wider mb-2"
+                Tue
+              </div>
+              <div
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
               >
-                歸還日
-              </h2>
-              <p
-                id="mobile-display-end-date"
-                class="text-lg font-['Inter',_sans-serif] text-white tracking-wide"
+                Wed
+              </div>
+              <div
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
               >
-                ---- / -- / --
-              </p>
+                Thu
+              </div>
+              <div
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
+              >
+                Fri
+              </div>
+              <div
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
+              >
+                Sat
+              </div>
+              <div
+                class="text-center text-tiny font-['Inter',_sans-serif] text-zinc-400 py-1"
+              >
+                Sun
+              </div>
             </div>
           </div>
 
-          <!-- 星期標題 -->
-          <div class="grid grid-cols-7 gap-1">
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              日
-            </div>
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              一
-            </div>
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              二
-            </div>
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              三
-            </div>
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              四
-            </div>
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              五
-            </div>
-            <div
-              class="text-center text-xs font-['Inter',_sans-serif] text-zinc-400 py-1"
-            >
-              六
+          <!-- 第三部分：日曆 - 可滑動，填滿剩餘空間 -->
+          <div class="flex-1 min-h-0 mb-6">
+            <div class="overflow-y-auto hide-scrollbar h-full calendar-fade-in">
+              <div id="mobile-calendar-slider" class="flex flex-col gap-6">
+                <!-- 月份將由 JavaScript 動態生成 -->
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 第三部分：日曆 - 可滑動，填滿剩餘空間 -->
-        <div class="px-6 flex-1 min-h-0">
-          <!-- 滑動月份容器 -->
-          <div class="overflow-y-auto hide-scrollbar h-full">
-            <div id="mobile-calendar-slider" class="flex flex-col gap-6">
-              <!-- 月份將由 JavaScript 動態生成 -->
+          <!-- 第四部分：按鈕 - 固定 -->
+          <div class="flex-shrink-0">
+            <div class="float-up-container">
+              <div class="flex flex-col items-start gap-4 float-up float-up-delay-7">
+                <a
+                  href="#"
+                  id="mobile-reset-date-button"
+                  class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block"
+                >
+                  <div class="hero-cta-wrapper">
+                    <span class="hero-cta-text">(RESET)</span>
+                    <span class="hero-cta-hidden">(RESET)</span>
+                  </div>
+                </a>
+
+                <a
+                  href="#"
+                  id="mobile-confirm-date-button"
+                  class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block"
+                >
+                  <div class="hero-cta-wrapper">
+                    <span class="hero-cta-text">(OKAY)</span>
+                    <span class="hero-cta-hidden">(OKAY)</span>
+                  </div>
+                </a>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 第四部分：按鈕 - 固定 -->
-        <div class="px-4 pt-6 flex-shrink-0">
-          <div class="flex gap-4">
-            <button
-              id="mobile-reset-date-button"
-              type="button"
-              class="border border-white bg-transparent text-white opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 text-sm cursor-not-allowed"
-              style="width: 120px"
-              disabled
-            >
-              重設日期
-            </button>
-
-            <button
-              id="mobile-confirm-date-button"
-              type="button"
-              class="bg-white text-black opacity-30 font-['Inter',_sans-serif] font-normal py-3 px-6 transition-all text-sm cursor-not-allowed hover:opacity-60"
-              style="width: 120px"
-              disabled
-            >
-              確定日期
-            </button>
           </div>
         </div>
       </div>
     </main>
 
-    <footer class="pt-4 pb-8">
-      <div
-        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 md:mb-0 hidden md:flex">
-          <a
-            href="https://sccd.usc.edu.tw/"
-            target="_blank"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >TO SCCD
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+    <!-- Footer -->
+    <footer class="bg-transparent footer-main">
+      <div class="container">
+        <!-- 桌面版 Footer -->
+        <div class="hidden md:flex justify-between items-center">
+          <div class="flex items-center footer-gap">
+            <a
+              href="https://sccd.usc.edu.tw/"
+              target="_blank"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(TO SCCD)</span>
+                <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
-            </div>
-          </a>
-          <a
-            href="about.html"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >ABOUT
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+            </a>
+            <a
+              href="about.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(ABOUT)</span>
+                <span class="menu-text-hidden">(ABOUT)</span>
               </div>
-            </div>
-          </a>
-        </div>
-        <div class="copyright text-xs md:text-right">
-          <p>
-            <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >Copyright © 2025 111</span
-              >屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >All rights reserved.</span
-              >
-            </span>
-            <span class="copyright-easter-egg" id="easter-egg-text">
-              <!-- 彩蛋文字將由JavaScript生成 -->
-            </span>
-          </p>
+            </a>
+          </div>
+          <div
+            class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header"
+          >
+            <p>
+              <span class="copyright-original">
+                <span class="font-['Inter',_sans-serif] uppercase"
+                  >Copyright © 2025 111</span
+                >屆系學會
+                <span class="font-['Inter',_sans-serif]"
+                  >All rights reserved.</span
+                >
+              </span>
+              <span class="copyright-easter-egg" id="easter-egg-text">
+                <!-- 彩蛋文字將由JavaScript生成 -->
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
 
-    <!-- 獨立手機版選單 -->
-    <div class="mobile-menu" id="mobile-menu">
-      <!-- Header區域 -->
-      <div class="py-6 px-6">
-        <div class="flex justify-between items-center">
-          <a href="index.html" class="logo-link">
-            <div
-              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
-            >
-              SCCD
-            </div>
-          </a>
-          <button
-            class="font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-close"
-          >
-            <span class="text-white">CLOSE</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 選單項目 -->
-      <div class="flex-grow px-6">
-        <nav>
-          <ul class="flex flex-col space-y-4">
-            <li class="menu-animate-enter">
+    <!-- 手機版選單 -->
+    <div class="mobile-menu md:hidden" id="mobile-menu">
+      <!-- 選單內容區域 -->
+      <div class="mobile-menu-content">
+        <!-- 導航項目 -->
+        <div class="flex flex-col items-start menu-gap flex-grow">
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-1">
               <a
                 href="booking.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
-                >BOOKING</a
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
               >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="resources.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
-                >RESOURCES</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="login.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
-                >LOG IN</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      <!-- Footer區域 -->
-      <div class="pt-4 pb-8 px-6">
-        <div class="flex flex-col text-sm">
-          <div class="flex flex-col space-y-2 mb-2 items-start">
-            <div class="menu-animate-enter">
-              <a
-                href="https://sccd.usc.edu.tw/"
-                target="_blank"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
-                >TO SCCD
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="menu-animate-enter">
-              <a
-                href="about.html"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
-                >ABOUT
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
+                <div class="menu-item-wrapper active">
+                  <span class="menu-text">(BOOKING)</span>
+                  <span class="menu-text-hidden">(BOOKING)</span>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-2">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(LOGIN)</span>
+                  <span class="menu-text-hidden">(LOGIN)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-3">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-4">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copyright 在底部 -->
+        <div class="menu-animate-enter mobile-menu-content-bottom">
+          <div class="menu-animate-enter-content menu-delay-5">
             <div
-              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+              class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header"
             >
               <p>
                 <span class="copyright-original">
                   <span class="font-['Inter',_sans-serif] uppercase"
                     >Copyright © 2025 111</span
                   >屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase"
+                  <span class="font-['Inter',_sans-serif]"
                     >All rights reserved.</span
                   >
+                </span>
+                <span
+                  class="copyright-easter-egg"
+                  id="mobile-menu-easter-egg-text"
+                >
+                  <!-- 彩蛋文字將由JavaScript生成 -->
                 </span>
               </p>
             </div>

@@ -1,43 +1,28 @@
-/* ===== Breadcrumb 導航麵包屑樣式 ===== */
-
-.breadcrumb {
+/* ===== 內聯 Breadcrumb 樣式 ===== */
+.breadcrumb-inline {
   font-family: 'Inter', sans-serif;
-  font-size: 0.75rem; /* text-xs */
-  font-weight: 300; /* font-light */
   color: white;
   text-align: left;
-  margin-bottom: 1rem;
   letter-spacing: 0.05em; /* tracking-wider */
-  position: absolute;
-  top: calc(3rem + 3vh);
-  left: 6%;
-  z-index: 10;
 }
 
-.breadcrumb .breadcrumb-item {
+.breadcrumb-inline .breadcrumb-item {
   transition: opacity 0.3s ease;
   cursor: pointer;
 }
 
-.breadcrumb .breadcrumb-separator {
+.breadcrumb-inline .breadcrumb-separator {
   margin: 0 0.5rem;
   opacity: 0.6;
 }
 
-/* 手機版隱藏 breadcrumb */
-@media (max-width: 767px) {
-  .breadcrumb {
-    display: none;
-  }
-}
-
-/* 只在桌面版顯示 hover 效果 */
+/* 內聯版本的 hover 效果 */
 @media (hover: hover) and (pointer: fine) {
-  .breadcrumb:hover .breadcrumb-item {
+  .breadcrumb-inline:hover .breadcrumb-item {
     opacity: 0.6;
   }
   
-  .breadcrumb .breadcrumb-item:hover {
+  .breadcrumb-inline .breadcrumb-item:hover {
     opacity: 1 !important;
   }
 } 

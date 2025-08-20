@@ -1,87 +1,108 @@
-/* Classroom 頁面特定樣式 */
+/* ===== Classroom 頁面特定樣式 ===== */
 
-/* 展開式元件樣式 */
-.accordion-item {
-  border-bottom: 1px solid white;
+/* ===== 新版卡片設計樣式 ===== */
+
+/* 選中狀態的樣式 - 使用更高權重覆蓋 group-hover */
+.classroom-card.selected {
+  border-color: #00ff80 !important;
+  border-width: 2pt !important;
 }
 
-.accordion-item:last-child {
-  border-bottom: none;
+/* 選中狀態下的背景圖片 - 覆蓋 group-hover:opacity-0 */
+.classroom-card.selected .classroom-bg {
+  opacity: 1 !important;
 }
 
-.accordion-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
+/* 選中狀態下的漸層覆蓋 - 覆蓋 group-hover:opacity-0 */
+.classroom-card.selected .classroom-gradient {
+  opacity: 1 !important;
 }
 
-/* 手機版 accordion 較小的高度 */
-@media (max-width: 767px) {
-  .accordion-header {
-    padding: 16px 0;
-  }
-  
-  .accordion-content.expanded {
-    padding-bottom: 16px;
-  }
+/* 選中狀態下的文字顯示 */
+.classroom-card.selected .classroom-status-text {
+  color: #00ff80 !important;
 }
 
-.accordion-content {
-  height: 0;
-  overflow: hidden;
-  padding: 0;
+/* 選中狀態下的押金資訊顯示 - 覆蓋 group-hover:max-h-0 */
+.classroom-card.selected .max-h-0 {
+  max-height: 7rem !important; /* 28 = 7rem */
 }
 
-.accordion-content.expanded {
-  padding-bottom: 24px;
+/* 確保選中狀態不受 hover 狀態影響 */
+.classroom-card.selected:not(:hover) .classroom-bg {
+  opacity: 1 !important;
 }
 
-.expand-icon {
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
+.classroom-card.selected:not(:hover) .classroom-gradient {
+  opacity: 1 !important;
 }
 
-.accordion-content-inner {
-  opacity: 0;
+.classroom-card.selected:not(:hover) .max-h-0 {
+  max-height: 7rem !important;
 }
 
+/* hover 時的邊框過渡效果 */
+.classroom-card {
+  transition: border-color 0.3s ease;
+}
 
+/* ADD 按鈕 disabled 狀態 */
+.add-btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
 
-/* 禁用按鈕樣式 */
+.add-btn-disabled .hero-cta-wrapper {
+  pointer-events: none;
+}
+
+/* 教室卡片在 cart 中的狀態 */
+.classroom-card.in-cart {
+  cursor: pointer; /* 改為可點擊，允許取消選擇 */
+}
+
+/* 動畫完成後的透明度設定 - 統一為完全顯示 */
+.classroom-card.animation-complete {
+  opacity: 1 !important;
+}
+
+/* 在 cart 中的卡片仍保留 hover 效果，但不能點擊 */
+.classroom-card.in-cart:hover .classroom-bg {
+  opacity: 1 !important;
+}
+
+.classroom-card.in-cart:hover .classroom-gradient {
+  opacity: 1 !important;
+}
+
+/* 在購物車中的卡片也顯示選中狀態的樣式 */
+.classroom-card.in-cart {
+  border-color: #00ff80 !important;
+  border-width: 2pt !important;
+}
+
+.classroom-card.in-cart .classroom-bg {
+  opacity: 1 !important;
+}
+
+.classroom-card.in-cart .classroom-gradient {
+  opacity: 1 !important;
+}
+
+.classroom-card.in-cart .max-h-0 {
+  max-height: 7rem !important;
+}
+
+/* ===== 禁用按鈕樣式 ===== */
 .button-disabled {
   opacity: 0.5 !important;
   cursor: not-allowed !important;
   pointer-events: none !important;
 }
 
-/* 手機版響應式樣式調整 */
+/* ===== 手機版響應式樣式調整 ===== */
 @media (max-width: 767px) {
-  /* 手機版 accordion 佈局 - 已移除，使用main的padding */
-  
-  .mobile-accordion-content {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .mobile-accordion-image {
-    width: 100%;
-    order: 1;
-  }
-  
-  .mobile-accordion-text {
-    order: 2;
-  }
-  
-  .mobile-accordion-button {
-    order: 3;
-    align-self: flex-start;
-    margin-top: 0.5rem;
-  }
-  
   /* 手機版文字大小調整 */
   .mobile-price-text {
     font-size: 1.25rem !important; /* xl */

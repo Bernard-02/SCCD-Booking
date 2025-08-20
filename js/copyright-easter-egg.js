@@ -2,8 +2,8 @@
 
 // 初始化 Copyright 彩蛋效果
 function initCopyrightEasterEgg() {
-  const copyrightElement = document.querySelector('.copyright');
-  const originalElement = document.querySelector('.copyright-original');
+  const copyrightElement = document.querySelector('.desktop-copyright');
+  const originalElement = copyrightElement ? copyrightElement.querySelector('.copyright-original') : null;
   const easterEggElement = document.getElementById('easter-egg-text');
   
   // 只在桌面版且有必要元素時啟用

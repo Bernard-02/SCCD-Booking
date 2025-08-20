@@ -1,359 +1,394 @@
 // Classroom 頁面專用 JavaScript
 
-let currentSelectedClassroom = 'a503';
-let classroomErrorCounts = {}; // 追蹤每個教室的錯誤通知次數
-
-// 教室圖片對應
-const classroomImages = {
-  'a503': 'Images/A503.png',
-  'a507': 'Images/A507.png',
-  'a508': 'Images/A508.jpg'
-};
-
-// 教室資料
+// 教室資料 - 與新版卡片選擇邏輯兼容
 const classroomData = {
-  'a503': {
-    id: 'classroom-a503',
+  'A503': {
+    id: 'A503',
     name: 'A503 教室',
     category: 'classroom',
     deposit: 5000,
-    image: 'Images/A503.png'
+    image: 'Images/A503.webp'
   },
-  'a507': {
-    id: 'classroom-a507',
+  'A507': {
+    id: 'A507',
     name: 'A507 教室', 
     category: 'classroom',
     deposit: 5000,
-    image: 'Images/A507.png'
+    image: 'Images/A507.webp'
   },
-  'a508': {
-    id: 'classroom-a508',
+  'A508': {
+    id: 'A508',
     name: 'A508 教室',
     category: 'classroom', 
     deposit: 5000,
-    image: 'Images/A508.jpg'
+    image: 'Images/A508.webp'
   }
 };
 
-function toggleAccordion(classroomId) {
-  // 如果點擊的是已經打開的教室，就關閉它
-  if (currentSelectedClassroom === classroomId) {
-    closeAccordion(classroomId);
-    currentSelectedClassroom = null;
-    updateButtonState();
+
+
+
+
+// ===== 新版卡片選擇邏輯 =====
+
+// 切換教室選擇狀態
+function toggleClassroomSelection(element, classroomName) {
+  // 如果教室已在 cart 中，點擊會從 cart 中移除
+  if (element.classList.contains('in-cart')) {
+    console.log(`${classroomName} 已在清單中，點擊將從清單中移除`);
+    removeClassroomFromCart(element, classroomName);
+    return true;
+  }
+  
+  // 切換選中狀態
+  element.classList.toggle('selected');
+  
+  // 更新 ADD 按鈕文字和狀態
+  updateAddButtonText();
+  
+  console.log(`${classroomName} ${element.classList.contains('selected') ? '已選中' : '已取消選中'}`);
+  return true;
+}
+
+// 從購物車中移除教室
+function removeClassroomFromCart(element, classroomName) {
+  if (!window.cartManager) {
+    console.error('CartManager not found');
+    showNotification('系統錯誤：購物車管理器未載入', 'error');
     return;
   }
   
-  // 關閉當前打開的教室
-  if (currentSelectedClassroom) {
-    closeAccordion(currentSelectedClassroom);
-  }
-  
-  // 延遲打開新選擇的教室，讓關閉動畫先完成
-  setTimeout(() => {
-    openAccordion(classroomId);
-    currentSelectedClassroom = classroomId;
-    updateClassroomImage(classroomId);
-    updateButtonState();
-  }, 200);
-}
-
-function openAccordion(classroomId) {
-  // 桌面版元素
-  const content = document.getElementById(`content-${classroomId}`);
-  const contentInner = content ? content.querySelector('.accordion-content-inner') : null;
-  const icon = document.getElementById(`icon-${classroomId}`);
-  
-  // 手機版元素
-  const contentMobile = document.getElementById(`content-${classroomId}-mobile`);
-  const contentInnerMobile = contentMobile ? contentMobile.querySelector('.accordion-content-inner') : null;
-  const iconMobile = document.getElementById(`icon-${classroomId}-mobile`);
-  
-  // 處理桌面版
-  if (content && contentInner && icon) {
-    // 先設置內容顯示以計算高度
-    gsap.set(contentInner, { opacity: 0 });
-    content.classList.add('expanded');
-    gsap.set(content, { height: 'auto' });
-    const autoHeight = content.offsetHeight;
-    gsap.set(content, { height: 0 });
-    
-    // 使用GSAP動畫展開
-    const tl = gsap.timeline();
-    tl.to(content, {
-      height: autoHeight,
-      duration: 0.5,
-      ease: "power2.out",
-      onComplete: () => {
-        gsap.set(content, { height: 'auto' });
-      }
-    })
-    .to(contentInner, {
-      opacity: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, "-=0.2");
-    
-    // 改變圖標為 "-"
-    icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>';
-    icon.classList.remove('plus');
-  }
-  
-  // 處理手機版
-  if (contentMobile && contentInnerMobile && iconMobile) {
-    // 先設置內容顯示以計算高度
-    gsap.set(contentInnerMobile, { opacity: 0 });
-    contentMobile.classList.add('expanded');
-    gsap.set(contentMobile, { height: 'auto' });
-    const autoHeightMobile = contentMobile.offsetHeight;
-    gsap.set(contentMobile, { height: 0 });
-    
-    // 使用GSAP動畫展開
-    const tl = gsap.timeline();
-    tl.to(contentMobile, {
-      height: autoHeightMobile,
-      duration: 0.5,
-      ease: "power2.out",
-      onComplete: () => {
-        gsap.set(contentMobile, { height: 'auto' });
-      }
-    })
-    .to(contentInnerMobile, {
-      opacity: 1,
-      duration: 0.3,
-      ease: "power2.out"
-    }, "-=0.2");
-    
-    // 改變圖標為 "-"
-    iconMobile.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/>';
-    iconMobile.classList.remove('plus');
-  }
-}
-
-function closeAccordion(classroomId) {
-  // 桌面版元素
-  const content = document.getElementById(`content-${classroomId}`);
-  const contentInner = content ? content.querySelector('.accordion-content-inner') : null;
-  const icon = document.getElementById(`icon-${classroomId}`);
-  
-  // 手機版元素
-  const contentMobile = document.getElementById(`content-${classroomId}-mobile`);
-  const contentInnerMobile = contentMobile ? contentMobile.querySelector('.accordion-content-inner') : null;
-  const iconMobile = document.getElementById(`icon-${classroomId}-mobile`);
-  
-  // 處理桌面版
-  if (content && contentInner && icon) {
-    // 使用GSAP動畫收起
-    const tl = gsap.timeline();
-    tl.to(contentInner, {
-      opacity: 0,
-      duration: 0.2,
-      ease: "power2.out"
-    })
-    .to(content, {
-      height: 0,
-      duration: 0.4,
-      ease: "power2.out",
-      onComplete: () => {
-        content.classList.remove('expanded');
-      }
-    }, "-=0.1");
-    
-    // 改變圖標為 "+"
-    icon.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/><line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>';
-    icon.classList.add('plus');
-  }
-  
-  // 處理手機版
-  if (contentMobile && contentInnerMobile && iconMobile) {
-    // 使用GSAP動畫收起
-    const tl = gsap.timeline();
-    tl.to(contentInnerMobile, {
-      opacity: 0,
-      duration: 0.2,
-      ease: "power2.out"
-    })
-    .to(contentMobile, {
-      height: 0,
-      duration: 0.4,
-      ease: "power2.out",
-      onComplete: () => {
-        contentMobile.classList.remove('expanded');
-      }
-    }, "-=0.1");
-    
-    // 改變圖標為 "+"
-    iconMobile.innerHTML = '<line x1="5" y1="15" x2="25" y2="15" stroke="white" stroke-width="1"/><line x1="15" y1="5" x2="15" y2="25" stroke="white" stroke-width="1"/>';
-    iconMobile.classList.add('plus');
-  }
-}
-
-function updateClassroomImage(classroomId) {
-  const image = document.getElementById('classroom-image');
-  if (image) {
-    image.src = classroomImages[classroomId];
-    image.alt = `${classroomId.toUpperCase()} 教室`;
-  }
-}
-
-function updateButtonState() {
-  const button = document.getElementById('add-classroom-btn');
-  if (!button) return;
-  
-  if (!currentSelectedClassroom) {
-    // 沒有選中教室時，按鈕可用
-    button.classList.remove('button-disabled');
-    return;
-  }
-  
-  const cart = window.cartManager.getCart();
-  const classroom = classroomData[currentSelectedClassroom];
-  const isClassroomInCart = cart.find(item => item.id === classroom.id);
-  const errorCount = classroomErrorCounts[currentSelectedClassroom] || 0;
-  
-  // 只有當前教室已在購物車中且錯誤次數達到2次時才禁用
-  if (isClassroomInCart && errorCount >= 2) {
-    button.classList.add('button-disabled');
-  } else {
-    button.classList.remove('button-disabled');
-  }
-}
-
-function addClassroomToCart() {
-  const button = document.getElementById('add-classroom-btn');
-  
-  // 檢查按鈕是否已被禁用
-  if (button && button.classList.contains('button-disabled')) {
-    return;
-  }
-  
-  if (!currentSelectedClassroom) {
-    showNotification('請先選擇一間教室！', 'error');
-    return;
-  }
-  
-  const classroom = classroomData[currentSelectedClassroom];
-  const cart = window.cartManager.getCart();
-  
-  // 檢查當前選中的教室是否已經在購物車中
-  const existingClassroom = cart.find(item => item.id === classroom.id);
-  
-  if (existingClassroom) {
-    // 增加當前教室的錯誤計數
-    classroomErrorCounts[currentSelectedClassroom] = (classroomErrorCounts[currentSelectedClassroom] || 0) + 1;
-    showNotification('教室只有一個啦...不能重複添加！', 'error');
-    
-    // 更新按鈕狀態
-    updateButtonState();
-    return;
-  }
-  
-  // 如果教室不在購物車中，可以正常添加
-  const success = window.cartManager.addToCart({
-    id: classroom.id,
-    name: classroom.name,
-    category: classroom.category,
-    deposit: classroom.deposit,
-    mainImage: classroom.image
-  });
+  // 從購物車中移除
+  const success = window.cartManager.removeFromCart(classroomName);
   
   if (success) {
-    showNotification(`${classroom.name}已成功加入租借清單！`);
-    // 成功添加後更新按鈕狀態
-    updateButtonState();
+    // 移除成功，更新卡片狀態
+    element.classList.remove('in-cart');
+    element.classList.remove('selected');
+    
+    // 恢復狀態文字
+    const statusText = element.querySelector('.classroom-status-text');
+    if (statusText) {
+      statusText.textContent = '可租借';
+      statusText.style.color = '#00ff80';
+    }
+    
+    // 更新 ADD 按鈕
+    updateAddButtonText();
+    
+    showNotification(`${classroomName} 教室已從清單中移除`, 'success');
+    console.log(`${classroomName} 已從購物車中移除`);
   } else {
-    // 添加失敗（可能是系統錯誤）
-    showNotification('添加失敗，請重試！', 'error');
+    showNotification('移除失敗，請重試', 'error');
+    console.error(`Failed to remove ${classroomName} from cart`);
   }
 }
 
+// 獲取所有選中且不在 cart 中的教室
+function getSelectedClassrooms() {
+  const selectedClassrooms = [];
+  
+  // 檢查每個教室卡片是否被選中
+  if (document.querySelector('.classroom-card-1.selected:not(.in-cart)')) {
+    selectedClassrooms.push('A503');
+  }
+  if (document.querySelector('.classroom-card-2.selected:not(.in-cart)')) {
+    selectedClassrooms.push('A507');
+  }
+  if (document.querySelector('.classroom-card-3.selected:not(.in-cart)')) {
+    selectedClassrooms.push('A508');
+  }
+  
+  return selectedClassrooms;
+}
+
+// 更新 ADD 按鈕文字和狀態
+function updateAddButtonText() {
+  const selectedCount = document.querySelectorAll('.classroom-card.selected:not(.in-cart)').length;
+  const addBtnText = document.getElementById('add-btn-text');
+  const addBtnHidden = document.getElementById('add-btn-hidden');
+  const addBtn = document.getElementById('add-classroom-btn');
+  
+  if (!addBtnText || !addBtnHidden || !addBtn) return;
+  
+  // 檢查是否所有教室都已在 cart 中
+  const allClassrooms = document.querySelectorAll('.classroom-card');
+  const classroomsInCart = document.querySelectorAll('.classroom-card.in-cart');
+  const allInCart = allClassrooms.length === classroomsInCart.length;
+  
+  if (selectedCount === 0 || allInCart) {
+    addBtnText.textContent = '(ADD)';
+    addBtnHidden.textContent = '(ADD)';
+    addBtn.classList.add('add-btn-disabled');
+  } else {
+    addBtnText.textContent = `(ADD ${selectedCount})`;
+    addBtnHidden.textContent = `(ADD ${selectedCount})`;
+    addBtn.classList.remove('add-btn-disabled');
+  }
+}
+
+// 將選中的教室加入購物車
+function addSelectedClassroomsToCart() {
+  const selectedClassrooms = getSelectedClassrooms();
+  
+  if (selectedClassrooms.length === 0) {
+    return;
+  }
+  
+  console.log('Adding classrooms to cart:', selectedClassrooms);
+  
+  // 確保 CartManager 存在
+  if (!window.cartManager) {
+    console.error('CartManager not found');
+    showNotification('系統錯誤：購物車管理器未載入', 'error');
+    return;
+  }
+  
+  // 將每個選中的教室加入購物車
+  let addedCount = 0;
+  selectedClassrooms.forEach(classroom => {
+    const classroomItem = {
+      id: classroom,
+      name: `${classroom} 教室`,
+      category: 'classroom',
+      deposit: 5000,
+      mainImage: classroomData[classroom]?.image || `Images/${classroom}.webp`, // 使用 mainImage 格式
+      image: classroomData[classroom]?.image || `Images/${classroom}.webp` // 也保留 image 以防萬一
+    };
+    
+    console.log('Adding classroom item:', classroomItem);
+    
+    try {
+      // 使用 addToCart 方法，它會自動路由到 addClassroomToCart
+      const success = window.cartManager.addToCart(classroomItem);
+      if (success) {
+        addedCount++;
+        console.log(`Successfully added ${classroom} to cart`);
+      } else {
+        console.warn(`Failed to add ${classroom} to cart - might already exist`);
+      }
+    } catch (error) {
+      console.error('Error adding classroom to cart:', error);
+    }
+  });
+  
+  if (addedCount > 0) {
+    // 顯示成功訊息
+    if (addedCount === 1) {
+      showNotification(`${selectedClassrooms[0]} 教室已加入清單`, 'success');
+    } else {
+      showNotification(`${selectedClassrooms.slice(0, addedCount).join('、')} 等 ${addedCount} 間教室已加入清單`, 'success');
+    }
+    
+    // 將已加入的教室標記為 in-cart 並清除選中狀態
+    selectedClassrooms.slice(0, addedCount).forEach(classroom => {
+      let card;
+      if (classroom === 'A503') {
+        card = document.querySelector('.classroom-card-1');
+      } else if (classroom === 'A507') {
+        card = document.querySelector('.classroom-card-2');
+      } else if (classroom === 'A508') {
+        card = document.querySelector('.classroom-card-3');
+      }
+      
+      if (card) {
+        card.classList.remove('selected');
+        card.classList.add('in-cart');
+        // 更新狀態文字
+        const statusText = card.querySelector('.classroom-status-text');
+        if (statusText) {
+          statusText.textContent = '已在清單中';
+          statusText.style.color = '#00ff80';
+        }
+        // 顯示圖片和押金資訊
+        card.classList.add('selected');
+      }
+    });
+    
+    // 重置按鈕文字
+    updateAddButtonText();
+  } else {
+    showNotification('加入清單失敗，請重試', 'error');
+  }
+}
+
+// 檢查教室是否在 cart 中
+function isClassroomInCart(classroomId) {
+  if (!window.cartManager) return false;
+  
+  const cart = window.cartManager.getCart();
+  return cart.some(item => 
+    item.id === classroomId || 
+    item.name === `${classroomId} 教室` ||
+    (item.category === 'classroom' && item.id === classroomId)
+  );
+}
+
+// 更新卡片的 cart 狀態
+function updateClassroomCartStatus() {
+  // 使用類別選擇器來識別教室卡片，而不是依賴 onclick 屬性
+  const classroomMappings = [
+    { selector: '.classroom-card-1', id: 'A503' },
+    { selector: '.classroom-card-2', id: 'A507' },
+    { selector: '.classroom-card-3', id: 'A508' }
+  ];
+  
+  classroomMappings.forEach(({ selector, id }) => {
+    const card = document.querySelector(selector);
+    if (card) {
+      const statusText = card.querySelector('.classroom-status-text');
+      
+      if (isClassroomInCart(id)) {
+        // 如果已在購物車中，設定為 in-cart 狀態
+        card.classList.add('in-cart');
+        card.classList.add('selected'); // 顯示圖片和押金資訊
+        // 更改狀態文字為「已在清單中」
+        if (statusText) {
+          statusText.textContent = '已在清單中';
+          statusText.style.color = '#00ff80';
+        }
+      } else {
+        // 如果不在購物車中，只移除 in-cart 狀態，保留用戶手動選中的 selected 狀態
+        card.classList.remove('in-cart');
+        // 只有當卡片不是用戶手動選中時才移除 selected 狀態
+        // 這裡我們不自動移除 selected，讓用戶控制選中狀態
+        
+        // 恢復原始文字「可租借」（只有在不是 in-cart 狀態時）
+        if (statusText && statusText.textContent === '已在清單中') {
+          statusText.textContent = '可租借';
+          statusText.style.color = '#00ff80';
+        }
+      }
+    }
+  });
+  updateAddButtonText();
+}
+
+// 監聽 cart 變化
+function setupCartListener() {
+  // 監聽 cartUpdated 事件
+  window.addEventListener('cartUpdated', updateClassroomCartStatus);
+  
+  // 定期檢查 cart 狀態（備用方案），降低頻率避免干擾用戶操作
+  setInterval(updateClassroomCartStatus, 5000); // 從 1 秒改為 5 秒
+}
+
+// 顯示通知
 function showNotification(message, type = 'success') {
-  // 使用全域的 showToast 函數
-  if (window.showToast) {
-    window.showToast(message, type);
-  } else if (window.showBookmarkToast) {
-    // 回退到 showBookmarkToast
-    window.showBookmarkToast(message, type);
+  const notification = document.getElementById('notification');
+  const notificationText = document.getElementById('notification-text');
+  
+  if (notification && notificationText) {
+    notificationText.textContent = message;
+    
+    // 清除之前的動畫類別
+    notification.classList.remove('show', 'fade-out');
+    notification.style.display = 'block';
+    
+    // 統一使用白色背景
+    notification.style.backgroundColor = 'white';
+    notification.style.color = 'black';
+    
+    // 短暫延遲後顯示（確保 CSS 過渡效果正常）
+    setTimeout(() => {
+      notification.classList.add('show');
+    }, 10);
+    
+    // 3秒後開始 fade out 動畫
+    setTimeout(() => {
+      notification.classList.remove('show');
+      notification.classList.add('fade-out');
+      
+      // fade out 動畫完成後隱藏元素
+      setTimeout(() => {
+        notification.style.display = 'none';
+        notification.classList.remove('fade-out');
+      }, 300);
+    }, 3000);
   } else {
-    // 最後回退到 alert
-    alert(message);
+    console.log(`Notification: ${message} (${type})`);
   }
 }
-
-// showToast 函數現在由 common.js 提供
-
-
 
 // 初始化頁面
 document.addEventListener('DOMContentLoaded', function() {
-  // 默認展開 A503
-  openAccordion('a503');
+  console.log('Classroom.js loaded - new card-based design');
   
+  // 監聽動畫完成事件
+  const classroomCards = document.querySelectorAll('.classroom-card.card-slide-in');
+  classroomCards.forEach(card => {
+    card.addEventListener('animationend', function(e) {
+      if (e.animationName === 'slideInFromRight') {
+        this.classList.add('animation-complete');
+      }
+    });
+  });
+  
+  // 添加點擊事件監聽器，替代 inline onclick
+  setupClickEventListeners();
+  
+  // 等待 CartManager 載入
+  const initClassroomLogic = () => {
+    if (window.cartManager) {
+      console.log('CartManager found, initializing classroom logic');
+      updateAddButtonText();
+      updateClassroomCartStatus();
+      setupCartListener();
+    } else {
+      console.log('CartManager not found, retrying...');
+      setTimeout(initClassroomLogic, 100);
+    }
+  };
+  
+  initClassroomLogic();
+});
 
-  
-  // 為圖標添加hover效果 - 只在桌面版
-  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const icons = document.querySelectorAll('.expand-icon');
-    icons.forEach(icon => {
-      icon.addEventListener('mouseenter', function() {
-        if (this.classList.contains('plus')) {
-          gsap.to(this, {
-            rotation: 90,
-            duration: 0.3,
-            ease: "power2.out"
-          });
-        }
-      });
-      
-      icon.addEventListener('mouseleave', function() {
-        if (this.classList.contains('plus')) {
-          gsap.to(this, {
-            rotation: 0,
-            duration: 0.3,
-            ease: "power2.out"
-          });
-        }
-      });
+// 設置點擊事件監聽器
+function setupClickEventListeners() {
+  // A503 教室卡片
+  const a503Card = document.querySelector('.classroom-card-1');
+  if (a503Card) {
+    a503Card.addEventListener('click', function() {
+      toggleClassroomSelection(this, 'A503');
     });
   }
   
-  // 按鈕動畫效果 - 只在桌面版
-  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const button = document.getElementById('add-classroom-btn');
-    const buttonFill = button ? button.querySelector('.button-bg-fill') : null;
-    
-    if (button && buttonFill) {
-      button.addEventListener('mouseenter', function() {
-        // 不包含disabled類時才執行動畫
-        if (!this.classList.contains('button-disabled')) {
-          gsap.to(buttonFill, {
-            height: '100%',
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          
-          // 文字顏色變化
-          this.classList.add('white-text');
-        }
-      });
-      
-      button.addEventListener('mouseleave', function() {
-        // 不包含disabled類時才執行動畫
-        if (!this.classList.contains('button-disabled')) {
-          gsap.to(buttonFill, {
-            height: '0%',
-            duration: 0.5,
-            ease: "power2.out"
-          });
-          
-          // 文字顏色恢復
-          this.classList.remove('white-text');
-        }
-      });
-    }
+  // A507 教室卡片
+  const a507Card = document.querySelector('.classroom-card-2');
+  if (a507Card) {
+    a507Card.addEventListener('click', function() {
+      toggleClassroomSelection(this, 'A507');
+    });
   }
-});
+  
+  // A508 教室卡片
+  const a508Card = document.querySelector('.classroom-card-3');
+  if (a508Card) {
+    a508Card.addEventListener('click', function() {
+      toggleClassroomSelection(this, 'A508');
+    });
+  }
+  
+  // ADD 按鈕
+  const addBtn = document.getElementById('add-classroom-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      addSelectedClassroomsToCart();
+    });
+  }
+  
+  // 防止收藏夾按鈕觸發卡片點擊事件
+  document.querySelectorAll('.bookmark-btn').forEach(bookmarkBtn => {
+    bookmarkBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      // 這裡可以添加收藏功能
+      console.log('Bookmark clicked for:', this.dataset.equipment);
+    });
+  });
+}
 
-// 全局函數，供 HTML 調用
-window.toggleAccordion = toggleAccordion;
-window.addClassroomToCart = addClassroomToCart; 
+// 全局函數，供 HTML 調用（保持向後兼容）
+window.toggleClassroomSelection = toggleClassroomSelection;
+window.addSelectedClassroomsToCart = addSelectedClassroomsToCart;
+window.updateClassroomCartStatus = updateClassroomCartStatus; 

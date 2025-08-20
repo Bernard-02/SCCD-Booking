@@ -13,747 +13,451 @@
       rel="stylesheet"
     />
 
-    <!-- 引入模組化 CSS 文件 -->
+    <!-- 引入 copyright 相關文件 -->
+    <script src="js/copyright-easter-egg.js"></script>
+
+    <!-- 引入通用樣式 -->
     <link rel="stylesheet" href="css/common.css" />
-    <link rel="stylesheet" href="css/arrows.css" />
+    <link rel="stylesheet" href="css/mobile-menu.css" />
+    <link rel="stylesheet" href="css/typography.css" />
     <link rel="stylesheet" href="css/breadcrumb.css" />
-    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/animations.css" />
+
     <link rel="stylesheet" href="css/classroom.css" />
 
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <!-- 引入通用 JS -->
     <script src="cart-manager.js"></script>
     <script src="js/common.js"></script>
+    <script src="js/cart-sync.js"></script>
 
-    <!-- 引入模組化 JavaScript 文件 -->
-    <script src="js/mobile-menu.js" defer></script>
-    <script src="js/copyright-easter-egg.js" defer></script>
-    <script src="js/button-animations.js" defer></script>
-    <script src="js/cart-sync.js" defer></script>
-    <script src="js/classroom.js" defer></script>
+    <!-- 引入手機版選單 JS -->
+    <script src="js/mobile-menu.js"></script>
+
+    <!-- 頁面相關 JS -->
+    <script src="js/classroom.js"></script>
+    <script src="js/booking-dates-display.js"></script>
   </head>
 
-  <body class="bg-black text-white flex flex-col h-screen overflow-x-hidden">
-    <header class="py-6">
-      <div
-        class="container mx-auto flex justify-between items-center px-6 md:px-4"
-      >
-        <div class="flex items-center">
-          <a href="index.html" class="logo-link mr-10">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
-              SCCD
-            </div>
+  <body class="bg-black text-white h-screen overflow-hidden flex flex-col">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
+      <div class="container">
+        <div class="flex justify-between items-center">
+          <a
+            href="index.html"
+            class="font-['Inter',_sans-serif] font-medium text-white text-header"
+          >
+            SCCD
           </a>
 
           <!-- 桌面版導航 -->
-          <nav class="desktop-nav">
-            <ul class="flex space-x-10">
-              <li>
-                <a
-                  href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >BOOKING</a
-                >
-              </li>
-              <li>
-                <a
-                  href="resources.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >RESOURCES</a
-                >
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        <div class="flex items-center space-x-5">
-          <a
-            href="rental-list.html"
-            id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
-            >(<span id="cart-count">0</span>) CART</a
-          >
-          <a
-            href="login.html"
-            id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden"
-          >
-            <div
-              class="button-bg-fill"
-              style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 0;
-                background-color: white;
-                z-index: 1;
-                border-radius: 30px;
-              "
-            ></div>
-            <span style="position: relative; z-index: 2">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+          <nav class="flex items-center header-menu desktop-nav nav-gap">
+            <a
+              href="booking.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper active">
+                <span class="menu-text">(BOOKING)</span>
+                <span class="menu-text-hidden">(BOOKING)</span>
               </div>
-            </div>
-          </a>
+            </a>
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="cart-count-mirror">0</span>) CART)</span
+                >
+              </div>
+            </a>
+            <a
+              href="login.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(LOGIN)</span>
+                <span class="menu-text-hidden">(LOGIN)</span>
+              </div>
+            </a>
+          </nav>
 
-          <!-- 手機版 CART 按鈕 -->
-          <a
-            href="rental-list.html"
-            id="mobile-cart-link"
-            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
-            >(<span id="mobile-cart-count">0</span>) CART</a
-          >
-
-          <!-- 手機版選單按鈕 -->
-          <button
-            class="md:hidden font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-btn"
-          >
-            <span class="text-white" id="menu-btn-text">MENU</span>
-          </button>
+          <!-- 手機版導航 -->
+          <nav class="flex items-center mobile-nav mobile-nav-gap">
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="mobile-cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="mobile-cart-count-mirror">0</span>)
+                  CART)</span
+                >
+              </div>
+            </a>
+            <button
+              id="mobile-menu-btn"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(MENU)</span>
+                <span class="menu-text-hidden">(MENU)</span>
+              </div>
+            </button>
+          </nav>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex flex-col pt-[3vh] pb-[3vh]">
-      <!-- Breadcrumb - 只在桌面版顯示 -->
-      <nav class="breadcrumb hidden md:block">
-        <a href="index.html" class="breadcrumb-item">首頁</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="booking.html" class="breadcrumb-item">租借日期</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="bookingresources.html" class="breadcrumb-item">租借資源</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="space.html" class="breadcrumb-item">租借空間</a>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-item">教室</span>
-      </nav>
-
-      <!-- 桌面版佈局 -->
-      <div class="w-full px-[6%] flex-grow flex-col hidden md:flex">
-        <!-- 頁面標題 -->
-        <div class="mb-6">
-          <h1
-            class="text-4xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4 mt-2"
-          >
-            租借教室
-          </h1>
-        </div>
-
-        <div class="flex gap-35 flex-grow">
-          <!-- 左側：教室列表 -->
-          <div class="flex-1">
-            <!-- A503 教室 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('a503')">
-                <h2
-                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
-                >
-                  A503 教室
-                </h2>
-                <svg
-                  class="expand-icon plus"
-                  id="icon-a503"
-                  viewBox="0 0 30 30"
-                >
-                  <line
-                    x1="5"
-                    y1="15"
-                    x2="25"
-                    y2="15"
-                    stroke="white"
-                    stroke-width="1"
-                  />
-                  <line
-                    x1="15"
-                    y1="5"
-                    x2="15"
-                    y2="25"
-                    stroke="white"
-                    stroke-width="1"
-                  />
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-a503">
-                <div class="accordion-content-inner space-y-8">
-                  <div>
-                    <div
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
-                      style="color: #00ff80"
-                    >
-                      可租借
-                    </div>
-                  </div>
-                  <div class="space-y-2">
-                    <div>
-                      <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"
-                      >
-                        押金
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
-                      >
-                        NT5,000
-                      </div>
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
-                        data-equipment="A503 教室"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p
-                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"
-                    >
-                      A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
-                    </p>
-                  </div>
-                </div>
+    <main class="flex-1 pt-20">
+      <div class="container">
+        <!-- 桌面版佈局：上下分割 -->
+        <div class="hidden md:flex flex-col">
+          <!-- 上方：文字資訊區塊 -->
+          <div class="flex-shrink-0">
+            <!-- Breadcrumb -->
+            <div class="text-left" style="padding-bottom: 1.08rem">
+              <div class="float-up-container">
+                <nav class="breadcrumb-inline float-up float-up-delay-1">
+                  <a href="index.html" class="breadcrumb-item text-breadcrumb"
+                    >首頁</a
+                  >
+                  <span class="breadcrumb-separator text-breadcrumb">/</span>
+                  <a href="booking.html" class="breadcrumb-item text-breadcrumb"
+                    >租借日期</a
+                  >
+                  <span class="breadcrumb-separator text-breadcrumb">/</span>
+                  <a
+                    href="bookingresources.html"
+                    class="breadcrumb-item text-breadcrumb"
+                    >租借資源</a
+                  >
+                  <span class="breadcrumb-separator text-breadcrumb">/</span>
+                  <a href="space.html" class="breadcrumb-item text-breadcrumb"
+                    >租借空間</a
+                  >
+                  <span class="breadcrumb-separator text-breadcrumb">/</span>
+                  <span class="breadcrumb-item text-breadcrumb">教室</span>
+                </nav>
               </div>
             </div>
 
-            <!-- A507 教室 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('a507')">
-                <h2
-                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
+            <div class="flex justify-between items-start">
+              <div class="float-up-container">
+                <h1
+                  class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-10 float-up float-up-delay-2"
                 >
-                  A507 教室
-                </h2>
-                <svg
-                  class="expand-icon plus"
-                  id="icon-a507"
-                  viewBox="0 0 30 30"
-                >
-                  <line
-                    x1="5"
-                    y1="15"
-                    x2="25"
-                    y2="15"
-                    stroke="white"
-                    stroke-width="1"
-                  />
-                  <line
-                    x1="15"
-                    y1="5"
-                    x2="15"
-                    y2="25"
-                    stroke="white"
-                    stroke-width="1"
-                  />
-                </svg>
+                  租借教室
+                </h1>
               </div>
-              <div class="accordion-content" id="content-a507">
-                <div class="accordion-content-inner space-y-8">
-                  <div>
-                    <div
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
-                      style="color: #00ff80"
-                    >
-                      可租借
-                    </div>
-                  </div>
-                  <div class="space-y-2">
-                    <div>
-                      <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"
-                      >
-                        押金
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
-                      >
-                        NT5,000
-                      </div>
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
-                        data-equipment="A507 教室"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p
-                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"
-                    >
-                      A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <!-- A508 教室 -->
-            <div class="accordion-item">
-              <div class="accordion-header" onclick="toggleAccordion('a508')">
-                <h2
-                  class="text-2xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
-                >
-                  A508 教室
-                </h2>
-                <svg
-                  class="expand-icon plus"
-                  id="icon-a508"
-                  viewBox="0 0 30 30"
-                >
-                  <line
-                    x1="5"
-                    y1="15"
-                    x2="25"
-                    y2="15"
-                    stroke="white"
-                    stroke-width="1"
-                  />
-                  <line
-                    x1="15"
-                    y1="5"
-                    x2="15"
-                    y2="25"
-                    stroke="white"
-                    stroke-width="1"
-                  />
-                </svg>
-              </div>
-              <div class="accordion-content" id="content-a508">
-                <div class="accordion-content-inner space-y-8">
-                  <div>
-                    <div
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide"
-                      style="color: #00ff80"
-                    >
-                      可租借
-                    </div>
-                  </div>
-                  <div class="space-y-2">
-                    <div>
-                      <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300"
-                      >
-                        押金
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide"
-                      >
-                        NT5,000
-                      </div>
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
-                        data-equipment="A508 教室"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p
-                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed"
-                    >
-                      A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
-                    </p>
-                  </div>
+              <!-- 日期顯示 -->
+              <div class="flex gap-8 float-up-container">
+                <div class="float-up float-up-delay-4">
+                  <h2 class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny">
+                    起租日
+                  </h2>
+                  <p id="display-start-date" class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight">
+                    ----/--/--
+                  </p>
+                </div>
+
+                <div class="float-up float-up-delay-5">
+                  <h2 class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny">
+                    歸還日
+                  </h2>
+                  <p id="display-end-date" class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight">
+                    ----/--/--
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 右側：教室圖片和按鈕 -->
-          <div class="flex-1">
-            <div>
-              <img
-                id="classroom-image"
-                src="Images/A503.png"
-                alt="教室圖片"
-                class="w-full aspect-[16/9] object-cover"
-              />
-              <button
-                id="add-classroom-btn"
-                class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer mt-12 button-animated"
-                style="width: 200px; position: relative; overflow: hidden"
-                onclick="addClassroomToCart()"
+          <!-- 下方：教室卡片網格 -->
+          <div>
+            <div class="grid grid-cols-3 gap-6 h-[58vh] mb-6">
+              <!-- A503 教室卡片 -->
+              <div
+                class="border border-white relative overflow-hidden group cursor-pointer card-slide-in h-full classroom-card classroom-card-1"
+                data-classroom-id="A503"
               >
+                <!-- 背景圖片 -->
                 <div
-                  class="button-bg-fill"
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 classroom-bg"
+                >
+                  <img
+                    src="Images/A503.webp"
+                    alt="A503 教室"
+                    class="w-full h-full object-cover object-center"
+                  />
+                </div>
+                <!-- Gradient overlay -->
+                <div
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 classroom-gradient"
                   style="
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 0;
-                    background-color: white;
-                    z-index: 1;
+                    background: linear-gradient(
+                      to top,
+                      rgba(0, 0, 0, 0.8) 0%,
+                      rgba(0, 0, 0, 0.4) 50%,
+                      transparent 100%
+                    );
                   "
                 ></div>
-                <span style="position: relative; z-index: 2">加入清單</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- 手機版佈局 -->
-      <div class="w-full md:hidden flex-grow flex flex-col px-6">
-        <!-- 標題區域 -->
-        <div class="text-center">
-          <h1
-            class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
-          >
-            租借教室
-          </h1>
-        </div>
-
-        <!-- 教室列表 -->
-        <div class="flex-1">
-          <!-- A503 教室 -->
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('a503')">
-              <h2
-                class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
-              >
-                A503 教室
-              </h2>
-              <svg
-                class="expand-icon plus"
-                id="icon-a503-mobile"
-                viewBox="0 0 30 30"
-              >
-                <line
-                  x1="5"
-                  y1="15"
-                  x2="25"
-                  y2="15"
-                  stroke="white"
-                  stroke-width="1"
-                />
-                <line
-                  x1="15"
-                  y1="5"
-                  x2="15"
-                  y2="25"
-                  stroke="white"
-                  stroke-width="1"
-                />
-              </svg>
-            </div>
-            <div class="accordion-content" id="content-a503-mobile">
-              <div
-                class="accordion-content-inner mobile-accordion-content flex"
-              >
-                <div class="mobile-accordion-image mobile-image-padding">
+                <!-- 收藏夾按鈕 -->
+                <div class="absolute top-5 right-6 z-20">
                   <img
-                    src="Images/A503.png"
-                    alt="A503 教室"
-                    class="w-full aspect-[16/9] object-cover"
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="A503 教室"
                   />
                 </div>
-                <div class="mobile-accordion-text space-y-4">
+
+                <!-- 內容 -->
+                <div class="relative z-10 h-full flex flex-col justify-end">
+                  <!-- 教室名稱 -->
                   <div>
-                    <div
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text"
-                      style="color: #00ff80"
+                    <h1
+                      class="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium"
                     >
-                      可租借
-                    </div>
+                      A503 教室
+                    </h1>
+                    <h1
+                      class="text-large-title font-['Inter',_sans-serif] font-normal uppercase"
+                    >
+                      A503 CLASSROOM
+                    </h1>
                   </div>
-                  <div class="space-y-2">
-                    <div>
+
+                  <!-- Hover 狀態：租借資訊（從下方推入） -->
+                  <div
+                    class="max-h-0 group-hover:max-h-28 overflow-hidden transition-all duration-500 ease-out"
+                  >
+                    <div class="pt-4">
                       <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text"
+                        class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide mb-2 classroom-status-text"
+                        style="color: #00ff80"
+                      >
+                        可租借
+                      </div>
+                      <div
+                        class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
                       >
                         押金
                       </div>
-                    </div>
-                    <div class="flex items-center justify-between">
                       <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text"
+                        class="text-medium-title font-['Inter',_sans-serif] text-white tracking-wide"
                       >
-                        NT5,000
+                        NT 5,000
                       </div>
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn"
-                        data-equipment="A503 教室"
-                      />
                     </div>
                   </div>
-                  <div>
-                    <p
-                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text"
-                    >
-                      A503教室是一間現代化的多功能教室，配備先進的教學設備，適合各種課程和活動使用。空間寬敞明亮，提供良好的學習環境。
-                    </p>
-                  </div>
-                </div>
-                <div class="mobile-accordion-button">
-                  <button
-                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button"
-                    style="position: relative; overflow: hidden"
-                    onclick="addClassroomToCart()"
-                  >
-                    <div
-                      class="button-bg-fill"
-                      style="
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 0;
-                        background-color: white;
-                        z-index: 1;
-                      "
-                    ></div>
-                    <span
-                      class="mobile-button-text"
-                      style="position: relative; z-index: 2"
-                      >加入清單</span
-                    >
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- A507 教室 -->
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('a507')">
-              <h2
-                class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
-              >
-                A507 教室
-              </h2>
-              <svg
-                class="expand-icon plus"
-                id="icon-a507-mobile"
-                viewBox="0 0 30 30"
-              >
-                <line
-                  x1="5"
-                  y1="15"
-                  x2="25"
-                  y2="15"
-                  stroke="white"
-                  stroke-width="1"
-                />
-                <line
-                  x1="15"
-                  y1="5"
-                  x2="15"
-                  y2="25"
-                  stroke="white"
-                  stroke-width="1"
-                />
-              </svg>
-            </div>
-            <div class="accordion-content" id="content-a507-mobile">
+                            <!-- A507 教室卡片 -->
               <div
-                class="accordion-content-inner mobile-accordion-content flex"
+                class="border border-white relative overflow-hidden group cursor-pointer card-slide-in h-full classroom-card classroom-card-2"
+                data-classroom-id="A507"
               >
-                <div class="mobile-accordion-image mobile-image-padding">
+                <!-- 背景圖片 -->
+                <div
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 classroom-bg"
+                >
                   <img
-                    src="Images/A507.png"
+                    src="Images/A507.webp"
                     alt="A507 教室"
-                    class="w-full aspect-[16/9] object-cover"
+                    class="w-full h-full object-cover object-center"
                   />
                 </div>
-                <div class="mobile-accordion-text space-y-4">
+                <!-- Gradient overlay -->
+                <div
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 classroom-gradient"
+                  style="
+                    background: linear-gradient(
+                      to top,
+                      rgba(0, 0, 0, 0.8) 0%,
+                      rgba(0, 0, 0, 0.4) 50%,
+                      transparent 100%
+                    );
+                  "
+                ></div>
+
+                <!-- 收藏夾按鈕 -->
+                <div class="absolute top-5 right-6 z-20">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="A507 教室"
+                  />
+                </div>
+
+                <!-- 內容 -->
+                <div class="relative z-10 h-full flex flex-col justify-end">
+                  <!-- 教室名稱 -->
                   <div>
-                    <div
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text"
-                      style="color: #00ff80"
+                    <h1
+                      class="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium"
                     >
-                      可租借
-                    </div>
+                      A507 教室
+                    </h1>
+                    <h1
+                      class="text-large-title font-['Inter',_sans-serif] font-normal tracking-wide"
+                    >
+                      A507 CLASSROOM
+                    </h1>
                   </div>
-                  <div class="space-y-2">
-                    <div>
+
+                  <!-- Hover 狀態：租借資訊（從下方推入） -->
+                  <div
+                    class="max-h-0 group-hover:max-h-28 overflow-hidden transition-all duration-500 ease-out"
+                  >
+                    <div class="pt-4">
                       <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text"
+                        class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide mb-2 classroom-status-text"
+                        style="color: #00ff80"
+                      >
+                        可租借
+                      </div>
+                      <div
+                        class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
                       >
                         押金
                       </div>
-                    </div>
-                    <div class="flex items-center justify-between">
                       <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text"
+                        class="text-medium-title font-['Inter',_sans-serif] text-white tracking-wide"
                       >
-                        NT5,000
+                        NT 5,000
                       </div>
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn"
-                        data-equipment="A507 教室"
-                      />
                     </div>
                   </div>
-                  <div>
-                    <p
-                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text"
-                    >
-                      A507教室擁有靈活的空間配置，適合小組討論和創意工作。配有現代化的視聽設備，是進行媒體製作和展示的理想場所。
-                    </p>
-                  </div>
-                </div>
-                <div class="mobile-accordion-button">
-                  <button
-                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button"
-                    style="position: relative; overflow: hidden"
-                    onclick="addClassroomToCart()"
-                  >
-                    <div
-                      class="button-bg-fill"
-                      style="
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 0;
-                        background-color: white;
-                        z-index: 1;
-                      "
-                    ></div>
-                    <span
-                      class="mobile-button-text"
-                      style="position: relative; z-index: 2"
-                      >加入清單</span
-                    >
-                  </button>
                 </div>
               </div>
+
+              <!-- A508 教室卡片 -->
+              <div
+                class="border border-white relative overflow-hidden group cursor-pointer card-slide-in h-full classroom-card classroom-card-3"
+                data-classroom-id="A508"
+              >
+                <!-- 背景圖片 -->
+                <div
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 classroom-bg"
+                >
+                  <img
+                    src="Images/A508.webp"
+                    alt="A508 教室"
+                    class="w-full h-full object-cover object-center"
+                  />
+                </div>
+                <!-- Gradient overlay -->
+                <div
+                  class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 classroom-gradient"
+                  style="
+                    background: linear-gradient(
+                      to top,
+                      rgba(0, 0, 0, 0.8) 0%,
+                      rgba(0, 0, 0, 0.4) 50%,
+                      transparent 100%
+                    );
+                  "
+                ></div>
+
+                <!-- 收藏夾按鈕 -->
+                <div class="absolute top-5 right-6 z-20">
+                  <img
+                    src="Icons/Bookmark Sharp Regular.svg"
+                    alt="Bookmark"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    data-equipment="A508 教室"
+                  />
+                </div>
+
+                <!-- 內容 -->
+                <div class="relative z-10 h-full flex flex-col justify-end">
+                  <!-- 教室名稱 -->
+                  <div>
+                    <h1
+                      class="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium"
+                    >
+                      A508 教室
+                    </h1>
+                    <h1
+                      class="text-large-title font-['Inter',_sans-serif] font-normal tracking-wide"
+                    >
+                      A508 CLASSROOM
+                    </h1>
+                  </div>
+
+                  <!-- Hover 狀態：租借資訊（從下方推入） -->
+                  <div
+                    class="max-h-0 group-hover:max-h-28 overflow-hidden transition-all duration-500 ease-out"
+                  >
+                    <div class="pt-4">
+                      <div
+                        class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide mb-2 classroom-status-text"
+                        style="color: #00ff80"
+                      >
+                        可租借
+                      </div>
+                      <div
+                        class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
+                      >
+                        押金
+                      </div>
+                      <div
+                        class="text-medium-title font-['Inter',_sans-serif] text-white tracking-wide"
+                      >
+                        NT 5,000
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ADD 按鈕區域 -->
+            <div class="flex justify-end">
+              <div class="float-up-container">
+                <a
+                  href="#"
+                  id="add-classroom-btn"
+                  class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block float-up"
+                  style="animation-delay: 1.2s;"
+                >
+                  <div class="hero-cta-wrapper">
+                    <span class="hero-cta-text" id="add-btn-text">(ADD)</span>
+                    <span class="hero-cta-hidden" id="add-btn-hidden">(ADD)</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手機版佈局 -->
+        <div class="md:hidden flex flex-col">
+          <!-- 標題與敘述 -->
+          <div class="text-left flex-shrink-0 mb-6">
+            <div class="float-up-container">
+              <h1
+                class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4 float-up float-up-delay-1"
+              >
+                租借教室
+              </h1>
             </div>
           </div>
 
-          <!-- A508 教室 -->
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('a508')">
-              <h2
-                class="text-xl font-['Noto_Sans_TC',_sans-serif] text-white font-medium"
-              >
-                A508 教室
-              </h2>
-              <svg
-                class="expand-icon plus"
-                id="icon-a508-mobile"
-                viewBox="0 0 30 30"
-              >
-                <line
-                  x1="5"
-                  y1="15"
-                  x2="25"
-                  y2="15"
-                  stroke="white"
-                  stroke-width="1"
-                />
-                <line
-                  x1="15"
-                  y1="5"
-                  x2="15"
-                  y2="25"
-                  stroke="white"
-                  stroke-width="1"
-                />
-              </svg>
-            </div>
-            <div class="accordion-content" id="content-a508-mobile">
-              <div
-                class="accordion-content-inner mobile-accordion-content flex"
-              >
-                <div class="mobile-accordion-image mobile-image-padding">
-                  <img
-                    src="Images/A508.jpg"
-                    alt="A508 教室"
-                    class="w-full aspect-[16/9] object-cover"
-                  />
-                </div>
-                <div class="mobile-accordion-text space-y-4">
-                  <div>
-                    <div
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide mobile-label-text"
-                      style="color: #00ff80"
-                    >
-                      可租借
-                    </div>
-                  </div>
-                  <div class="space-y-2">
-                    <div>
-                      <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mobile-label-text"
-                      >
-                        押金
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide mobile-price-text"
-                      >
-                        NT5,000
-                      </div>
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer transition-opacity bookmark-btn"
-                        data-equipment="A508 教室"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p
-                      class="text-base font-['Noto_Sans_TC',_sans-serif] text-white leading-relaxed mobile-description-text"
-                    >
-                      A508教室是專為數位媒體課程設計的專業教室，配備高端的電腦設備和專業軟體，提供最佳的數位創作環境。
-                    </p>
-                  </div>
-                </div>
-                <div class="mobile-accordion-button">
-                  <button
-                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated mobile-button"
-                    style="position: relative; overflow: hidden"
-                    onclick="addClassroomToCart()"
-                  >
-                    <div
-                      class="button-bg-fill"
-                      style="
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 0;
-                        background-color: white;
-                        z-index: 1;
-                      "
-                    ></div>
-                    <span
-                      class="mobile-button-text"
-                      style="position: relative; z-index: 2"
-                      >加入清單</span
-                    >
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- 教室列表 -->
+          <div></div>
         </div>
       </div>
     </main>
@@ -766,179 +470,132 @@
       ></p>
     </div>
 
-    <footer class="pt-4 pb-8">
-      <div
-        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 md:mb-0 hidden md:flex">
-          <a
-            href="https://sccd.usc.edu.tw/"
-            target="_blank"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >TO SCCD
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+    <!-- Footer -->
+    <footer class="bg-transparent footer-main">
+      <div class="container">
+        <div class="hidden md:flex justify-between items-center">
+          <div class="flex items-center footer-gap">
+            <a
+              href="https://sccd.usc.edu.tw/"
+              target="_blank"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(TO SCCD)</span>
+                <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
-            </div>
-          </a>
-          <a
-            href="about.html"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >ABOUT
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+            </a>
+            <a
+              href="about.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(ABOUT)</span>
+                <span class="menu-text-hidden">(ABOUT)</span>
               </div>
-            </div>
-          </a>
-        </div>
-        <div class="copyright text-xs md:text-right">
-          <p>
-            <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >Copyright © 2025 111</span
-              >屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >All rights reserved.</span
-              >
-            </span>
-            <span class="copyright-easter-egg" id="easter-egg-text">
-              <!-- 彩蛋文字將由JavaScript生成 -->
-            </span>
-          </p>
+            </a>
+          </div>
+          <div
+            class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header"
+          >
+            <p>
+              <span class="copyright-original">
+                <span class="font-['Inter',_sans-serif] uppercase"
+                  >Copyright © 2025 111</span
+                >屆系學會
+                <span class="font-['Inter',_sans-serif]"
+                  >All rights reserved.</span
+                >
+              </span>
+              <span class="copyright-easter-egg" id="easter-egg-text">
+                <!-- 彩蛋文字將由JavaScript生成 -->
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
 
     <!-- 手機版選單 -->
     <div class="mobile-menu md:hidden" id="mobile-menu">
-      <!-- Header區域 -->
-      <div class="py-6 px-6">
-        <div class="flex justify-between items-center">
-          <a href="index.html" class="logo-link">
-            <div
-              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
-            >
-              SCCD
-            </div>
-          </a>
-          <button
-            class="font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-close"
-          >
-            <span class="text-white">CLOSE</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 選單項目 -->
-      <div class="flex-grow px-6">
-        <nav>
-          <ul class="flex flex-col space-y-4">
-            <li class="menu-animate-enter">
+      <div class="mobile-menu-content">
+        <!-- 導航項目 -->
+        <div class="flex flex-col items-start menu-gap flex-grow">
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-1">
               <a
                 href="booking.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
-                >BOOKING</a
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
               >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="resources.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
-                >RESOURCES</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="login.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
-                >LOG IN</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      <!-- Footer區域 -->
-      <div class="pt-4 pb-8 px-6">
-        <div class="flex flex-col text-sm">
-          <div class="flex flex-col space-y-2 mb-2 items-start">
-            <div class="menu-animate-enter">
-              <a
-                href="https://sccd.usc.edu.tw/"
-                target="_blank"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
-                >TO SCCD
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="menu-animate-enter">
-              <a
-                href="about.html"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
-                >ABOUT
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
+                <div class="menu-item-wrapper active">
+                  <span class="menu-text">(BOOKING)</span>
+                  <span class="menu-text-hidden">(BOOKING)</span>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-2">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(LOGIN)</span>
+                  <span class="menu-text-hidden">(LOGIN)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-3">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-4">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copyright 在底部 -->
+        <div class="menu-animate-enter mobile-menu-content-bottom">
+          <div class="menu-animate-enter-content menu-delay-5">
             <div
-              class="copyright text-xs menu-animate-enter-content menu-delay-6"
+              class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header"
             >
               <p>
                 <span class="copyright-original">
                   <span class="font-['Inter',_sans-serif] uppercase"
                     >Copyright © 2025 111</span
                   >屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase"
+                  <span class="font-['Inter',_sans-serif]"
                     >All rights reserved.</span
                   >
+                </span>
+                <span
+                  class="copyright-easter-egg"
+                  id="mobile-menu-easter-egg-text"
+                >
+                  <!-- 彩蛋文字將由JavaScript生成 -->
                 </span>
               </p>
             </div>

@@ -29,7 +29,7 @@
     pointer-events: none;
   }
   
-  /* 篩選器hover邏輯 */
+  /* 篩選器hover邏輯 - 水平排列版本 */
   .filter-group:hover .filter-button {
     opacity: 0.3;
   }
@@ -123,6 +123,38 @@
   margin: 1rem 0;
 }
 
+/* ===== Equipment Detail 頁面專用樣式 ===== */
+
+/* 圖片放大覆蓋層樣式 */
+#image-overlay {
+  background-color: rgba(0, 0, 0, 0.85);
+}
+
+#image-overlay .relative {
+  padding: 6vh 3vw;
+}
+
+#enlarged-image {
+  max-height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+/* 圖片hover提示樣式 */
+.image-tooltip {
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.4);
+  color: white;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 400;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  white-space: nowrap;
+}
+
 /* 響應式佈局 */
 @media (max-width: 767px) {
   
@@ -171,5 +203,10 @@
   .mobile-equipment-card .equipment-bookmark {
     margin-left: 0.5rem;
     flex-shrink: 0;
+  }
+  
+  /* Equipment Detail 頁面響應式調整 */
+  main {
+    padding-top: 0;
   }
 } 

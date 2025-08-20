@@ -1,455 +1,258 @@
-/* ===== 設備篩選系統 JavaScript ===== */
-
-// 桌面版篩選器管理
-class DesktopFilter {
-  constructor() {
-    this.categoryButtons = document.querySelectorAll('.filter-button');
-    this.statusButtons = document.querySelectorAll('#status-available, #status-unavailable');
-    this.equipmentCards = document.querySelectorAll('.equipment-card');
-    this.searchInput = document.getElementById('searchInput');
-    this.currentCategory = 'all'; // 預設顯示所有類別
-    this.currentStatus = '有現貨'; // 預設只顯示有現貨的設備
-    this.currentSearchText = '';
-    this.init();
-  }
-  
-  init() {
-    if (this.categoryButtons.length === 0 || this.equipmentCards.length === 0) return;
-    
-    this.setupCategoryFilters();
-    this.setupStatusFilters();
-    this.setupSearchFilter();
-    
-    // 初始化：使用進場動畫顯示默認內容
-    this.startEnterAnimation();
-  }
-  
-  setupCategoryFilters() {
-    this.categoryButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const newCategory = e.target.getAttribute('data-category');
-        
-        // 如果點擊的是當前分類，不做任何處理
-        if (this.currentCategory === newCategory) return;
-        
-        // 開始分類切換過程
-        this.switchCategory(newCategory, e.target);
-      });
-    });
-  }
-  
-  // 新增：分類切換管理方法
-  switchCategory(newCategory, buttonElement) {
-    // 計算適當的延遲時間 - 如果從"查看全部"切換到其他分類，需要更長時間
-    const isFromAll = this.currentCategory === 'all';
-    const delayTime = isFromAll ? 600 : 450; // 從查看全部切換需要更長時間
-    
-    // 第一階段：出場動畫
-    this.startExitAnimation();
-    
-    // 更新按鈕狀態
-    this.updateCategoryButtonStyles(buttonElement);
-    
-    // 等待出場動畫完成後開始進場
-    setTimeout(() => {
-      this.currentCategory = newCategory;
-      this.startEnterAnimation();
-    }, delayTime);
-  }
-  
-  // 新增：出場動畫
-  startExitAnimation() {
-    // 獲取當前可見的卡片
-    const visibleCards = Array.from(this.equipmentCards).filter(card => 
-      window.getComputedStyle(card).display !== 'none' && 
-      card.classList.contains('animate-in')
-    );
-    
-    // 根據當前分類決定出場速度
-    const isFromAll = this.currentCategory === 'all';
-    const cardInterval = isFromAll ? 30 : 50; // 從查看全部切換時更快的出場
-    
-    // 為可見卡片添加出場動畫
-    visibleCards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.remove('animate-in');
-        card.classList.add('animate-out');
-      }, index * cardInterval);
-    });
-  }
-  
-  // 新增：進場動畫
-  startEnterAnimation() {
-    // 重置所有卡片狀態
-    this.equipmentCards.forEach(card => {
-      card.classList.remove('animate-in', 'animate-out', 'transitioning');
-      card.style.opacity = '';
-      card.style.transform = '';
-    });
-    
-    // 篩選需要顯示的卡片
-    this.filterCards();
-    
-    // 觸發進場動畫
-    this.animateFilteredCards();
-  }
-  
-  // 更新：按鈕樣式更新方法
-  updateCategoryButtonStyles(selectedButton) {
-    this.categoryButtons.forEach(btn => {
-      btn.classList.remove('filter-active', 'font-bold');
-      btn.classList.add('font-normal');
-    });
-    
-    selectedButton.classList.add('filter-active', 'font-bold');
-    selectedButton.classList.remove('font-normal');
-  }
-  
-  setupStatusFilters() {
-    this.statusButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const newStatus = e.target.getAttribute('data-status');
-        
-        // 如果點擊的是當前狀態，不做任何處理
-        if (this.currentStatus === newStatus) return;
-        
-        // 開始狀態切換
-        this.switchStatus(newStatus, e.target);
-      });
-    });
-  }
-  
-  // 新增：狀態切換管理方法
-  switchStatus(newStatus, buttonElement) {
-    // 計算適當的延遲時間
-    const isFromAll = this.currentCategory === 'all';
-    const delayTime = isFromAll ? 600 : 450;
-    
-    // 開始出場動畫
-    this.startExitAnimation();
-    
-    // 更新按鈕狀態
-    this.updateStatusButtonStyles(buttonElement);
-    
-    // 等待出場動畫完成後開始進場
-    setTimeout(() => {
-      this.currentStatus = newStatus;
-      this.startEnterAnimation();
-    }, delayTime);
-  }
-  
-  // 新增：狀態按鈕樣式更新方法
-  updateStatusButtonStyles(selectedButton) {
-    this.statusButtons.forEach(btn => {
-      btn.classList.remove('bg-white', 'text-black');
-      btn.classList.add('border', 'border-white', 'text-white');
-    });
-    selectedButton.classList.remove('border', 'border-white', 'text-white');
-    selectedButton.classList.add('bg-white', 'text-black');
-  }
-  
-  setupSearchFilter() {
-    if (!this.searchInput) return;
-    
-    // 實時搜尋 - 使用防抖技術
-    let searchTimeout;
-    this.searchInput.addEventListener('input', (e) => {
-      const newSearchText = e.target.value.toLowerCase().trim();
-      
-      // 清除之前的定時器
-      clearTimeout(searchTimeout);
-      
-      // 如果搜尋文字沒有變化，不處理
-      if (this.currentSearchText === newSearchText) return;
-      
-      // 設置新的定時器
-      searchTimeout = setTimeout(() => {
-        this.switchSearch(newSearchText);
-      }, 300); // 300ms防抖
-    });
-  }
-  
-  // 新增：搜尋切換管理方法
-  switchSearch(newSearchText) {
-    // 如果有可見卡片，先執行出場動畫
-    const hasVisibleCards = Array.from(this.equipmentCards).some(card => 
-      window.getComputedStyle(card).display !== 'none' && 
-      card.classList.contains('animate-in')
-    );
-    
-    if (hasVisibleCards) {
-      // 計算適當的延遲時間
-      const isFromAll = this.currentCategory === 'all';
-      const delayTime = isFromAll ? 600 : 450;
-      
-      this.startExitAnimation();
-      setTimeout(() => {
-        this.currentSearchText = newSearchText;
-        this.startEnterAnimation();
-      }, delayTime);
-    } else {
-      this.currentSearchText = newSearchText;
-      this.startEnterAnimation();
-    }
-  }
-  
-  filterCards() {
-    // 設置卡片的顯示狀態
-    this.equipmentCards.forEach(card => {
-      const cardCategory = card.getAttribute('data-category');
-      const cardStatus = card.getAttribute('data-status');
-      
-      // 獲取設備名稱進行文字匹配
-      const nameElement = card.querySelector('.text-lg, .text-xl');
-      const equipmentName = nameElement ? nameElement.textContent.toLowerCase() : '';
-      
-      const categoryMatch = this.currentCategory === 'all' || cardCategory === this.currentCategory;
-      const statusMatch = cardStatus === this.currentStatus; // 狀態必須精確匹配
-      const searchMatch = this.currentSearchText === '' || equipmentName.includes(this.currentSearchText);
-      
-      if (categoryMatch && statusMatch && searchMatch) {
-        card.style.display = 'flex';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  }
-  
-  animateFilteredCards() {
-    // 確保卡片處於初始隱藏狀態
-    this.equipmentCards.forEach(card => {
-      if (window.getComputedStyle(card).display !== 'none') {
-        card.classList.remove('animate-in', 'animate-out', 'transitioning');
-        // 強制重排以確保樣式已應用
-        card.offsetHeight;
-      }
-    });
-    
-    // 延遲重新計算動畫，確保 DOM 更新完成
-    setTimeout(() => {
-      if (window.recalculateRows) {
-        window.recalculateRows();
-      }
-    }, 50);
-  }
-  
-  // 公用方法：重新應用當前篩選
-  applyFilters() {
-    this.startEnterAnimation();
-  }
-}
-
-// 手機版底部篩選器管理
-class MobileFilter {
-  constructor() {
-    this.filtersBtn = document.getElementById('mobile-filters-btn');
-    this.bottomSheet = document.getElementById('filters-bottom-sheet');
-    this.overlay = document.getElementById('filters-overlay');
-    this.applyBtn = document.getElementById('apply-filters-btn');
-    this.clearBtn = document.getElementById('clear-filters-btn');
-    this.categoryButtons = document.querySelectorAll('.mobile-filter-category');
-    this.equipmentCards = document.querySelectorAll('.equipment-card');
-    this.mobileSearchInput = document.getElementById('mobileSearchInput');
-    this.currentSearchText = '';
-    this.init();
-  }
-  
-  init() {
-    if (!this.filtersBtn || !this.bottomSheet || !this.overlay || !this.applyBtn) return;
-    
-    this.setupEventListeners();
-    this.setupMobileSearchFilter();
-  }
-  
-  setupEventListeners() {
-    // 打開篩選器
-    this.filtersBtn.addEventListener('click', () => this.openBottomSheet());
-    
-    // 關閉篩選器
-    this.overlay.addEventListener('click', () => this.closeBottomSheet());
-    
-    // 應用篩選
-    this.applyBtn.addEventListener('click', () => {
-      const selectedCategories = Array.from(this.categoryButtons)
-        .filter(btn => btn.classList.contains('font-bold'))
-        .map(btn => btn.getAttribute('data-category'));
-      
-      const selectedStatus = '有現貨'; // 手機版固定為有現貨
-      
-      this.applyMobileFilters(selectedCategories, selectedStatus);
-      this.closeBottomSheet();
-    });
-    
-    // 清除篩選
-    if (this.clearBtn) {
-      this.clearBtn.addEventListener('click', () => {
-        this.currentSearchText = '';
-        if (this.mobileSearchInput) {
-          this.mobileSearchInput.value = '';
-        }
-        this.applyMobileFilters([], '有現貨');
-        this.closeBottomSheet();
-      });
-    }
-    
-    // 分類選擇
-    this.categoryButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        button.classList.toggle('font-bold');
-        button.classList.toggle('font-normal');
-      });
-    });
-  }
-  
-  setupMobileSearchFilter() {
-    if (!this.mobileSearchInput) return;
-    
-    // 實時搜尋 - 每次輸入都觸發
-    this.mobileSearchInput.addEventListener('input', (e) => {
-      const newSearchText = e.target.value.toLowerCase().trim();
-      
-      // 如果是從有內容變成空白（刪除所有文字），需要特殊處理
-      if (this.currentSearchText !== '' && newSearchText === '') {
-        // 先隱藏所有卡片避免跳動
-        this.equipmentCards.forEach(card => {
-          card.style.display = 'none';
-          card.classList.remove('animate-in');
-          card.style.opacity = '';
-          card.style.transform = '';
-        });
-        
-        // 延遲更新搜尋文字和重新篩選
-        setTimeout(() => {
-          this.currentSearchText = newSearchText;
-          this.filterMobileCards();
-        }, 50);
-      } else {
-        this.currentSearchText = newSearchText;
-        this.filterMobileCards();
-      }
-    });
-    
-    // 清空搜尋框時重置
-    this.mobileSearchInput.addEventListener('blur', (e) => {
-      if (e.target.value.trim() === '') {
-        this.currentSearchText = '';
-        this.filterMobileCards();
-      }
-    });
-  }
-  
-  filterMobileCards() {
-    // 重置所有卡片動畫狀態
-    this.equipmentCards.forEach(card => {
-      card.classList.remove('animate-in');
-      // 移除內聯樣式，讓CSS的默認樣式生效
-      card.style.opacity = '';
-      card.style.transform = '';
-    });
-    
-    this.equipmentCards.forEach(card => {
-      const cardCategory = card.getAttribute('data-category');
-      const cardStatus = card.getAttribute('data-status');
-      
-      // 獲取設備名稱進行文字匹配
-      const nameElement = card.querySelector('.text-lg, .text-xl');
-      const equipmentName = nameElement ? nameElement.textContent.toLowerCase() : '';
-      
-      const statusMatch = cardStatus === '有現貨'; // 手機版固定只顯示有現貨
-      const searchMatch = this.currentSearchText === '' || equipmentName.includes(this.currentSearchText);
-      
-      if (statusMatch && searchMatch) {
-        card.style.display = 'flex';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-    
-    // 延遲重新觸發動畫
-    setTimeout(() => {
-      if (window.recalculateRows) {
-        window.recalculateRows();
-      }
-    }, 50);
-  }
-  
-  openBottomSheet() {
-    this.bottomSheet.classList.add('active');
-    this.overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-  
-  closeBottomSheet() {
-    this.bottomSheet.classList.remove('active');
-    this.overlay.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-  
-  applyMobileFilters(categories, status) {
-    // 先執行出場動畫
-    this.startMobileExitAnimation();
-    
-    // 等待出場動畫完成後開始進場
-    setTimeout(() => {
-      this.equipmentCards.forEach(card => {
-        const cardCategory = card.getAttribute('data-category');
-        const cardStatus = card.getAttribute('data-status');
-        
-        // 獲取設備名稱進行文字匹配
-        const nameElement = card.querySelector('.text-lg, .text-xl');
-        const equipmentName = nameElement ? nameElement.textContent.toLowerCase() : '';
-        
-        const categoryMatch = categories.length === 0 || categories.includes(cardCategory);
-        const statusMatch = cardStatus === status;
-        const searchMatch = this.currentSearchText === '' || equipmentName.includes(this.currentSearchText);
-        
-        if (categoryMatch && statusMatch && searchMatch) {
-          card.style.display = 'flex';
-        } else {
-          card.style.display = 'none';
-        }
-      });
-      
-      // 觸發進場動畫
-      if (window.recalculateRows) {
-        window.recalculateRows();
-      }
-    }, 450);
-  }
-  
-  // 新增：手機版出場動畫
-  startMobileExitAnimation() {
-    const visibleCards = Array.from(this.equipmentCards).filter(card => 
-      window.getComputedStyle(card).display !== 'none' && 
-      card.classList.contains('animate-in')
-    );
-    
-    visibleCards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.remove('animate-in');
-        card.classList.add('animate-out');
-      }, index * 50);
-    });
-  }
-}
-
-// 全域函數
-window.DesktopFilter = DesktopFilter;
-window.MobileFilter = MobileFilter;
-
-// 自動初始化
+// 設備篩選器
 document.addEventListener('DOMContentLoaded', function() {
-  // 檢查是否在設備頁面
-  if (document.querySelector('.equipment-card')) {
-    // 等待設備數據準備完成後再初始化篩選器
-    function waitForEquipmentData() {
-      if (window.equipmentDataReady) {
-        window.desktopFilter = new DesktopFilter();
-        window.mobileFilter = new MobileFilter();
-      } else {
-        setTimeout(waitForEquipmentData, 100);
-      }
+    console.log('DOM Content Loaded'); // 調試用
+
+    // 獲取所有篩選按鈕和設備卡片
+    const filterButtons = document.querySelectorAll('.filter-button');
+    const equipmentCards = document.querySelectorAll('.equipment-card');
+    const searchInput = document.getElementById('searchInput');
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    
+    // 桌面版狀態篩選按鈕
+    const statusAvailableBtn = document.getElementById('status-available');
+    const statusUnavailableBtn = document.getElementById('status-unavailable');
+    
+    // 當前選中的狀態（預設為有現貨）
+    let currentSelectedStatus = '有現貨';
+
+    console.log('Found equipment cards:', equipmentCards.length); // 調試用
+
+    // 顯示已收藏的設備
+    function showBookmarkedEquipment() {
+        console.log('Showing bookmarked equipment'); // 調試用
+        // 從 localStorage 獲取收藏列表，使用正確的鍵值
+        const bookmarks = JSON.parse(localStorage.getItem('sccd_bookmarks') || '[]');
+        console.log('Bookmarks from localStorage:', bookmarks); // 調試用
+
+        equipmentCards.forEach(card => {
+            // 獲取設備名稱
+            const bookmarkBtn = card.querySelector('.bookmark-btn');
+            if (bookmarkBtn) {
+                const equipmentName = bookmarkBtn.dataset.equipment;
+                const cardStatus = card.getAttribute('data-status');
+                
+                // 檢查設備是否在收藏列表中
+                const isBookmarked = bookmarks.includes(equipmentName);
+                // 檢查狀態是否匹配
+                const statusMatch = cardStatus === currentSelectedStatus;
+                
+                console.log('Equipment:', equipmentName, 'Bookmarked:', isBookmarked, 'Status:', cardStatus, 'StatusMatch:', statusMatch); // 調試用
+                card.style.display = (isBookmarked && statusMatch) ? 'flex' : 'none';
+            } else {
+                console.log('No bookmark button found for card'); // 調試用
+                card.style.display = 'none';
+            }
+            card.classList.remove('animate-in');
+        });
+
+        // 重新計算行號並觸發動畫
+        if (typeof window.recalculateRows === 'function') {
+            window.recalculateRows();
+        }
     }
-    waitForEquipmentData();
-  }
-}); 
+
+    // 初始化時顯示常用設備並設置按鈕狀態
+    const bookmarksButton = document.querySelector('[data-category="bookmarks"]');
+    if (bookmarksButton) {
+        console.log('Found bookmarks button'); // 調試用
+        bookmarksButton.classList.add('filter-active', 'font-bold');
+        bookmarksButton.classList.remove('font-normal');
+    } else {
+        console.log('Bookmarks button not found'); // 調試用
+    }
+    showBookmarkedEquipment();
+
+    // 為每個篩選按鈕添加點擊事件
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            console.log('Filter button clicked:', this.dataset.category); // 調試用
+
+            // 移除所有按鈕的 active 狀態
+            filterButtons.forEach(btn => {
+                btn.classList.remove('filter-active', 'font-bold');
+                btn.classList.add('font-normal');
+            });
+
+            // 添加當前按鈕的 active 狀態
+            this.classList.add('filter-active', 'font-bold');
+            this.classList.remove('font-normal');
+
+            const category = this.dataset.category;
+
+            // 清空搜索框
+            if (searchInput) searchInput.value = '';
+            if (mobileSearchInput) mobileSearchInput.value = '';
+
+            // 根據類別篩選
+            if (category === 'bookmarks') {
+                showBookmarkedEquipment();
+            } else {
+                filterByCategory(category);
+            }
+        });
+    });
+
+    // 搜索功能
+    function setupSearch(input) {
+        if (!input) return;
+
+        let searchTimeout;
+        input.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchText = this.value.toLowerCase().trim();
+                
+                // 如果搜索框為空，顯示當前選中類別的設備
+                if (!searchText) {
+                    const activeButton = document.querySelector('.filter-active');
+                    if (activeButton) {
+                        const category = activeButton.dataset.category;
+                        if (category === 'bookmarks') {
+                            showBookmarkedEquipment();
+                        } else {
+                            filterByCategory(category);
+                        }
+                    }
+                    return;
+                }
+
+                // 搜索並排序結果
+                const searchResults = Array.from(equipmentCards).map(card => {
+                    const title = card.querySelector('.text-small-title').textContent.toLowerCase();
+                    const exactMatch = title.includes(searchText);
+                    const consecutiveMatch = title.includes(searchText);
+                    const partialMatches = searchText.split('').filter(char => title.includes(char)).length;
+                    
+                    return {
+                        card: card,
+                        score: consecutiveMatch ? (searchText.length * 2) : partialMatches,
+                        exactMatch: exactMatch
+                    };
+                }).sort((a, b) => b.score - a.score);
+
+                // 顯示搜索結果
+                equipmentCards.forEach(card => {
+                    card.style.display = 'none';
+                    card.classList.remove('animate-in');
+                });
+
+                searchResults.forEach(result => {
+                    if (result.score > 0) {
+                        result.card.style.display = 'flex';
+                    }
+                });
+
+                // 重新計算行號並觸發動畫
+                if (typeof window.recalculateRows === 'function') {
+                    window.recalculateRows();
+                }
+            }, 300);
+        });
+    }
+
+    // 設置桌面版和手機版搜索
+    setupSearch(searchInput);
+    setupSearch(mobileSearchInput);
+
+    // 根據類別篩選設備
+    function filterByCategory(category) {
+        console.log('Filtering by category:', category, 'Status:', currentSelectedStatus); // 調試用
+        equipmentCards.forEach(card => {
+            const cardCategory = card.dataset.category;
+            const cardStatus = card.getAttribute('data-status');
+            
+            const categoryMatch = cardCategory === category;
+            const statusMatch = cardStatus === currentSelectedStatus;
+            
+            if (categoryMatch && statusMatch) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+            card.classList.remove('animate-in');
+        });
+
+        // 重新計算行號並觸發動畫
+        if (typeof window.recalculateRows === 'function') {
+            window.recalculateRows();
+        }
+    }
+
+    // 桌面版狀態篩選按鈕事件處理
+    if (statusAvailableBtn && statusUnavailableBtn) {
+        // 設置初始狀態 - 有現貨為預設選中
+        const availableWrapper = statusAvailableBtn.querySelector('.menu-item-wrapper');
+        const unavailableWrapper = statusUnavailableBtn.querySelector('.menu-item-wrapper');
+        
+        if (availableWrapper && unavailableWrapper) {
+            // 設置初始狀態：有現貨選中（active），已借出未選中但保持red-underline
+            availableWrapper.classList.add('active');
+            availableWrapper.classList.remove('red-underline');
+            unavailableWrapper.classList.remove('active');
+            unavailableWrapper.classList.add('red-underline');
+
+            statusAvailableBtn.addEventListener('click', function() {
+                console.log('Status filter clicked: 有現貨'); // 調試用
+                currentSelectedStatus = '有現貨';
+                
+                // 更新按鈕狀態：有現貨選中，已借出未選中
+                availableWrapper.classList.add('active');
+                availableWrapper.classList.remove('red-underline');
+                unavailableWrapper.classList.remove('active');
+                unavailableWrapper.classList.add('red-underline');
+                
+                // 重新應用當前篩選
+                applyCurrentFilter();
+            });
+
+            statusUnavailableBtn.addEventListener('click', function() {
+                console.log('Status filter clicked: 已借出'); // 調試用
+                currentSelectedStatus = '已借出';
+                
+                // 更新按鈕狀態：已借出選中且保持red-underline，有現貨未選中
+                unavailableWrapper.classList.add('active');
+                unavailableWrapper.classList.add('red-underline'); // 保持red-underline以顯示紅色
+                availableWrapper.classList.remove('active');
+                availableWrapper.classList.remove('red-underline');
+                
+                // 重新應用當前篩選
+                applyCurrentFilter();
+            });
+        }
+    }
+
+    // 應用當前篩選
+    function applyCurrentFilter() {
+        const activeButton = document.querySelector('.filter-active');
+        if (activeButton) {
+            const category = activeButton.dataset.category;
+            if (category === 'bookmarks') {
+                showBookmarkedEquipment();
+            } else {
+                filterByCategory(category);
+            }
+        }
+    }
+
+    // 監聽收藏狀態變化
+    window.addEventListener('bookmarkUpdated', function() {
+        console.log('Bookmark updated'); // 調試用
+        // 如果當前是在常用設備分類，則重新篩選
+        const activeButton = document.querySelector('.filter-active');
+        if (activeButton && activeButton.dataset.category === 'bookmarks') {
+            showBookmarkedEquipment();
+        }
+    });
+
+    // 監聽 localStorage 變化以同步收藏狀態
+    window.addEventListener('storage', function(event) {
+        if (event.key === 'sccd_bookmarks') {
+            console.log('Bookmarks storage changed'); // 調試用
+            // 如果當前是在常用設備分類，則重新篩選
+            const activeButton = document.querySelector('.filter-active');
+            if (activeButton && activeButton.dataset.category === 'bookmarks') {
+                showBookmarkedEquipment();
+            }
+        }
+    });
+});

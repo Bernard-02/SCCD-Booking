@@ -158,9 +158,9 @@ function setupAddToCart(equipmentId) {
       const equipment = window.cartManager.getEquipmentById(equipmentId);
       
       if (!equipment) {
-        if (window.showToast) {
-          window.showToast('設備資料載入錯誤！');
-        }
+              if (window.showToast) {
+        window.showToast('設備資料載入錯誤！', 'error');
+      }
         return;
       }
       
@@ -175,11 +175,11 @@ function setupAddToCart(equipmentId) {
         updateEquipmentDisplay(equipment);
         
         if (window.showToast) {
-          window.showToast(`${equipment.name}已成功加入租借清單！`);
+          window.showToast(`${equipment.name}已成功加入租借清單！`, 'success');
         }
       } else {
         if (window.showToast) {
-          window.showToast(`${equipment.name}庫存不足或已達上限！`);
+          window.showToast(`${equipment.name}庫存不足或已達上限！`, 'error');
         }
       }
     });

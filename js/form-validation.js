@@ -15,6 +15,7 @@ class LoginFormValidator {
     if (!this.form || !this.usernameInput || !this.passwordInput) return;
     
     this.setupEventListeners();
+    this.setupLoginCTA();
   }
   
   setupEventListeners() {
@@ -47,6 +48,18 @@ class LoginFormValidator {
     if (registerLink) {
       registerLink.addEventListener('click', this.handleRegister);
     }
+  }
+
+  // 綁定 (LOGIN) CTA 觸發提交
+  setupLoginCTA() {
+    const loginCta = document.getElementById('login-cta');
+    if (!loginCta || !this.form) return;
+    loginCta.addEventListener('click', (e) => {
+      e.preventDefault();
+      // 觸發與 submit 相同的流程
+      const submitEvent = new Event('submit', { cancelable: true });
+      this.form.dispatchEvent(submitEvent);
+    });
   }
   
   clearError(inputGroup, errorElement) {

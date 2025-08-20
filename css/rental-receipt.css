@@ -35,8 +35,13 @@
 .equipment-scroll-area {
   flex-grow: 1;
   overflow-y: auto;
-  padding-right: 4px;
   min-height: 0; /* 允許flex項目縮小 */
+}
+
+/* 設備項目最大高度限制 */
+.equipment-item {
+  max-height: 120px;
+  overflow: hidden;
 }
 
 .equipment-scroll-area::-webkit-scrollbar {
@@ -61,12 +66,7 @@
   border-bottom: none !important;
 }
 
-/* 桌面版確保body不會出現滾動條 */
-@media (min-width: 768px) {
-  body {
-    overflow: hidden;
-  }
-}
+/* 允許整頁滾動：移除桌面版強制隱藏 body 捲動 */
 
 /* 響應式調整 */
 @media (max-width: 767px) {

@@ -18,300 +18,132 @@
 
     <!-- 引入外部CSS文件 -->
     <link rel="stylesheet" href="css/common.css" />
-    <link rel="stylesheet" href="css/arrows.css" />
-    <link rel="stylesheet" href="css/copyright.css" />
+    <link rel="stylesheet" href="css/mobile-menu.css" />
+    <link rel="stylesheet" href="css/typography.css" />
+
+
     <link rel="stylesheet" href="css/breadcrumb.css" />
     <link rel="stylesheet" href="css/animations.css" />
-    <link rel="stylesheet" href="css/equipment-detail.css" />
-
-
+    <link rel="stylesheet" href="css/equipment.css" />
 
     <!-- 引入模組化 JavaScript 文件 -->
     <script src="js/mobile-menu.js" defer></script>
     <script src="js/copyright-easter-egg.js" defer></script>
-    <script src="js/button-animations.js" defer></script>
+
     <script src="js/cart-sync.js" defer></script>
     <script src="js/equipment-detail.js" defer></script>
   </head>
 
   <body class="bg-black text-white flex flex-col h-screen">
-    <header class="py-6">
-      <div
-        class="container mx-auto flex justify-between items-center px-6 md:px-4"
-      >
-        <div class="flex items-center">
-          <a href="index.html" class="logo-link mr-10">
-            <div class="font-['Inter',_sans-serif] logo text-base font-medium">
-              SCCD
-            </div>
+    <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
+      <div class="container">
+        <div class="flex justify-between items-center">
+          <a href="index.html" class="font-['Inter',_sans-serif] font-medium text-white text-header">
+            SCCD
           </a>
 
           <!-- 桌面版導航 -->
-          <nav class="desktop-nav">
-            <ul class="flex space-x-10">
-              <li>
-                <a
-                  href="booking.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >BOOKING</a
-                >
-              </li>
-              <li>
-                <a
-                  href="resources.html"
-                  class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link"
-                  >RESOURCES</a
-                >
-              </li>
-            </ul>
-          </nav>
-        </div>
-
-        <div class="flex items-center space-x-5">
-          <a
-            href="rental-list.html"
-            id="cart-link"
-            class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link hidden md:block"
-            >(<span id="cart-count">0</span>) CART</a
-          >
-          <a
-            href="login.html"
-            id="login-btn"
-            class="login-btn border text-white rounded-[30px] transition-colors font-['Inter',_sans-serif] font-regular text-sm arrow-link button-animated hidden md:flex"
-            style="position: relative; overflow: hidden"
-          >
-            <div
-              class="button-bg-fill"
-              style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 0;
-                background-color: white;
-                z-index: 1;
-                border-radius: 30px;
-              "
-            ></div>
-            <span style="position: relative; z-index: 2">LOG IN</span>
-            <div class="arrow-container" style="position: relative; z-index: 2">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+          <nav class="flex items-center header-menu desktop-nav nav-gap">
+            <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper active">
+                <span class="menu-text">(BOOKING)</span>
+                <span class="menu-text-hidden">(BOOKING)</span>
               </div>
-            </div>
-          </a>
+            </a>
+            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">((<span id="cart-count">0</span>) CART)</span>
+                <span class="menu-text-hidden">((<span class="cart-count-mirror">0</span>) CART)</span>
+              </div>
+            </a>
+            <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(LOGIN)</span>
+                <span class="menu-text-hidden">(LOGIN)</span>
+              </div>
+            </a>
+          </nav>
 
-          <!-- 手機版 CART 按鈕 -->
-          <a
-            href="rental-list.html"
-            id="mobile-cart-link"
-            class="font-['Inter',_sans-serif] text-base font-normal transition-colors nav-link md:hidden"
-            >(<span id="mobile-cart-count">0</span>) CART</a
-          >
-
-          <!-- 手機版選單按鈕 -->
-          <button
-            class="md:hidden font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-btn"
-          >
-            <span class="text-white" id="menu-btn-text">MENU</span>
-          </button>
+          <!-- 手機版導航 -->
+          <nav class="flex items-center mobile-nav mobile-nav-gap">
+            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">((<span id="mobile-cart-count">0</span>) CART)</span>
+                <span class="menu-text-hidden">((<span class="mobile-cart-count-mirror">0</span>) CART)</span>
+              </div>
+            </a>
+            <button id="mobile-menu-btn" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(MENU)</span>
+                <span class="menu-text-hidden">(MENU)</span>
+              </div>
+            </button>
+          </nav>
         </div>
       </div>
     </header>
 
-    <main class="flex-grow flex flex-col pt-0 md:pt-[3vh] pb-[3vh]">
-      <div class="w-full flex-grow flex items-center justify-center">
-        <!-- Breadcrumb -->
-        <nav class="breadcrumb hidden md:block" id="equipment-breadcrumb">
-          <a href="index.html" class="breadcrumb-item">首頁</a>
-          <span class="breadcrumb-separator">/</span>
-          <a href="booking.html" class="breadcrumb-item">租借日期</a>
-          <span class="breadcrumb-separator">/</span>
-          <a href="bookingresources.html" class="breadcrumb-item">租借資源</a>
-          <span class="breadcrumb-separator">/</span>
-          <a href="equipment.html" class="breadcrumb-item">租借設備</a>
-          <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-item" id="breadcrumb-equipment-name"
-            >設備名稱</span
-          >
-        </nav>
-
-        <div
-          class="flex flex-col md:grid md:grid-cols-2 md:gap-50 w-full px-6 md:px-0 md:w-4/5 md:items-center md:mt-12"
-        >
-          <!-- MOBILE -->
-          <div class="flex flex-col w-full block md:hidden">
-            <div class="w-full">
-              <div
-                class="aspect-square w-full cursor-pointer js-equipment-image-container"
-              >
-                <img
-                  class="w-full h-full object-cover js-main-image"
-                  src=""
-                  alt="設備圖片"
-                />
-              </div>
+    <main class="flex-1 pt-20 pb-8 flex flex-col overflow-hidden">
+      <div class="container w-full flex-1 min-h-0">
+        <div class="w-full h-full px-6 md:px-[6%]">
+          <div class="grid grid-cols-2 gap-0 w-full h-full min-h-0">
+          <div id="left" class="h-full min-h-0">
+            <div class="w-full h-full cursor-pointer js-equipment-image-container">
+              <img class="w-full h-full object-cover js-main-image" src="" alt="設備圖片" />
             </div>
-            <div class="w-full flex flex-col justify-center mt-8">
-              <div class="flex flex-col">
-                <div class="mb-2">
-                  <span
-                    class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"
-                  ></span>
+          </div>
+          <div id="right" class="h-full min-h-0">
+            <div class="pt-8 px-12 pb-0 min-h-full flex flex-col">
+              <div class="flex flex-col items-start flex-1 w-full">
+                <!-- 1) Breadcrumb -->
+                <div class="text-left w-full" style="padding-bottom: 1.08rem;">
+                  <nav class="breadcrumb-inline">
+                    <a href="index.html" class="breadcrumb-item text-breadcrumb">首頁</a>
+                    <span class="breadcrumb-separator text-breadcrumb">/</span>
+                    <a href="booking.html" class="breadcrumb-item text-breadcrumb">租借日期</a>
+                    <span class="breadcrumb-separator text-breadcrumb">/</span>
+                    <a href="bookingresources.html" class="breadcrumb-item text-breadcrumb">租借資源</a>
+                    <span class="breadcrumb-separator text-breadcrumb">/</span>
+                    <a href="equipment.html" class="breadcrumb-item text-breadcrumb">租借設備</a>
+                    <span class="breadcrumb-separator text-breadcrumb">/</span>
+                    <span class="breadcrumb-item text-breadcrumb" id="breadcrumb-equipment-name">設備名稱</span>
+                  </nav>
                 </div>
-                <div class="mb-1">
-                  <span
-                    class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"
-                  ></span>
+
+                <!-- 2) 狀態 + 分類/收藏 + 名稱（使用 flex column，不用 gap） -->
+                <div class="mt-6 w-full flex flex-col">
+                  <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"></span>
+                  <div class="w-full flex items-center justify-between mt-2">
+                    <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"></span>
+                    <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity js-bookmark-btn" data-equipment="" />
+                  </div>
+                  <h1 class="text-large-title font-['Inter',_sans-serif] font-medium text-white tracking-wide js-equipment-name mt-3"></h1>
                 </div>
-                <h1
-                  class="text-xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-6 js-equipment-name"
-                ></h1>
-                <div class="grid grid-cols-2 gap-8 mb-6">
+
+                <!-- 4) 押金與設備數量 -->
+                <div class="grid grid-cols-2 gap-0 w-full mt-8">
                   <div>
-                    <div
-                      class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
-                    >
-                      設備數量
-                    </div>
-                    <div
-                      class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"
-                    ></div>
+                    <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1">押金</div>
+                    <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"></div>
                   </div>
                   <div>
-                    <div
-                      class="text-xs font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1"
-                    >
-                      押金
-                    </div>
-                    <div
-                      class="text-2xl font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"
-                    ></div>
+                    <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1">設備數量</div>
+                    <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"></div>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-6 mt-8">
-                  <button
-                    class="flex-grow border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-2 text-base cursor-pointer button-animated js-add-to-cart-btn"
-                    style="position: relative; overflow: hidden"
-                  >
-                    <div
-                      class="button-bg-fill"
-                      style="
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 0;
-                        background-color: white;
-                        z-index: 1;
-                      "
-                    ></div>
-                    <span style="position: relative; z-index: 2">加入清單</span>
-                  </button>
-                  <img
-                    src="Icons/Bookmark Sharp Regular.svg"
-                    alt="Bookmark"
-                    class="w-5 h-5 cursor-pointer transition-opacity flex-shrink-0 js-bookmark-btn"
-                    data-equipment=""
-                  />
+                <!-- 5) (ADD) 按鈕（文字樣式，參考 home 的 (BOOK) ） -->
+                <div class="mt-auto">
+                  <a href="javascript:void(0)" class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block js-add-to-cart-btn">
+                    <div class="hero-cta-wrapper">
+                      <span class="hero-cta-text">(ADD)</span>
+                      <span class="hero-cta-hidden">(ADD)</span>
+                    </div>
+                  </a>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- DESKTOP -->
-          <div class="hidden md:contents">
-            <div class="flex justify-end h-full items-center">
-              <div
-                class="aspect-[4/5] w-4/5 cursor-pointer js-equipment-image-container"
-              >
-                <img
-                  class="w-full h-full object-cover js-main-image"
-                  src=""
-                  alt="設備圖片"
-                />
-              </div>
-            </div>
-            <div class="w-4/5 flex flex-col justify-center h-full">
-              <div class="flex flex-col justify-center gap-20">
-                <div>
-                  <div class="mb-4">
-                    <span
-                      class="text-base font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"
-                    ></span>
-                  </div>
-                  <div class="flex items-start justify-between mb-3">
-                    <span
-                      class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"
-                    ></span>
-                    <div class="ml-2">
-                      <img
-                        src="Icons/Bookmark Sharp Regular.svg"
-                        alt="Bookmark"
-                        class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity js-bookmark-btn"
-                        data-equipment=""
-                      />
-                    </div>
-                  </div>
-                  <h1
-                    class="text-3xl font-['Inter',_sans-serif] font-medium text-white tracking-wide mb-8 js-equipment-name"
-                  ></h1>
-                  <div class="grid grid-cols-2 gap-8">
-                    <div>
-                      <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2"
-                      >
-                        設備數量
-                      </div>
-                      <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"
-                      ></div>
-                    </div>
-                    <div>
-                      <div
-                        class="text-sm font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2"
-                      >
-                        押金
-                      </div>
-                      <div
-                        class="text-3xl font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="flex items-center justify-start">
-                  <button
-                    class="border border-white bg-transparent text-white font-['Inter',_sans-serif] font-normal py-3 px-8 text-lg cursor-pointer button-animated js-add-to-cart-btn"
-                    style="width: 200px; position: relative; overflow: hidden"
-                  >
-                    <div
-                      class="button-bg-fill"
-                      style="
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 0;
-                        background-color: white;
-                        z-index: 1;
-                      "
-                    ></div>
-                    <span style="position: relative; z-index: 2">加入清單</span>
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -335,181 +167,101 @@
       </div>
     </div>
 
+    <!-- 通知元件 -->
+    <div id="notification">
+      <p
+        id="notification-text"
+        class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"
+      ></p>
+    </div>
+
     <!-- 加入清單通知 (現在由JS動態生成) -->
 
-    <footer class="pt-4 pb-8">
-      <div
-        class="container mx-auto px-6 md:px-4 flex flex-col md:flex-row justify-between items-center text-sm"
-      >
-        <div class="flex space-x-6 md:mb-0 hidden md:flex">
-          <a
-            href="https://sccd.usc.edu.tw/"
-            target="_blank"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >TO SCCD
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+    <footer class="bg-transparent footer-main">
+      <div class="container">
+        <div class="hidden md:flex justify-between items-center">
+          <div class="flex items-center footer-gap">
+            <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(TO SCCD)</span>
+                <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
-            </div>
-          </a>
-          <a
-            href="about.html"
-            class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link"
-            >ABOUT
-            <div class="arrow-container">
-              <div class="arrow-icons-wrapper">
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
-                <img
-                  src="Icons/Small Arrow UpRight.svg"
-                  alt="Arrow"
-                  class="arrow-icon"
-                />
+            </a>
+            <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(ABOUT)</span>
+                <span class="menu-text-hidden">(ABOUT)</span>
               </div>
-            </div>
-          </a>
-        </div>
-        <div class="copyright text-xs md:text-right">
-          <p>
-            <span class="copyright-original">
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >Copyright © 2025 111</span
-              >屆系學會
-              <span class="font-['Inter',_sans-serif] uppercase"
-                >All rights reserved.</span
-              >
-            </span>
-            <span class="copyright-easter-egg" id="easter-egg-text">
-              <!-- 彩蛋文字將由JavaScript生成 -->
-            </span>
-          </p>
+            </a>
+          </div>
+          <div class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header">
+            <p>
+              <span class="copyright-original">
+                <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+                <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+              </span>
+              <span class="copyright-easter-egg" id="easter-egg-text">
+                <!-- 彩蛋文字將由JavaScript生成 -->
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
 
     <!-- 手機版選單 -->
     <div class="mobile-menu md:hidden" id="mobile-menu">
-      <!-- Header區域 -->
-      <div class="py-6 px-6">
-        <div class="flex justify-between items-center">
-          <a href="index.html" class="logo-link">
-            <div
-              class="font-['Inter',_sans-serif] logo text-base font-medium text-white"
-            >
-              SCCD
-            </div>
-          </a>
-          <button
-            class="font-['Inter',_sans-serif] text-base"
-            id="mobile-menu-close"
-          >
-            <span class="text-white">CLOSE</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 選單項目 -->
-      <div class="flex-grow px-6">
-        <nav>
-          <ul class="flex flex-col space-y-4">
-            <li class="menu-animate-enter">
-              <a
-                href="booking.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-1"
-                >BOOKING</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="resources.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-2"
-                >RESOURCES</a
-              >
-            </li>
-            <li class="menu-animate-enter">
-              <a
-                href="login.html"
-                class="font-['Inter',_sans-serif] text-base font-medium transition-colors nav-link block text-white menu-animate-enter-content menu-delay-3"
-                >LOG IN</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      <!-- Footer區域 -->
-      <div class="pt-4 pb-8 px-6">
-        <div class="flex flex-col text-sm">
-          <div class="flex flex-col space-y-2 mb-2 items-start">
-            <div class="menu-animate-enter">
-              <a
-                href="https://sccd.usc.edu.tw/"
-                target="_blank"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-4"
-                >TO SCCD
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="menu-animate-enter">
-              <a
-                href="about.html"
-                class="font-['Inter',_sans-serif] transition-colors arrow-link footer-link menu-animate-enter-content menu-delay-5"
-                >ABOUT
-                <div class="arrow-container">
-                  <div class="arrow-icons-wrapper">
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                    <img
-                      src="Icons/Small Arrow UpRight.svg"
-                      alt="Arrow"
-                      class="arrow-icon"
-                    />
-                  </div>
+      <div class="mobile-menu-content">
+        <div class="flex flex-col items-start menu-gap flex-grow">
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-1">
+              <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(BOOKING)</span>
+                  <span class="menu-text-hidden">(BOOKING)</span>
                 </div>
               </a>
             </div>
           </div>
           <div class="menu-animate-enter">
-            <div
-              class="copyright text-xs menu-animate-enter-content menu-delay-6"
-            >
+            <div class="menu-animate-enter-content menu-delay-2">
+              <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(LOGIN)</span>
+                  <span class="menu-text-hidden">(LOGIN)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-3">
+              <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-4">
+              <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-animate-enter mobile-menu-content-bottom">
+          <div class="menu-animate-enter-content menu-delay-5">
+            <div class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header">
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase"
-                    >Copyright © 2025 111</span
-                  >屆系學會
-                  <span class="font-['Inter',_sans-serif] uppercase"
-                    >All rights reserved.</span
-                  >
+                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
+                  <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
                 </span>
               </p>
             </div>

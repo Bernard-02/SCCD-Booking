@@ -142,6 +142,26 @@ function initMobileFilters() {
       }
   }
 
+  // 設置初始狀態 - 常用設備為預設選中
+  function setInitialMobileFilterState() {
+    // 設定常用設備為預設選中
+    const bookmarksBtn = Array.from(categoryButtons).find(btn => btn.dataset.category === 'bookmarks');
+    if (bookmarksBtn) {
+      bookmarksBtn.classList.add('font-bold');
+      bookmarksBtn.classList.remove('font-normal');
+    }
+    
+    // 設定有現貨為預設選中，已借出為非選中
+    statusButtons.forEach(btn => {
+      const isAvailable = btn.dataset.status === '有現貨';
+      btn.classList.toggle('font-bold', isAvailable);
+      btn.classList.toggle('font-normal', !isAvailable);
+    });
+    
+    // 更新選中的狀態
+    selectedStatus = '有現貨';
+  }
+
   // 開啟與關閉 Bottom Sheet
   function openBottomSheet() {
       bottomSheet.classList.add('active');
@@ -156,6 +176,9 @@ function initMobileFilters() {
       // 清除內聯 transform 樣式，讓 CSS 過渡效果生效
       bottomSheet.style.transform = '';
   }
+
+  // 設置初始狀態
+  setInitialMobileFilterState();
 
   filtersBtn.addEventListener('click', openBottomSheet);
   overlay.addEventListener('click', closeBottomSheet);
@@ -189,15 +212,28 @@ function initMobileFilters() {
   
   if (clearBtn) {
       clearBtn.addEventListener('click', () => {
+          // 重置所有類別按鈕
           categoryButtons.forEach(btn => {
               btn.classList.remove('font-bold');
               btn.classList.add('font-normal');
           });
+          
+          // 重新設置常用設備為預設選中
+          const bookmarksBtn = Array.from(categoryButtons).find(btn => btn.dataset.category === 'bookmarks');
+          if (bookmarksBtn) {
+              bookmarksBtn.classList.add('font-bold');
+              bookmarksBtn.classList.remove('font-normal');
+          }
+          
+          // 設置有現貨為預設選中
           statusButtons.forEach(btn => {
               const isAvailable = btn.dataset.status === '有現貨';
               btn.classList.toggle('font-bold', isAvailable);
               btn.classList.toggle('font-normal', !isAvailable);
           });
+          
+          // 更新內部狀態
+          selectedStatus = '有現貨';
       });
   }
 
@@ -315,19 +351,39 @@ function generateMobileEquipmentCards() {
 function applyMobileFilters(categories, status) {
   const mobileCards = document.querySelectorAll('.mobile-equipment-card');
   
-  mobileCards.forEach(card => {
-    const cardCategory = card.getAttribute('data-category');
-    const cardStatus = card.getAttribute('data-status');
+  // 如果選擇了常用設備，使用收藏功能篩選
+  if (categories.includes('bookmarks')) {
+    const bookmarks = JSON.parse(localStorage.getItem('sccd_bookmarks') || '[]');
     
-    const categoryMatch = categories.length === 0 || categories.includes(cardCategory);
-    const statusMatch = cardStatus === status;
-    
-    if (categoryMatch && statusMatch) {
-      card.style.display = 'flex';
-    } else {
-      card.style.display = 'none';
-    }
-  });
+    mobileCards.forEach(card => {
+      const equipmentName = card.querySelector('.bookmark-btn')?.getAttribute('data-equipment');
+      const cardStatus = card.getAttribute('data-status');
+      
+      const isBookmarked = bookmarks.includes(equipmentName);
+      const statusMatch = cardStatus === status;
+      
+      if (isBookmarked && statusMatch) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  } else {
+    // 正常的類別篩選
+    mobileCards.forEach(card => {
+      const cardCategory = card.getAttribute('data-category');
+      const cardStatus = card.getAttribute('data-status');
+      
+      const categoryMatch = categories.length === 0 || categories.includes(cardCategory);
+      const statusMatch = cardStatus === status;
+      
+      if (categoryMatch && statusMatch) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
 }
 
 // 手機版搜尋欄互動效果
@@ -370,8 +426,8 @@ function initMobileSearchInteraction() {
 function initMobileVersion() {
   if (window.innerWidth <= 767) {
     generateMobileEquipmentCards();
-    // 預設顯示有現貨的項目
-    applyMobileFilters([], '有現貨');
+    // 預設顯示常用設備（收藏的項目）且有現貨的項目
+    applyMobileFilters(['bookmarks'], '有現貨');
   }
   
   // 無論是否手機版，都初始化收藏狀態

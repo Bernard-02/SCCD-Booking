@@ -149,7 +149,7 @@ function loadEquipmentSummary() {
   // 更新總押金 - 桌面版和手機版
   const desktopDepositAmount = document.getElementById('total-deposit-amount');
   const mobileDepositAmount = document.getElementById('total-deposit-amount-mobile');
-  const formattedAmount = `NT${totalDeposit.toLocaleString()}`;
+  const formattedAmount = `NT ${totalDeposit.toLocaleString()}`;
   
   if (desktopDepositAmount) desktopDepositAmount.textContent = formattedAmount;
   if (mobileDepositAmount) mobileDepositAmount.textContent = formattedAmount;
@@ -159,7 +159,7 @@ function loadEquipmentSummary() {
 function createSummaryItem(item) {
   const div = document.createElement('div');
   div.className = 'summary-item flex items-center';
-  div.style.cssText = 'height: 150px;';
+  div.style.cssText = 'height: 130px;';
   
   div.innerHTML = `
     <!-- 設備圖片 -->
@@ -182,7 +182,7 @@ function createSummaryItem(item) {
       
       <!-- 右邊：押金 -->
       <div class="text-right">
-        <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-wide text-white">NT${(item.deposit * item.quantity).toLocaleString()}</span>
+        <span class="text-2xl font-['Inter',_sans-serif] font-normal tracking-wide text-white">NT ${(item.deposit * item.quantity).toLocaleString()}</span>
       </div>
     </div>
   `;
@@ -212,7 +212,7 @@ function createMobileSummaryItem(item) {
     
     <!-- 右邊：押金 -->
     <div class="text-right">
-      <span class="text-sm font-['Inter',_sans-serif] text-white">NT${(item.deposit * item.quantity).toLocaleString()}</span>
+      <span class="text-sm font-['Inter',_sans-serif] text-white">NT ${(item.deposit * item.quantity).toLocaleString()}</span>
     </div>
   `;
   

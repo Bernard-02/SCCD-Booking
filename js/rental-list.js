@@ -3,58 +3,43 @@
 // 租借按鈕動畫功能
 function setupRentalButtonAnimation() {
   const button = document.getElementById('rental-btn');
-  const buttonFill = button ? button.querySelector('.button-bg-fill') : null;
   
-  if (button && buttonFill && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    button.addEventListener('mouseenter', function() {
-      if (!this.disabled) {
-        gsap.to(buttonFill, {
-          height: '100%',
-          duration: 0.5,
-          ease: "power2.out"
-        });
-        
-        // 文字顏色變化
-        this.classList.add('white-text');
-      }
+  // hero-cta 樣式的按鈕不需要額外的 JavaScript 動畫
+  // CSS 中已經定義了 hover 效果
+  if (button && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    // 只需要確保按鈕在啟用時可以正常 hover
+    // 禁用狀態時不應該有 hover 效果
+    const originalPointerEvents = window.getComputedStyle(button).pointerEvents;
+    
+    // 監聽按鈕狀態變化
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'disabled') {
+          if (button.disabled) {
+            button.style.pointerEvents = 'none';
+          } else {
+            button.style.pointerEvents = originalPointerEvents;
+          }
+        }
+      });
     });
     
-    button.addEventListener('mouseleave', function() {
-      if (!this.disabled) {
-        gsap.to(buttonFill, {
-          height: '0%',
-          duration: 0.5,
-          ease: "power2.out"
-        });
-        
-        // 文字顏色恢復
-        this.classList.remove('white-text');
-      }
-    });
+    observer.observe(button, { attributes: true });
   }
 }
 
 // 動態調整租借摘要位置
 function adjustSummaryPosition() {
   const footer = document.querySelector('footer');
-  const rentalSummary = document.querySelector('.rental-summary');
-  const mainScrollArea = document.querySelector('.main-scroll-area');
+  const cart = window.cartManager.getCart();
   
-  if (footer && rentalSummary && mainScrollArea) {
-    const footerHeight = footer.offsetHeight;
-    const summaryHeight = rentalSummary.offsetHeight;
-
-    if (window.innerWidth <= 767) {
-      // Mobile: stack summary on footer
-      rentalSummary.style.bottom = `${footerHeight}px`;
-      mainScrollArea.style.paddingBottom = `${footerHeight -40}px`;
-    } else {
-      // Desktop: summary at bottom: 80px, over footer
-      const desktopSummaryBottom = 60; // As per CSS for .rental-summary
-      rentalSummary.style.bottom = `${desktopSummaryBottom}px`;
-      mainScrollArea.style.paddingBottom = `${summaryHeight -60}px`; // 減少桌面版 padding
-    }
+  // 如果購物車為空，不調整任何位置，讓 footer 回到原本位置
+  if (cart.length === 0) {
+    return;
   }
+  
+  // 這個頁面沒有租借摘要，所以不需要調整位置
+  // 保持 footer 在原本的位置
 }
 
 // 從購物車管理器載入設備項目
@@ -70,7 +55,7 @@ function loadCartItems() {
   let gridContainer = equipmentList.querySelector('.equipment-grid');
   if (!gridContainer) {
     gridContainer = document.createElement('div');
-    gridContainer.className = 'equipment-grid grid grid-cols-4 gap-16';
+    gridContainer.className = 'equipment-grid';
     equipmentList.appendChild(gridContainer);
   } else {
     // 清空現有項目
@@ -89,15 +74,18 @@ function createEquipmentItem(item) {
   const div = document.createElement('div');
   div.className = 'equipment-card';
   
+  // 檢查是否為教室項目
+  const isClassroom = item.category === 'classroom' || item.id.startsWith('A5');
+  
   div.innerHTML = `
-    <!-- 設備圖片 -->
-    <div class="relative mb-6 image-container">
-      <div class="w-full h-96">
-        <img src="${item.image}" alt="設備圖片" class="w-full h-full object-cover">
+    <!-- 設備/教室圖片 -->
+    <div class="relative mb-6 image-container" onclick="goToDetailPage('${item.id}')">
+      <div class="w-full h-84">
+        <img src="${item.image || item.mainImage}" alt="${isClassroom ? '教室' : '設備'}圖片" class="w-full h-full object-cover">
       </div>
       
       <!-- 刪除按鈕 (Desktop) -->
-      <div class="remove-btn" onclick="removeItem('${item.id}')">
+      <div class="remove-btn" onclick="event.stopPropagation(); removeItem('${item.id}')">
         <svg viewBox="0 0 20 20">
           <line x1="4" y1="4" x2="16" y2="16" stroke="black" stroke-width="1"/>
           <line x1="16" y1="4" x2="4" y2="16" stroke="black" stroke-width="1"/>
@@ -105,47 +93,77 @@ function createEquipmentItem(item) {
       </div>
     </div>
     
-    <!-- 設備資訊 -->
+    <!-- 設備/教室資訊 -->
     <div class="space-y-2 info-container">
       <div> <!-- Info top part wrapper -->
-        <h3 class="text-sm font-['Inter',_sans-serif] font-medium text-white text-left">${item.name}</h3>
+        <h3 class="text-small-title font-['Inter',_sans-serif] font-medium text-white text-left">${item.name}</h3>
         
         <div class="text-left mt-2">
-          <span class="text-sm font-['Inter',_sans-serif] font-normal text-white tracking-wide" data-unit-price="${item.deposit}" data-total-price="${item.deposit * item.quantity}" data-equipment-id="${item.id}">NT${(item.deposit * item.quantity).toLocaleString()}</span>
+          <span class="text-small-title font-['Inter',_sans-serif] font-normal text-white tracking-wide" data-unit-price="${item.deposit || item.price || 0}" data-total-price="${(item.deposit || item.price || 0) * (item.quantity || 1)}" data-equipment-id="${item.id}">NT ${((item.deposit || item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
         </div>
         
+        ${!isClassroom ? `
         <div class="flex items-center justify-start space-x-3 mt-4">
-          <svg class="quantity-btn ${item.quantity === 1 ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="decreaseQuantity('${item.id}')" style="width: 20px; height: 20px;">
+          <svg class="quantity-btn ${(item.quantity || 1) === 1 ? 'disabled' : ''}" viewBox="0 0 20 20" onclick="event.stopPropagation(); decreaseQuantity('${item.id}')" style="width: 20px; height: 20px;">
             <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
           </svg>
-          <span class="text-base font-['Inter',_sans-serif] font-normal text-white min-w-[1.5rem] text-center" data-quantity="${item.quantity}" data-equipment-id="${item.id}">${item.quantity}</span>
-          <svg class="quantity-btn" viewBox="0 0 20 20" onclick="increaseQuantity('${item.id}')" style="width: 20px; height: 20px;">
-            <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
+          <span class="text-header font-['Inter',_sans-serif] font-normal text-white min-w-[1.5rem] text-center" data-quantity="${item.quantity || 1}" data-equipment-id="${item.id}">${item.quantity || 1}</span>
+          <svg class="quantity-btn" viewBox="0 0 20 20" onclick="event.stopPropagation(); increaseQuantity('${item.id}')" style="width: 20px; height: 20px;">
             <line x1="10" y1="4" x2="10" y2="16" stroke="white" stroke-width="1"/>
+            <line x1="4" y1="10" x2="16" y2="10" stroke="white" stroke-width="1"/>
           </svg>
         </div>
+                       ` : `
+               <div class="mt-4">
+                 <span class="text-breadcrumb font-['Inter',_sans-serif]" style="color: #cccccc">數量 | 1</span>
+               </div>
+               `}
       </div>
       <button class="mobile-delete-btn" onclick="removeItem('${item.id}')">DELETE</button>
     </div>
   `;
   
+  // 為卡片添加點擊事件
+  div.addEventListener('click', function(e) {
+    // 如果點擊的是數量按鈕或刪除按鈕，不執行跳轉
+    if (e.target.closest('.quantity-btn') || e.target.closest('.remove-btn') || e.target.closest('.mobile-delete-btn')) {
+      return;
+    }
+    
+    if (isClassroom) {
+      // 教室卡片跳轉到 classroom.html
+      window.location.href = 'classroom.html';
+    } else {
+      // 設備跳轉到詳情頁面
+      window.location.href = `equipment-detail.html?id=${item.id}`;
+    }
+  });
+  
   return div;
 }
 
-// 增加數量
+// 增加數量 - 只適用於設備，教室不允許修改數量
 function increaseQuantity(equipmentId) {
   const cart = window.cartManager.getCart();
   const item = cart.find(item => item.id === equipmentId);
-  if (item) {
+  
+  // 檢查是否為教室項目
+  const isClassroom = item && (item.category === 'classroom' || item.id.startsWith('A5'));
+  
+  if (item && !isClassroom) {
     window.cartManager.updateQuantity(equipmentId, item.quantity + 1);
   }
 }
 
-// 減少數量
+// 減少數量 - 只適用於設備，教室不允許修改數量
 function decreaseQuantity(equipmentId) {
   const cart = window.cartManager.getCart();
   const item = cart.find(item => item.id === equipmentId);
-  if (item && item.quantity > 1) {
+  
+  // 檢查是否為教室項目
+  const isClassroom = item && (item.category === 'classroom' || item.id.startsWith('A5'));
+  
+  if (item && !isClassroom && item.quantity > 1) {
     window.cartManager.updateQuantity(equipmentId, item.quantity - 1);
   }
 }
@@ -179,7 +197,7 @@ function removeItem(equipmentId) {
 
 // 格式化貨幣
 function formatCurrency(amount) {
-  return `NT${amount.toLocaleString()}`;
+  return `NT ${amount.toLocaleString()}`;
 }
 
 // 更新摘要
@@ -227,8 +245,10 @@ function updateSummary() {
     if (mobileCheckbox) mobileCheckbox.disabled = false;
     
     cart.forEach(item => {
-      totalItems += item.quantity;
-      totalDeposit += item.deposit * item.quantity;
+      const quantity = item.quantity || 1;
+      const price = item.deposit || item.price || 0;
+      totalItems += quantity;
+      totalDeposit += price * quantity;
     });
     
     // 根據checkbox狀態設定button（檢查任一個checkbox）
@@ -271,8 +291,6 @@ function updateSummary() {
   if (mobileTotalItemsElement) mobileTotalItemsElement.textContent = totalItems;
   if (totalDepositElement) totalDepositElement.textContent = formatCurrency(totalDeposit);
   if (mobileTotalDepositElement) mobileTotalDepositElement.textContent = formatCurrency(totalDeposit);
-
-  adjustSummaryPosition();
 }
 
 // 初始化按鈕狀態
@@ -316,9 +334,28 @@ function handleRentalClick(button, checkbox) {
     // 清除舊的租借號，讓收據頁面生成新的
     localStorage.removeItem('currentRentalNumber');
     
+    // 清除暫存的日期選擇
+    localStorage.removeItem('tempSelectedDates');
+    
     // 跳轉到租借收據頁面
     window.location.href = 'rental-receipt.html';
   }
+}
+
+// 跳轉到詳情頁面
+function goToDetailPage(itemId) {
+  // 阻止事件冒泡
+  event.stopPropagation();
+  
+  // 檢查是否為教室項目
+  if (itemId.startsWith('A5')) {
+    // 教室項目跳轉到教室頁面
+    window.location.href = 'classroom.html';
+    return;
+  }
+  
+  // 設備項目跳轉到設備詳情頁
+  window.location.href = `equipment-detail.html?id=${itemId}`;
 }
 
 // 初始化頁面
@@ -326,9 +363,6 @@ function initRentalListPage() {
   loadCartItems();
   updateSummary();
   setupRentalButtonAnimation(); // 初始化按鈕動畫
-  adjustSummaryPosition(); // 頁面載入時調整位置
-  
-  window.addEventListener('resize', adjustSummaryPosition); // 視窗大小改變時調整
   
   // 監聽checkbox變化
   const checkbox = document.getElementById('terms-checkbox');
@@ -374,8 +408,6 @@ function initRentalListPage() {
     loadCartItems();
     updateSummary();
   });
-
-  adjustSummaryPosition();
 }
 
 // 暴露給全域
