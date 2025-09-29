@@ -2,7 +2,7 @@
 
 /* 主要容器高度設定 */
 #equipment-list {
-  min-height: calc(100vh - 200px); /* 確保有足夠的最小高度 */
+  min-height: calc(100vh - 260px); /* 確保有足夠的最小高度 */
   display: flex;
   flex-direction: column;
 }
@@ -30,16 +30,10 @@
   pointer-events: none;
 }
 
-
-
 /* Footer 樣式 */
 footer {
   background-color: transparent;
 }
-
-
-
-
 
 /* 空清單提示樣式 */
 .empty-message-container {
@@ -69,7 +63,7 @@ footer {
 }
 
 .equipment-card .image-container::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -113,7 +107,7 @@ footer {
   text-align: left;
   margin-top: 0.5rem;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
   width: auto;
@@ -133,7 +127,7 @@ footer {
   .remove-btn {
     display: none; /* 手機版隱藏桌面版的 X 按鈕 */
   }
-  
+
   /* 手機版網格佈局 */
   .equipment-grid {
     grid-template-columns: 1fr; /* 手機版單欄顯示 */
@@ -167,7 +161,7 @@ footer {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
-  
+
   /* 手機版容器高度調整 */
   #equipment-list {
     min-height: auto;
@@ -180,7 +174,7 @@ footer {
   .quantity-btn:hover {
     opacity: 0.7;
   }
-  
+
   /* 設備卡片 hover 效果 - 僅用於顯示刪除按鈕 */
   .equipment-card:hover .remove-btn {
     opacity: 1;
@@ -195,4 +189,8 @@ button:disabled .hero-cta-wrapper:hover .hero-cta-hidden {
 
 button:disabled .hero-cta-wrapper {
   pointer-events: none;
-} 
+}
+
+/* BOOK 按鈕現在使用通用的 sccd-btn 系統 - 在 common.css 中定義 */
+
+/* CLEAR ALL 按鈕現在使用通用的 sccd-btn 系統 - 在 common.css 中定義 */

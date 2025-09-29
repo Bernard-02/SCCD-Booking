@@ -1,0 +1,357 @@
+/* ===== Google Calendar風格教室時間表 ===== */
+
+/* 教室時間表主容器 */
+.classroom-schedule-wrapper {
+  width: 100%;
+  margin-bottom: 2rem;
+  padding-right: 5rem;
+}
+
+/* 時間表容器 */
+.schedule-container {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "schedule-header"
+    "schedule-body";
+  background-color: transparent;
+}
+
+/* 統一標題區域 */
+.schedule-header {
+  grid-area: schedule-header;
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr 1fr;
+  background-color: transparent;
+  padding: 1rem 0;
+  position: relative;
+}
+
+/* 標題區域下方的分隔線 */
+.schedule-header::after {
+  content: '';
+  position: absolute;
+  left: 120px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background-color: var(--color-gray-scale5);
+  z-index: 1;
+}
+
+/* 標題區域的時間標題 */
+.time-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--color-gray-light);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* 主體區域 */
+.schedule-body {
+  grid-area: schedule-body;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  grid-template-areas: "time-axis schedule-content";
+  background-color: transparent;
+}
+
+/* 時間軸區域 */
+.time-axis {
+  grid-area: time-axis;
+  position: relative;
+  background-color: transparent;
+}
+
+/* 時間標記容器 */
+.time-mark {
+  position: absolute;
+  right: 1rem;
+  transform: translateY(-0.75em);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-light);
+  white-space: nowrap;
+}
+
+/* 時間標記內的span */
+.time-mark span {
+  display: inline-block;
+  transform: translateY(-2px);
+}
+
+/* 教室標題區域 */
+.classroom-headers {
+  display: contents;
+}
+
+/* 教室標題項目 */
+.classroom-header-item {
+  padding: 1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+}
+
+.classroom-header-item .classroom-name-zh {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 2rem;
+  color: var(--color-white);
+  font-weight: 400;
+}
+
+.classroom-header-item .classroom-name-en {
+  font-family: 'Inter', sans-serif;
+  font-size: 2rem;
+  color: var(--color-white);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+
+/* 內容區域 */
+.schedule-content {
+  grid-area: schedule-content;
+  position: relative;
+  background-color: transparent;
+}
+
+/* 網格背景 */
+.schedule-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  background-color: transparent;
+}
+
+/* 網格單元格 */
+.grid-cell {
+  min-height: 48px;
+  position: relative;
+}
+
+/* 添加橫線（時間分隔線） */
+.grid-cell::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background-color: var(--color-gray-scale5);
+}
+
+/* 最後一行不需要底部橫線 */
+.grid-cell:nth-last-child(-n+3)::before {
+  display: none;
+}
+
+/* 添加教室分隔線（垂直線） - 只在第1和第2列右邊添加 */
+.grid-cell:nth-child(3n+1)::after,
+.grid-cell:nth-child(3n+2)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-gray-scale5);
+}
+
+/* 課程區塊容器 */
+.course-blocks-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* 課程區塊樣式 */
+.course-block {
+  position: absolute;
+  background-color: #353535;
+  color: var(--color-white);
+  padding: 0.5rem 0.75rem;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: default;
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.2;
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  z-index: 20;
+}
+
+.course-block:hover {
+  background-color: #454545;
+}
+
+/* 課程名稱 */
+.course-name {
+  font-weight: 400;
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-size: 1.125rem;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+/* 課程時間 */
+.course-time {
+  font-size: 1.125rem;
+  color: var(--color-white);
+  font-family: 'Inter', sans-serif;
+}
+
+/* 當前時間高亮 */
+.current-time-row {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.current-time-row .time-cell {
+  color: var(--color-white);
+  font-weight: 600;
+}
+
+
+/* 響應式設計 */
+@media (max-width: 1024px) {
+  .schedule-container {
+    grid-template-columns: 100px 1fr;
+  }
+
+  .time-mark {
+    font-size: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .classroom-header-item .classroom-name-zh {
+    font-size: 1rem;
+  }
+
+  .classroom-header-item .classroom-name-en {
+    font-size: 0.75rem;
+  }
+
+  .grid-cell {
+    min-height: 50px;
+  }
+
+  .course-block {
+    font-size: 0.6875rem;
+    padding: 0.375rem 0.5rem;
+  }
+
+  .course-time {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-container {
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: 60px 1fr;
+  }
+
+  .time-mark {
+    font-size: 0.6875rem;
+    right: 0.5rem;
+  }
+
+  .classroom-header-item {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .classroom-header-item .classroom-name-zh {
+    font-size: 0.875rem;
+  }
+
+  .classroom-header-item .classroom-name-en {
+    font-size: 0.6875rem;
+  }
+
+  .grid-cell {
+    min-height: 40px;
+  }
+
+  .course-block {
+    font-size: 0.625rem;
+    padding: 0.25rem 0.375rem;
+  }
+
+  .course-time {
+    font-size: 0.5625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .classroom-schedule-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .schedule-container {
+    min-width: 400px;
+  }
+}
+
+/* 載入狀態 */
+.classroom-schedule-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  color: var(--color-gray-light);
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-gray-dark);
+  border-top: 2px solid var(--color-success);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 錯誤狀態 */
+.classroom-schedule-error {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-error);
+  font-family: 'Noto Sans TC', sans-serif;
+}

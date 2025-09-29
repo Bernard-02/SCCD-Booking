@@ -13,6 +13,13 @@
       rel="stylesheet"
     />
 
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
+
+    <!-- 通用功能 -->
+    <script src="js/common.js"></script>
+
     <!-- 外部 CSS 檔案 -->
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/typography.css" />
@@ -27,6 +34,7 @@
     <!-- 外部 JavaScript 檔案 -->
     <script src="js/mobile-menu.js"></script>
     <script src="js/copyright-easter-egg.js"></script>
+    <script src="js/rental-progress-manager.js"></script>
 
     <script src="js/cart-sync.js"></script>
     <script src="js/rental-list.js"></script>
@@ -117,12 +125,20 @@
           <!-- 左邊：租借清單 (75%) -->
           <div class="w-3/4">
             <!-- 頁面標題 -->
-            <div class="mb-6">
-              <h1
-                class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title"
-              >
-                租借清單
+            <div class="mb-6 flex justify-between items-end">
+              <h1 class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title">
+                租借清單 <span id="cart-count-title" class="font-['Inter',_sans-serif] text-hero-title">(0)</span>
               </h1>
+              <a
+                href="#"
+                id="clear-all-btn"
+                class="sccd-btn text-button disabled"
+              >
+                <div class="hero-cta-wrapper">
+                  <span class="hero-cta-text">(CLEAR ALL)</span>
+                  <span class="hero-cta-hidden">(CLEAR ALL)</span>
+                </div>
+              </a>
             </div>
 
             <!-- 設備列表 -->
@@ -162,8 +178,18 @@
                 </p>
               </div>
 
-              <!-- 押金 -->
-              <div class="mb-6">
+              <!-- 押金詳細 -->
+              <div id="deposit-breakdown" class="mb-3" style="display: none;">
+                <div class="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white mb-1">
+                  設備押金 <span id="equipment-deposit" class="font-['Inter',_sans-serif]">NT 0</span>
+                </div>
+                <div class="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white mb-2">
+                  空間押金 <span id="space-deposit" class="font-['Inter',_sans-serif]">NT 0</span>
+                </div>
+              </div>
+              
+              <!-- 押金總額 -->
+              <div class="mb-3">
                 <div
                   id="total-deposit"
                   class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide"
@@ -171,14 +197,20 @@
                   NT 0
                 </div>
               </div>
-
+              <div class="mb-12">
+                <div class="text-shrink-container pr-12">
+                  <p class="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white text-shrink-content">
+                    結帳後會保留30分鐘的繳押金時間，請在時間內至系學會完成租借程序
+                  </p>
+                </div>
+              </div>
               <!-- 同意條款 -->
-              <div class="mb-20">
-                <div class="flex items-start space-x-3">
+              <div class="mb-6">
+                <div class="flex items-start space-x-3 pr-10">
                   <input
                     type="checkbox"
                     id="terms-checkbox"
-                    class="mt-1 custom-checkbox w-4 h-4 flex-shrink-0"
+                    class="custom-checkbox flex-shrink-0"
                   />
                   <label
                     for="terms-checkbox"
@@ -194,18 +226,21 @@
                 </div>
               </div>
 
+              <!-- 結帳說明 -->
+              
+
               <!-- 租借按鈕 -->
               <div>
-                <button
+                <a
+                  href="#"
                   id="rental-btn"
-                  class="text-button font-['Inter',_sans-serif] uppercase text-white opacity-30 cursor-not-allowed rental-book-btn"
-                  disabled
+                  class="sccd-btn text-button disabled rental-book-btn"
                 >
                   <div class="hero-cta-wrapper">
                     <span class="hero-cta-text">(BOOK)</span>
                     <span class="hero-cta-hidden">(BOOK)</span>
                   </div>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -323,7 +358,17 @@
             </p>
           </div>
           
-          <!-- 押金 -->
+          <!-- 押金詳細 -->
+          <div id="mobile-deposit-breakdown" class="mb-3" style="display: none;">
+            <div class="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white mb-1">
+              設備押金 <span id="mobile-equipment-deposit" class="font-['Inter',_sans-serif]">NT 0</span>
+            </div>
+            <div class="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white mb-2">
+              空間押金 <span id="mobile-space-deposit" class="font-['Inter',_sans-serif]">NT 0</span>
+            </div>
+          </div>
+          
+          <!-- 押金總額 -->
           <div class="mb-6">
             <div id="mobile-total-deposit" class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide">
               NT 0
@@ -351,19 +396,26 @@
               </label>
             </div>
           </div>
+
+          <!-- 結帳說明 -->
+          <div class="mb-6">
+            <p class="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white">
+              結帳後會保留30分鐘的繳押金時間，請在時間內至系學會完成租借程序
+            </p>
+          </div>
           
           <!-- 租借按鈕 -->
           <div>
-            <button
+            <a
+              href="#"
               id="mobile-rental-btn"
-              class="text-button font-['Inter',_sans-serif] uppercase text-white opacity-30 cursor-not-allowed rental-book-btn w-full"
-              disabled
+              class="sccd-btn text-button disabled rental-book-btn w-full text-center"
             >
               <div class="hero-cta-wrapper">
                 <span class="hero-cta-text">(BOOK)</span>
                 <span class="hero-cta-hidden">(BOOK)</span>
               </div>
-            </button>
+            </a>
           </div>
         </div>
       </div>

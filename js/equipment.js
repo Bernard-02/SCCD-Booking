@@ -350,18 +350,25 @@ function generateMobileEquipmentCards() {
 // 應用手機版篩選器
 function applyMobileFilters(categories, status) {
   const mobileCards = document.querySelectorAll('.mobile-equipment-card');
-  
+
   // 如果選擇了常用設備，使用收藏功能篩選
   if (categories.includes('bookmarks')) {
+    // 檢查登入狀態 - 只有常用設備分類需要檢查
+    const isLoggedIn = window.AuthStorage && window.AuthStorage.isLoggedIn();
+    if (!isLoggedIn) {
+      showMobileLoginPrompt();
+      return;
+    }
+
     const bookmarks = JSON.parse(localStorage.getItem('sccd_bookmarks') || '[]');
-    
+
     mobileCards.forEach(card => {
       const equipmentName = card.querySelector('.bookmark-btn')?.getAttribute('data-equipment');
       const cardStatus = card.getAttribute('data-status');
-      
+
       const isBookmarked = bookmarks.includes(equipmentName);
       const statusMatch = cardStatus === status;
-      
+
       if (isBookmarked && statusMatch) {
         card.style.display = 'flex';
       } else {
@@ -369,14 +376,20 @@ function applyMobileFilters(categories, status) {
       }
     });
   } else {
+    // 清除可能存在的登入提示
+    const existingPrompt = document.querySelector('.mobile-login-prompt');
+    if (existingPrompt) {
+      existingPrompt.remove();
+    }
+
     // 正常的類別篩選
     mobileCards.forEach(card => {
       const cardCategory = card.getAttribute('data-category');
       const cardStatus = card.getAttribute('data-status');
-      
+
       const categoryMatch = categories.length === 0 || categories.includes(cardCategory);
       const statusMatch = cardStatus === status;
-      
+
       if (categoryMatch && statusMatch) {
         card.style.display = 'flex';
       } else {
@@ -522,12 +535,12 @@ function initEquipmentCardAnimations() {
   // 觸發所有可見卡片的進場動畫
   function triggerAllVisibleAnimations() {
     animatedRows.clear();
-    
+
     // 獲取所有可見的行，按順序處理
-    const visibleCards = Array.from(equipmentCards).filter(card => 
+    const visibleCards = Array.from(equipmentCards).filter(card =>
       window.getComputedStyle(card).display !== 'none'
     );
-    
+
     // 按行號分組
     const rowGroups = {};
     visibleCards.forEach(card => {
@@ -537,18 +550,18 @@ function initEquipmentCardAnimations() {
       }
       rowGroups[row].push(card);
     });
-    
+
     // 按行號順序觸發動畫
     Object.keys(rowGroups).sort((a, b) => parseInt(a) - parseInt(b)).forEach((rowNumber, rowIndex) => {
       const rowCards = rowGroups[rowNumber];
-      
+
       // 每一行延遲300ms，行內卡片間隔150ms
       rowCards.forEach((card, cardIndex) => {
         setTimeout(() => {
           card.classList.add('animate-in');
         }, (rowIndex * 300) + (cardIndex * 150) + 200);
       });
-      
+
       animatedRows.add(parseInt(rowNumber));
     });
   }
@@ -563,73 +576,31 @@ function initEquipmentCardAnimations() {
   };
 }
 
-// 顯示Toast提示
-function showToast(message) {
-  // 檢查是否已有toast，如果有則移除
-  const existingToast = document.querySelector('.toast');
-  if (existingToast) {
-    existingToast.remove();
+// 顯示手機版登入提示
+function showMobileLoginPrompt() {
+  // 檢查是否已有提示，如果有則移除
+  const existingPrompt = document.querySelector('.mobile-login-prompt');
+  if (existingPrompt) {
+    existingPrompt.remove();
   }
-  
-  // 創建新的toast
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  
-  // 創建內部的p元素
-  const p = document.createElement('p');
-  p.textContent = message;
-  toast.appendChild(p);
-  
-  document.body.appendChild(toast);
-  
-  // 檢查是否為手機版
-  const isMobile = window.innerWidth <= 767;
-  
-  if (isMobile) {
-    // 手機版動畫（已由CSS處理定位）
-    toast.style.opacity = '0';
-    toast.style.pointerEvents = 'none';
-    toast.style.transform = 'translateY(20px)';
-    
-    // 顯示通知（從底部浮上來的效果）
-    setTimeout(() => {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0px)';
-    }, 50);
-    
-    // 2秒後開始消失動畫
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(-10px)';
-    }, 2000);
-  } else {
-    // 桌面版動畫（原有邏輯）
-    toast.style.bottom = '7.5rem';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%) translateY(50px)';
-    toast.style.opacity = '0';
-    toast.style.pointerEvents = 'none';
-    
-    // 顯示通知（從底部浮上來的效果）
-    setTimeout(() => {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateX(-50%) translateY(0px)';
-    }, 50);
-    
-    // 2秒後開始消失動畫
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(-10px)';
-    }, 2000);
+
+  // 清空設備網格
+  const mobileGrid = document.getElementById('mobile-equipment-grid');
+  if (mobileGrid) {
+    mobileGrid.innerHTML = '';
+
+    // 創建登入提示，使用與profile.html收藏頁面相同的樣式
+    const promptDiv = document.createElement('div');
+    promptDiv.className = 'mobile-login-prompt empty-state-message text-left';
+    promptDiv.style.cssText = 'padding: 2rem 1rem;';
+    promptDiv.innerHTML = `
+      <p class="font-chinese text-gray-scale4 text-small-title">請先登入以查看收藏的設備</p>
+    `;
+
+    mobileGrid.appendChild(promptDiv);
   }
-  
-  // 動畫完成後完全隱藏並移除
-  setTimeout(() => {
-    if (toast.parentNode) {
-      toast.parentNode.removeChild(toast);
-    }
-  }, 2500);
 }
+
 
 // 監聽庫存變化，實時更新設備列表狀態
 function setupInventoryUpdateListener() {
@@ -675,10 +646,50 @@ function setupInventoryUpdateListener() {
     });
 }
 
+// 處理URL參數並自動應用篩選
+function handleURLParameters() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const filterCategory = urlParams.get('filter_category');
+  const filterStatus = urlParams.get('filter_status');
+  
+  // 如果有URL參數，應用對應的篩選
+  if (filterCategory || filterStatus) {
+    setTimeout(() => {
+      // 如果有分類參數，點擊對應的分類按鈕
+      if (filterCategory) {
+        const categoryButton = document.querySelector(`[data-category="${filterCategory}"]`);
+        if (categoryButton) {
+          categoryButton.click();
+        }
+      }
+      
+      // 如果有狀態參數，設置對應的狀態
+      if (filterStatus) {
+        const statusButton = filterStatus === '有現貨' 
+          ? document.getElementById('status-available')
+          : document.getElementById('status-unavailable');
+        if (statusButton) {
+          statusButton.click();
+        }
+      }
+      
+      // 處理完URL參數後，清除URL以避免影響後續操作
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }, 500); // 延遲500ms確保所有初始化完成
+    
+    return true; // 表示有URL參數被處理
+  }
+  
+  return false; // 表示沒有URL參數
+}
+
 // 主要初始化函數
 async function initEquipmentPage() {
   // 首先初始化購物車管理器並更新設備卡片名稱（動態狀態）
   await updateEquipmentCardNames();
+  
+  // 設定標誌表示設備數據已準備完成（在篩選器初始化之前）
+  window.equipmentDataReady = true;
   
   initMobileSearchScrollEffect();
   initMobileFilters();
@@ -688,14 +699,13 @@ async function initEquipmentPage() {
   initEquipmentCardAnimations();
   setupInventoryUpdateListener();
   
-  // 設定標誌表示設備數據已準備完成
-  window.equipmentDataReady = true;
+  // 處理URL參數，如果沒有參數則保持預設狀態
+  const hasURLParams = handleURLParameters();
 }
 
 // 全域函數
 window.generateMobileEquipmentCards = generateMobileEquipmentCards;
 window.applyMobileFilters = applyMobileFilters;
-window.showToast = showToast;
 
 // 自動初始化
 document.addEventListener('DOMContentLoaded', function() {

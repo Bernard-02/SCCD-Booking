@@ -13,357 +13,68 @@
       rel="stylesheet"
     />
 
-
     <link rel="stylesheet" href="css/breadcrumb.css" />
 
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
     <link rel="stylesheet" href="css/typography.css" />
     <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/numbered-area.css" />
 
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+    <!-- 移除了不需要的GSAP庫 -->
     <script src="cart-manager.js"></script>
     <script src="js/common.js"></script>
     <script src="js/cart-sync.js"></script>
     <script src="js/mobile-menu.js"></script>
+    <script src="js/booking-dates-display.js"></script>
+    <script src="js/numbered-area.js"></script>
 
     <script src="js/copyright-easter-egg.js"></script>
-    
-    <!-- 箭頭動畫樣式 -->
-    <style>
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .arrow-link:hover .arrow-icons-wrapper {
-          transform: translateY(-1em);
-        }
-        
-        /* Footer 連結 hover 效果 */
-        .footer-link:hover {
-          opacity: 0.6;
-        }
-        
-        /* Header 導航連結 hover 效果 */
-        .nav-link:hover {
-          opacity: 0.6;
-        }
-      }
-      
-      /* 展開式元件樣式 */
-      .accordion-item {
-        border-bottom: 1px solid white;
-        padding: 0.6rem 0; /* 增加分類間距 */
-      }
-      
-      .accordion-item:last-child {
-        border-bottom: none;
-      }
-      
-      .accordion-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-      
-      .accordion-content {
-        max-height: 0;
-        overflow: hidden;
-        padding: 0;
-        transition: max-height 0.35s ease;
-      }
-      
-      .accordion-content.expanded {
-        padding-bottom: 20px; /* 增加底部間距 */
-      }
-      
-      .expand-icon {
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
-      }
-      
-      .accordion-content-inner {
-        opacity: 0;
-        margin-top: 16px; /* 押金群組往下移動 */
-        transition: opacity 0.25s ease;
-      }
-      
-      .accordion-content.expanded .accordion-content-inner {
-        opacity: 1;
-        transition-delay: 0.1s;
-      }
-      
-      /* 左側欄位固定保留捲軸空間，避免版面抖動 */
-      .left-pane-scroll {
-        scrollbar-gutter: stable both-edges;
-      }
 
-      /* 區域卡片樣式 */
-      .area-card {
-        transition: border-color 0.3s ease;
-      }
-      .area-card:hover {
-        border-color: transparent;
-      }
-      .area-card.selected {
-        border-color: #00ff80 !important;
-      }
-      .area-card.selected:hover {
-        border-color: #00ff80 !important;
-      }
-      .area-card.selected .area-bg {
-        opacity: 1 !important;
-      }
-      .area-card.selected .area-gradient {
-        opacity: 1 !important;
-      }
-      .area-card.selected .area-deposit {
-        opacity: 1 !important;
-      }
-      
-      /* 新的區域項目樣式 */
-      .area-item {
-        transition: all 0.3s ease;
-        position: relative;
-      }
-      
-      /* 橫線樣式 */
-      .area-divider {
-        height: 1px;
-        background-color: white;
-        transition: all 0.3s ease;
-      }
-      
-      /* Hover 效果 */
-      .area-item:hover .area-deposit {
-        opacity: 1 !important;
-        transform: translateY(0);
-      }
-      
-      .area-item:hover .area-divider {
-        height: 6px;
-        background-color: #00ff80;
-      }
-      
-      /* Select 效果 */
-      .area-item.selected .area-deposit {
-        opacity: 1 !important;
-        transform: translateY(0);
-      }
-      
-      .area-item.selected .area-divider {
-        height: 6px;
-        background-color: #00ff80;
-      }
-      
-      /* 押金文字的初始狀態和動畫 */
-      .area-deposit {
-        opacity: 0;
-        transform: translateY(20px);
-        transition: all 0.3s ease;
-      }
-      
-      /* 地圖區域樣式 */
-      .map-container {
-        display: flex;
-        align-items: center; /* 垂直居中對齊 */
-        justify-content: center; /* 水平居中對齊 */
-        height: 100%;
-        overflow: hidden;
-        background: transparent;
-        position: relative;
-      }
-      
-      /* 玻璃牆和柱子的特殊滾動容器 */
-      .map-container.scrollable {
-        overflow: auto;
-        align-items: flex-start; /* 改為頂部對齊 */
-        justify-content: center; /* 保持水平居中 */
-      }
-      
-      .map-svg {
-        width: 100%;
-        height: 100%;
-        max-width: 100%;
-        max-height: 100%;
-        cursor: pointer;
-      }
-      
-      /* 玻璃牆和柱子的SVG不縮放，保持原始比例 */
-      .map-svg.no-scale {
-        width: auto;
-        height: auto;
-        max-width: none;
-        max-height: none;
-        object-fit: none;
-        flex-shrink: 0; /* 防止被壓縮 */
-      }
-      
-      /* SVG 格子樣式 */
-      .grid-cell {
-        cursor: pointer;
-        transition: all 0.2s ease;
-        transform-box: fill-box;
-        transform-origin: center center;
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .grid-cell:hover {
-          transform: scale(1.05);
-          filter: brightness(1.1);
-        }
-      }
-      
-      .grid-cell.selected {
-        fill: #00ff80 !important;
-      }
-      
-      .grid-cell.booked {
-        fill: #ff448a !important;
-        cursor: not-allowed;
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .grid-cell.booked:hover {
-          transform: none;
-          filter: none;
-        }
-      }
-      
-      /* 可租借格子顏色 */
-      .grid-cell:not(.selected):not(.booked) {
-        fill: #898989 !important;
-      }
-      
-      /* 後陽台SVG特殊縮放 */
-      #area-map[data-area="back-balcony"] {
-        transform: scale(0.6);
-        transform-origin: center center;
-      }
-      
-      /* 阻止頁面滾動 */
-      body {
-        overflow: hidden;
-      }
-      
-      /* 狀態指示器樣式 */
-      .status-indicators {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        margin-bottom: 2rem;
-      }
-      
-      .status-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-      
-      .status-box {
-        width: 1.2rem;
-        height: 1.2rem;
-      }
-      
-      .status-available {
-        background-color: #898989;
-      }
-      
-      .status-booked {
-        background-color: #ff448a;
-      }
-      
-      .status-selected {
-        background-color: #00ff80;
-      }
-      
-      /* SVG 點擊區域樣式 */
-      .clickable-area {
-        cursor: pointer;
-        transition: fill 0.2s ease;
-      }
-      
-      /* 只在桌面版顯示 hover 效果 */
-      @media (hover: hover) and (pointer: fine) {
-        .clickable-area:hover {
-          opacity: 0.8;
-        }
-      }
-      
-      .clickable-area.selected {
-        fill: #00ff80 !important;
-      }
-      
-      .clickable-area.booked {
-        fill: #ff448a !important;
-        cursor: not-allowed;
-      }
-      
-      /* Tooltip 樣式 */
-      #grid-tooltip {
-        position: fixed;
-        background-color: white;
-        color: black;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75rem; /* 從text-breadcrumbm改為text-xs */
-        font-weight: 400;
-        padding: 3px 8px; /* 減少上下padding */
-        border-radius: 0; /* 移除倒角 */
-        pointer-events: none;
-        z-index: 1000;
-        opacity: 0;
-        transform: translate(10px, -30px); /* 偏移到滑鼠右上角 */
-        transition: opacity 0.2s ease;
-      }
-      
-      #grid-tooltip.show {
-        opacity: 1;
-      }
-      
-      /* 響應式佈局 */
-      @media (max-width: 767px) {
-        .mobile-title-section {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-      }
-      
-      /* 確保大於768px時隱藏手機版選單 */
-      @media (min-width: 768px) {
-        .mobile-menu { 
-          display: none !important; 
-        }
-      }
-    </style>
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
   </head>
 
-  <body class="bg-black text-white h-screen overflow-hidden flex flex-col">
+  <body class="bg-black text-white h-screen flex flex-col">
     <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
       <div class="container">
         <div class="flex justify-between items-center">
-          <a href="index.html" class="font-['Inter',_sans-serif] font-medium text-white text-header">
+          <a
+            href="index.html"
+            class="font-['Inter',_sans-serif] font-medium text-white text-header"
+          >
             SCCD
           </a>
 
           <!-- 桌面版導航 -->
           <nav class="flex items-center header-menu desktop-nav nav-gap">
-            <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a
+              href="booking.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
               <div class="menu-item-wrapper active">
                 <span class="menu-text">(BOOKING)</span>
                 <span class="menu-text-hidden">(BOOKING)</span>
               </div>
             </a>
-            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
               <div class="menu-item-wrapper">
-                <span class="menu-text">((<span id="cart-count">0</span>) CART)</span>
-                <span class="menu-text-hidden">((<span class="cart-count-mirror">0</span>) CART)</span>
+                <span class="menu-text"
+                  >((<span id="cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="cart-count-mirror">0</span>) CART)</span
+                >
               </div>
             </a>
-            <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a
+              href="login.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
               <div class="menu-item-wrapper">
                 <span class="menu-text">(LOGIN)</span>
                 <span class="menu-text-hidden">(LOGIN)</span>
@@ -373,13 +84,24 @@
 
           <!-- 手機版導航 -->
           <nav class="flex items-center mobile-nav mobile-nav-gap">
-            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+            <a
+              href="rental-list.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
               <div class="menu-item-wrapper">
-                <span class="menu-text">((<span id="mobile-cart-count">0</span>) CART)</span>
-                <span class="menu-text-hidden">((<span class="mobile-cart-count-mirror">0</span>) CART)</span>
+                <span class="menu-text"
+                  >((<span id="mobile-cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="mobile-cart-count-mirror">0</span>)
+                  CART)</span
+                >
               </div>
             </a>
-            <button id="mobile-menu-btn" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+            <button
+              id="mobile-menu-btn"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+            >
               <div class="menu-item-wrapper">
                 <span class="menu-text">(MENU)</span>
                 <span class="menu-text-hidden">(MENU)</span>
@@ -394,190 +116,255 @@
       <div class="container h-full flex flex-col">
         <!-- 上方：Breadcrumb + 標題 -->
         <div class="flex-shrink-0">
-          <div class="text-left hidden md:block" style="padding-bottom: 1.08rem;">
-            <nav class="breadcrumb-inline">
-              <a href="index.html" class="breadcrumb-item text-breadcrumb">首頁</a>
+          <div class="text-left hidden md:block float-up-container pb-4">
+            <nav class="breadcrumb-inline float-up float-up-delay-1">
+              <a href="index.html" class="breadcrumb-item text-breadcrumb"
+                >首頁</a
+              >
               <span class="breadcrumb-separator text-breadcrumb">/</span>
-              <a href="booking.html" class="breadcrumb-item text-breadcrumb">租借日期</a>
+              <a href="booking.html" class="breadcrumb-item text-breadcrumb"
+                >租借日期</a
+              >
               <span class="breadcrumb-separator text-breadcrumb">/</span>
-              <a href="bookingresources.html" class="breadcrumb-item text-breadcrumb">租借資源</a>
+              <a
+                href="bookingresources.html"
+                class="breadcrumb-item text-breadcrumb"
+                >租借資源</a
+              >
               <span class="breadcrumb-separator text-breadcrumb">/</span>
-              <a href="space.html" class="breadcrumb-item text-breadcrumb">租借空間</a>
+              <a href="space.html" class="breadcrumb-item text-breadcrumb"
+                >租借空間</a
+              >
               <span class="breadcrumb-separator text-breadcrumb">/</span>
-              <span class="breadcrumb-item text-breadcrumb">A5F編號區</span>
+              <span
+                id="main-breadcrumb"
+                class="breadcrumb-item text-breadcrumb cursor-pointer hover:opacity-60"
+                >A5F編號區</span
+              >
             </nav>
           </div>
-          <h1 class="hidden md:block font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-6">A5F編號區</h1>
+          <div
+            class="hidden md:flex justify-between items-end mb-6 float-up-container"
+          >
+            <h1
+              class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title float-up float-up-delay-2"
+            >
+              A5F編號區
+            </h1>
+            <!-- 日期顯示 -->
+            <div class="flex gap-8">
+              <div class="float-up float-up-delay-3">
+                <h2
+                  class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny"
+                >
+                  起租日
+                </h2>
+                <p
+                  id="display-start-date"
+                  class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight"
+                >
+                  ----/--/--
+                </p>
+              </div>
+
+              <div class="float-up float-up-delay-4">
+                <h2
+                  class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny"
+                >
+                  歸還日
+                </h2>
+                <p
+                  id="display-end-date"
+                  class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight"
+                >
+                  ----/--/--
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 下方：主要內容 -->
-        <div class="flex-1 min-h-0 overflow-hidden">
-          <!-- 左中右三個區塊 -->
-          <div class="hidden md:flex h-full gap-20">
-            <!-- 左側：區域列表 25% -->
-            <div class="basis-[25%] min-w-0 min-h-0 left-pane">
-              <div class="left-fixed h-full">
-                <div class="left-pane-scroll h-full overflow-y-auto">
-                  <div class="space-y-0">
-                    <!-- 中庭 -->
-                    <div id="area-card-courtyard" class="relative cursor-pointer area-item" onclick="selectAreaCard('courtyard')">
-                      <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">中庭</div>
-                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">ATRIUM</div>
-                        </div>
-                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
-                          <div class="flex flex-col items-end gap-1">
-                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="area-divider mt-1"></div>
-                    </div>
+        <!-- 下方：主要內容 - 平面圖區域 -->
+        <div
+          class="flex-1 min-h-0 overflow-hidden pb-10 relative float-up-container"
+        >
+          <!-- A5F Area Booking SVG -->
+          <div class="h-full text-center relative float-up float-up-delay-5">
+            <!-- SVG 容器 -->
+            <div
+              class="w-1/2 h-full flex items-center justify-center mx-auto overflow-hidden"
+            >
+              <!-- SVG內容將在這裡插入 -->
+            </div>
+          </div>
 
-                    <!-- 走廊 -->
-                    <div id="area-card-corridor" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('corridor')">
-                      <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">走廊</div>
-                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">CORRIDOR</div>
-                        </div>
-                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
-                          <div class="flex flex-col items-end gap-1">
-                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="area-divider mt-1"></div>
-                    </div>
+          <!-- 左側叠加選單（初始隱藏） -->
+          <div id="left-overlay-menu" class="left-overlay-menu">
+            <div class="left-menu-content">
+              <!-- BACK按鈕 -->
+              <button
+                id="back-button"
+                class="sccd-back-btn text-tiny mb-8 text-left"
+              >
+                < BACK
+              </button>
 
-                    <!-- 前陽台 -->
-                    <div id="area-card-front-balcony" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('front-balcony')">
-                      <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">前陽台</div>
-                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">FRONT TERRACE</div>
-                        </div>
-                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
-                          <div class="flex flex-col items-end gap-1">
-                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="area-divider mt-1"></div>
-                    </div>
-
-                    <!-- 後陽台 -->
-                    <div id="area-card-back-balcony" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('back-balcony')">
-                      <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">後陽台</div>
-                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">BACK TERRACE</div>
-                        </div>
-                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
-                          <div class="flex flex-col items-end gap-1">
-                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 2,000</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="area-divider mt-1"></div>
-                    </div>
-
-                    <!-- 玻璃牆 -->
-                    <div id="area-card-glass-wall" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('glass-wall')">
-                      <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">玻璃牆</div>
-                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">GLASS WALL</div>
-                        </div>
-                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
-                          <div class="flex flex-col items-end gap-1">
-                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="area-divider mt-1"></div>
-                    </div>
-
-                    <!-- 柱子 -->
-                    <div id="area-card-pillar" class="relative cursor-pointer area-item pt-4" onclick="selectAreaCard('pillar')">
-                      <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                          <div class="text-content font-['Noto_Sans_TC',_sans-serif] text-white mb-2">柱子</div>
-                          <div class="text-small-title font-['Inter',_sans-serif] font-normal text-white">PILLAR</div>
-                        </div>
-                        <div class="opacity-0 transition-opacity duration-300 area-deposit">
-                          <div class="flex flex-col items-end gap-1">
-                            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300">押金/塊</div>
-                            <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white">NT 1,000</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="area-divider mt-1"></div>
-                    </div>
+              <div class="area-menu-item" data-area="square">
+                <div class="area-menu-text">
+                  <div class="area-menu-name text-content">
+                    中庭
+                    <span class="area-menu-english text-header">Square</span>
                   </div>
+                  <div class="area-menu-deposit text-tiny">NT 1,000/塊</div>
                 </div>
+                <div class="area-menu-divider"></div>
+              </div>
+
+              <div class="area-menu-item" data-area="corridor">
+                <div class="area-menu-text">
+                  <div class="area-menu-permission text-tiny">*專案許可區</div>
+                  <div class="area-menu-name text-content">
+                    走廊
+                    <span class="area-menu-english text-header">Corridor</span>
+                  </div>
+                  <div class="area-menu-deposit text-tiny">NT 1,000/塊</div>
+                </div>
+                <div class="area-menu-divider"></div>
+              </div>
+
+              <div class="area-menu-item" data-area="front-terrace">
+                <div class="area-menu-text">
+                  <div class="area-menu-name text-content">
+                    前陽台
+                    <span class="area-menu-english text-header"
+                      >Front Terrace</span
+                    >
+                  </div>
+                  <div class="area-menu-deposit text-tiny">NT 1,000/塊</div>
+                </div>
+                <div class="area-menu-divider"></div>
+              </div>
+
+              <div class="area-menu-item" data-area="back-terrace">
+                <div class="area-menu-text">
+                  <div class="area-menu-name text-content">
+                    後陽台
+                    <span class="area-menu-english text-header"
+                      >Back Terrace</span
+                    >
+                  </div>
+                  <div class="area-menu-deposit text-tiny">NT 2,000/塊</div>
+                </div>
+                <div class="area-menu-divider"></div>
+              </div>
+
+              <div class="area-menu-item" data-area="glass-wall">
+                <div class="area-menu-text">
+                  <div class="area-menu-permission text-tiny">
+                    *Y4-Y7為專案許可區
+                  </div>
+                  <div class="area-menu-name text-content">
+                    玻璃牆
+                    <span class="area-menu-english text-header"
+                      >Glass Wall</span
+                    >
+                  </div>
+                  <div class="area-menu-deposit text-tiny">NT 1,000/塊</div>
+                </div>
+                <div class="area-menu-divider"></div>
+              </div>
+
+              <div class="area-menu-item" data-area="pillar">
+                <div class="area-menu-text">
+                  <div class="area-menu-permission text-tiny">*專案許可區</div>
+                  <div class="area-menu-name text-content">
+                    柱子
+                    <span class="area-menu-english text-header">Pillar</span>
+                  </div>
+                  <div class="area-menu-deposit text-tiny">NT 1,000/塊</div>
+                </div>
+                <div class="area-menu-divider"></div>
               </div>
             </div>
-            
-            <!-- 中間：地圖區域 50% -->
-            <div class="basis-[50%] min-w-0 min-h-0 overflow-hidden">
-              <div class="map-container p-5" id="map-container">
-                <!-- SVG將由JavaScript動態載入 -->
-              </div>
-            </div>
+          </div>
 
-            <!-- 右側：資訊（上）與按鈕（下） 25% -->
-            <div class="basis-[25%] min-w-0 min-h-0 flex flex-col overflow-hidden pb-4">
-              <!-- 上：狀態指示器 -->
-              <div class="status-indicators">
+          <!-- 右側資訊面板（初始隱藏） -->
+          <div id="right-info-panel" class="right-info-panel">
+            <div class="right-info-content">
+              <!-- 上方：狀態說明 -->
+              <div class="info-status-section">
                 <div class="status-item">
-                  <div class="status-box status-available"></div>
-                  <span class="text-[1.125rem] font-['Noto_Sans_TC',_sans-serif] text-white">可租借</span>
+                  <div class="status-indicator available"></div>
+                  <span class="status-text text-small-title">可租借</span>
                 </div>
                 <div class="status-item">
-                  <div class="status-box status-booked"></div>
-                  <span class="text-[1.125rem] font-['Noto_Sans_TC',_sans-serif] text-white">已借出</span>
+                  <div class="status-indicator rented"></div>
+                  <span class="status-text text-small-title">已借出</span>
                 </div>
                 <div class="status-item">
-                  <div class="status-box status-selected"></div>
-                  <span class="text-[1.125rem] font-['Noto_Sans_TC',_sans-serif] text-white">已選擇</span>
+                  <div class="status-indicator selected"></div>
+                  <span class="status-text text-small-title">已選擇</span>
                 </div>
               </div>
 
-              <!-- 下：租借資訊 + 按鈕 -->
-              <div class="space-y-6 mt-auto">
-                <!-- 租借資訊 -->
-                <div class="space-y-6">
-                  <div>
-                    <div class="text-small-title font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">租借區塊</div>
-                    <div id="selected-blocks" class="text-content font-['Inter',_sans-serif] font-normal text-white tracking-wide">--</div>
-                  </div>
-                  <div>
-                    <div class="text-small-title font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-2">押金總額</div>
-                    <div id="total-deposit" class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide">NT 0</div>
+              <!-- 下方：租借資訊 -->
+              <div class="info-rental-section">
+                <div class="rental-blocks">
+                  <span class="rental-label text-tiny">租借區塊</span>
+                  <div
+                    id="rental-block-numbers"
+                    class="rental-numbers text-content"
+                  >
+                    --
                   </div>
                 </div>
+                <div class="rental-deposit">
+                  <span class="deposit-label text-tiny">押金總額</span>
+                  <span
+                    id="total-deposit"
+                    class="deposit-amount text-medium-title"
+                    >NT 0</span
+                  >
+                </div>
 
-                <!-- 按鈕區域 -->
-                <div class="flex gap-4">
-                  <a href="#" id="clear-btn" class="font-['Inter',_sans-serif] uppercase text-button inline-block" style="color: #777777;" data-disabled="true" onclick="clearSelection(); return false;">
+                <!-- 專案許可區確認checkbox（初始隱藏） -->
+                <div
+                  id="project-permission-section"
+                  class="project-permission hidden"
+                >
+                  <label class="project-permission-label">
+                    <input
+                      type="checkbox"
+                      id="project-permission-checkbox"
+                      class="custom-checkbox"
+                    />
+                    <span class="text-small-title"
+                      >已與老師討論，確認老師知情並允許於此專案借用</span
+                    >
+                  </label>
+                </div>
+
+                <div class="rental-actions">
+                  <button
+                    id="clear-button"
+                    class="text-button font-['Inter',_sans-serif] uppercase text-white"
+                    disabled
+                  >
                     <div class="hero-cta-wrapper">
                       <span class="hero-cta-text">(CLEAR)</span>
                       <span class="hero-cta-hidden">(CLEAR)</span>
                     </div>
-                  </a>
-                  <a href="#" id="add-area-btn" class="font-['Inter',_sans-serif] uppercase text-button inline-block" style="color: #777777;" data-disabled="true" onclick="addAreaToCart(); return false;">
+                  </button>
+                  <button
+                    id="add-button"
+                    class="text-button font-['Inter',_sans-serif] uppercase text-white"
+                    disabled
+                  >
                     <div class="hero-cta-wrapper">
                       <span class="hero-cta-text">(ADD)</span>
                       <span class="hero-cta-hidden">(ADD)</span>
                     </div>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -588,49 +375,79 @@
         <div class="md:hidden h-full flex flex-col">
           <!-- 標題區域 -->
           <div class="mobile-title-section">
-            <h1 class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4">
+            <h1
+              class="text-3xl font-['Noto_Sans_TC',_sans-serif] font-medium mb-4"
+            >
               A5F編號區
             </h1>
           </div>
-          
+
           <!-- 暫時內容 -->
           <div class="flex-grow flex items-center justify-center">
-            <p class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white">製作中，敬請期待！</p>
+            <p
+              class="text-base font-['Noto_Sans_TC',_sans-serif] font-normal text-white"
+            >
+              製作中，敬請期待！
+            </p>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Tooltip 元件 -->
-    <div id="grid-tooltip"></div>
-
-    <!-- 通知元件 -->
-    <div id="notification">
-      <p id="notification-text" class="text-base font-['Noto_Sans_TC',_sans-serif] leading-relaxed text-center"></p>
+    <!-- 區域說明框 -->
+    <div id="area-tooltip" class="area-tooltip">
+      <div class="area-tooltip-content">
+        <div class="area-tooltip-left">
+          <div
+            id="tooltip-project-permission"
+            class="tooltip-project-permission text-tiny hidden"
+          ></div>
+          <div id="tooltip-area-name" class="area-name text-content"></div>
+          <div id="tooltip-area-english" class="area-english text-header"></div>
+        </div>
+        <div class="area-tooltip-right">
+          <div class="deposit-label text-tiny">押金/塊</div>
+          <div id="tooltip-deposit" class="deposit-amount text-header"></div>
+        </div>
+      </div>
+      <div class="tooltip-description text-tiny">點擊區塊以開始租借</div>
     </div>
 
     <footer class="bg-transparent footer-main">
       <div class="container">
         <div class="hidden md:flex justify-between items-center">
           <div class="flex items-center footer-gap">
-            <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a
+              href="https://sccd.usc.edu.tw/"
+              target="_blank"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
               <div class="menu-item-wrapper">
                 <span class="menu-text">(TO SCCD)</span>
                 <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
             </a>
-            <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a
+              href="about.html"
+              class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
               <div class="menu-item-wrapper">
                 <span class="menu-text">(ABOUT)</span>
                 <span class="menu-text-hidden">(ABOUT)</span>
               </div>
             </a>
           </div>
-          <div class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header">
+          <div
+            class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header"
+          >
             <p>
               <span class="copyright-original">
-                <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+                <span class="font-['Inter',_sans-serif] uppercase"
+                  >Copyright © 2025 111</span
+                >屆系學會
+                <span class="font-['Inter',_sans-serif]"
+                  >All rights reserved.</span
+                >
               </span>
               <span class="copyright-easter-egg" id="easter-egg-text">
                 <!-- 彩蛋文字將由JavaScript生成 -->
@@ -648,7 +465,10 @@
         <div class="flex flex-col items-start menu-gap flex-grow">
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-1">
-              <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a
+                href="booking.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
                 <div class="menu-item-wrapper active">
                   <span class="menu-text">(BOOKING)</span>
                   <span class="menu-text-hidden">(BOOKING)</span>
@@ -658,7 +478,10 @@
           </div>
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-2">
-              <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a
+                href="login.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
                 <div class="menu-item-wrapper">
                   <span class="menu-text">(LOGIN)</span>
                   <span class="menu-text-hidden">(LOGIN)</span>
@@ -668,7 +491,11 @@
           </div>
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-3">
-              <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
                 <div class="menu-item-wrapper">
                   <span class="menu-text">(TO SCCD)</span>
                   <span class="menu-text-hidden">(TO SCCD)</span>
@@ -678,7 +505,10 @@
           </div>
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-4">
-              <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a
+                href="about.html"
+                class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title"
+              >
                 <div class="menu-item-wrapper">
                   <span class="menu-text">(ABOUT)</span>
                   <span class="menu-text-hidden">(ABOUT)</span>
@@ -691,13 +521,22 @@
         <!-- Copyright 在底部 -->
         <div class="menu-animate-enter mobile-menu-content-bottom">
           <div class="menu-animate-enter-content menu-delay-5">
-            <div class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header">
+            <div
+              class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header"
+            >
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+                  <span class="font-['Inter',_sans-serif] uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-['Inter',_sans-serif]"
+                    >All rights reserved.</span
+                  >
                 </span>
-                <span class="copyright-easter-egg" id="mobile-menu-easter-egg-text">
+                <span
+                  class="copyright-easter-egg"
+                  id="mobile-menu-easter-egg-text"
+                >
                   <!-- 彩蛋文字將由JavaScript生成 -->
                 </span>
               </p>
@@ -706,966 +545,5 @@
         </div>
       </div>
     </div>
-
-    <script>
-      let currentSelectedArea = 'courtyard';
-      let selectedBlocks = []; // 存儲選中的區塊
-      let selectedBlockNames = []; // 存儲選中區塊的名稱
-      
-      // 存儲每個區域的選擇狀態
-      let areaSelections = {
-        'courtyard': [],
-        'corridor': [],
-        'front-balcony': [],
-        'back-balcony': [],
-        'glass-wall': [],
-        'pillar': []
-      };
-      
-      // 存儲已加入購物車的區塊（按區域分類）
-      let cartBlocks = {
-        'courtyard': [],
-        'corridor': [],
-        'front-balcony': [],
-        'back-balcony': [],
-        'glass-wall': [],
-        'pillar': []
-      };
-      
-      // 區域資料
-      const areaData = {
-        'courtyard': {
-          id: 'area-courtyard',
-          name: '中庭',
-          category: 'area',
-          deposit: 1000,
-          image: 'Area/A5F Numbered Area_Square.svg',
-          mapImage: 'Area/A5F Numbered Area_Square.svg'
-        },
-        'corridor': {
-          id: 'area-corridor',
-          name: '走廊',
-          category: 'area',
-          deposit: 1000,
-          image: 'Area/A5F Numbered Area_Corridor.svg',
-          mapImage: 'Area/A5F Numbered Area_Corridor.svg'
-        },
-        'front-balcony': {
-          id: 'area-front-balcony',
-          name: '前陽台',
-          category: 'area',
-          deposit: 1000,
-          image: 'Area/A5F Numbered Area_Front Terrace.svg',
-          mapImage: 'Area/A5F Numbered Area_Front Terrace.svg'
-        },
-        'back-balcony': {
-          id: 'area-back-balcony',
-          name: '後陽台',
-          category: 'area',
-          deposit: 2000,
-          image: 'Area/A5F Numbered Area_Back Terrace.svg',
-          mapImage: 'Area/A5F Numbered Area_Back Terrace.svg'
-        },
-        'glass-wall': {
-          id: 'area-glass-wall',
-          name: '玻璃牆',
-          category: 'area',
-          deposit: 1000,
-          image: 'Area/A5F Numbered Area_Glass Wall.svg',
-          mapImage: 'Area/A5F Numbered Area_Glass Wall.svg'
-        },
-        'pillar': {
-          id: 'area-pillar',
-          name: '柱子',
-          category: 'area',
-          deposit: 1000,
-          image: 'Area/A5F Numbered Area_Pillar.svg',
-          mapImage: 'Area/A5F Numbered Area_Pillar.svg'
-        }
-      };
-      
-      function toggleAccordion(areaId) {
-        // 如果點擊的是已經打開的區域，就關閉它
-        if (currentSelectedArea === areaId) {
-          closeAccordion(areaId);
-          currentSelectedArea = null;
-          updateAreaDisplay();
-          return;
-        }
-        
-        // 關閉當前打開的區域
-        if (currentSelectedArea) {
-          closeAccordion(currentSelectedArea);
-        }
-        
-        // 延遲打開新選擇的區域
-        setTimeout(() => {
-          // 保存當前區域的選擇狀態（排除已在購物車中的格子）
-          if (currentSelectedArea) {
-            const currentCartBlocks = cartBlocks[currentSelectedArea] || [];
-            const availableSelections = selectedBlockNames.filter(blockName => 
-              !currentCartBlocks.includes(blockName)
-            );
-            areaSelections[currentSelectedArea] = [...availableSelections];
-          }
-          
-          openAccordion(areaId);
-          currentSelectedArea = areaId;
-          updateAreaDisplay();
-          
-          // 先恢復購物車中格子的視覺狀態
-          setTimeout(() => {
-            restoreCartBlocksVisualState();
-            
-            // 然後恢復新區域的選擇狀態（排除已在購物車中的格子）
-            const cartBlocksInNewArea = cartBlocks[areaId] || [];
-            const availableSelections = areaSelections[areaId].filter(blockName => 
-              !cartBlocksInNewArea.includes(blockName)
-            );
-            selectedBlockNames = [...availableSelections];
-            selectedBlocks = [...selectedBlockNames]; // 保持同步
-            updateSelectedBlocks();
-          }, 50);
-        }, 200);
-      }
-      
-      function openAccordion(areaId) {
-        const content = document.getElementById(`content-${areaId}`);
-        const icon = document.getElementById(`icon-${areaId}`);
-        
-        // 設置為展開：用 scrollHeight 作為 max-height 目標
-        content.classList.add('expanded');
-        const target = content.scrollHeight;
-        content.style.maxHeight = target + 'px';
-        
-        // 圖標變 "-"
-        icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/>';
-        icon.classList.remove('plus');
-      }
-      
-      function closeAccordion(areaId) {
-        const content = document.getElementById(`content-${areaId}`);
-        const icon = document.getElementById(`icon-${areaId}`);
-        
-        // 收起：將 max-height 設為 0
-        content.style.maxHeight = '0px';
-        content.classList.remove('expanded');
-        
-        // 圖標變 "+"
-        icon.innerHTML = '<line x1="4" y1="12" x2="20" y2="12" stroke="white" stroke-width="1"/><line x1="12" y1="4" x2="12" y2="20" stroke="white" stroke-width="1"/>';
-        icon.classList.add('plus');
-      }
-
-      // 區域卡片選擇（取代手風琴）
-      function clearAreaCardSelections() {
-        const cards = document.querySelectorAll('.area-item');
-        cards.forEach(card => card.classList.remove('selected'));
-      }
-
-      function selectAreaCard(areaId) {
-        // 如果點擊的是已經選中的區域，則取消選擇
-        if (currentSelectedArea === areaId) {
-          clearAreaCardSelections();
-          currentSelectedArea = null;
-          updateAreaDisplay();
-          return;
-        }
-        
-        // 保存當前區域的選擇狀態（排除已在購物車中的格子）
-        if (currentSelectedArea) {
-          const currentCartBlocks = cartBlocks[currentSelectedArea] || [];
-          const availableSelections = selectedBlockNames.filter(blockName =>
-            !currentCartBlocks.includes(blockName)
-          );
-          areaSelections[currentSelectedArea] = [...availableSelections];
-        }
-
-        // 視覺選中卡片（互斥）
-        clearAreaCardSelections();
-        const cardEl = document.getElementById(`area-card-${areaId}`);
-        if (cardEl) {
-          cardEl.classList.add('selected');
-        }
-
-        // 更新當前區域
-        currentSelectedArea = areaId;
-
-        // 更新中間地圖/格子狀態
-        updateAreaDisplay();
-
-        // 恢復購物車與選擇狀態（排除已在購物車的格子）
-        setTimeout(() => {
-          restoreCartBlocksVisualState();
-          const cartBlocksInNewArea = cartBlocks[areaId] || [];
-          const availableSelections = (areaSelections[areaId] || []).filter(blockName =>
-            !cartBlocksInNewArea.includes(blockName)
-          );
-          selectedBlockNames = [...availableSelections];
-          selectedBlocks = [...selectedBlockNames];
-          updateSelectedBlocks();
-        }, 50);
-      }
-      
-      // 新的穩定SVG載入機制
-      async function updateAreaDisplay() {
-        if (!currentSelectedArea) {
-          // 如果沒有選擇區域，清空中間區域
-          const mapContainer = document.getElementById('map-container');
-          mapContainer.innerHTML = '';
-          return;
-        }
-        
-        const mapContainer = document.getElementById('map-container');
-        const area = areaData[currentSelectedArea];
-        
-        if (!area || !area.mapImage) {
-          console.warn(`區域 ${currentSelectedArea} 沒有對應的地圖檔案`);
-          mapContainer.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-base font-[\'Noto_Sans_TC\',_sans-serif] font-normal text-white">地圖載入中...</p></div>';
-          return;
-        }
-        
-        // 為玻璃牆和柱子設置滾動容器
-        if (currentSelectedArea === 'glass-wall' || currentSelectedArea === 'pillar') {
-          mapContainer.classList.add('scrollable');
-        } else {
-          mapContainer.classList.remove('scrollable');
-        }
-        
-        try {
-          // 使用fetch載入SVG檔案
-          const response = await fetch(area.mapImage);
-          if (!response.ok) {
-            throw new Error(`載入SVG失敗: ${response.status}`);
-          }
-          
-          const svgText = await response.text();
-          
-          // 清理和準備SVG內容
-          const cleanedSVG = prepareSVGForInteraction(svgText, currentSelectedArea);
-          
-          // 載入SVG到容器
-          mapContainer.innerHTML = cleanedSVG;
-          
-          // 等待DOM更新完成後設置交互
-          await new Promise(resolve => requestAnimationFrame(resolve));
-          await new Promise(resolve => setTimeout(resolve, 50));
-          
-          console.log(`開始設置區域 ${currentSelectedArea} 的格子狀態`);
-          setupSVGClickEvents();
-          
-          // 設置各種格子狀態
-          setupGridStates();
-          
-          console.log(`區域 ${currentSelectedArea} SVG載入和設置完成`);
-          
-        } catch (error) {
-          console.error(`載入區域 ${currentSelectedArea} 的SVG時發生錯誤:`, error);
-          mapContainer.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-base font-[\'Noto_Sans_TC\',_sans-serif] font-normal text-white">地圖載入失敗，請重試</p></div>';
-        }
-      }
-      
-      // 準備SVG以支持交互功能
-      function prepareSVGForInteraction(svgText, areaId) {
-        // 創建一個臨時DOM來解析SVG
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(svgText, 'image/svg+xml');
-        const svg = doc.documentElement;
-        
-        // 設置SVG的基本屬性
-        svg.setAttribute('id', 'area-map');
-        svg.classList.add('map-svg');
-        
-        // 為玻璃牆和柱子添加特殊縮放類
-        if (areaId === 'glass-wall' || areaId === 'pillar') {
-          svg.classList.add('no-scale');
-        }
-        
-        // 為後陽台添加特殊縮放屬性
-        if (areaId === 'back-balcony') {
-          svg.setAttribute('data-area', 'back-balcony');
-        }
-        
-        // 尋找所有可點擊的矩形和多邊形元素
-        const clickableElements = svg.querySelectorAll('rect[id], polygon[id]');
-        
-        clickableElements.forEach(element => {
-          // 只為有ID且ID不是特殊元素的添加格子類
-          const id = element.getAttribute('id');
-          if (id && !id.includes('Layer') && !id.includes('_Terrace') && !id.includes('Corridor') && !id.includes('Square')) {
-            element.classList.add('grid-cell');
-            element.classList.add('clickable-area');
-          }
-        });
-        
-        // 返回處理後的SVG字符串
-        return new XMLSerializer().serializeToString(svg);
-      }
-      
-      // 設置格子狀態
-      function setupGridStates() {
-        // 設置已提交訂單的格子為已預訂狀態（紅色）
-        if (submittedBlocks[currentSelectedArea]) {
-          submittedBlocks[currentSelectedArea].forEach(blockName => {
-            const cell = document.getElementById(blockName);
-            if (cell) {
-              cell.classList.add('booked');
-              console.log(`格子 ${blockName} 設為已提交狀態 (紅色)`);
-            }
-          });
-        }
-        
-        // 示範：設置一些格子為已預訂狀態（可選，用於測試）
-        const demoBookedBlocks = getBookedBlocksForArea(currentSelectedArea);
-        demoBookedBlocks.forEach(blockName => {
-          const cell = document.getElementById(blockName);
-          if (cell) {
-            cell.classList.add('booked');
-            console.log(`格子 ${blockName} 設為示範預訂狀態 (紅色)`);
-          }
-        });
-        
-        // 恢復已選擇的區塊視覺狀態
-        selectedBlockNames.forEach(blockName => {
-          const cell = document.getElementById(blockName);
-          if (cell && !cell.classList.contains('booked')) {
-            cell.classList.add('selected');
-            console.log(`格子 ${blockName} 恢復選中狀態 (綠色)`);
-          }
-        });
-        
-        // 恢復已加入購物車的區塊視覺狀態（綠色）
-        console.log('準備恢復購物車格子視覺狀態...');
-        restoreCartBlocksVisualState();
-      }
-      
-      // 載入預設的預訂狀態區塊
-      function getBookedBlocksForArea(areaId) {
-        // 為不同區域設置不同的預訂狀態示範
-        const bookedBlocks = {
-          'courtyard': ['B5', 'C7', 'D9'],
-          'corridor': ['G8', 'H6'],
-          'front-balcony': ['K3', 'K7'],
-          'back-balcony': ['L2'],
-          'glass-wall': ['Y5', 'Y12', 'Y20'],
-          'pillar': ['Z3', 'Z6']
-        };
-        
-        return bookedBlocks[areaId] || [];
-      }
-      
-      // 改進的SVG事件設置，更穩定可靠
-      function setupSVGClickEvents() {
-        const gridCells = document.querySelectorAll('.grid-cell, .clickable-area');
-        const tooltip = document.getElementById('grid-tooltip');
-        
-        console.log(`找到 ${gridCells.length} 個可點擊格子`);
-        
-        // 如果沒有找到格子元素，延遲重試
-        if (gridCells.length === 0) {
-          console.warn('未找到可點擊格子，1秒後重試...');
-          setTimeout(() => {
-            setupSVGClickEvents();
-          }, 1000);
-          return;
-        }
-        
-        // 清理之前的事件監聽器
-        gridCells.forEach(cell => {
-          const newCell = cell.cloneNode(true);
-          cell.parentNode.replaceChild(newCell, cell);
-        });
-        
-        // 重新選取所有格子並設置事件
-        const freshCells = document.querySelectorAll('.grid-cell, .clickable-area');
-        
-        freshCells.forEach(cell => {
-          const blockId = cell.getAttribute('id');
-          
-          // 確保格子有有效的ID
-          if (!blockId || blockId.includes('Layer') || blockId.includes('_')) {
-            return;
-          }
-          
-          console.log(`為格子 ${blockId} 設置事件監聽器`);
-          
-          // 點擊事件
-          cell.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log(`格子 ${blockId} 被點擊`);
-            handleBlockClick(blockId);
-          });
-          
-          // 只在桌面版顯示tooltip hover效果
-          if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-            // Hover事件 - 顯示tooltip
-            cell.addEventListener('mouseenter', function(e) {
-              if (tooltip) {
-                tooltip.textContent = blockId;
-                tooltip.classList.add('show');
-                updateTooltipPosition(e);
-              }
-            });
-            
-            // 滑鼠移動事件 - 更新tooltip位置
-            cell.addEventListener('mousemove', function(e) {
-              if (tooltip) {
-                updateTooltipPosition(e);
-              }
-            });
-            
-            // 離開hover - 隱藏tooltip
-            cell.addEventListener('mouseleave', function() {
-              if (tooltip) {
-                tooltip.classList.remove('show');
-              }
-            });
-          }
-        });
-        
-        console.log(`成功為 ${freshCells.length} 個格子設置事件監聽器`);
-      }
-      
-      function updateTooltipPosition(e) {
-        const tooltip = document.getElementById('grid-tooltip');
-        tooltip.style.left = e.clientX + 'px';
-        tooltip.style.top = e.clientY + 'px';
-      }
-      
-      function handleBlockClick(blockName) {
-        const cell = document.getElementById(blockName);
-        
-        // 調試用：輸出當前狀態（可在生產環境中移除）
-        // console.log('點擊格子:', blockName);
-        
-        // 檢查是否已被預訂（這裡可以設置一些預訂的格子用於示範）
-        if (cell.classList.contains('booked')) {
-          showNotification(`${blockName} 已被預訂！`, 'error');
-          return;
-        }
-        
-        // 使用購物車管理器檢查是否已在購物車中
-        if (window.cartManager && window.cartManager.isBlockInCart(currentSelectedArea, blockName)) {
-          showNotification(`${blockName} 已在租借清單中！`, 'error');
-          return;
-        }
-        
-        // 檢查本地購物車記錄（雙重保險）
-        if (cartBlocks[currentSelectedArea] && cartBlocks[currentSelectedArea].includes(blockName)) {
-          showNotification(`${blockName} 已在租借清單中！`, 'error');
-          return;
-        }
-        
-        // 檢查是否已提交訂單
-        if (submittedBlocks[currentSelectedArea] && submittedBlocks[currentSelectedArea].includes(blockName)) {
-          showNotification(`${blockName} 已提交訂單！`, 'error');
-          return;
-        }
-        
-        const index = selectedBlockNames.indexOf(blockName);
-        if (index > -1) {
-          // 如果已選中，則取消選中
-          selectedBlockNames.splice(index, 1);
-          cell.classList.remove('selected');
-          // console.log('取消選中:', blockName);
-        } else {
-          // 如果未選中，則添加到選中列表
-          selectedBlockNames.push(blockName);
-          cell.classList.add('selected');
-          // console.log('新增選中:', blockName);
-        }
-        
-        updateSelectedBlocks();
-      }
-      
-      function updateSelectedBlocks() {
-        const selectedBlocksElement = document.getElementById('selected-blocks');
-        const totalDepositElement = document.getElementById('total-deposit');
-        const addButton = document.getElementById('add-area-btn');
-        const clearButton = document.getElementById('clear-btn');
-        
-        if (selectedBlockNames.length === 0) {
-          selectedBlocksElement.textContent = '--';
-          totalDepositElement.textContent = 'NT 0';
-          
-          // 兩個按鈕都禁用 - #777777 但可以 hover
-          addButton.style.color = '#777777';
-          addButton.setAttribute('data-disabled', 'true');
-          
-          clearButton.style.color = '#777777';
-          clearButton.setAttribute('data-disabled', 'true');
-        } else {
-          selectedBlocksElement.textContent = selectedBlockNames.join(', ');
-          
-          // 根據當前區域計算押金
-          const area = areaData[currentSelectedArea];
-          const totalDeposit = selectedBlockNames.length * (area ? area.deposit : 1000);
-          totalDepositElement.textContent = `NT${totalDeposit.toLocaleString()}`;
-          
-          // 兩個按鈕都啟用 - 白色且可點擊
-          addButton.style.color = 'white';
-          addButton.removeAttribute('data-disabled');
-          
-          clearButton.style.color = 'white';
-          clearButton.removeAttribute('data-disabled');
-        }
-      }
-      
-      function clearSelection() {
-        const clearButton = document.getElementById('clear-btn');
-        
-        // 檢查是否被禁用
-        if (clearButton.getAttribute('data-disabled') === 'true') {
-          return;
-        }
-        
-        // 清除所有選中的格子（但不影響已在購物車中的格子）
-        selectedBlockNames.forEach(blockName => {
-          const cell = document.getElementById(blockName);
-          if (cell && !cartBlocks[currentSelectedArea].includes(blockName)) {
-            cell.classList.remove('selected');
-          }
-        });
-        
-        // 清空選中列表
-        selectedBlockNames = [];
-        selectedBlocks = [];
-        
-        // 清空當前區域的記錄
-        if (currentSelectedArea) {
-          areaSelections[currentSelectedArea] = [];
-        }
-        
-        // 更新顯示
-        updateSelectedBlocks();
-        
-        // 顯示通知
-        showNotification('已清除所有選擇！');
-        
-        // 執行點擊後的反向動畫
-        const buttonFill = clearButton.querySelector('.button-bg-fill');
-        if (buttonFill) {
-          // 先快速填滿背景
-          gsap.set(buttonFill, { height: '100%' });
-          clearButton.classList.add('white-text');
-          
-          // 然後執行從上往下的清空動畫，同時文字顏色逐漸變回白色
-          setTimeout(() => {
-            gsap.to(buttonFill, {
-              height: '0%',
-              duration: 0.5,
-              ease: "power2.out"
-            });
-            
-            // 文字顏色同時開始過渡變回白色
-            clearButton.classList.remove('white-text');
-          }, 100);
-        }
-      }
-      
-      function addAreaToCart() {
-        const button = document.getElementById('add-area-btn');
-        
-        // 檢查是否被禁用
-        if (button.getAttribute('data-disabled') === 'true' || !currentSelectedArea || selectedBlockNames.length === 0) {
-          showNotification('請先選擇區塊！', 'error');
-          return;
-        }
-        
-        // 使用購物車管理器檢查重複格子
-        if (window.cartManager) {
-          const duplicateBlocks = selectedBlockNames.filter(blockName => 
-            window.cartManager.isBlockInCart(currentSelectedArea, blockName)
-          );
-          
-          if (duplicateBlocks.length > 0) {
-            showNotification(`以下格子已在租借清單中：${duplicateBlocks.join(', ')}`, 'error');
-            return;
-          }
-        }
-        
-        const area = areaData[currentSelectedArea];
-        const totalDeposit = selectedBlockNames.length * area.deposit;
-        const blockList = selectedBlockNames.join(', ');
-        
-        // 創建購物車項目
-        const cartItem = {
-          id: `${area.id}-${Date.now()}`, // 使用時間戳確保唯一性
-          name: `${area.name} (${blockList})`,
-          category: area.category,
-          deposit: totalDeposit,
-          mainImage: area.image,
-          blocks: selectedBlockNames.slice(), // 複製數組
-          areaKey: currentSelectedArea // 添加區域鍵值以便後續識別
-        };
-        
-        const success = window.cartManager.addToCart(cartItem);
-        
-        if (success) {
-          showNotification(`${area.name}區域 ${blockList} 已成功加入租借清單！`);
-          
-          // 將選中的區塊加入購物車記錄
-          cartBlocks[currentSelectedArea] = cartBlocks[currentSelectedArea].concat(selectedBlockNames);
-          
-          // 清空當前選擇（但保持購物車中的格子為綠色）
-          selectedBlocks = [];
-          selectedBlockNames = [];
-          
-          // 清空當前區域的選擇記錄
-          if (currentSelectedArea) {
-            areaSelections[currentSelectedArea] = [];
-          }
-          
-          updateSelectedBlocks();
-        }
-      }
-      
-      function showNotification(message, type = 'success') {
-        const notification = document.getElementById('notification');
-        const notificationText = document.getElementById('notification-text');
-        
-        if (notification && notificationText) {
-          notificationText.textContent = message;
-          
-          // 清除之前的動畫類別和樣式
-          notification.classList.remove('show', 'fade-out', 'error');
-          notification.style.display = 'block';
-          notification.style.bottom = 'auto';
-          notification.style.left = 'auto';
-          notification.style.transform = 'none';
-          notification.style.opacity = '';
-          notification.style.pointerEvents = '';
-          
-          // 根據類型設置樣式
-          if (type === 'error') {
-            notification.classList.add('error');
-          }
-          
-          // 統一使用白色背景
-          notification.style.backgroundColor = 'white';
-          notification.style.color = 'black';
-          
-          // 短暫延遲後顯示（確保 CSS 過渡效果正常）
-          setTimeout(() => {
-            notification.classList.add('show');
-          }, 10);
-          
-          // 3秒後開始 fade out 動畫
-          setTimeout(() => {
-            notification.classList.remove('show');
-            notification.classList.add('fade-out');
-            
-            // fade out 動畫完成後隱藏元素
-            setTimeout(() => {
-              notification.style.display = 'none';
-              notification.classList.remove('fade-out', 'error');
-            }, 300);
-          }, 3000);
-        } else {
-          console.log(`Notification: ${message} (${type})`);
-        }
-      }
-      
-      // 按鈕動畫效果 - 只在桌面版
-      function setupButtonAnimations() {
-        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          // 清除按鈕動畫（有 button-bg-fill）
-          const clearButton = document.getElementById('clear-btn');
-          const clearButtonFill = clearButton.querySelector('.button-bg-fill');
-          
-          clearButton.addEventListener('mouseenter', function() {
-            if (!this.disabled) {
-              gsap.to(clearButtonFill, {
-                height: '100%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色變化
-              this.classList.add('white-text');
-            }
-          });
-          
-          clearButton.addEventListener('mouseleave', function() {
-            if (!this.disabled) {
-              gsap.to(clearButtonFill, {
-                height: '0%',
-                duration: 0.5,
-                ease: "power2.out"
-              });
-              
-              // 文字顏色恢復
-              this.classList.remove('white-text');
-            }
-          });
-        }
-        
-        // 加入清單按鈕已經有 CSS hover 效果，不需要額外 JavaScript 動畫
-      }
-      
-      // 監聽購物車變化
-      function syncCartState(shouldUpdateDisplay = true) {
-        if (window.cartManager) {
-          // 使用購物車管理器的 API 獲取所有區域格子狀態
-          const areaBlocksArray = window.cartManager.getAllAreaBlocks();
-          
-          // 重置所有購物車狀態
-          Object.keys(cartBlocks).forEach(areaKey => {
-            cartBlocks[areaKey] = [];
-          });
-          
-          // 將數組轉換為按區域分組的對象
-          areaBlocksArray.forEach(blockInfo => {
-            const { areaKey, blockName } = blockInfo;
-            if (cartBlocks[areaKey]) {
-              cartBlocks[areaKey].push(blockName);
-            }
-          });
-          
-          console.log('同步購物車狀態完成:', cartBlocks);
-          
-          // 只在需要時更新當前區域的視覺狀態
-          if (shouldUpdateDisplay && currentSelectedArea) {
-            updateAreaDisplay();
-          }
-        }
-      }
-      
-      // 恢復購物車中格子的視覺狀態
-      function restoreCartBlocksVisualState() {
-        if (!currentSelectedArea) {
-          console.log('沒有當前選中區域，跳過視覺狀態恢復');
-          return;
-        }
-        
-        const cartBlocksInCurrentArea = cartBlocks[currentSelectedArea] || [];
-        
-        if (cartBlocksInCurrentArea.length > 0) {
-          console.log(`恢復區域 ${currentSelectedArea} 的購物車格子:`, cartBlocksInCurrentArea);
-          
-          cartBlocksInCurrentArea.forEach(blockName => {
-            const cell = document.getElementById(blockName);
-            if (cell) {
-              if (cell.classList.contains('booked')) {
-                console.log(`格子 ${blockName} 已被預訂，跳過視覺恢復`);
-              } else {
-                cell.classList.add('selected');
-                console.log(`格子 ${blockName} 已恢復為綠色 (購物車狀態)`);
-              }
-            } else {
-              console.log(`找不到格子元素: ${blockName}`);
-            }
-          });
-        } else {
-          console.log(`區域 ${currentSelectedArea} 沒有購物車格子需要恢復`);
-        }
-      }
-      
-      // 添加已提交訂單的區塊管理
-      let submittedBlocks = {
-        'courtyard': [],
-        'corridor': [],
-        'front-balcony': [],
-        'back-balcony': [],
-        'glass-wall': [],
-        'pillar': []
-      };
-      
-      // 模擬訂單提交後的狀態更新（實際使用時需要替換為後端API調用）
-      function handleOrderSubmission() {
-        // 將購物車中的區塊移至已提交狀態
-        Object.keys(cartBlocks).forEach(areaKey => {
-          submittedBlocks[areaKey] = submittedBlocks[areaKey].concat(cartBlocks[areaKey]);
-        });
-        
-        // 清空購物車狀態
-        Object.keys(cartBlocks).forEach(areaKey => {
-          cartBlocks[areaKey] = [];
-        });
-      }
-      
-      // 等待購物車管理器準備就緒
-      function waitForCartManager() {
-        return new Promise((resolve) => {
-          const checkCartManager = () => {
-            if (window.cartManager && typeof window.cartManager.getAllAreaBlocks === 'function') {
-              resolve();
-            } else {
-              setTimeout(checkCartManager, 50);
-            }
-          };
-          checkCartManager();
-        });
-      }
-      
-      // 初始化：預設不選擇任何區域
-      document.addEventListener('DOMContentLoaded', async function() {
-        // 等待購物車管理器準備就緒
-        await waitForCartManager();
-        console.log('購物車管理器已準備就緒');
-        
-        // 預設不選擇任何區域
-        currentSelectedArea = null;
-        console.log('初始化：預設不選擇任何區域');
-        
-        // 立即同步購物車狀態
-        syncCartState(false);
-
-        // 不預設選擇任何卡片，等待用戶點擊
-        console.log('初始化完成，當前區域:', currentSelectedArea);
-        console.log('初始化完成，購物車狀態:', cartBlocks);
-        
-        // 監聽購物車變化事件
-        window.addEventListener('cartUpdated', function(event) {
-          console.log('購物車更新事件觸發');
-          syncCartState(false); // 先同步狀態
-          // 延遲一點確保DOM更新完成後恢復視覺狀態
-          setTimeout(() => {
-            restoreCartBlocksVisualState();
-          }, 100);
-        });
-        
-        // 監聽跨頁面購物車變化
-        window.addEventListener('storage', function(event) {
-          if (event.key === 'sccd-rental-cart') {
-            console.log('跨頁面購物車變化檢測，準備同步狀態...');
-            // 延遲一點讓其他頁面的變更完全寫入
-            setTimeout(() => {
-              syncCartState(false); // 先同步狀態
-              // 再延遲一點確保DOM更新完成後恢復視覺狀態
-              setTimeout(() => {
-                console.log('執行跨頁面視覺狀態恢復...');
-                restoreCartBlocksVisualState();
-              }, 150);
-            }, 50);
-          }
-        });
-        
-        setupButtonAnimations(); // 初始化按鈕動畫
-        
-        // 為圖標添加hover效果 - 只在桌面版
-        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          const icons = document.querySelectorAll('.expand-icon');
-          icons.forEach(icon => {
-            icon.addEventListener('mouseenter', function() {
-              if (this.classList.contains('plus')) {
-                gsap.to(this, {
-                  rotation: 90,
-                  duration: 0.3,
-                  ease: "power2.out"
-                });
-              }
-            });
-            
-            icon.addEventListener('mouseleave', function() {
-              if (this.classList.contains('plus')) {
-                gsap.to(this, {
-                  rotation: 0,
-                  duration: 0.3,
-                  ease: "power2.out"
-                });
-              }
-            });
-          });
-        }
-        
-        // 開發用功能：提供測試函數
-        window.testFunctions = {
-          // 模擬訂單提交
-          submitOrder: function() {
-            handleOrderSubmission();
-            updateAreaDisplay();
-            showNotification('訂單已提交！購物車中的區塊現在變為紅色狀態。');
-          },
-          
-          // 重置所有狀態
-          resetAll: function() {
-            Object.keys(cartBlocks).forEach(key => cartBlocks[key] = []);
-            Object.keys(submittedBlocks).forEach(key => submittedBlocks[key] = []);
-            Object.keys(areaSelections).forEach(key => areaSelections[key] = []);
-            selectedBlocks = [];
-            selectedBlockNames = [];
-            updateAreaDisplay();
-            updateSelectedBlocks();
-            showNotification('所有狀態已重置！');
-          },
-          
-          // 查看當前狀態
-          showStatus: function() {
-            console.log('購物車狀態：', cartBlocks);
-            console.log('已提交訂單：', submittedBlocks);
-            console.log('當前選擇：', selectedBlockNames);
-            console.log('當前區域：', currentSelectedArea);
-          },
-          
-          // 強制同步購物車狀態
-          forceSync: function() {
-            console.log('強制同步購物車狀態...');
-            syncCartState(false);
-            setTimeout(() => {
-              restoreCartBlocksVisualState();
-              console.log('強制同步完成');
-            }, 100);
-          },
-          
-          // 測試購物車管理器
-          testCartManager: function() {
-            if (window.cartManager) {
-              console.log('購物車管理器可用');
-              const allBlocks = window.cartManager.getAllAreaBlocks();
-              console.log('購物車中的所有區域格子：', allBlocks);
-            } else {
-              console.log('購物車管理器不可用');
-            }
-          },
-          
-          // 測試所有區域的SVG載入
-          testAllAreas: async function() {
-            const areas = ['courtyard', 'corridor', 'front-balcony', 'back-balcony', 'glass-wall', 'pillar'];
-            console.log('開始測試所有區域的SVG載入...');
-            
-            for (const areaId of areas) {
-              console.log(`測試區域: ${areaId}`);
-              const oldArea = currentSelectedArea;
-              try {
-                // 模擬選擇區域
-                selectAreaCard(areaId);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // 等待載入
-                
-                const mapContainer = document.getElementById('map-container');
-                const svg = mapContainer.querySelector('svg');
-                const clickableCells = mapContainer.querySelectorAll('.grid-cell, .clickable-area');
-                
-                console.log(`區域 ${areaId}: SVG載入${svg ? '成功' : '失敗'}, 找到 ${clickableCells.length} 個可點擊格子`);
-                
-                if (clickableCells.length > 0) {
-                  console.log(`區域 ${areaId} 格子ID列表:`, Array.from(clickableCells).map(cell => cell.id).filter(id => id));
-                }
-              } catch (error) {
-                console.error(`區域 ${areaId} 測試失敗:`, error);
-              }
-            }
-            
-            console.log('所有區域測試完成');
-            showNotification('所有區域測試完成，請查看控制台詳細結果');
-          }
-        };
-        
-        // 示範用：添加一些測試信息
-        setTimeout(() => {
-          console.log('頁面載入完成！');
-          console.log('可用的測試功能：');
-          console.log('- testFunctions.submitOrder() // 模擬提交訂單');
-          console.log('- testFunctions.resetAll() // 重置所有狀態');
-          console.log('- testFunctions.showStatus() // 查看當前狀態');
-          console.log('- 點擊左側區域卡片來選擇區域（一次只能選擇一個）');
-          console.log('- 再次點擊已選擇的區域可以取消選擇');
-        }, 1000);
-      });
-
-
-    </script>
-
-
   </body>
-</html> 
+</html>

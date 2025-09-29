@@ -106,35 +106,6 @@ class EquipmentCardAnimations {
   }
 }
 
-// Toast 提示功能
-class ToastManager {
-  static show(message) {
-    // 檢查是否已有toast，如果有則移除
-    const existingToast = document.querySelector('.toast');
-    if (existingToast) {
-      existingToast.remove();
-    }
-    
-    // 創建新的toast
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    
-    // 創建內部的p元素
-    const p = document.createElement('p');
-    p.textContent = message;
-    toast.appendChild(p);
-    
-    // 添加到頁面
-    document.body.appendChild(toast);
-    
-    // 自動移除
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.remove();
-      }
-    }, 3000);
-  }
-}
 
 // 進場動畫通用函數 - 修復版本，不干擾CSS動畫
 function initPageAnimations() {
@@ -194,8 +165,6 @@ function initSearchAnimation() {
 
 // 全域變數和函數
 window.EquipmentCardAnimations = EquipmentCardAnimations;
-window.ToastManager = ToastManager;
-window.showToast = ToastManager.show;
 window.initPageAnimations = initPageAnimations;
 window.initSearchAnimation = initSearchAnimation;
 

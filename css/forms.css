@@ -3,7 +3,7 @@
 /* 輸入框樣式 */
 .input-group {
   position: relative;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .input-group.error {
@@ -20,6 +20,16 @@
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   outline: none;
+  transition: border-bottom-color 0.3s ease;
+}
+
+.password-field {
+  padding-right: 2.5rem;
+}
+
+/* 錯誤狀態的輸入框 */
+.input-field.error {
+  border-bottom-color: #ff8698;
 }
 
 .input-label {
@@ -98,4 +108,111 @@
 
 .register-link:hover::after {
   width: 100%;
+}
+
+/* 密碼切換按鈕樣式 */
+.password-toggle {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+}
+
+.password-toggle:hover {
+  opacity: 0.7;
+}
+
+.password-icon {
+  width: 20px;
+  height: 20px;
+  fill: white;
+  transition: fill 0.3s ease;
+  cursor: pointer;
+}
+
+/* ===== 更改密碼模態框樣式 ===== */
+
+/* 密碼切換按鈕（模態框內） */
+.password-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+}
+
+.password-toggle-btn svg {
+  cursor: pointer;
+}
+
+.password-toggle-btn:hover {
+  opacity: 0.7;
+}
+
+/* 密碼要求清單樣式 */
+.password-requirements {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.requirement-item {
+  transition: color 0.3s ease;
+  margin-bottom: 0.25rem;
+}
+
+/* 密碼強度指示器 */
+.password-strength-bar {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.strength-bar-container {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.strength-bar {
+  flex: 1;
+  height: 4px;
+  background-color: #333;
+  transition: background-color 0.3s ease;
+  border-radius: 2px;
+}
+
+.strength-bar.weak {
+  background-color: #ff4757; /* 紅色 */
+}
+
+.strength-bar.medium {
+  background-color: #ffa726; /* 橙色 */
+}
+
+.strength-bar.strong {
+  background-color: #66bb6a; /* 綠色 */
+}
+
+/* 模態框輸入組樣式調整 */
+#change-password-overlay .input-group {
+  margin-bottom: 1.5rem;
+}
+
+#change-password-overlay .input-field {
+  padding-right: 3rem; /* 為密碼切換按鈕留出空間 */
 } 

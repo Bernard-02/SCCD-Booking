@@ -15,8 +15,13 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/ScrollToPlugin.min.js"></script>
     <script src="cart-manager.js"></script>
+    <script src="js/bookmark.js"></script>
     <script src="js/common.js"></script>
     <script src="js/copyright-easter-egg.js"></script>
+
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
 
     <script src="js/ui-animations.js"></script>
     <script src="js/equipment-filter.js"></script>
@@ -141,16 +146,61 @@
           <!-- 篩選器區域 -->
           <div class="flex justify-between items-center mb-8 equipment-filter-fade-in">
             <!-- 左側：篩選分類（水平排列） -->
-            <div class="flex items-center gap-6 filter-group">
-              <button id="filter-bookmarks" class="text-small-title font-['Inter',_sans-serif] text-white transition-all font-bold cursor-pointer filter-active filter-button" data-category="bookmarks">常用設備</button>
-              <button id="filter-cables" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="線材">線材</button>
-              <button id="filter-tools" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="工具">工具</button>
-              <button id="filter-extension" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="延長線">延長線</button>
-              <button id="filter-av" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="視聽類">視聽類</button>
-              <button id="filter-lights" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="燈具">燈具</button>
-              <button id="filter-display" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="畫板/展桌/展台">畫板/展桌/展台</button>
-              <button id="filter-machines" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="機具">機具</button>
-              <button id="filter-moving-lights" class="text-small-title font-['Noto_Sans_TC',_sans-serif] text-white hover:text-zinc-300 transition-all font-normal cursor-pointer filter-button" data-category="搖頭燈">搖頭燈</button>
+            <div class="sccd-filter-group gap-6">
+              <button id="filter-bookmarks" class="text-small-title text-white cursor-pointer sccd-filter-item sccd-filter-active" data-category="bookmarks">
+                <div class="menu-item-wrapper active">
+                  <span class="menu-text text-small-title">常用設備</span>
+                  <span class="menu-text-hidden text-small-title">常用設備</span>
+                </div>
+              </button>
+              <button id="filter-cables" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="線材">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">線材</span>
+                  <span class="menu-text-hidden text-small-title">線材</span>
+                </div>
+              </button>
+              <button id="filter-tools" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="工具">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">工具</span>
+                  <span class="menu-text-hidden text-small-title">工具</span>
+                </div>
+              </button>
+              <button id="filter-extension" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="延長線">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">延長線</span>
+                  <span class="menu-text-hidden text-small-title">延長線</span>
+                </div>
+              </button>
+              <button id="filter-av" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="視聽類">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">視聽類</span>
+                  <span class="menu-text-hidden text-small-title">視聽類</span>
+                </div>
+              </button>
+              <button id="filter-lights" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="燈具">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">燈具</span>
+                  <span class="menu-text-hidden text-small-title">燈具</span>
+                </div>
+              </button>
+              <button id="filter-display" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="畫板/展桌/展台">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">畫板/展桌/展台</span>
+                  <span class="menu-text-hidden text-small-title">畫板/展桌/展台</span>
+                </div>
+              </button>
+              <button id="filter-machines" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="機具">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">機具</span>
+                  <span class="menu-text-hidden text-small-title">機具</span>
+                </div>
+              </button>
+              <button id="filter-moving-lights" class="text-small-title text-white cursor-pointer sccd-filter-item" data-category="搖頭燈">
+                <div class="menu-item-wrapper">
+                  <span class="menu-text text-small-title">搖頭燈</span>
+                  <span class="menu-text-hidden text-small-title">搖頭燈</span>
+                </div>
+              </button>
             </div>
 
             <!-- 右側：搜尋與狀態 chip -->

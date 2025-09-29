@@ -332,10 +332,10 @@ class CartManager {
   getAreaKeyFromName(name) {
     const areaName = name.split(' (')[0];
     switch(areaName) {
-      case '中庭': return 'courtyard';
+      case '中庭': return 'square';
       case '走廊': return 'corridor';
-      case '前陽台': return 'front-balcony';
-      case '後陽台': return 'back-balcony';
+      case '前陽台': return 'front-terrace';
+      case '後陽台': return 'back-terrace';
       case '玻璃牆': return 'glass-wall';
       case '柱子': return 'pillar';
       default: return '';

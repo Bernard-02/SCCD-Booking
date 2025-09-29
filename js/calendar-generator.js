@@ -6,17 +6,64 @@ class CalendarGenerator {
         this.endDate = null;
         this.today = new Date();
         this.today.setHours(0, 0, 0, 0);
-        
+
+        // 先檢查並清理過期的進度（優先使用進度管理器）
+        if (window.rentalProgressManager) {
+            window.rentalProgressManager.checkAndClearExpiredProgress();
+        }
+
         // 檢查是否有暫存的日期
         const cachedDates = localStorage.getItem('tempSelectedDates');
         if (cachedDates) {
-            const dates = JSON.parse(cachedDates);
-            if (dates.startDate) this.startDate = new Date(dates.startDate);
-            if (dates.endDate) this.endDate = new Date(dates.endDate);
+            try {
+                const dates = JSON.parse(cachedDates);
+                if (dates.startDate) this.startDate = new Date(dates.startDate);
+                if (dates.endDate) this.endDate = new Date(dates.endDate);
+
+                // 檢查日期是否過期
+                this.checkAndClearExpiredDates();
+            } catch (error) {
+                console.error('無法解析暫存日期:', error);
+                localStorage.removeItem('tempSelectedDates');
+            }
         }
-        
+
         this.init();
     }
+
+    // 檢查並清理過期的日期選擇
+    checkAndClearExpiredDates() {
+        if (!this.startDate) return;
+
+        // 使用租借進度管理器檢查是否過期
+        if (window.rentalProgressManager && window.rentalProgressManager.isProgressExpired()) {
+            // 過期時清空日期選擇
+            this.clearDateSelection();
+            return;
+        }
+
+        // 檢查選擇的日期範圍是否已經過期
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (this.startDate < today) {
+            // 起租日已經過去，清空選擇
+            this.clearDateSelection();
+            if (window.rentalProgressManager) {
+                window.rentalProgressManager.clearAllRelatedData();
+            }
+            return;
+        }
+    }
+
+    // 清空日期選擇
+    clearDateSelection() {
+        this.startDate = null;
+        this.endDate = null;
+        localStorage.removeItem('tempSelectedDates');
+        localStorage.removeItem('dateSelectionTime');
+    }
+
 
     init() {
         this.generateCalendar();
@@ -260,12 +307,12 @@ class CalendarGenerator {
     selectDate(dateElement) {
         const selectedDate = dateElement.dataset.date;
         if (!selectedDate) return;
-        
+
         // 解析日期
         const [year, month, day] = selectedDate.split('-').map(Number);
         const clickedDate = new Date(year, month - 1, day);
         clickedDate.setHours(0, 0, 0, 0);
-        
+
         // 使用與原本相同的邏輯
         if (this.startDate && this.endDate) {
             // 已經有完整範圍，重新開始選擇起租日
@@ -322,8 +369,11 @@ class CalendarGenerator {
                 startDate: this.startDate ? this.startDate.toISOString() : null,
                 endDate: this.endDate ? this.endDate.toISOString() : null
             }));
+            // 更新選擇時間戳
+            localStorage.setItem('dateSelectionTime', Date.now().toString());
         } else {
             localStorage.removeItem('tempSelectedDates');
+            localStorage.removeItem('dateSelectionTime');
         }
     }
 
@@ -398,8 +448,9 @@ class CalendarGenerator {
         this.generateCalendar(); // 重新生成日曆以移除30天限制
         this.updateButtonState();
         
-        // 清除暫存的日期
+        // 清除暫存的日期和時間戳
         localStorage.removeItem('tempSelectedDates');
+        localStorage.removeItem('dateSelectionTime');
     }
 
     // 確認選擇
@@ -411,7 +462,15 @@ class CalendarGenerator {
                 endDate: this.endDate.toISOString()
             };
             localStorage.setItem('selectedRentalDates', JSON.stringify(rentalDateData));
-            
+
+            // 每次按OKAY時都重新開始24小時倒計時
+            if (window.rentalProgressManager) {
+                // 重新開始日期選擇流程（重設24小時計時器）
+                window.rentalProgressManager.startDateSelection();
+                // 然後立即完成日期選擇
+                window.rentalProgressManager.completeDateSelection();
+            }
+
             // 跳轉到下一頁
             window.location.href = 'bookingresources.html';
         } else {

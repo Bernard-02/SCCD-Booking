@@ -23,19 +23,24 @@
 }
 
 /* 租借收據特定樣式 */
-.main-container {
-  height: calc(100vh - 200px); /* 扣除header(約80px)和footer(約120px)的高度 */
-  overflow: hidden;
+/* 左邊欄位 sticky 佈局 */
+.left-column {
+  position: sticky;
+  top: 5rem; /* 80px header + 20px 間距 */
+  height: fit-content;
 }
 
-.rental-summary-section {
-  height: 100%; /* 確保右側摘要區域佔滿主容器高度 */
+/* 右邊欄位可滾動 */
+.right-column {
+  min-height: calc(100vh - 12rem); /* 視窗高度減去 header + footer + 間距 */
+  display: flex;
+  flex-direction: column;
 }
 
 .equipment-scroll-area {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
-  min-height: 0; /* 允許flex項目縮小 */
+  min-height: 0;
 }
 
 /* 設備項目最大高度限制 */

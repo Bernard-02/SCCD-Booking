@@ -1,0 +1,317 @@
+/* ===== numbered-area.html 專用樣式 ===== */
+
+/* 區域說明框樣式 */
+.area-tooltip {
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: var(--color-white);
+  padding: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0;
+  transform: translate(10px, 10px);
+  transition: opacity 0.2s ease;
+  border-radius: 0;
+  font-family: 'Noto_Sans_TC', sans-serif;
+  min-width: 220px;
+}
+
+.area-tooltip.show {
+  opacity: 1;
+}
+
+.area-tooltip-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 30px;
+  margin-bottom: 8px;
+}
+
+.area-tooltip-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.area-tooltip-right {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+}
+
+.area-name {
+  color: var(--color-white);
+  margin-bottom: 2px;
+}
+
+.area-english {
+  color: var(--color-white);
+  font-family: 'Inter', sans-serif;
+}
+
+.deposit-label {
+  color: var(--color-gray-light);
+  margin-bottom: 2px;
+}
+
+.deposit-amount {
+  color: var(--color-white);
+  font-family: 'Inter', sans-serif;
+}
+
+.tooltip-description {
+  color: var(--color-white);
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.tooltip-project-permission {
+  color: var(--color-purple);
+  margin-bottom: 4px;
+}
+
+/* 區域 hover 效果 */
+.area-group {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.area-group.dimmed {
+  opacity: 0.3;
+}
+
+/* SVG zoom/camera 效果 */
+#area-booking-svg {
+  transition: transform 0.5s ease-in-out;
+  transform-origin: center center;
+}
+
+/* 左側疊加選單樣式 */
+.left-overlay-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+}
+
+.left-overlay-menu.show {
+  transform: translateX(0);
+}
+
+.left-menu-content {
+  padding: 2rem 1.5rem;
+}
+
+.area-menu-item {
+  cursor: pointer;
+  padding-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.area-menu-item:hover {
+  opacity: 0.8;
+}
+
+.area-menu-text {
+  margin-bottom: 0.5rem;
+}
+
+.area-menu-name {
+  font-family: 'Noto_Sans_TC', sans-serif;
+  color: var(--color-white);
+  margin-bottom: 0.25rem;
+}
+
+.area-menu-english {
+  font-family: 'Inter', sans-serif;
+}
+
+.area-menu-deposit {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-gray-light);
+}
+
+.area-menu-permission {
+  color: var(--color-purple);
+  margin-bottom: 0.25rem;
+}
+
+.area-menu-divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+/* 選中狀態 */
+.area-menu-item.selected .area-menu-divider {
+  height: 6px;
+  background-color: var(--color-success);
+}
+
+.area-menu-item.selected .area-menu-name,
+.area-menu-item.selected .area-menu-deposit {
+  color: var(--color-white);
+}
+
+/* 右側資訊面板樣式 */
+.right-info-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 1);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+}
+
+.right-info-panel.show {
+  transform: translateX(0);
+}
+
+.right-info-content {
+  padding: 2rem 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 上方狀態區塊 */
+.info-status-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-indicator {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 0;
+}
+
+.status-indicator.available {
+  background-color: #565656;
+}
+
+.status-indicator.rented {
+  background-color: var(--color-error);
+}
+
+.status-indicator.selected {
+  background-color: var(--color-success);
+}
+
+.status-text {
+  color: var(--color-white);
+  font-family: 'Noto_Sans_TC', sans-serif;
+}
+
+/* 下方租借資訊區塊 */
+.info-rental-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.rental-blocks,
+.rental-deposit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.rental-label,
+.deposit-label {
+  color: var(--color-gray-light);
+  font-family: 'Noto_Sans_TC', sans-serif;
+}
+
+.rental-numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--color-white);
+}
+
+.rental-number {
+  color: var(--color-white);
+  font-family: 'Inter', sans-serif;
+}
+
+.rental-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.rental-actions button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: opacity 0.3s ease;
+}
+
+.rental-actions button:not(:disabled) {
+  opacity: 1;
+  color: var(--color-white);
+  cursor: pointer;
+}
+
+.rental-actions button:not(:disabled):hover {
+  opacity: 1; /* hover時顏色不變 */
+}
+
+.rental-actions button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 專案許可區確認樣式 */
+.project-permission {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.project-permission-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  color: var(--color-white);
+}
+
+.project-permission-label .custom-checkbox {
+  flex-shrink: 0;
+}
+
+
+/* 手機版響應式 */
+@media (max-width: 767px) {
+  .mobile-title-section {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+}

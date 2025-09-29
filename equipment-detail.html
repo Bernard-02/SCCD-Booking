@@ -16,6 +16,10 @@
     <script src="cart-manager.js"></script>
     <script src="js/common.js"></script>
 
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
+
     <!-- 引入外部CSS文件 -->
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
@@ -34,7 +38,7 @@
     <script src="js/equipment-detail.js" defer></script>
   </head>
 
-  <body class="bg-black text-white flex flex-col h-screen">
+  <body class="bg-black text-white flex flex-col h-screen equipment-detail-page">
     <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
       <div class="container">
         <div class="flex justify-between items-center">
@@ -87,8 +91,8 @@
       <div class="container w-full flex-1 min-h-0">
         <div class="w-full h-full px-6 md:px-[6%]">
           <div class="grid grid-cols-2 gap-0 w-full h-full min-h-0">
-          <div id="left" class="h-full min-h-0">
-            <div class="w-full h-full cursor-pointer js-equipment-image-container">
+          <div id="left" class="h-full min-h-0 flex items-center justify-center">
+            <div class="h-full aspect-[4/5] cursor-pointer js-equipment-image-container">
               <img class="w-full h-full object-cover js-main-image" src="" alt="設備圖片" />
             </div>
           </div>
@@ -98,6 +102,11 @@
                 <!-- 1) Breadcrumb -->
                 <div class="text-left w-full" style="padding-bottom: 1.08rem;">
                   <nav class="breadcrumb-inline">
+                    <a href="equipment.html">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="inline-block mr-4 cursor-pointer transition-transform hover:scale-125">
+                        <path d="M15 18L9 12L15 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </a>
                     <a href="index.html" class="breadcrumb-item text-breadcrumb">首頁</a>
                     <span class="breadcrumb-separator text-breadcrumb">/</span>
                     <a href="booking.html" class="breadcrumb-item text-breadcrumb">租借日期</a>
@@ -110,40 +119,67 @@
                   </nav>
                 </div>
 
-                <!-- 2) 狀態 + 分類/收藏 + 名稱（使用 flex column，不用 gap） -->
+                <!-- 2) 分類、狀態、設備名稱、押金為一組 -->
                 <div class="mt-6 w-full flex flex-col">
-                  <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"></span>
-                  <div class="w-full flex items-center justify-between mt-2">
-                    <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 js-equipment-category"></span>
+                  <div class="w-full flex items-center justify-between">
+                    <div class="flex items-center">
+                      <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 cursor-pointer hover:text-white transition-colors js-equipment-category"></span>
+                      <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mx-2">|</span>
+                      <span class="text-tiny font-['Inter',_sans-serif] font-normal tracking-wide js-equipment-status"></span>
+                    </div>
                     <img src="Icons/Bookmark Sharp Regular.svg" alt="Bookmark" class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity js-bookmark-btn" data-equipment="" />
                   </div>
                   <h1 class="text-large-title font-['Inter',_sans-serif] font-medium text-white tracking-wide js-equipment-name mt-3"></h1>
+                  <div class="text-content font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit mt-4"></div>
                 </div>
 
-                <!-- 4) 押金與設備數量 -->
-                <div class="grid grid-cols-2 gap-0 w-full mt-8">
-                  <div>
-                    <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1">押金</div>
-                    <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white tracking-wide js-equipment-deposit"></div>
+                <!-- 3) 設備庫存顯示 -->
+                <div class="w-full mt-10">
+                  <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-3">
+                    設備庫存：<span class="js-equipment-stock">0</span> <span class="js-cart-quantity-display">(已在清單數量: 0)</span>
                   </div>
-                  <div>
-                    <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide text-zinc-300 mb-1">設備數量</div>
-                    <div class="text-medium-title font-['Inter',_sans-serif] font-normal text-white tracking-wider js-equipment-quantity"></div>
-                  </div>
-                </div>
 
-                <!-- 5) (ADD) 按鈕（文字樣式，參考 home 的 (BOOK) ） -->
-                <div class="mt-auto">
-                  <a href="javascript:void(0)" class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block js-add-to-cart-btn">
-                    <div class="hero-cta-wrapper">
-                      <span class="hero-cta-text">(ADD)</span>
-                      <span class="hero-cta-hidden">(ADD)</span>
+                  <!-- 4) 數量選擇器和ADD按鈕 -->
+                  <div class="flex items-center gap-10">
+                    <div class="flex items-center relative">
+                      <!-- 選擇10+前的樣式：無邊框，緊貼 -->
+                      <select id="quantity-select" class="quantity-selector-normal bg-transparent text-white text-content font-['Inter',_sans-serif] focus:outline-none cursor-pointer appearance-none pr-6">
+                        <option value="1" class="bg-black text-white">1</option>
+                        <option value="2" class="bg-black text-white">2</option>
+                        <option value="3" class="bg-black text-white">3</option>
+                        <option value="4" class="bg-black text-white">4</option>
+                        <option value="5" class="bg-black text-white">5</option>
+                        <option value="6" class="bg-black text-white">6</option>
+                        <option value="7" class="bg-black text-white">7</option>
+                        <option value="8" class="bg-black text-white">8</option>
+                        <option value="9" class="bg-black text-white">9</option>
+                        <option value="10+" class="bg-black text-white">10+</option>
+                      </select>
+
+                      <!-- 自由輸入模式：有灰色邊框 -->
+                      <input type="number" id="quantity-input" class="quantity-selector-custom bg-transparent text-white text-content font-['Inter',_sans-serif] focus:outline-none focus:border-white hover:border-white w-16 hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" min="1" max="999">
+
+                      <!-- 下拉箭頭 - 更大更靠近數字 -->
+                      <span id="dropdown-arrow" class="flex items-center justify-center pointer-events-none absolute right-1">
+                        <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+                          <path d="M3 4.5L6 7.5L9 4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </span>
                     </div>
-                  </a>
+
+                    <a href="javascript:void(0)" class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block js-add-to-cart-btn">
+                      <div class="hero-cta-wrapper">
+                        <span class="hero-cta-text">(ADD)</span>
+                        <span class="hero-cta-hidden">(ADD)</span>
+                      </div>
+                    </a>
+                  </div>
                 </div>
+
+                <!-- 5) 推到底部的空間 -->
+                <div class="mt-auto"></div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       </div>

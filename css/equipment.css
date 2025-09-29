@@ -28,19 +28,13 @@
     transform: translateY(50px) !important;
     pointer-events: none;
   }
-  
-  /* 篩選器hover邏輯 - 水平排列版本 */
-  .filter-group:hover .filter-button {
-    opacity: 0.3;
+
+  /* 收藏移除淡出動畫 */
+  .equipment-card.fade-out {
+    opacity: 0;
+    transition: opacity 0.5s ease;
   }
   
-  .filter-group:hover .filter-button:hover {
-    opacity: 1 !important;
-  }
-  
-  .filter-group:hover .filter-button.filter-active {
-    opacity: 1;
-  }
 }
 
 /* 移除設備卡片點擊時的白框 */
@@ -124,6 +118,93 @@
 }
 
 /* ===== Equipment Detail 頁面專用樣式 ===== */
+
+/* 數量選擇器樣式 */
+.quantity-btn {
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.quantity-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* 普通下拉選單樣式 - 無邊框，緊貼 */
+.quantity-selector-normal {
+  padding: 0.5rem 1.25rem 0.5rem 0.5rem; /* 減少右側padding讓箭頭更靠近 */
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: white;
+  font-size: 1.35rem; /* 使用text-content大小 */
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  transition: all 0.2s ease;
+  min-width: 2rem;
+}
+
+.quantity-selector-normal:focus {
+  outline: none;
+  background: transparent;
+}
+
+/* 自定義輸入框樣式 - 灰色邊框，hover和focus時白色 */
+.quantity-selector-custom {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #666666; /* 灰色邊框，無radius */
+  background: transparent;
+  color: white;
+  font-size: 1.35rem; /* 使用text-content大小 */
+  font-family: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-width: 2.5rem;
+}
+
+.quantity-selector-custom:hover {
+  border-color: white;
+}
+
+.quantity-selector-custom:focus {
+  outline: none;
+  border-color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 設備規格區域樣式 */
+.equipment-specs {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.spec-item {
+  transition: background-color 0.2s ease;
+}
+
+.spec-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 設備描述區域樣式 */
+.equipment-description {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-left: 3px solid #cccccc;
+}
 
 /* 圖片放大覆蓋層樣式 */
 #image-overlay {
@@ -209,4 +290,161 @@
   main {
     padding-top: 0;
   }
-} 
+  
+  /* 手機版佈局調整 */
+  body {
+    height: 100vh;
+    overflow-y: auto;
+  }
+  
+  main {
+    height: auto;
+    min-height: 100vh;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .container .grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    height: auto;
+  }
+  
+  #left {
+    order: 1;
+    height: auto;
+    min-height: 300px;
+    padding: 1rem;
+  }
+  
+  #left .js-equipment-image-container {
+    max-height: 400px;
+  }
+  
+  #right {
+    order: 2;
+    height: auto;
+    overflow-y: visible;
+  }
+  
+  #right > div {
+    padding: 1.5rem;
+    height: auto;
+    min-height: auto;
+    justify-content: flex-start;
+  }
+  
+  #right > div > div {
+    space-y: 1.5rem;
+  }
+}
+
+/* 移除多餘的視覺裝飾 */
+
+/* 加入清單按鈕微動畫 */
+.js-add-to-cart-btn:not(:disabled):hover .hero-cta-wrapper {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+.js-add-to-cart-btn:not(:disabled):active .hero-cta-wrapper {
+  transform: translateY(0);
+}
+
+.hero-cta-wrapper {
+  transition: transform 0.2s ease;
+}
+
+/* 返回按鈕加強樣式 */
+.breadcrumb-back-btn {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 0.25rem;
+  color: #ffffff;
+}
+
+.breadcrumb-back-btn:hover {
+  color: #cccccc;
+}
+
+/* Equipment Detail 頁面專用佈局 - 確保剛好填滿視窗高度 */
+@media (min-width: 768px) {
+  .equipment-detail-page {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Equipment Detail 頁面的 main 區域調整 */
+  .equipment-detail-page main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding-top: 5rem; /* 對應 header 高度 */
+    padding-bottom: 0;
+    min-height: 0; /* 重要：允許 flexbox 收縮 */
+  }
+}
+
+@media (min-width: 768px) {
+  /* Footer 固定在底部 - Equipment Detail 頁面專用 */
+  .equipment-detail-page footer {
+    flex-shrink: 0;
+  }
+
+  /* Equipment Detail 內容區域調整 */
+  .equipment-detail-page main .container {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* 左右兩欄佈局調整 - Equipment Detail 頁面專用 */
+  .equipment-detail-page #left {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .equipment-detail-page #right > div {
+    height: 100%;
+    padding: 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 0;
+  }
+
+  /* 確保右側內容區能夠正確佈局 - Equipment Detail 頁面專用 */
+  .equipment-detail-page #right > div > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    justify-content: space-between;
+  }
+
+  /* ADD 按鈕區域固定在底部 - Equipment Detail 頁面專用 */
+  .equipment-detail-page #right .mt-auto {
+    margin-top: auto;
+    padding-top: 2rem;
+  }
+
+  /* 圖片容器修正 - 保持4:5寬高比 - Equipment Detail 頁面專用 */
+  .equipment-detail-page .js-equipment-image-container {
+    aspect-ratio: 4/5;
+    max-height: 80vh;
+    overflow: hidden;
+  }
+
+  .equipment-detail-page .js-equipment-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 右側內容區域滾動控制 - Equipment Detail 頁面不需要滾動 */
+  .equipment-detail-page #right {
+    overflow: hidden;
+  }
+}
+
+/* 移除重複的樣式定義，已在上方定義完整的 #right > div 樣式 */ 

@@ -273,40 +273,48 @@ function setupCartListener() {
   setInterval(updateClassroomCartStatus, 5000); // 從 1 秒改為 5 秒
 }
 
-// 顯示通知
+// 顯示通知 - 改用全域 toast 系統
 function showNotification(message, type = 'success') {
-  const notification = document.getElementById('notification');
-  const notificationText = document.getElementById('notification-text');
-  
-  if (notification && notificationText) {
-    notificationText.textContent = message;
-    
-    // 清除之前的動畫類別
-    notification.classList.remove('show', 'fade-out');
-    notification.style.display = 'block';
-    
-    // 統一使用白色背景
-    notification.style.backgroundColor = 'white';
-    notification.style.color = 'black';
-    
-    // 短暫延遲後顯示（確保 CSS 過渡效果正常）
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 10);
-    
-    // 3秒後開始 fade out 動畫
-    setTimeout(() => {
-      notification.classList.remove('show');
-      notification.classList.add('fade-out');
-      
-      // fade out 動畫完成後隱藏元素
-      setTimeout(() => {
-        notification.style.display = 'none';
-        notification.classList.remove('fade-out');
-      }, 300);
-    }, 3000);
+  // 使用全域 toast 系統
+  if (window.showBookmarkToast) {
+    window.showBookmarkToast(message, type);
+  } else if (window.showToast) {
+    window.showToast(message, type);
   } else {
-    console.log(`Notification: ${message} (${type})`);
+    // 備用方案：檢查是否有舊的 notification 元素
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notification-text');
+    
+    if (notification && notificationText) {
+      notificationText.textContent = message;
+      
+      // 清除之前的動畫類別
+      notification.classList.remove('show', 'fade-out');
+      notification.style.display = 'block';
+      
+      // 統一使用白色背景
+      notification.style.backgroundColor = 'white';
+      notification.style.color = 'black';
+      
+      // 短暫延遲後顯示（確保 CSS 過渡效果正常）
+      setTimeout(() => {
+        notification.classList.add('show');
+      }, 10);
+      
+      // 3秒後開始 fade out 動畫
+      setTimeout(() => {
+        notification.classList.remove('show');
+        notification.classList.add('fade-out');
+        
+        // fade out 動畫完成後隱藏元素
+        setTimeout(() => {
+          notification.style.display = 'none';
+          notification.classList.remove('fade-out');
+        }, 300);
+      }, 3000);
+    } else {
+      console.log(`Notification: ${message} (${type})`);
+    }
   }
 }
 
@@ -326,6 +334,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 添加點擊事件監聽器，替代 inline onclick
   setupClickEventListeners();
+  
+  // 書籤狀態會由全域的 BookmarkUIManager 自動處理
   
   // 等待 CartManager 載入
   const initClassroomLogic = () => {
@@ -348,7 +358,13 @@ function setupClickEventListeners() {
   // A503 教室卡片
   const a503Card = document.querySelector('.classroom-card-1');
   if (a503Card) {
-    a503Card.addEventListener('click', function() {
+    a503Card.addEventListener('click', function(e) {
+      // 檢查點擊是否來自收藏夾按鈕或其容器
+      if (e.target.closest('.bookmark-btn') || 
+          e.target.classList.contains('bookmark-btn') ||
+          e.target.closest('.bookmark-area')) {
+        return; // 如果點擊的是收藏夾按鈕區域，不處理卡片選擇
+      }
       toggleClassroomSelection(this, 'A503');
     });
   }
@@ -356,7 +372,13 @@ function setupClickEventListeners() {
   // A507 教室卡片
   const a507Card = document.querySelector('.classroom-card-2');
   if (a507Card) {
-    a507Card.addEventListener('click', function() {
+    a507Card.addEventListener('click', function(e) {
+      // 檢查點擊是否來自收藏夾按鈕或其容器
+      if (e.target.closest('.bookmark-btn') || 
+          e.target.classList.contains('bookmark-btn') ||
+          e.target.closest('.bookmark-area')) {
+        return; // 如果點擊的是收藏夾按鈕區域，不處理卡片選擇
+      }
       toggleClassroomSelection(this, 'A507');
     });
   }
@@ -364,7 +386,13 @@ function setupClickEventListeners() {
   // A508 教室卡片
   const a508Card = document.querySelector('.classroom-card-3');
   if (a508Card) {
-    a508Card.addEventListener('click', function() {
+    a508Card.addEventListener('click', function(e) {
+      // 檢查點擊是否來自收藏夾按鈕或其容器
+      if (e.target.closest('.bookmark-btn') || 
+          e.target.classList.contains('bookmark-btn') ||
+          e.target.closest('.bookmark-area')) {
+        return; // 如果點擊的是收藏夾按鈕區域，不處理卡片選擇
+      }
       toggleClassroomSelection(this, 'A508');
     });
   }
@@ -378,15 +406,21 @@ function setupClickEventListeners() {
     });
   }
   
-  // 防止收藏夾按鈕觸發卡片點擊事件
-  document.querySelectorAll('.bookmark-btn').forEach(bookmarkBtn => {
-    bookmarkBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      // 這裡可以添加收藏功能
-      console.log('Bookmark clicked for:', this.dataset.equipment);
-    });
-  });
+  // 確保統一收藏夾系統已初始化
+  setTimeout(() => {
+    console.log('檢查統一收藏夾系統狀態:');
+    console.log('- window.unifiedBookmarkManager:', !!window.unifiedBookmarkManager);
+    console.log('- window.bookmarkUIManager:', !!window.bookmarkUIManager);
+    console.log('- 找到的收藏按鈕數量:', document.querySelectorAll('.bookmark-btn').length);
+
+    // 如果統一系統未初始化，手動初始化
+    if (!window.unifiedBookmarkManager && window.initBookmarkSystem) {
+      console.log('手動初始化統一收藏夾系統');
+      window.initBookmarkSystem();
+    }
+  }, 200);
 }
+
 
 // 全局函數，供 HTML 調用（保持向後兼容）
 window.toggleClassroomSelection = toggleClassroomSelection;

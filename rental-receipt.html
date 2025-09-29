@@ -20,8 +20,12 @@
     <link rel="stylesheet" href="css/rental-receipt.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="cart-manager.js"></script>
+
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
+
     <!-- 外部 JavaScript 檔案 -->
     <script src="js/mobile-menu.js"></script>
     <script src="js/copyright-easter-egg.js"></script>
@@ -114,94 +118,84 @@
         <!-- 左右分欄佈局 -->
         <div class="flex gap-16">
           <!-- 左邊：租借收據 (40%) -->
-          <div class="w-2/5 pr-4">
-            <div class="sticky top-20 flex flex-col">
-              <!-- 頁面標題 -->
-              <div class="mb-8">
-                <h1
-                  class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4"
-                >
-                  租借收據
-                </h1>
-                <p
-                  class="text-content font-['Noto_Sans_TC',_sans-serif] text-white"
-                >
-                  這是你的租借收據，請至系學會繳交押金完成租借手續
-                </p>
-              </div>
-
-              <!-- 押金總額 -->
-              <div class="mb-8">
-                <div
-                  class="text-small-title font-['Inter',_sans-serif]"
-                  style="color: #cccccc"
-                >
-                  押金總額
-                </div>
-                <div
-                  id="total-deposit-amount"
-                  class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide"
-                >
-                  NT 5,000
-                </div>
-              </div>
-
-              <!-- 租借詳細資訊 -->
-              <div class="space-y-4 flex-grow">
-                <!-- 租借人 -->
-                <div>
-                  <div
-                    class="text-small-title font-['Inter',_sans-serif]"
-                    style="color: #cccccc"
+          <div class="w-2/5 left-column">
+            <div class="flex flex-col">
+              <!-- 合併的內容區域 -->
+              <div class="flex-1 flex flex-col">
+                <!-- 頁面標題 -->
+                <div class="mb-8">
+                  <h1
+                    class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4"
                   >
-                    租借人
-                  </div>
-                  <div
-                    id="borrower-name-desktop"
+                    租借收據
+                  </h1>
+                  <p
                     class="text-content font-['Noto_Sans_TC',_sans-serif] text-white"
                   >
-                    阿志
-                  </div>
+                    這是你的租借收據，請至系學會繳交押金完成租借手續
+                  </p>
                 </div>
 
-                <!-- 租借日期 -->
-                <div>
+                <!-- 押金總額 -->
+                <div class="mb-8">
                   <div
                     class="text-small-title font-['Inter',_sans-serif]"
                     style="color: #cccccc"
                   >
-                    租借日期
+                    押金總額
                   </div>
                   <div
-                    id="rental-dates-desktop"
-                    class="text-content font-['Inter',_sans-serif] text-white tracking-normal uppercase"
-                  ></div>
+                    id="total-deposit-amount"
+                    class="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide"
+                  >
+                    NT 5,000
+                  </div>
                 </div>
 
-                <!-- 租借號 -->
-                <div>
-                  <div
-                    class="text-small-title font-['Inter',_sans-serif]"
-                    style="color: #cccccc"
-                  >
-                    租借號
+                <!-- 租借詳細資訊 -->
+                <div class="space-y-4 mb-16">
+                  <!-- 租借人 -->
+                  <div>
+                    <div
+                      class="text-small-title font-['Inter',_sans-serif]"
+                      style="color: #cccccc"
+                    >
+                      租借人
+                    </div>
+                    <div
+                      id="borrower-name-desktop"
+                      class="text-content font-['Noto_Sans_TC',_sans-serif] text-white"
+                    >
+                      阿志
+                    </div>
                   </div>
-                  <div
-                    id="rental-number-desktop"
-                    class="text-content font-['Inter',_sans-serif] text-white tracking-normal uppercase"
-                  ></div>
-                </div>
 
-                <!-- 租借條碼 -->
-                <div>
-                  <div
-                    class="text-small-title font-['Inter',_sans-serif] mb-4"
-                    style="color: #cccccc"
-                  >
-                    租借條碼
+                  <!-- 租借日期 -->
+                  <div>
+                    <div
+                      class="text-small-title font-['Inter',_sans-serif]"
+                      style="color: #cccccc"
+                    >
+                      租借日期
+                    </div>
+                    <div
+                      id="rental-dates-desktop"
+                      class="text-content font-['Inter',_sans-serif] text-white tracking-normal uppercase"
+                    ></div>
                   </div>
-                  <div class="max-w-md">
-                    <svg id="barcode-desktop" class="w-full h-auto"></svg>
+
+                  <!-- 租借號 -->
+                  <div>
+                    <div
+                      class="text-small-title font-['Inter',_sans-serif]"
+                      style="color: #cccccc"
+                    >
+                      租借號
+                    </div>
+                    <div
+                      id="rental-number-desktop"
+                      class="text-content font-['Inter',_sans-serif] text-white tracking-normal uppercase"
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -210,7 +204,7 @@
               <div class="mt-auto">
                 <button
                   id="download-receipt-btn"
-                  class="text-button font-['Inter',_sans-serif] uppercase text-white mt-16 rental-book-btn cursor-pointer"
+                  class="text-button font-['Inter',_sans-serif] uppercase text-white mt-42 rental-book-btn cursor-pointer"
                 >
                   <div class="hero-cta-wrapper">
                     <span class="hero-cta-text">(DOWNLOAD)</span>
@@ -222,7 +216,7 @@
           </div>
 
           <!-- 右邊：租借摘要 (60%) -->
-          <div class="w-3/5">
+          <div class="w-3/5 right-column">
             <!-- 租借摘要標題 -->
             <div class="mb-6">
               <h2
@@ -233,7 +227,7 @@
             </div>
 
             <!-- 設備列表 -->
-            <div id="equipment-summary-list" class="space-y-0">
+            <div id="equipment-summary-list" class="space-y-0 equipment-scroll-area">
               <!-- 設備項目將動態載入 -->
             </div>
           </div>

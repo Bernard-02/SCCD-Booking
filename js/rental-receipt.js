@@ -21,42 +21,6 @@ function generateRentalInfo() {
   const desktopRentalNumber = document.getElementById('rental-number-desktop');
   if (mobileRentalNumber) mobileRentalNumber.textContent = rentalNumber;
   if (desktopRentalNumber) desktopRentalNumber.textContent = rentalNumber;
-  
-  // 生成條碼 - 手機版和桌面版
-  const mobileBarcode = document.getElementById('barcode');
-  const desktopBarcode = document.getElementById('barcode-desktop');
-  
-  if (mobileBarcode) {
-    JsBarcode("#barcode", rentalNumber, {
-      format: "CODE128",
-      width: 2,
-      height: 60,
-      displayValue: false,
-      background: "transparent",
-      lineColor: "white",
-      margin: 0,
-      marginLeft: 0,
-      marginRight: 0,
-      marginTop: 0,
-      marginBottom: 0
-    });
-  }
-  
-  if (desktopBarcode) {
-    JsBarcode("#barcode-desktop", rentalNumber, {
-      format: "CODE128",
-      width: 2,
-      height: 60,
-      displayValue: false,
-      background: "transparent",
-      lineColor: "white",
-      margin: 0,
-      marginLeft: 0,
-      marginRight: 0,
-      marginTop: 0,
-      marginBottom: 0
-    });
-  }
 
   // 從 localStorage 讀取選擇的租借日期
   let startDate, endDate;
@@ -97,14 +61,22 @@ function generateRentalInfo() {
   if (desktopRentalDates) desktopRentalDates.textContent = `${startDate}  -  ${endDate}`;
 }
 
-// 生成隨機租借號
+// 生成租借號 (#年份+單號)
 function generateRentalNumber() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 15; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+  const currentYear = new Date().getFullYear();
+  
+  // 從 localStorage 獲取當年的計數器
+  const yearKey = `rentalCounter_${currentYear}`;
+  let currentCount = parseInt(localStorage.getItem(yearKey)) || 0;
+  
+  // 增加計數器
+  currentCount++;
+  localStorage.setItem(yearKey, currentCount.toString());
+  
+  // 格式化單號為3位數（例如：001, 002, 999）
+  const formattedCount = currentCount.toString().padStart(3, '0');
+  
+  return `#${currentYear}${formattedCount}`;
 }
 
 // 格式化日期

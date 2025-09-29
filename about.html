@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>關於我們 - SCCD Booking</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
@@ -15,240 +15,396 @@
 
     <!-- 引入購物車管理 -->
     <script src="cart-manager.js"></script>
-    
+
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
+
     <!-- 引入 copyright 相關文件 -->
     <script src="js/copyright-easter-egg.js"></script>
 
-    
     <!-- 引入通用樣式 -->
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
     <link rel="stylesheet" href="css/typography.css" />
-    
+    <link rel="stylesheet" href="css/animations.css" />
+
     <!-- 引入通用 JS -->
     <script src="js/common.js"></script>
     <script src="js/cart-sync.js"></script>
-    
+
     <!-- 引入手機版選單 JS -->
     <script src="js/mobile-menu.js"></script>
 
-</head>
+    <!-- 引入 about 頁面特定 JS -->
+    <script src="js/about.js"></script>
 
-<body class="bg-black text-white">
+    <!-- Instagram 連結hover效果 -->
+    <style>
+      .instagram-link {
+        transition: transform 0.3s ease, color 0.3s ease;
+        display: inline-block;
+        text-decoration: none;
+      }
+
+      .instagram-link:hover {
+        transform: translateX(8px);
+      }
+
+      /* 名字hover樣式 */
+      .name-box {
+        cursor: pointer;
+        display: inline;
+        transition: text-decoration 0.3s ease;
+      }
+
+      .name-box:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body class="bg-black text-white h-screen overflow-hidden flex flex-col">
     <!-- Header -->
     <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
-        <div class="container">
-            <div class="flex justify-between items-center">
-                <a href="index.html" class="font-['Inter',_sans-serif] font-medium text-white text-header">
-                    SCCD
-                </a>
-                
-                <!-- 桌面版導航 -->
-                <nav class="flex items-center header-menu desktop-nav nav-gap">
-                    <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
-                        <div class="menu-item-wrapper">
-                            <span class="menu-text">(BOOKING)</span>
-                            <span class="menu-text-hidden">(BOOKING)</span>
-                        </div>
-                    </a>
-                    <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
-                        <div class="menu-item-wrapper">
-                            <span class="menu-text">((<span id="cart-count">0</span>) CART)</span>
-                            <span class="menu-text-hidden">((<span class="cart-count-mirror">0</span>) CART)</span>
-                        </div>
-                    </a>
-                    <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
-                        <div class="menu-item-wrapper">
-                            <span class="menu-text">(LOGIN)</span>
-                            <span class="menu-text-hidden">(LOGIN)</span>
-                        </div>
-                    </a>
-                </nav>
-                
-                <!-- 手機版導航 -->
-                <nav class="flex items-center mobile-nav mobile-nav-gap">
-                    <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
-                        <div class="menu-item-wrapper">
-                            <span class="menu-text">((<span id="mobile-cart-count">0</span>) CART)</span>
-                            <span class="menu-text-hidden">((<span class="mobile-cart-count-mirror">0</span>) CART)</span>
-                        </div>
-                    </a>
-                    <button id="mobile-menu-btn" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
-                        <div class="menu-item-wrapper">
-                            <span class="menu-text">(MENU)</span>
-                            <span class="menu-text-hidden">(MENU)</span>
-                        </div>
-                    </button>
-                </nav>
-            </div>
+      <div class="container">
+        <div class="flex justify-between items-center">
+          <a
+            href="index.html"
+            class="font-english font-medium text-white text-header"
+          >
+            SCCD
+          </a>
+
+          <!-- 桌面版導航 -->
+          <nav class="flex items-center header-menu desktop-nav nav-gap">
+            <a
+              href="booking.html"
+              class="font-english font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(BOOKING)</span>
+                <span class="menu-text-hidden">(BOOKING)</span>
+              </div>
+            </a>
+            <a
+              href="rental-list.html"
+              class="font-english font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="cart-count-mirror">0</span>) CART)</span
+                >
+              </div>
+            </a>
+            <a
+              href="login.html"
+              class="font-english font-medium uppercase transition-colors text-white flex items-center text-header"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(LOGIN)</span>
+                <span class="menu-text-hidden">(LOGIN)</span>
+              </div>
+            </a>
+          </nav>
+
+          <!-- 手機版導航 -->
+          <nav class="flex items-center mobile-nav mobile-nav-gap">
+            <a
+              href="rental-list.html"
+              class="font-english font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text"
+                  >((<span id="mobile-cart-count">0</span>) CART)</span
+                >
+                <span class="menu-text-hidden"
+                  >((<span class="mobile-cart-count-mirror">0</span>)
+                  CART)</span
+                >
+              </div>
+            </a>
+            <button
+              id="mobile-menu-btn"
+              class="font-english font-medium uppercase transition-colors text-white flex items-center"
+            >
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(MENU)</span>
+                <span class="menu-text-hidden">(MENU)</span>
+              </div>
+            </button>
+          </nav>
         </div>
+      </div>
     </header>
 
-    <!-- 主要畫面區塊 -->
-    <section class="bg-black text-white h-screen flex items-end hero-section">
-        <div class="container">
-            <div class="flex justify-between items-end" style="padding-bottom: 1.25rem;">
-                <!-- 桌面版佈局 -->
-                <div class="hidden md:flex justify-between items-end w-full">
-                    <!-- 左側文字內容 -->
-                    <div class="flex-1 text-left" style="padding-bottom: 1.25rem; padding-right: 10rem;">
-                        <h1 class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-8">關於我們</h1>
-                        <div class="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
-                            <!-- 內容將在此處添加 -->
-                        </div>
-                    </div>
-                    
-                    <!-- 右側預留區域 -->
-                    <div class="flex-shrink-0">
-                        <!-- 可以放置圖片、按鈕或其他元素 -->
-                    </div>
+    <!-- 主要內容區塊 -->
+    <main class="flex-1 pt-20">
+      <!-- 大容器 - 全寬度 -->
+      <div class="w-full h-full overflow-hidden relative">
+        <!-- 動態標題 - 只佔據必要空間 -->
+        <div
+          id="dynamic-title"
+          class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-1000 ease-in-out"
+        >
+          <h1
+            id="title-text"
+            class="font-english text-white text-hero-title text-center"
+          >
+            ABOUT
+          </h1>
+        </div>
+
+        <!-- 滾動內容容器 - 覆蓋整個區域但不攔截標題事件 -->
+        <div
+          id="scroll-area"
+          class="absolute w-full h-full z-0"
+          style="pointer-events: auto"
+        >
+          <!-- 第一階段內容 -->
+          <div
+            id="stage-1"
+            class="absolute w-full h-full z-30"
+            style="transform: translateX(100%)"
+          >
+            <!-- 文字容器：位於下方，左側45%寬度 -->
+            <div class="absolute left-0 bottom-0 w-[52%]" style="padding-left: clamp(1.2rem, 2vw, 2%); padding-right: clamp(1.2rem, 2vw, 2%)">
+              <!-- 第一段文字 -->
+              <div class="mb-8">
+                <p class="font-chinese text-white text-content leading-relaxed">
+                  租借，這件事情一直以來都是媒傳系必修的課題。大一的時候因為聽說Ragic很難用，再加上剛好對UI、UX等設計感興趣，因此就自己做了一款SCCD
+                  APP的設計原型，設法去將所有大學時期會使用的功能進行整合。
+                </p>
+              </div>
+
+              <!-- 第二段文字 -->
+              <div>
+                <p class="font-chinese text-white text-content leading-relaxed">
+                  後來經過研究發現APP開發的成本其實比想像中的高，再加上各個平台（FB、DC、校務系統）的使用已經愈加成熟，造成開發APP的意義不大。我寫這一段到底有誰會去認真看啊？然後這個系統是兩個111級學長做的：<span
+                    id="name-liu"
+                    class="name-box"
+                    >劉冠成</span
+                  >和<span id="name-wu" class="name-box">吳霽</span
+                  >。因此打算只單攻租借這件事情，並以網站的形式去解決目前遇到的問題。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 第二階段內容 -->
+          <div
+            id="stage-2"
+            class="absolute w-full h-full z-20"
+            style="transform: translateX(100%)"
+          >
+            <!-- 右側40%的新內容，從52%位置開始 -->
+            <div class="absolute bottom-0 w-[48%]" style="left: 52%; padding-left: clamp(1.2rem, 2vw, 2%); padding-right: clamp(1.2rem, 2vw, 2%)">
+              <!-- 第一段文字 -->
+              <div class="mb-8">
+                <p class="font-chinese text-white text-content leading-relaxed">
+                  平台主要想通過系統化及自動化處理租借這件事情，提高使用者和管理者的效率。在開發的時候，我們重新設計了租借流程，變得更簡化及符合使用者體驗。另外，租借日期的選擇，參考了航空公司的日期選擇方法，場地編號區採用電影院選座位的方式處理，而租借清單則參考了購物車的系統。
+                </p>
+              </div>
+
+              <!-- 第二段文字 -->
+              <div>
+                <p class="font-chinese text-white text-content leading-relaxed">
+                  很開心大家可以使用我們製作的平台，讓我們學以致用。第一次製作那麽龐大的設計，如使用過程中遇到問題，還請多多包涵。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 第三階段內容 -->
+          <div
+            id="stage-3"
+            class="absolute w-full h-full z-40"
+            style="transform: translateX(100%)"
+          >
+            <!-- 中央對齊的三元件組合 -->
+            <div class="absolute inset-0 flex items-center justify-center" style="padding-left: clamp(1.2rem, 2vw, 2%); padding-right: clamp(1.2rem, 2vw, 2%)">
+                <div class="flex flex-col items-center gap-8">
+                <!-- 上方按鈕：CASE STUDY -->
+                <a
+                  href="#"
+                  class="font-english font-medium uppercase text-white text-button"
+                >
+                  <div class="hero-cta-wrapper">
+                    <span class="hero-cta-text">(CASE STUDY)</span>
+                    <span class="hero-cta-hidden">(CASE STUDY)</span>
+                  </div>
+                </a>
+
+                <!-- 中間文字 -->
+                <div class="text-center">
+                  <p class="font-chinese text-white text-content leading-relaxed whitespace-nowrap">
+                    「解決問題也是設計的一種，未來大家都可以依照這個基礎去改進」<br/>
+                    ——媒傳系一位德高望重的老師高捷，曾經說過。
+                  </p>
                 </div>
-                
-                <!-- 手機版佈局 - 靠左三行排列 -->
-                <div class="md:hidden flex flex-col items-start w-full">
-                    <!-- 標題 -->
-                    <h1 class="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4">關於我們</h1>
-                    
-                    <!-- 內文 -->
-                    <div class="font-['Noto_Sans_TC',_sans-serif] text-white text-content mb-6">
-                        <!-- 內容將在此處添加 -->
-                    </div>
-                    
-                    <!-- 預留區域 -->
-                    <div>
-                        <!-- 可以放置按鈕或其他元素 -->
-                    </div>
+
+                <!-- 下方按鈕：BOOK -->
+                <a
+                  href="booking.html"
+                  class="font-english font-medium uppercase text-white text-button"
+                >
+                  <div class="hero-cta-wrapper">
+                    <span class="hero-cta-text">(BOOK)</span>
+                    <span class="hero-cta-hidden">(BOOK)</span>
+                  </div>
+                </a>
+                </div>
+
+                <!-- Footer上方提示文字 -->
+                <div class="absolute bottom-0 right-8">
+                  <p class="font-chinese text-white text-tiny text-right">(試試看將滑鼠停在這裡∨)</p>
                 </div>
             </div>
-        </div>
-    </section>
+          </div>
 
-    <!-- Section 1 -->
-    <section class="bg-black text-white py-20">
-        <div class="container">
-            <div class="text-center">
-                <!-- 預留內容區域 -->
-            </div>
         </div>
-    </section>
-
-    <!-- Section 2 -->
-    <section class="bg-black text-white py-20">
-        <div class="container">
-            <div class="text-center">
-                <!-- 預留內容區域 -->
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="bg-black text-white py-20">
-        <div class="container">
-            <div class="text-center">
-                <!-- 預留內容區域 -->
-            </div>
-        </div>
-    </section>
+      </div>
+    </main>
 
     <!-- Footer -->
     <footer class="bg-transparent footer-main">
-        <div class="container">
-            <!-- 桌面版 Footer -->
-            <div class="hidden md:flex justify-between items-center">
-                <div class="flex items-center footer-gap">
-                    <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
-                        <div class="menu-item-wrapper">
-                            <span class="menu-text">(TO SCCD)</span>
-                            <span class="menu-text-hidden">(TO SCCD)</span>
-                        </div>
-                    </a>
-                    <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
-                        <div class="menu-item-wrapper active">
-                            <span class="menu-text">(ABOUT)</span>
-                            <span class="menu-text-hidden">(ABOUT)</span>
-                        </div>
-                    </a>
+      <div class="container">
+        <!-- 桌面版 Footer -->
+        <div class="hidden md:flex justify-between items-center">
+          <div class="flex items-center footer-gap">
+            <div>
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-english font-medium uppercase transition-colors text-white flex items-center text-header"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
                 </div>
-                <div class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header">
-                    <p>
-                        <span class="copyright-original">
-                            <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                            <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
-                        </span>
-                        <span class="copyright-easter-egg" id="easter-egg-text">
-                            <!-- 彩蛋文字將由JavaScript生成 -->
-                        </span>
-                    </p>
-                </div>
+              </a>
             </div>
+            <div>
+              <a
+                href="about.html"
+                class="font-english font-medium uppercase transition-colors text-white flex items-center text-header"
+              >
+                <div class="menu-item-wrapper active">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div
+            class="copyright desktop-copyright font-english font-medium text-white text-right text-header"
+          >
+            <div>
+              <p>
+                <span class="copyright-original">
+                  <span class="font-english uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-english">All rights reserved.</span>
+                </span>
+                <span class="copyright-easter-egg" id="easter-egg-text">
+                  <!-- 彩蛋文字將由JavaScript生成 -->
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
     </footer>
 
     <!-- 手機版選單 -->
     <div class="mobile-menu md:hidden" id="mobile-menu">
-        <!-- 選單內容區域 -->
-        <div class="mobile-menu-content">
-            <!-- 導航項目 -->
-            <div class="flex flex-col items-start menu-gap flex-grow">
-                <div class="menu-animate-enter">
-                    <div class="menu-animate-enter-content menu-delay-1">
-                        <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
-                            <div class="menu-item-wrapper">
-                                <span class="menu-text">(BOOKING)</span>
-                                <span class="menu-text-hidden">(BOOKING)</span>
-                            </div>
-                        </a>
-                    </div>
+      <!-- 選單內容區域 -->
+      <div class="mobile-menu-content">
+        <!-- 導航項目 -->
+        <div class="flex flex-col items-start menu-gap flex-grow">
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-1">
+              <a
+                href="booking.html"
+                class="font-english font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(BOOKING)</span>
+                  <span class="menu-text-hidden">(BOOKING)</span>
                 </div>
-                <div class="menu-animate-enter">
-                    <div class="menu-animate-enter-content menu-delay-2">
-                        <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
-                            <div class="menu-item-wrapper">
-                                <span class="menu-text">(LOGIN)</span>
-                                <span class="menu-text-hidden">(LOGIN)</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="menu-animate-enter">
-                    <div class="menu-animate-enter-content menu-delay-3">
-                        <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
-                            <div class="menu-item-wrapper">
-                                <span class="menu-text">(TO SCCD)</span>
-                                <span class="menu-text-hidden">(TO SCCD)</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="menu-animate-enter">
-                    <div class="menu-animate-enter-content menu-delay-4">
-                        <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
-                            <div class="menu-item-wrapper active">
-                                <span class="menu-text">(ABOUT)</span>
-                                <span class="menu-text-hidden">(ABOUT)</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
+              </a>
             </div>
-            
-            <!-- Copyright 在底部 -->
-            <div class="menu-animate-enter mobile-menu-content-bottom">
-                <div class="menu-animate-enter-content menu-delay-5">
-                    <div class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header">
-                        <p>
-                            <span class="copyright-original">
-                                <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                                <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
-                            </span>
-                            <span class="copyright-easter-egg" id="mobile-menu-easter-egg-text">
-                                <!-- 彩蛋文字將由JavaScript生成 -->
-                            </span>
-                        </p>
-                    </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-2">
+              <a
+                href="login.html"
+                class="font-english font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(LOGIN)</span>
+                  <span class="menu-text-hidden">(LOGIN)</span>
                 </div>
+              </a>
             </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-3">
+              <a
+                href="https://sccd.usc.edu.tw/"
+                target="_blank"
+                class="font-english font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper">
+                  <span class="menu-text">(TO SCCD)</span>
+                  <span class="menu-text-hidden">(TO SCCD)</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          <div class="menu-animate-enter">
+            <div class="menu-animate-enter-content menu-delay-4">
+              <a
+                href="about.html"
+                class="font-english font-medium uppercase transition-colors text-white text-large-title"
+              >
+                <div class="menu-item-wrapper active">
+                  <span class="menu-text">(ABOUT)</span>
+                  <span class="menu-text-hidden">(ABOUT)</span>
+                </div>
+              </a>
+            </div>
+          </div>
         </div>
+
+        <!-- Copyright 在底部 -->
+        <div class="menu-animate-enter mobile-menu-content-bottom">
+          <div class="menu-animate-enter-content menu-delay-5">
+            <div
+              class="copyright font-english font-medium text-white text-left text-header"
+            >
+              <p>
+                <span class="copyright-original">
+                  <span class="font-english uppercase"
+                    >Copyright © 2025 111</span
+                  >屆系學會
+                  <span class="font-english">All rights reserved.</span>
+                </span>
+                <span
+                  class="copyright-easter-egg"
+                  id="mobile-menu-easter-egg-text"
+                >
+                  <!-- 彩蛋文字將由JavaScript生成 -->
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>

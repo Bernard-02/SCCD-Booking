@@ -108,21 +108,20 @@ class LoginFormValidator {
   }
   
   submitLogin(username, password, rememberMe) {
-    // 這裡之後可以添加實際的登入邏輯
-    console.log('Login attempt:', { username, password, rememberMe });
-    
-    // 暫時顯示登入成功消息
-    alert('登入功能尚未實作，但表單已正常工作！');
+    // 登入邏輯已由 login-auth.js 處理
+    console.log('Login attempt handled by login-auth.js');
   }
   
   handleForgotPassword(e) {
     e.preventDefault();
-    alert('忘記密碼功能尚未實作！');
+    // 忘記密碼功能稍後實作
+    console.log('Forgot password clicked');
   }
   
   handleRegister(e) {
     e.preventDefault();
-    alert('注冊功能尚未實作！');
+    // 註冊功能已移除
+    console.log('Register function removed');
   }
 }
 

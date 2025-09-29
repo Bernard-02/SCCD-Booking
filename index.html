@@ -16,11 +16,16 @@
     <!-- 引入 copyright 相關文件 -->
     <script src="js/copyright-easter-egg.js"></script>
 
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
+
     <!-- 引入通用樣式 -->
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
     <link rel="stylesheet" href="css/typography.css" />
     <link rel="stylesheet" href="css/animations.css" />
+    <link rel="stylesheet" href="css/classroom-schedule.css" />
 
     <!-- 引入通用 JS -->
     <script src="cart-manager.js"></script>
@@ -35,6 +40,26 @@
 
     <!-- 引入首頁儀表板 JS -->
     <script src="js/home-dashboard.js"></script>
+
+    <!-- 引入SVG嵌入JS -->
+    <script src="js/embed-svg.js"></script>
+
+    <!-- 引入日期時間顯示JS -->
+    <script src="js/datetime-display.js"></script>
+
+    <!-- 引入教室時間表JS -->
+    <script src="js/classroom-schedule.js"></script>
+
+    <!-- 引入教室卡片展開功能JS -->
+
+    <!-- 區域hover效果CSS -->
+    <style>
+      /* 為hover效果添加平滑過渡 */
+      .area-item {
+        transition: opacity 0.2s ease-in-out;
+      }
+    </style>
+
   </head>
   <body class="bg-black text-white">
     <!-- Header -->
@@ -141,7 +166,7 @@
                 <h5
                   class="font-['Noto_Sans_TC',_sans-serif] text-white text-content float-up float-up-delay-3"
                 >
-                  歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
+                  歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點右側按鈕開始租借，記得到系學會繳押金喔！
                 </h5>
               </div>
             </div>
@@ -178,7 +203,7 @@
               <p
                 class="font-['Noto_Sans_TC',_sans-serif] text-white text-content mb-6 float-up float-up-delay-3"
               >
-                歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點擊下方按鈕開始租借，記得到系學會繳押金喔！
+                歡迎來到媒傳系學生專屬租借資源平台，這是一位學長為了媒傳系全系學生學習方便而特別做的平台，請大家多多利用，別枉費了他一片好心。請點右側按鈕開始租借，記得到系學會繳押金喔！
               </p>
             </div>
 
@@ -202,13 +227,16 @@
     <!-- 設備租借狀態區塊 -->
     <section class="bg-black text-white pt-40 pb-10">
       <div class="container">
-        <div class="mb-16">
+        <div class="mb-16 flex justify-between items-end">
           <div class="float-up-container">
             <h2
               class="font-['Noto_Sans_TC',_sans-serif] text-hero-title text-left float-up"
             >
               設備租借狀態
             </h2>
+          </div>
+          <div id="equipment-datetime" class="font-['Inter',_sans-serif] text-white text-content">
+            <!-- 日期時間將由JavaScript插入 -->
           </div>
         </div>
 
@@ -373,7 +401,7 @@
     <!-- 空間租借狀態區塊 -->
     <section class="bg-black text-white py-40">
       <div class="container">
-        <div class="mb-16">
+        <div class="mb-16 flex justify-between items-end">
           <div class="float-up-container">
             <h2
               class="font-['Noto_Sans_TC',_sans-serif] text-hero-title text-left float-up"
@@ -381,6 +409,124 @@
               空間租借狀態
             </h2>
           </div>
+          <div id="space-datetime" class="font-['Inter',_sans-serif] text-white text-content">
+            <!-- 日期時間將由JavaScript插入 -->
+          </div>
+        </div>
+
+        <!-- 教室租借狀態 -->
+        <div class="mb-32">
+          <div class="float-up-container mb-8">
+            <h3 class="font-['Noto_Sans_TC',_sans-serif] text-large-title text-left float-up">
+              教室
+            </h3>
+          </div>
+
+          <!-- 教室時間表 -->
+          <div class="classroom-schedule-wrapper">
+            <!-- 時間表容器 -->
+            <div class="schedule-container" id="schedule-container">
+              <!-- 統一標題區域 -->
+              <div class="schedule-header">
+                <!-- 空白時間區域 -->
+                <div class="time-header"></div>
+                <!-- 教室標題 -->
+                <div class="classroom-header-item">
+                  <div class="font-chinese text-tiny font-medium text-success transition-colors duration-300" id="status-A503">可租借</div>
+                  <span class="classroom-name-zh">A503教室</span>
+                  <span class="classroom-name-en">A503 CLASSROOM</span>
+                </div>
+                <div class="classroom-header-item">
+                  <div class="font-chinese text-tiny font-medium text-success transition-colors duration-300" id="status-A507">可租借</div>
+                  <span class="classroom-name-zh">A507教室</span>
+                  <span class="classroom-name-en">A507 CLASSROOM</span>
+                </div>
+                <div class="classroom-header-item">
+                  <div class="font-chinese text-tiny font-medium text-success transition-colors duration-300" id="status-A508">可租借</div>
+                  <span class="classroom-name-zh">A508教室</span>
+                  <span class="classroom-name-en">A508 CLASSROOM</span>
+                </div>
+              </div>
+
+              <!-- 主體區域 -->
+              <div class="schedule-body">
+                <!-- 時間軸 -->
+                <div class="time-axis" id="time-axis">
+                  <!-- 時間標記將由JavaScript生成 -->
+                </div>
+
+                <!-- 內容區域 -->
+                <div class="schedule-content">
+                  <!-- 網格背景 -->
+                  <div class="schedule-grid" id="schedule-grid">
+                    <!-- 網格線將由JavaScript生成 -->
+                  </div>
+
+                  <!-- 課程區塊容器 -->
+                  <div class="course-blocks-container" id="course-blocks">
+                    <!-- 課程區塊將由JavaScript生成 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- A5F編號區 -->
+        <div>
+          <div class="float-up-container mb-8">
+            <h3 class="font-chinese text-large-title text-left float-up">
+              A5F編號區
+            </h3>
+          </div>
+
+          <!-- A5F Area Homepage SVG -->
+          <div class="py-12 text-center relative">
+          <!-- A5F Area Homepage SVG 內嵌版本 -->
+          <div style="width: 50%; height: auto; margin: 0 auto;">
+            <!-- SVG內容將在這裡插入 -->
+          </div>
+
+          <!-- Status Toggle Button -->
+          <button
+            id="status-toggle-btn"
+            class="absolute hover:bg-white/10 backdrop-blur-sm border border-white/30 px-3 py-2 flex items-center gap-2 transition-all duration-200 hover:scale-105 group cursor-pointer"
+            style="bottom: calc(2rem + 1rem); right: calc(2rem + 1rem);"
+            title="切換狀態圈圈顯示"
+          >
+            <svg class="w-4 h-4 text-white transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <!-- 方格子外框 -->
+              <rect x="4" y="4" width="16" height="16" stroke-width="2" rx="2"/>
+              <!-- 圓圈 (初始顯示) -->
+              <circle id="toggle-circle" cx="12" cy="12" r="4" stroke-width="2" opacity="1"/>
+            </svg>
+            <span id="toggle-text" class="font-['Inter',_sans-serif] text-white text-tiny font-medium">SHOW</span>
+          </button>
+
+          <!-- 區域說明 -->
+          <div class="absolute area-legend" style="top: calc(2rem + 1rem); right: calc(2rem + 1rem);">
+            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #fdf4c9;" data-area="square">
+              中庭 <span class="font-['Inter',_sans-serif] font-semibold">Square</span>
+            </div>
+            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #fbe5cd;" data-area="corridor">
+              走廊 <span class="font-['Inter',_sans-serif] font-semibold">Corridor</span>
+            </div>
+            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #f1e6ff;" data-area="front-terrace">
+              前陽台 <span class="font-['Inter',_sans-serif] font-semibold">Front Terrace</span>
+            </div>
+            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #d2fdfa;" data-area="back-terrace">
+              後陽台 <span class="font-['Inter',_sans-serif] font-semibold">Back Terrace</span>
+            </div>
+            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #d6fed7;" data-area="glass-wall">
+              玻璃牆 <span class="font-['Inter',_sans-serif] font-semibold">Glass Wall</span>
+            </div>
+            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #d1f3ff;" data-area="pillar">
+              柱子 <span class="font-['Inter',_sans-serif] font-semibold">Pillar</span>
+            </div>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </section>

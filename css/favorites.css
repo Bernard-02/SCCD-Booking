@@ -1,0 +1,36 @@
+/* ===== 收藏頁面專用樣式 ===== */
+
+
+/* 收藏卡片圖片 hover 放大效果 - 只對圖片容器內的背景圖片生效 */
+.favorites-equipment-card .absolute.inset-0 img,
+.favorites-classroom-card .absolute.inset-0 img {
+  transition: transform 0.3s ease;
+}
+
+.favorites-equipment-card:hover .absolute.inset-0 img,
+.favorites-classroom-card:hover .absolute.inset-0 img {
+  transform: scale(1.1);
+}
+
+/* 收藏卡片不可點擊 */
+.favorites-equipment-card,
+.favorites-classroom-card {
+  cursor: default;
+}
+
+/* 移除收藏按鈕 hover 效果 */
+.remove-favorite-btn:hover {
+  opacity: 0.7;
+}
+
+/* 設備區域最小高度 - 確保與教室有足夠間距 */
+#favorites-equipment-grid {
+  min-height: 300px; /* 至少一張卡片的高度 */
+}
+
+/* 收藏移除淡出動畫 - 與equipment.js保持一致 */
+.favorites-equipment-card.fade-out,
+.favorites-classroom-card.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}

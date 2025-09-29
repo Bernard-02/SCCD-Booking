@@ -1,4 +1,13 @@
 /* ===== 標準化文字系統 ===== */
+/* 字體族定義 */
+.font-chinese {
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.font-english {
+  font-family: 'Inter', sans-serif;
+}
+
 /* 8種核心文字樣式，統一命名 */
 
 /* ===== 1. Hero 標題 (主頁大標題) ===== */

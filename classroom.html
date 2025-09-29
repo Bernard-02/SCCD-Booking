@@ -16,6 +16,10 @@
     <!-- 引入 copyright 相關文件 -->
     <script src="js/copyright-easter-egg.js"></script>
 
+    <!-- 全站登入狀態管理 -->
+    <script src="js/login-auth.js"></script>
+    <script src="js/global-auth-manager.js"></script>
+
     <!-- 引入通用樣式 -->
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
@@ -27,6 +31,7 @@
 
     <!-- 引入通用 JS -->
     <script src="cart-manager.js"></script>
+    <script src="js/bookmark.js"></script>
     <script src="js/common.js"></script>
     <script src="js/cart-sync.js"></script>
 
@@ -160,19 +165,29 @@
               <!-- 日期顯示 -->
               <div class="flex gap-8 float-up-container">
                 <div class="float-up float-up-delay-4">
-                  <h2 class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny">
+                  <h2
+                    class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny"
+                  >
                     起租日
                   </h2>
-                  <p id="display-start-date" class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight">
+                  <p
+                    id="display-start-date"
+                    class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight"
+                  >
                     ----/--/--
                   </p>
                 </div>
 
                 <div class="float-up float-up-delay-5">
-                  <h2 class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny">
+                  <h2
+                    class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny"
+                  >
                     歸還日
                   </h2>
-                  <p id="display-end-date" class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight">
+                  <p
+                    id="display-end-date"
+                    class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight"
+                  >
                     ----/--/--
                   </p>
                 </div>
@@ -212,11 +227,11 @@
                 ></div>
 
                 <!-- 收藏夾按鈕 -->
-                <div class="absolute top-5 right-6 z-20">
+                <div class="absolute top-5 right-6 z-30 p-2 -m-2 bookmark-area">
                   <img
                     src="Icons/Bookmark Sharp Regular.svg"
                     alt="Bookmark"
-                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn relative z-40"
                     data-equipment="A503 教室"
                   />
                 </div>
@@ -263,7 +278,7 @@
                 </div>
               </div>
 
-                            <!-- A507 教室卡片 -->
+              <!-- A507 教室卡片 -->
               <div
                 class="border border-white relative overflow-hidden group cursor-pointer card-slide-in h-full classroom-card classroom-card-2"
                 data-classroom-id="A507"
@@ -292,11 +307,11 @@
                 ></div>
 
                 <!-- 收藏夾按鈕 -->
-                <div class="absolute top-5 right-6 z-20">
+                <div class="absolute top-5 right-6 z-30 p-2 -m-2 bookmark-area">
                   <img
                     src="Icons/Bookmark Sharp Regular.svg"
                     alt="Bookmark"
-                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn relative z-40"
                     data-equipment="A507 教室"
                   />
                 </div>
@@ -372,11 +387,11 @@
                 ></div>
 
                 <!-- 收藏夾按鈕 -->
-                <div class="absolute top-5 right-6 z-20">
+                <div class="absolute top-5 right-6 z-30 p-2 -m-2 bookmark-area">
                   <img
                     src="Icons/Bookmark Sharp Regular.svg"
                     alt="Bookmark"
-                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn"
+                    class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity bookmark-btn relative z-40"
                     data-equipment="A508 教室"
                   />
                 </div>
@@ -431,11 +446,13 @@
                   href="#"
                   id="add-classroom-btn"
                   class="font-['Inter',_sans-serif] uppercase text-white text-button inline-block float-up"
-                  style="animation-delay: 1.2s;"
+                  style="animation-delay: 1.2s"
                 >
                   <div class="hero-cta-wrapper">
                     <span class="hero-cta-text" id="add-btn-text">(ADD)</span>
-                    <span class="hero-cta-hidden" id="add-btn-hidden">(ADD)</span>
+                    <span class="hero-cta-hidden" id="add-btn-hidden"
+                      >(ADD)</span
+                    >
                   </div>
                 </a>
               </div>

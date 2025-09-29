@@ -10,11 +10,19 @@
   --color-success: #00ff80;          /* 綠色 - 有現貨、成功狀態 */
   --color-error: #ff448a;            /* 粉紅色 - 已借出、錯誤狀態 */
   --color-warning: #ffaa00;          /* 橙色 - 警告狀態 */
+  --color-purple: #8787e8;           /* 紫色 - 專案許可區標示 */
   
-  /* 灰階系統 */
-  --color-gray-light: #cccccc;       /* 淺灰 - 副標題、標籤 */
-  --color-gray-medium: #888888;      /* 中灰 - 輔助文字 */
-  --color-gray-dark: #777777;        /* 深灰 - 禁用狀態 */
+  /* 灰階系統 - Scale 1-5 (淺到深) */
+  --color-gray-scale1: #cccccc;      /* Scale 1 - 最淺灰 - 副標題、標籤 */
+  --color-gray-scale2: #a4a4a4;      /* Scale 2 - 輔助文字 */
+  --color-gray-scale3: #7c7c7c;      /* Scale 3 - 禁用狀態 */
+  --color-gray-scale4: #545454;      /* Scale 4 - 深灰背景 */
+  --color-gray-scale5: #2b2b2b;      /* Scale 5 - 最深灰 - 邊框線 */
+
+  /* 向後兼容的舊命名 */
+  --color-gray-light: var(--color-gray-scale1);
+  --color-gray-medium: var(--color-gray-scale2);
+  --color-gray-dark: var(--color-gray-scale3);
   
   /* 背景色 */
   --color-bg-overlay: rgba(0, 0, 0, 0.75);    /* 半透明黑色覆蓋 */
@@ -36,6 +44,15 @@
 .text-success { color: var(--color-success) !important; }
 .text-error { color: var(--color-error) !important; }
 .text-warning { color: var(--color-warning) !important; }
+
+/* 灰階 Scale 系統 */
+.text-gray-scale1 { color: var(--color-gray-scale1) !important; }
+.text-gray-scale2 { color: var(--color-gray-scale2) !important; }
+.text-gray-scale3 { color: var(--color-gray-scale3) !important; }
+.text-gray-scale4 { color: var(--color-gray-scale4) !important; }
+.text-gray-scale5 { color: var(--color-gray-scale5) !important; }
+
+/* 向後兼容的舊命名 */
 .text-gray-light { color: var(--color-gray-light) !important; }
 .text-gray-medium { color: var(--color-gray-medium) !important; }
 .text-gray-dark { color: var(--color-gray-dark) !important; }
@@ -46,13 +63,29 @@
 .bg-warning { background-color: var(--color-warning) !important; }
 .bg-overlay { background-color: var(--color-bg-overlay) !important; }
 
+/* 灰階 Scale 系統背景 */
+.bg-gray-scale1 { background-color: var(--color-gray-scale1) !important; }
+.bg-gray-scale2 { background-color: var(--color-gray-scale2) !important; }
+.bg-gray-scale3 { background-color: var(--color-gray-scale3) !important; }
+.bg-gray-scale4 { background-color: var(--color-gray-scale4) !important; }
+.bg-gray-scale5 { background-color: var(--color-gray-scale5) !important; }
+
 /* 邊框顏色 */
 .border-success { border-color: var(--color-success) !important; }
 .border-error { border-color: var(--color-error) !important; }
 .border-warning { border-color: var(--color-warning) !important; }
-.border-gray-light { border-color: var(--color-gray-light) !important; }
 .border-default { border-color: var(--color-border-default) !important; }
 .border-focus { border-color: var(--color-border-focus) !important; }
+
+/* 灰階 Scale 系統邊框 */
+.border-gray-scale1 { border-color: var(--color-gray-scale1) !important; }
+.border-gray-scale2 { border-color: var(--color-gray-scale2) !important; }
+.border-gray-scale3 { border-color: var(--color-gray-scale3) !important; }
+.border-gray-scale4 { border-color: var(--color-gray-scale4) !important; }
+.border-gray-scale5 { border-color: var(--color-gray-scale5) !important; }
+
+/* 向後兼容的舊命名 */
+.border-gray-light { border-color: var(--color-gray-light) !important; }
 
 /* ===== 通用樣式 ===== */
 
@@ -81,6 +114,7 @@
   background-color: transparent;
   cursor: pointer;
   position: relative;
+  margin-top: 0.3rem;
 }
 
 .custom-checkbox:checked {
@@ -107,13 +141,15 @@
   right: -400px; /* 初始位置在右側外面 */
   background-color: var(--color-bg-toast);
   color: var(--color-primary);
-  padding: 0.75rem 2rem; /* 減少 padding */
+  padding: 0.75rem 1.5rem; /* 增加 padding 讓文字有適當間距 */
   border-radius: 2px; /* 添加 1px border radius */
   z-index: 50;
   opacity: 0;
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  max-width: 300px; /* 限制最大寬度 */
+  width: fit-content; /* 寬度根據內容調整 */
+  min-width: 150px; /* 設定最小寬度 */
+  max-width: 600px; /* 設定最大寬度 */
   white-space: nowrap; /* 防止文字換行 */
 }
 
@@ -182,6 +218,14 @@
   top: calc(50% + 2px);
 }
 
+/* 篩選器按鈕：橫線在文字水平中間，無圓角 */
+.sccd-filter-item .menu-item-wrapper.active::after {
+  top: 50%; /* 橫線在文字水平中間 */
+  height: 6px; /* 6px高度 */
+  border-radius: 0; /* 移除圓角 */
+}
+
+
 /* ===== 手機版選單樣式 ===== */
 .mobile-menu {
   position: fixed;
@@ -209,6 +253,15 @@
 /* 大型桌面 (1200px以下) */
 @media (max-width: 1200px) {
   /* 響應式調整 */
+}
+
+/* 返回按鈕樣式 */
+#back-btn {
+  transition: all 0.3s ease;
+}
+
+#back-btn:hover {
+  transform: scale(1.1);
 }
 
 /* 平板和手機 (767px以下) */
@@ -270,10 +323,11 @@
     right: -300px !important; /* 手機版初始位置調整 */
     left: auto !important;
     bottom: auto !important;
-    width: auto !important;
-    max-width: 280px !important; /* 手機版稍微減少寬度 */
+    width: fit-content !important; /* 手機版也使用 fit-content */
+    min-width: 160px !important; /* 手機版較小的最小寬度 */
+    max-width: 280px !important; /* 手機版最大寬度 */
     transform: none !important;
-    padding: 0.5rem 1rem !important; /* 手機版更小的 padding */
+    padding: 0.75rem 1.25rem !important; /* 手機版適當的 padding */
   }
   
   .toast.show, #notification.show {
@@ -290,6 +344,20 @@
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+  }
+
+  /* 手機版返回按鈕調整 */
+  #back-btn {
+    top: 1rem !important;
+    left: 1rem !important;
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0.75rem !important;
+  }
+
+  #back-btn svg {
+    width: 14px !important;
+    height: 14px !important;
   }
 }
 
@@ -388,6 +456,27 @@
   transform: translateY(-1.4rem);
 }
 
+/* Page Button - 頁面內按鈕樣式（與 header 按鈕相同） */
+.page-button {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;        /* 17.6px - 與 header 相同 */
+  font-weight: 500;          /* medium */
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;    /* tracking-wide */
+  color: #ffffff;           /* 白色 */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-button .menu-item-wrapper {
+  height: 1.4rem;           /* 與 header 相同 */
+  line-height: 1.4rem;
+}
+
+
 /* Hero CTA Button 動畫效果 */
 .hero-cta-wrapper {
   position: relative;
@@ -417,6 +506,94 @@
 
 .hero-cta-wrapper:hover .hero-cta-hidden {
   transform: translateY(-2.8rem);
+}
+
+/* ===== SCCD 通用按鈕組件系統 ===== */
+
+/* 返回按鈕組件 */
+.sccd-back-btn {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-white);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  text-transform: uppercase;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.sccd-back-btn:hover {
+  opacity: 0.6;
+}
+
+/* ===== SCCD 通用按鈕組件系統 ===== */
+
+/* 基礎按鈕樣式 - 結合現有的 hero-cta-wrapper */
+.sccd-btn {
+  /* 外觀樣式 */
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+  
+  /* 狀態樣式 */
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* 禁用狀態 */
+.sccd-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 禁用狀態下的 hover 效果保留 */
+.sccd-btn.disabled:hover .hero-cta-text {
+  transform: translateY(-2.8rem);
+}
+
+.sccd-btn.disabled:hover .hero-cta-hidden {
+  transform: translateY(-2.8rem);
+}
+
+/* ===== SCCD 通用篩選器組件系統 ===== */
+
+/* 篩選器群組容器 */
+.sccd-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* 預設間距，可以被覆蓋 */
+}
+
+/* 篩選器項目基本樣式 */
+.sccd-filter-item {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-white);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+}
+
+/* 篩選器變體 - 垂直排列 */
+.sccd-filter-group.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+/* 篩選器變體 - 緊密間距 */
+.sccd-filter-group.compact {
+  gap: 1rem;
+}
+
+/* 篩選器變體 - 寬鬆間距 */
+.sccd-filter-group.spacious {
+  gap: 2rem;
 }
 
 /* ===== Copyright 彩蛋效果樣式 ===== */
@@ -651,4 +828,3 @@ body::-webkit-scrollbar {
     margin: 0 0.75rem;
   }
 }
- 

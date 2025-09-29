@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded'); // 調試用
 
     // 獲取所有篩選按鈕和設備卡片
-    const filterButtons = document.querySelectorAll('.filter-button');
+    const filterButtons = document.querySelectorAll('.sccd-filter-item');
     const equipmentCards = document.querySelectorAll('.equipment-card');
     const searchInput = document.getElementById('searchInput');
     const mobileSearchInput = document.getElementById('mobileSearchInput');
@@ -17,50 +17,194 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('Found equipment cards:', equipmentCards.length); // 調試用
 
-    // 顯示已收藏的設備
+    // 顯示已收藏的設備 - 使用改進的三步驟動畫方法
     function showBookmarkedEquipment() {
         console.log('Showing bookmarked equipment'); // 調試用
-        // 從 localStorage 獲取收藏列表，使用正確的鍵值
-        const bookmarks = JSON.parse(localStorage.getItem('sccd_bookmarks') || '[]');
+
+        // 檢查登入狀態 - 只有常用設備分類需要檢查
+        const isLoggedIn = window.AuthStorage && window.AuthStorage.isLoggedIn();
+        if (!isLoggedIn) {
+            showLoginPrompt();
+            return;
+        }
+
+        // 從統一收藏管理器獲取設備收藏列表
+        let bookmarks = [];
+        if (window.unifiedBookmarkManager) {
+            bookmarks = window.unifiedBookmarkManager.getEquipmentBookmarks();
+        } else {
+            console.warn('統一收藏管理器未初始化');
+        }
         console.log('Bookmarks from localStorage:', bookmarks); // 調試用
 
+        // 清除任何現有的提示
+        const equipmentGrid = document.getElementById('equipment-grid');
+        const existingPrompts = equipmentGrid.querySelectorAll('.login-prompt');
+        existingPrompts.forEach(prompt => prompt.remove());
+
+        // 第一步：立即移除所有卡片的布局影響，避免任何視覺跳躍
         equipmentCards.forEach(card => {
-            // 獲取設備名稱
-            const bookmarkBtn = card.querySelector('.bookmark-btn');
-            if (bookmarkBtn) {
-                const equipmentName = bookmarkBtn.dataset.equipment;
-                const cardStatus = card.getAttribute('data-status');
-                
-                // 檢查設備是否在收藏列表中
-                const isBookmarked = bookmarks.includes(equipmentName);
-                // 檢查狀態是否匹配
-                const statusMatch = cardStatus === currentSelectedStatus;
-                
-                console.log('Equipment:', equipmentName, 'Bookmarked:', isBookmarked, 'Status:', cardStatus, 'StatusMatch:', statusMatch); // 調試用
-                card.style.display = (isBookmarked && statusMatch) ? 'flex' : 'none';
-            } else {
-                console.log('No bookmark button found for card'); // 調試用
-                card.style.display = 'none';
-            }
             card.classList.remove('animate-in');
+            card.style.display = 'none';  // 立即移除布局影響
+            card.style.opacity = '';  // 清除透明度
+            card.style.transform = '';
         });
 
-        // 重新計算行號並觸發動畫
-        if (typeof window.recalculateRows === 'function') {
-            window.recalculateRows();
+        // 第二步：短暫延遲後重新顯示符合條件的卡片（仍然透明，等待動畫）
+        setTimeout(() => {
+            let hasVisibleCards = false;
+
+            equipmentCards.forEach(card => {
+                // 獲取設備名稱
+                const bookmarkBtn = card.querySelector('.bookmark-btn');
+                if (bookmarkBtn) {
+                    const equipmentName = bookmarkBtn.dataset.equipment;
+                    const cardStatus = card.getAttribute('data-status');
+
+                    // 檢查設備是否在收藏列表中
+                    const isBookmarked = bookmarks.includes(equipmentName);
+                    // 檢查狀態是否匹配
+                    const statusMatch = cardStatus === currentSelectedStatus;
+
+                    console.log('Equipment:', equipmentName, 'Bookmarked:', isBookmarked, 'Status:', cardStatus, 'StatusMatch:', statusMatch); // 調試用
+
+                    if (isBookmarked && statusMatch) {
+                        card.style.display = 'flex';
+                        card.style.opacity = '0';  // 顯示但透明，準備動畫
+                        hasVisibleCards = true;
+                    }
+                } else {
+                    console.log('No bookmark button found for card'); // 調試用
+                }
+            });
+
+            // 如果沒有可見的收藏卡片，顯示空提示
+            if (!hasVisibleCards) {
+                showEmptyBookmarksPrompt();
+            }
+
+            // 第三步：等待布局完全穩定後觸發進場動畫
+            setTimeout(() => {
+                // 清除透明度，讓動畫系統接管
+                equipmentCards.forEach(card => {
+                    if (card.style.display === 'flex') {
+                        card.style.opacity = '';  // 讓CSS動畫控制
+                    }
+                });
+
+                // 重新計算行號並觸發動畫
+                if (typeof window.recalculateRows === 'function') {
+                    window.recalculateRows();
+                }
+            }, 150);  // 增加延遲確保布局完全穩定
+        }, 50);  // 減少初始延遲
+    }
+
+    // 個別移除收藏卡片（帶動畫效果）
+    function removeBookmarkedCard(equipmentName) {
+        console.log('Removing bookmarked card:', equipmentName);
+
+        // 找到對應的設備卡片
+        let targetCard = null;
+        equipmentCards.forEach(card => {
+            const bookmarkBtn = card.querySelector('.bookmark-btn');
+            if (bookmarkBtn && bookmarkBtn.dataset.equipment === equipmentName) {
+                targetCard = card;
+            }
+        });
+
+        if (targetCard && targetCard.style.display === 'flex') {
+            // 添加淡出動畫類（使用rental-list的樣式）
+            targetCard.classList.add('fade-out');
+
+            // 等待動畫完成後隱藏卡片
+            setTimeout(() => {
+                targetCard.style.display = 'none';
+                targetCard.classList.remove('fade-out');
+
+                // 檢查是否還有其他可見的收藏卡片
+                checkIfBookmarksEmpty();
+
+                // 重新計算布局和動畫
+                if (typeof window.recalculateRows === 'function') {
+                    setTimeout(() => {
+                        window.recalculateRows();
+                    }, 50);
+                }
+            }, 500); // 等待0.5秒動畫完成
         }
     }
 
-    // 初始化時顯示常用設備並設置按鈕狀態
-    const bookmarksButton = document.querySelector('[data-category="bookmarks"]');
-    if (bookmarksButton) {
-        console.log('Found bookmarks button'); // 調試用
-        bookmarksButton.classList.add('filter-active', 'font-bold');
-        bookmarksButton.classList.remove('font-normal');
-    } else {
-        console.log('Bookmarks button not found'); // 調試用
+    // 檢查收藏是否為空，並顯示提示
+    function checkIfBookmarksEmpty() {
+        const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+        if (!activeWrapper) {
+            return;
+        }
+        const activeButton = activeWrapper.closest('.sccd-filter-item');
+        if (!activeButton || activeButton.dataset.category !== 'bookmarks') {
+            return; // 不在常用設備分類
+        }
+
+        // 檢查是否有可見的設備卡片
+        const visibleCards = Array.from(equipmentCards).filter(card =>
+            card.style.display === 'flex'
+        );
+
+        if (visibleCards.length === 0) {
+            // 沒有可見卡片，顯示空狀態提示
+            showEmptyBookmarksPrompt();
+        }
     }
-    showBookmarkedEquipment();
+
+    // 顯示空收藏提示（樣式和未登入提醒相同）
+    function showEmptyBookmarksPrompt() {
+        const equipmentGrid = document.getElementById('equipment-grid');
+        const existingPrompt = equipmentGrid.querySelector('.login-prompt');
+
+        // 如果已經有提示，就不重複創建
+        if (existingPrompt) {
+            return;
+        }
+
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'login-prompt empty-state-message col-span-4 text-left';
+        promptDiv.innerHTML = `
+            <p class="font-chinese text-gray-scale4 text-small-title">目前沒有任何收藏的設備，請先收藏設備</p>
+        `;
+
+        equipmentGrid.appendChild(promptDiv);
+    }
+
+    // 初始化常用設備按鈕狀態和篩選 - 延遲執行以等待設備數據載入
+    function initializeBookmarksFilter() {
+        const bookmarksButton = document.querySelector('[data-category="bookmarks"]');
+        if (bookmarksButton) {
+            console.log('Found bookmarks button'); // 調試用
+            const wrapper = bookmarksButton.querySelector('.menu-item-wrapper');
+            if (wrapper) {
+                wrapper.classList.add('active');
+            }
+            showBookmarkedEquipment();
+        } else {
+            console.log('Bookmarks button not found'); // 調試用
+        }
+    }
+
+    // 檢查設備數據是否已準備好，如果還沒準備好則等待
+    if (window.equipmentDataReady) {
+        initializeBookmarksFilter();
+    } else {
+        // 等待設備數據準備完成
+        const checkDataReady = () => {
+            if (window.equipmentDataReady) {
+                initializeBookmarksFilter();
+            } else {
+                setTimeout(checkDataReady, 100);
+            }
+        };
+        checkDataReady();
+    }
 
     // 為每個篩選按鈕添加點擊事件
     filterButtons.forEach(button => {
@@ -69,13 +213,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 移除所有按鈕的 active 狀態
             filterButtons.forEach(btn => {
-                btn.classList.remove('filter-active', 'font-bold');
-                btn.classList.add('font-normal');
+                const wrapper = btn.querySelector('.menu-item-wrapper');
+                if (wrapper) {
+                    wrapper.classList.remove('active');
+                }
             });
 
             // 添加當前按鈕的 active 狀態
-            this.classList.add('filter-active', 'font-bold');
-            this.classList.remove('font-normal');
+            const currentWrapper = this.querySelector('.menu-item-wrapper');
+            if (currentWrapper) {
+                currentWrapper.classList.add('active');
+            }
 
             const category = this.dataset.category;
 
@@ -104,7 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 如果搜索框為空，顯示當前選中類別的設備
                 if (!searchText) {
-                    const activeButton = document.querySelector('.filter-active');
+                    const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+                    const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
                     if (activeButton) {
                         const category = activeButton.dataset.category;
                         if (category === 'bookmarks') {
@@ -130,22 +279,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 }).sort((a, b) => b.score - a.score);
 
-                // 顯示搜索結果
+                // 顯示搜索結果 - 使用改進的三步驟動畫方法
+                // 第一步：立即移除所有卡片的布局影響
                 equipmentCards.forEach(card => {
-                    card.style.display = 'none';
                     card.classList.remove('animate-in');
+                    card.style.display = 'none';
+                    card.style.opacity = '';
+                    card.style.transform = '';
                 });
 
-                searchResults.forEach(result => {
-                    if (result.score > 0) {
-                        result.card.style.display = 'flex';
-                    }
-                });
+                // 第二步：短暫延遲後重新顯示符合條件的卡片（仍然透明，等待動畫）
+                setTimeout(() => {
+                    searchResults.forEach(result => {
+                        if (result.score > 0) {
+                            result.card.style.display = 'flex';
+                            result.card.style.opacity = '0';  // 顯示但透明，準備動畫
+                        }
+                    });
 
-                // 重新計算行號並觸發動畫
-                if (typeof window.recalculateRows === 'function') {
-                    window.recalculateRows();
-                }
+                    // 第三步：等待布局完全穩定後觸發進場動畫
+                    setTimeout(() => {
+                        // 清除透明度，讓動畫系統接管
+                        searchResults.forEach(result => {
+                            if (result.score > 0 && result.card.style.display === 'flex') {
+                                result.card.style.opacity = '';  // 讓CSS動畫控制
+                            }
+                        });
+
+                        // 重新計算行號並觸發動畫
+                        if (typeof window.recalculateRows === 'function') {
+                            window.recalculateRows();
+                        }
+                    }, 150);
+                }, 50);
             }, 300);
         });
     }
@@ -154,28 +320,54 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSearch(searchInput);
     setupSearch(mobileSearchInput);
 
-    // 根據類別篩選設備
+    // 根據類別篩選設備 - 使用改進的三步驟動畫方法
     function filterByCategory(category) {
         console.log('Filtering by category:', category, 'Status:', currentSelectedStatus); // 調試用
+
+        // 清除登入提示（如果存在）
+        const existingPrompt = document.querySelector('.login-prompt');
+        if (existingPrompt) {
+            existingPrompt.remove();
+        }
+
+        // 第一步：立即移除所有卡片的布局影響，避免任何視覺跳躍
         equipmentCards.forEach(card => {
-            const cardCategory = card.dataset.category;
-            const cardStatus = card.getAttribute('data-status');
-            
-            const categoryMatch = cardCategory === category;
-            const statusMatch = cardStatus === currentSelectedStatus;
-            
-            if (categoryMatch && statusMatch) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
             card.classList.remove('animate-in');
+            card.style.display = 'none';  // 立即移除布局影響
+            card.style.opacity = '';  // 清除透明度
+            card.style.transform = '';
         });
 
-        // 重新計算行號並觸發動畫
-        if (typeof window.recalculateRows === 'function') {
-            window.recalculateRows();
-        }
+        // 第二步：短暫延遲後重新顯示符合條件的卡片（仍然透明，等待動畫）
+        setTimeout(() => {
+            equipmentCards.forEach(card => {
+                const cardCategory = card.dataset.category;
+                const cardStatus = card.getAttribute('data-status');
+
+                const categoryMatch = cardCategory === category;
+                const statusMatch = cardStatus === currentSelectedStatus;
+
+                if (categoryMatch && statusMatch) {
+                    card.style.display = 'flex';
+                    card.style.opacity = '0';  // 顯示但透明，準備動畫
+                }
+            });
+
+            // 第三步：等待布局完全穩定後觸發進場動畫
+            setTimeout(() => {
+                // 清除透明度，讓動畫系統接管
+                equipmentCards.forEach(card => {
+                    if (card.style.display === 'flex') {
+                        card.style.opacity = '';  // 讓CSS動畫控制
+                    }
+                });
+
+                // 重新計算行號並觸發動畫
+                if (typeof window.recalculateRows === 'function') {
+                    window.recalculateRows();
+                }
+            }, 150);  // 增加延遲確保布局完全穩定
+        }, 50);  // 減少初始延遲
     }
 
     // 桌面版狀態篩選按鈕事件處理
@@ -221,9 +413,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 顯示登入提示
+    function showLoginPrompt() {
+        // 檢查是否已有登入提示，如果有則移除
+        const existingPrompt = document.querySelector('.login-prompt');
+        if (existingPrompt) {
+            existingPrompt.remove();
+        }
+
+        // 隱藏所有設備卡片
+        equipmentCards.forEach(card => {
+            card.classList.remove('animate-in');
+            card.style.display = 'none';
+            card.style.opacity = '';
+            card.style.transform = '';
+        });
+
+        // 創建登入提示元素，使用與profile.html收藏頁面相同的樣式
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'login-prompt empty-state-message col-span-4 text-left';
+        promptDiv.innerHTML = `
+            <p class="font-chinese text-gray-scale4 text-small-title">請先登入以查看收藏的設備</p>
+        `;
+
+        // 將提示插入到設備網格中
+        const equipmentGrid = document.getElementById('equipment-grid');
+        if (equipmentGrid) {
+            equipmentGrid.appendChild(promptDiv);
+        }
+    }
+
     // 應用當前篩選
     function applyCurrentFilter() {
-        const activeButton = document.querySelector('.filter-active');
+        // 清除可能存在的登入提示
+        const existingPrompt = document.querySelector('.login-prompt');
+        if (existingPrompt) {
+            existingPrompt.remove();
+        }
+
+        const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+        const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
         if (activeButton) {
             const category = activeButton.dataset.category;
             if (category === 'bookmarks') {
@@ -235,22 +464,49 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 監聽收藏狀態變化
-    window.addEventListener('bookmarkUpdated', function() {
+    window.addEventListener('bookmarkUpdated', function(event) {
         console.log('Bookmark updated'); // 調試用
-        // 如果當前是在常用設備分類，則重新篩選
-        const activeButton = document.querySelector('.filter-active');
+        // 如果當前是在常用設備分類，處理收藏變化
+        const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+        const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
         if (activeButton && activeButton.dataset.category === 'bookmarks') {
-            showBookmarkedEquipment();
+            // 檢查是否為移除操作
+            if (event.detail && event.detail.action === 'remove') {
+                // 使用動畫移除個別卡片
+                removeBookmarkedCard(event.detail.itemName);
+            } else {
+                // 添加操作或初始化，重新篩選整個分類
+                showBookmarkedEquipment();
+            }
         }
     });
 
-    // 監聽 localStorage 變化以同步收藏狀態
+    // 監聽收藏狀態變化 - 支持全域 BookmarkManager
     window.addEventListener('storage', function(event) {
-        if (event.key === 'sccd_bookmarks') {
+        if (event.key === 'sccd_bookmarks' || event.key?.startsWith('sccd_bookmarks_')) {
             console.log('Bookmarks storage changed'); // 調試用
             // 如果當前是在常用設備分類，則重新篩選
-            const activeButton = document.querySelector('.filter-active');
+            const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+        const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
             if (activeButton && activeButton.dataset.category === 'bookmarks') {
+                showBookmarkedEquipment();
+            }
+        }
+    });
+
+    // 監聽全域 BookmarkManager 的事件
+    window.addEventListener('bookmarkUpdated', function(event) {
+        console.log('Bookmark updated via BookmarkManager'); // 調試用
+        // 如果當前是在常用設備分類，處理收藏變化
+        const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+        const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
+        if (activeButton && activeButton.dataset.category === 'bookmarks') {
+            // 檢查是否為移除操作
+            if (event.detail && event.detail.action === 'remove') {
+                // 使用動畫移除個別卡片
+                removeBookmarkedCard(event.detail.itemName);
+            } else {
+                // 添加操作或初始化，重新篩選整個分類
                 showBookmarkedEquipment();
             }
         }
