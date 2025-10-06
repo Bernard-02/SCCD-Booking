@@ -219,11 +219,14 @@
     position: relative;
     display: inline-block;
     overflow: hidden;
+    line-height: 1;
+    height: 1em;
 }
 
 .date-number-text {
     display: block;
     transition: transform 0.3s ease;
+    line-height: 1;
 }
 
 .date-number-hidden {
@@ -232,6 +235,7 @@
     left: 0;
     display: block;
     transition: transform 0.3s ease;
+    line-height: 1;
 }
 
 /* Hover 動畫效果 */
@@ -240,6 +244,15 @@
 }
 
 .cursor-pointer:hover .date-number-hidden {
+    transform: translateY(-100%);
+}
+
+/* 延期對話框的 hover 效果 */
+.extend-date-cell.cursor-pointer:hover .date-number-text {
+    transform: translateY(-100%);
+}
+
+.extend-date-cell.cursor-pointer:hover .date-number-hidden {
     transform: translateY(-100%);
 }
 
@@ -411,8 +424,34 @@
 
 /* ===== 延期對話框專用樣式 ===== */
 
-/* 延期起始日 - 只顯示左半條綠線 */
-.extend-date-cell.extend-start::after {
+/* 第1個數字 - 完整實心綠線 */
+.extend-line-start::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* 第2個數字 - 完整實心綠線 */
+.extend-line-end::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* 第3個數字 - 左半邊實心綠線（初始狀態） */
+.extend-line-third::after {
     content: '';
     position: absolute;
     top: 45%;
@@ -424,8 +463,8 @@
     transform: translateY(-50%);
 }
 
-/* 延期起始日的 hover 預覽 - 右半條半透明綠線 */
-.extend-date-cell.extend-start.hover-preview::before {
+/* 第3個數字 hover - 右半邊半透明綠線 */
+.extend-line-third.hover-preview::before {
     content: '';
     position: absolute;
     top: 45%;
@@ -435,5 +474,67 @@
     background-color: rgba(0, 255, 128, 0.5);
     z-index: 0;
     transform: translateY(-50%);
+}
+
+/* 第3個數字選中範圍內 - 變成完整實心綠線 */
+.extend-line-third.in-range-extend::after {
+    width: 100%; /* 覆蓋原本的 50% */
+}
+
+/* 範圍內的數字（選中狀態）- 完整實心綠線 */
+.in-range-extend::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* hover 預覽 - 完整半透明綠線 */
+.hover-preview-extend::before {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: rgba(0, 255, 128, 0.5);
+    z-index: 0;
+    transform: translateY(-50%);
+}
+
+/* hover 位置本身 - 完整半透明綠線 */
+.hover-preview-end::before {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: rgba(0, 255, 128, 0.5);
+    z-index: 0;
+    transform: translateY(-50%);
+}
+
+/* 選中的結束日期 - 完整綠線 + 綠色數字 */
+.end-date-extend::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.end-date-extend .date-number-text,
+.end-date-extend .date-number-hidden {
+    color: #00FF80 !important;
 }
 

@@ -779,10 +779,11 @@ class FavoritesManager {
     // 取消按鈕
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'page-button';
+    cancelBtn.style.color = 'var(--color-error2)';
     cancelBtn.innerHTML = `
       <div class="menu-item-wrapper">
-        <span class="menu-text">(CANCEL)</span>
-        <span class="menu-text-hidden">(CANCEL)</span>
+        <span class="menu-text">(DISCARD)</span>
+        <span class="menu-text-hidden">(DISCARD)</span>
       </div>
     `;
     cancelBtn.onclick = () => {

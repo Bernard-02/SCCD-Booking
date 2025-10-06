@@ -482,7 +482,7 @@ class RentalHistoryManager {
             <div class="font-chinese text-white text-small-title space-y-1">
               <p>1. 延期申請需在原租借收據歸還日的前三天提出，且僅可以提出乙次申請。</p>
               <p>2. 延期天數是原歸還日往後開始計算，可最多延期7天。</p>
-              <p class="text-gray-scale2 text-tiny mt-2">例：若租借收據的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。</p>
+              <p class="text-gray-scale2 text-tiny mt-2">例：假設租借收據的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。</p>
             </div>
           </div>
 
@@ -565,55 +565,58 @@ class RentalHistoryManager {
     return dates;
   }
 
-  // 生成日期單元格（完全照抄 booking.html 樣式）
-  generateDateCell(date, index, total) {
+  // 生成日期單元格
+  generateDateCell(date, index) {
     const isFirst = index === 0;
     const isSecond = index === 1;
-    const isThird = index === 2;
     const isDisabled = date.disabled;
 
-    // 基本類別
-    let classes = 'extend-date-cell text-left text-white text-[3.5rem] font-semibold font-[\'Inter\',_sans-serif] tracking-tighter leading-none py-1 min-w-0 relative';
+    // padding 設定：用 padding 代替 margin 來創造間距
+    let paddingStyle = '';
+    if (isFirst) {
+      paddingStyle = 'padding-right: 16px;'; // 第1個數字右側 padding
+    } else if (isSecond) {
+      paddingStyle = 'padding-left: 16px; padding-right: 8px;'; // 第2個數字左右 padding
+    } else if (index > 1) {
+      paddingStyle = 'padding-left: 8px; padding-right: 8px;'; // 其他數字左右 padding
+    }
+
+    // 第2個數字是綠色
+    const colorStyle = isSecond ? 'color: #00FF80;' : 'color: white;';
+
+    // class 設定（使用與 booking 日曆相同的 class）
+    let cellClass = 'extend-date-item text-left font-semibold font-[\'Inter\',_sans-serif] tracking-tighter leading-none py-1 text-[3.5rem] relative';
 
     if (!isDisabled) {
-      classes += ' cursor-pointer';
+      cellClass += ' cursor-pointer';
     }
 
-    // 第1個數字：白色，完整綠線
+    // 綠線 class
     if (isFirst) {
-      classes += ' in-range';
-    }
-    // 第2個數字：完整綠線（會是綠色數字）
-    else if (isSecond) {
-      classes += ' start-date';
-    }
-    // 第3個數字：白色，半條綠線
-    else if (isThird) {
-      classes += ' extend-start';
+      cellClass += ' extend-line-start';
+    } else if (isSecond) {
+      cellClass += ' extend-line-end';
+    } else if (index === 2) {
+      // 第3個數字：左半邊綠線
+      cellClass += ' extend-line-third';
     }
 
-    // 第1和第2個之間間距較大
-    const marginStyle = isSecond ? 'margin-left: 32px;' : '';
+    const disabledStyle = isDisabled ? 'pointer-events: none;' : '';
 
-    // 禁用的數字不需要 wrapper（避免 hover 動畫）
-    let innerHTML;
-    if (isDisabled) {
-      innerHTML = date.day;
-    } else {
-      innerHTML = `
-        <div class="date-number-wrapper">
-          <span class="date-number-text">${date.day}</span>
-          <span class="date-number-hidden">${date.day}</span>
-        </div>
-      `;
-    }
+    // 數字需要 wrapper 結構來實現 hover 動畫
+    const innerHTML = `
+      <div class="date-number-wrapper">
+        <span class="date-number-text">${date.day}</span>
+        <span class="date-number-hidden">${date.day}</span>
+      </div>
+    `;
 
     return `
-      <div class="${classes}"
+      <div class="${cellClass}"
            data-index="${index}"
            data-extend-days="${date.extendDays || 0}"
            data-disabled="${isDisabled}"
-           style="${marginStyle} ${isDisabled ? 'pointer-events: none;' : ''}">
+           style="${colorStyle} ${paddingStyle} ${disabledStyle}">
         ${innerHTML}
       </div>
     `;
@@ -622,7 +625,6 @@ class RentalHistoryManager {
   // 設置延期對話框事件
   setupExtendDialogEvents(rental, dates) {
     const overlay = document.getElementById('extend-dialog-overlay');
-    const dialog = document.getElementById('extend-dialog');
     const discardBtn = document.getElementById('extend-discard-btn');
     const confirmBtn = document.getElementById('extend-confirm-btn');
     const daysCountSpan = document.getElementById('extend-days-count');
@@ -631,24 +633,94 @@ class RentalHistoryManager {
     let selectedIndex = null;
     let selectedDays = 0;
 
-    // 日期選擇事件
-    const dateCells = document.querySelectorAll('.extend-date-cell');
+    // 獲取所有日期單元格
+    const allCells = document.querySelectorAll('[data-index]');
 
-    dateCells.forEach((cell, index) => {
+    // Hover 預覽效果
+    const showHoverPreview = (hoverIndex) => {
+      // 只在未選擇狀態下顯示預覽
+      if (selectedIndex !== null) return;
+
+      // 只處理第3-8個數字的 hover
+      if (hoverIndex < 2) return;
+
+      allCells.forEach((cell) => {
+        const cellIndex = parseInt(cell.dataset.index);
+
+        // 移除之前的 hover 預覽
+        cell.classList.remove('hover-preview', 'hover-preview-extend', 'hover-preview-end');
+
+        if (cellIndex === 2) {
+          // 第3個數字：如果 hover 在它或之後，顯示右半邊預覽
+          if (hoverIndex >= 2) {
+            cell.classList.add('hover-preview');
+          }
+        } else if (cellIndex > 2 && cellIndex < hoverIndex) {
+          // 第3個之後到 hover 位置之前：完整半透明預覽 + 延伸
+          cell.classList.add('hover-preview-extend');
+        } else if (cellIndex === hoverIndex) {
+          // hover 位置本身：完整半透明預覽（不延伸）
+          cell.classList.add('hover-preview-end');
+        }
+      });
+    };
+
+    // 隱藏 hover 預覽
+    const hideHoverPreview = () => {
+      allCells.forEach(cell => {
+        cell.classList.remove('hover-preview', 'hover-preview-extend', 'hover-preview-end');
+      });
+    };
+
+    // 更新選擇狀態
+    const updateSelection = (newIndex) => {
+      allCells.forEach((cell) => {
+        const cellIndex = parseInt(cell.dataset.index);
+
+        // 移除所有選擇相關的 class
+        cell.classList.remove('in-range-extend', 'end-date-extend');
+
+        if (newIndex !== null) {
+          if (cellIndex === 2 && newIndex > 2) {
+            // 第3個數字在選中範圍內時：完整綠線（覆蓋原本的左半邊）
+            cell.classList.add('in-range-extend');
+          } else if (cellIndex > 2 && cellIndex < newIndex) {
+            // 範圍內的數字：完整綠線
+            cell.classList.add('in-range-extend');
+          } else if (cellIndex === newIndex) {
+            // 選中的數字：綠線 + 綠色數字
+            cell.classList.add('end-date-extend');
+          }
+        }
+      });
+    };
+
+    // 日期選擇事件（只有第3-8個可以選擇）
+    allCells.forEach((cell) => {
+      const cellIndex = parseInt(cell.dataset.index);
       const isDisabled = cell.dataset.disabled === 'true';
 
-      if (isDisabled) return;
+      // 只有第3-8個數字可以選擇
+      if (cellIndex < 2 || isDisabled) return;
+
+      // Hover 事件
+      cell.addEventListener('mouseenter', () => {
+        showHoverPreview(cellIndex);
+      });
+
+      cell.addEventListener('mouseleave', () => {
+        hideHoverPreview();
+      });
 
       // 點擊事件
       cell.addEventListener('click', () => {
-        const clickedIndex = parseInt(cell.dataset.index);
         const extendDays = parseInt(cell.dataset.extendDays);
 
         // 如果點擊已選擇的日期，取消選擇
-        if (selectedIndex === clickedIndex) {
+        if (selectedIndex === cellIndex) {
           selectedIndex = null;
           selectedDays = 0;
-          this.resetExtendSelection(dateCells);
+          updateSelection(null);
 
           // 更新狀態提示為初始狀態
           daysCountSpan.textContent = '0';
@@ -660,9 +732,9 @@ class RentalHistoryManager {
           confirmBtn.classList.add('disabled');
         } else {
           // 選擇新日期
-          selectedIndex = clickedIndex;
+          selectedIndex = cellIndex;
           selectedDays = extendDays;
-          this.updateExtendSelection(dateCells, clickedIndex);
+          updateSelection(cellIndex);
 
           // 更新狀態提示
           const newDueDate = new Date(rental.dueDate);
@@ -674,20 +746,6 @@ class RentalHistoryManager {
           confirmBtn.disabled = false;
           confirmBtn.style.opacity = '1';
           confirmBtn.classList.remove('disabled');
-        }
-      });
-
-      // Hover 效果
-      cell.addEventListener('mouseenter', () => {
-        if (selectedIndex === null) {
-          const hoverIndex = parseInt(cell.dataset.index);
-          this.updateExtendHover(dateCells, hoverIndex);
-        }
-      });
-
-      cell.addEventListener('mouseleave', () => {
-        if (selectedIndex === null) {
-          this.resetExtendSelection(dateCells);
         }
       });
     });
@@ -702,77 +760,6 @@ class RentalHistoryManager {
       if (selectedDays > 0) {
         this.confirmExtendRental(rental.id, selectedDays);
         overlay.remove();
-      }
-    });
-  }
-
-  // 重置為初始狀態
-  resetExtendSelection(cells) {
-    cells.forEach((cell, index) => {
-      // 移除所有狀態類別
-      cell.classList.remove('in-range', 'start-date', 'end-date', 'hover-preview', 'complete-line', 'extend-start');
-
-      // 重新設置初始狀態
-      if (index === 0) {
-        // 第1個：白色，完整綠線
-        cell.classList.add('in-range');
-      } else if (index === 1) {
-        // 第2個：綠色，完整綠線
-        cell.classList.add('start-date');
-      } else if (index === 2) {
-        // 第3個：白色，永遠只有左半條實心綠線
-        cell.classList.add('extend-start');
-      }
-    });
-  }
-
-  // 更新延期選擇狀態
-  updateExtendSelection(cells, selectedIndex) {
-    cells.forEach((cell, index) => {
-      // 移除所有狀態類別
-      cell.classList.remove('in-range', 'start-date', 'end-date', 'hover-preview', 'complete-line', 'extend-start');
-
-      if (index === 0) {
-        // 第1個：白色，完整綠線
-        cell.classList.add('in-range');
-      } else if (index === 1) {
-        // 第2個：綠色，完整綠線
-        cell.classList.add('start-date');
-      } else if (index === 2) {
-        // 第3個：永遠只有左半條實心綠線
-        cell.classList.add('extend-start');
-        // 如果選中第3個，數字變綠色
-        if (selectedIndex === 2) {
-          const dateText = cell.querySelectorAll('.date-number-text, .date-number-hidden');
-          dateText.forEach(span => span.style.color = '#00FF80');
-        }
-      } else if (index > 2 && index < selectedIndex) {
-        // 範圍內：白色，完整綠線
-        cell.classList.add('in-range');
-      } else if (index === selectedIndex) {
-        // 選中的日期：綠色，完整綠線
-        cell.classList.add('end-date');
-      }
-    });
-  }
-
-  // 更新 Hover 預覽
-  updateExtendHover(cells, hoverIndex) {
-    cells.forEach((cell, index) => {
-      // 第3個日期（index=2）的特殊處理
-      if (index === 2) {
-        if (hoverIndex === 2) {
-          // hover 第3個：保持半條實心 + 加上右半邊半透明
-          cell.classList.add('hover-preview');
-        } else if (hoverIndex > 2) {
-          // hover 更後面的日期：保持半條實心 + 延伸到選擇的日期
-          // 不移除 only-start，保持左半條實心，然後用 hover-preview 延伸
-          cell.classList.add('hover-preview');
-        }
-      }
-      // 第3個之後的日期
-      else if (index > 2 && index <= hoverIndex) {
-        cell.classList.add('hover-preview');
       }
     });
   }
