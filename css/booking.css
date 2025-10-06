@@ -409,4 +409,31 @@
     cursor: pointer;
 }
 
- 
+/* ===== 延期對話框專用樣式 ===== */
+
+/* 延期起始日 - 只顯示左半條綠線 */
+.extend-date-cell.extend-start::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 0;
+    width: 50%;
+    height: 6px;
+    background-color: #00FF80;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* 延期起始日的 hover 預覽 - 右半條半透明綠線 */
+.extend-date-cell.extend-start.hover-preview::before {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    width: 50%;
+    height: 6px;
+    background-color: rgba(0, 255, 128, 0.5);
+    z-index: 0;
+    transform: translateY(-50%);
+}
+

@@ -308,6 +308,29 @@
 }
 
 
+/* SELECT ALL 按鈕樣式 */
+#select-all-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: opacity 0.3s ease;
+}
+
+#select-all-button:not(:disabled) {
+  opacity: 1;
+  color: var(--color-white);
+  cursor: pointer;
+}
+
+#select-all-button:not(:disabled):hover {
+  opacity: 1;
+}
+
+#select-all-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* 手機版響應式 */
 @media (max-width: 767px) {
   .mobile-title-section {

@@ -34,6 +34,55 @@
     <link rel="stylesheet" href="css/animations.css" />
     <link rel="stylesheet" href="css/equipment.css" />
     <link rel="stylesheet" href="css/favorites.css" />
+    <link rel="stylesheet" href="css/booking.css" />
+    <style>
+      /* 延期對話框專用樣式 */
+
+      /* 第1個數字：白色文字覆蓋 in-range 的綠色 */
+      .extend-date-cell.in-range .date-number-text,
+      .extend-date-cell.in-range .date-number-hidden {
+        color: #ffffff !important;
+        position: relative;
+        z-index: 2;
+      }
+
+      /* 第3個日期：永遠只有左半條實心綠線 */
+      .cursor-pointer.extend-start {
+        position: relative;
+      }
+
+      .cursor-pointer.extend-start::after {
+        content: '';
+        position: absolute;
+        top: 45%;
+        left: 0;
+        width: 50%;
+        height: 6px;
+        background-color: #00FF80;
+        z-index: 1;
+        transform: translateY(-50%);
+      }
+
+      .cursor-pointer.extend-start .date-number-text,
+      .cursor-pointer.extend-start .date-number-hidden {
+        color: #ffffff;
+        position: relative;
+        z-index: 2;
+      }
+
+      /* Hover 第3個日期：右半邊半透明 */
+      .cursor-pointer.extend-start.hover-preview::before {
+        content: '';
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        width: 50%;
+        height: 6px;
+        background-color: rgba(0, 255, 128, 0.5);
+        z-index: 0;
+        transform: translateY(-50%);
+      }
+    </style>
   </head>
 
   <body

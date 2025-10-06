@@ -7,13 +7,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const equipmentCards = document.querySelectorAll('.equipment-card');
     const searchInput = document.getElementById('searchInput');
     const mobileSearchInput = document.getElementById('mobileSearchInput');
-    
+
     // 桌面版狀態篩選按鈕
     const statusAvailableBtn = document.getElementById('status-available');
     const statusUnavailableBtn = document.getElementById('status-unavailable');
-    
+
     // 當前選中的狀態（預設為有現貨）
     let currentSelectedStatus = '有現貨';
+
+    // 保存當前選中的篩選器類別（用於恢復）
+    let savedCategory = null;
 
     console.log('Found equipment cards:', equipmentCards.length); // 調試用
 
@@ -185,6 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (wrapper) {
                 wrapper.classList.add('active');
             }
+            // 保存初始選中的類別
+            savedCategory = 'bookmarks';
             showBookmarkedEquipment();
         } else {
             console.log('Bookmarks button not found'); // 調試用
@@ -227,9 +232,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const category = this.dataset.category;
 
-            // 清空搜索框
-            if (searchInput) searchInput.value = '';
-            if (mobileSearchInput) mobileSearchInput.value = '';
+            // 更新保存的類別（用於搜尋後恢復）
+            savedCategory = category;
+
+            // 清空搜索框並恢復 label 顯示
+            if (searchInput) {
+                searchInput.value = '';
+                const searchLabel = document.getElementById('searchLabel');
+                if (searchLabel) {
+                    searchLabel.style.display = 'block';
+                    searchLabel.style.color = '#ffffff';
+                    searchLabel.style.transform = 'translateX(0)';
+                }
+            }
+            if (mobileSearchInput) {
+                mobileSearchInput.value = '';
+                const mobileSearchLabel = document.getElementById('mobileSearchLabel');
+                if (mobileSearchLabel) {
+                    mobileSearchLabel.style.display = 'block';
+                    mobileSearchLabel.style.color = '#ffffff';
+                    mobileSearchLabel.style.transform = 'translateX(0)';
+                }
+            }
 
             // 根據類別篩選
             if (category === 'bookmarks') {
@@ -245,24 +269,56 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!input) return;
 
         let searchTimeout;
+
+        // 恢復到原本選項的函數
+        function restoreOriginalFilter() {
+            if (savedCategory) {
+                // 先移除所有按鈕的 active 狀態
+                filterButtons.forEach(btn => {
+                    const wrapper = btn.querySelector('.menu-item-wrapper');
+                    if (wrapper) {
+                        wrapper.classList.remove('active');
+                    }
+                });
+
+                // 根據保存的類別重新找到按鈕並添加 active 狀態
+                const savedButton = Array.from(filterButtons).find(btn => btn.dataset.category === savedCategory);
+                if (savedButton) {
+                    const wrapper = savedButton.querySelector('.menu-item-wrapper');
+                    if (wrapper) {
+                        wrapper.classList.add('active');
+                    }
+                }
+
+                // 恢復篩選
+                if (savedCategory === 'bookmarks') {
+                    showBookmarkedEquipment();
+                } else {
+                    filterByCategory(savedCategory);
+                }
+            }
+        }
+
+        // 監聽輸入事件
         input.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const searchText = this.value.toLowerCase().trim();
-                
-                // 如果搜索框為空，顯示當前選中類別的設備
+
+                // 如果搜索框為空，恢復到原本的選項
                 if (!searchText) {
-                    const activeWrapper = document.querySelector('.menu-item-wrapper.active');
-                    const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
-                    if (activeButton) {
-                        const category = activeButton.dataset.category;
-                        if (category === 'bookmarks') {
-                            showBookmarkedEquipment();
-                        } else {
-                            filterByCategory(category);
-                        }
-                    }
+                    restoreOriginalFilter();
                     return;
+                }
+
+                // 搜尋時，保存當前選中的類別並取消所有篩選器的橫線
+                const activeWrapper = document.querySelector('.menu-item-wrapper.active');
+                if (activeWrapper) {
+                    const activeButton = activeWrapper.closest('.sccd-filter-item');
+                    if (activeButton) {
+                        savedCategory = activeButton.dataset.category;
+                    }
+                    activeWrapper.classList.remove('active');
                 }
 
                 // 搜索並排序結果
@@ -271,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const exactMatch = title.includes(searchText);
                     const consecutiveMatch = title.includes(searchText);
                     const partialMatches = searchText.split('').filter(char => title.includes(char)).length;
-                    
+
                     return {
                         card: card,
                         score: consecutiveMatch ? (searchText.length * 2) : partialMatches,
@@ -313,6 +369,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 150);
                 }, 50);
             }, 300);
+        });
+
+        // 監聽離開搜尋欄事件（blur）
+        input.addEventListener('blur', function() {
+            // 短暫延遲檢查，避免點擊篩選器時的衝突
+            setTimeout(() => {
+                const searchText = this.value.toLowerCase().trim();
+                // 只要搜尋欄為空且離開，就恢復原本選項
+                if (!searchText) {
+                    restoreOriginalFilter();
+                }
+            }, 100);
         });
     }
 

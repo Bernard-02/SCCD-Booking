@@ -101,10 +101,10 @@ class LoginForm {
       const redirectUrl = this.getRedirectUrl();
       if (redirectUrl) {
         console.log('用戶已登入且有重定向需求，立即重定向到:', redirectUrl); // Debug
-        window.location.href = redirectUrl;
+        window.location.replace(redirectUrl);
       } else {
-        console.log('用戶已登入但無重定向需求，顯示已登入狀態'); // Debug
-        this.showLoggedInState();
+        console.log('用戶已登入但無重定向需求，重定向到 profile 頁面'); // Debug
+        window.location.replace('profile.html');
       }
     }
   }
@@ -198,8 +198,26 @@ class LoginForm {
         this.clearError('password');
         // 密碼輸入時不顯示錯誤提示
       });
+
+      // 密碼框按下Enter鍵時觸發登入
+      this.passwordField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleLogin();
+        }
+      });
     } else {
       console.error('密碼輸入框未找到，ID: password');
+    }
+
+    // 用戶名框按下Enter鍵時觸發登入
+    if (this.usernameField) {
+      this.usernameField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleLogin();
+        }
+      });
     }
 
     // 密碼切換按鈕事件
@@ -453,11 +471,11 @@ class LoginForm {
     if (redirectUrl) {
       // 有重定向需求，跳轉到指定頁面
       console.log('登入成功，重定向到原頁面:', redirectUrl); // Debug
-      window.location.href = redirectUrl;
+      window.location.replace(redirectUrl);
     } else {
       // 沒有重定向需求，跳轉到profile頁面
       console.log('登入成功，跳轉到profile頁面'); // Debug
-      window.location.href = 'profile.html';
+      window.location.replace('profile.html');
     }
   }
 }

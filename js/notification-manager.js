@@ -18,14 +18,8 @@ class NotificationManager {
 
     return `
       <div class="space-y-8">
-        <div class="flex justify-between items-end">
+        <div>
           <h2 class="font-chinese text-white text-medium-title">通知</h2>
-          <button id="read-all-btn" class="page-button">
-            <div class="menu-item-wrapper">
-              <span class="menu-text">(READ ALL)</span>
-              <span class="menu-text-hidden">(READ ALL)</span>
-            </div>
-          </button>
         </div>
         <div class="space-y-0">
           ${notifications.map((notification, index) => this.generateNotificationItem(notification, index, notifications.length)).join('')}
@@ -42,8 +36,7 @@ class NotificationManager {
 
     return `
       <div class="notification-item ${hasTopPadding ? 'pt-4' : ''} pb-4 ${hasBorder ? 'border-b border-gray-scale5' : ''}"
-           data-notification-id="${notification.id}"
-           style="cursor: pointer;">
+           data-notification-id="${notification.id}">
         <!-- 上半部：訊息和圓點 -->
         <div class="flex justify-between items-start mb-2">
           <p class="font-chinese ${isRead ? 'text-gray-scale3' : 'text-white'} text-small-title flex-1 pr-4">
@@ -69,29 +62,8 @@ class NotificationManager {
 
   // 設置通知頁面事件監聽器
   setupEventListeners() {
-    this.setupReadAllButton();
-    this.setupNotificationItemClickEvents();
-  }
-
-  // 設置全部已讀按鈕
-  setupReadAllButton() {
-    const readAllBtn = document.getElementById('read-all-btn');
-    if (readAllBtn) {
-      readAllBtn.addEventListener('click', () => {
-        this.markAllNotificationsAsRead();
-      });
-    }
-  }
-
-  // 設置通知項目點擊事件
-  setupNotificationItemClickEvents() {
-    const notificationItems = document.querySelectorAll('.notification-item');
-    notificationItems.forEach(item => {
-      item.addEventListener('click', () => {
-        const notificationId = item.dataset.notificationId;
-        this.markNotificationAsRead(notificationId);
-      });
-    });
+    // 不需要設置任何事件監聽器
+    // 通知頁面的已讀功能由 profile.js 的切換頁面邏輯處理
   }
 
   // 獲取通知數據
@@ -109,7 +81,27 @@ class NotificationManager {
       this.saveNotificationsData(notifications);
     }
 
+    // 自動刪除超過7天的通知
+    notifications = this.removeOldNotifications(notifications);
+
     return notifications.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  // 移除超過7天的通知
+  removeOldNotifications(notifications) {
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+    const filteredNotifications = notifications.filter(notification => {
+      return (now - notification.timestamp) < sevenDays;
+    });
+
+    // 如果有通知被刪除，更新存儲
+    if (filteredNotifications.length !== notifications.length) {
+      this.saveNotificationsData(filteredNotifications);
+    }
+
+    return filteredNotifications;
   }
 
   // 從存儲加載通知數據
@@ -130,27 +122,59 @@ class NotificationManager {
     return [
       {
         id: '1',
-        message: '您的 Sony FX3 攝影機 租借將於明天到期，請準時歸還。',
-        timestamp: now - (2 * 60 * 60 * 1000), // 2小時前
+        type: 'overdue',
+        message: '您的租借 #2025001 即將逾期 1小時，請注意歸還設備或空間！',
+        timestamp: now - (30 * 60 * 1000), // 30分鐘前
         isRead: false
       },
       {
         id: '2',
-        message: '新增了 Canon R5 相機，現在可以進行租借。',
-        timestamp: now - (24 * 60 * 60 * 1000), // 1天前
+        type: 'approved',
+        message: '您的租借申請 #2025002 已通過審核。',
+        timestamp: now - (2 * 60 * 60 * 1000), // 2小時前
         isRead: false
       },
       {
         id: '3',
-        message: '您的租借申請已通過審核。',
+        type: 'extended',
+        message: '您的租借單 #2025003 已延期，請以新的歸還日為主。',
+        timestamp: now - (6 * 60 * 60 * 1000), // 6小時前
+        isRead: false
+      },
+      {
+        id: '4',
+        type: 'overdue',
+        message: '您的租借 #2025004 即將逾期 12小時，請注意歸還設備或空間！',
+        timestamp: now - (12 * 60 * 60 * 1000), // 12小時前
+        isRead: false
+      },
+      {
+        id: '5',
+        type: 'overdue',
+        message: '您的租借 #2025005 即將逾期 1天，請注意歸還設備或空間！',
+        timestamp: now - (24 * 60 * 60 * 1000), // 1天前
+        isRead: false
+      },
+      {
+        id: '6',
+        type: 'approved',
+        message: '您的租借申請 #2025006 已通過審核。',
+        timestamp: now - (2 * 24 * 60 * 60 * 1000), // 2天前
+        isRead: true
+      },
+      {
+        id: '7',
+        type: 'overdue',
+        message: '您的租借 #2025007 即將逾期 3天，請注意歸還設備或空間！',
         timestamp: now - (3 * 24 * 60 * 60 * 1000), // 3天前
         isRead: true
       },
       {
-        id: '4',
-        message: '系統維護通知：將於本週日凌晨2點進行系統維護，預計維護時間1小時。',
+        id: '8',
+        type: 'extended',
+        message: '您的租借單 #2025008 已延期，請以新的歸還日為主。',
         timestamp: now - (5 * 24 * 60 * 60 * 1000), // 5天前
-        isRead: false
+        isRead: true
       }
     ];
   }
@@ -235,11 +259,22 @@ class NotificationManager {
   // 格式化通知日期
   formatNotificationDate(timestamp) {
     const date = new Date(timestamp);
+    const now = new Date();
+
+    const notificationYear = date.getFullYear();
+    const currentYear = now.getFullYear();
+
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const { hours, minutes, ampm } = this.formatTime(date);
 
-    return `${month}月${day}日 ${hours}:${minutes}${ampm}`;
+    // 跨年判斷：如果通知的年份小於當前年份，顯示年份
+    let yearPrefix = '';
+    if (notificationYear < currentYear) {
+      yearPrefix = `${notificationYear}年`;
+    }
+
+    return `${yearPrefix}${month}月${day}日 ${hours}:${minutes}${ampm}`;
   }
 
   // 格式化時間 - 提取公共邏輯

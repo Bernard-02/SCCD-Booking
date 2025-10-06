@@ -7,6 +7,57 @@ const RENTAL_STATUS = {
   OVERDUE: 'overdue'
 };
 
+// 全域訂單號碼管理器（所有用戶共用）
+class GlobalOrderNumberManager {
+  constructor() {
+    this.storageKey = 'sccd_global_order_counter';
+  }
+
+  // 獲取當前訂單號碼
+  getCurrentOrderNumber() {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      return stored ? parseInt(stored, 10) : 0;
+    } catch (error) {
+      console.error('獲取全域訂單號碼錯誤:', error);
+      return 0;
+    }
+  }
+
+  // 生成下一個訂單號碼並遞增計數器
+  generateNextOrderNumber() {
+    const currentNumber = this.getCurrentOrderNumber();
+    const nextNumber = currentNumber + 1;
+
+    try {
+      localStorage.setItem(this.storageKey, nextNumber.toString());
+    } catch (error) {
+      console.error('保存全域訂單號碼錯誤:', error);
+    }
+
+    return this.formatOrderNumber(nextNumber);
+  }
+
+  // 格式化訂單號碼
+  formatOrderNumber(number) {
+    const year = new Date().getFullYear();
+    const paddedNumber = number.toString().padStart(3, '0');
+    return `#${year}${paddedNumber}`;
+  }
+
+  // 設置訂單號碼（用於初始化或重置）
+  setOrderNumber(number) {
+    try {
+      localStorage.setItem(this.storageKey, number.toString());
+    } catch (error) {
+      console.error('設置全域訂單號碼錯誤:', error);
+    }
+  }
+}
+
+// 創建全域實例
+const globalOrderNumberManager = new GlobalOrderNumberManager();
+
 // 逾期警告常量
 const DUE_WARNING = {
   CRITICAL_DAYS: 3, // 3天內顯示紅色警告
@@ -30,6 +81,21 @@ class RentalHistoryManager {
     const rentalData = this.getRentalHistoryData();
     const ongoingRentals = rentalData.filter(rental => rental.status === RENTAL_STATUS.ONGOING);
     const completedRentals = rentalData.filter(rental => rental.status === RENTAL_STATUS.COMPLETED);
+
+    // 如果沒有任何租借記錄，顯示提示訊息
+    if (rentalData.length === 0) {
+      return `
+        <div class="space-y-8">
+          <div>
+            <h2 class="font-chinese text-white text-medium-title">租借歷史</h2>
+          </div>
+          <div class="text-center py-16">
+            <p class="font-chinese text-gray-scale3 text-content">尚無租借記錄</p>
+            <p class="font-chinese text-gray-scale4 text-tiny mt-2">完成租借後，記錄會顯示在這裡</p>
+          </div>
+        </div>
+      `;
+    }
 
     return `
       <div class="space-y-8">
@@ -78,24 +144,26 @@ class RentalHistoryManager {
   generateRentalItem(rental, index, totalCount, isOngoing) {
     const hasBorder = index < totalCount - 1;
     const dueInfo = this.calculateDueInfo(rental.dueDate);
+    const isOverdue = rental.status === RENTAL_STATUS.ONGOING && dueInfo.isOverdue;
+    const hoverColor = isOverdue ? '#38040E' : 'var(--color-gray-scale5)';
 
     return `
       <div class="rental-item px-4 pt-6 pb-4 ${hasBorder ? 'border-b border-gray-scale5' : ''} transition-colors duration-200"
            data-rental-id="${rental.id}"
            style="cursor: pointer;"
-           onmouseover="this.style.backgroundColor='var(--color-gray-scale5)'"
+           onmouseover="this.style.backgroundColor='${hoverColor}'"
            onmouseout="this.style.backgroundColor='transparent'">
         <!-- 上半部：租借單號和狀態 -->
         <div class="flex justify-between items-start mb-2">
           <span class="font-english text-white text-small-title">${rental.orderNumber}</span>
-          <span class="font-chinese text-tiny pr-1" ${dueInfo.needsRedColor ? 'style="color: var(--color-error);"' : ''}>
+          <span class="font-chinese text-tiny" ${this.getStatusColorStyle(rental, dueInfo)}>
             ${this.getStatusText(rental, dueInfo)}
           </span>
         </div>
 
         <!-- 下半部：租借日期和操作按鈕 -->
         <div class="flex justify-between items-start">
-          <span class="font-english text-gray-scale3 text-tiny">
+          <span class="font-english text-gray-scale2 text-tiny">
             ${this.formatRentalDateRange(rental.startDate, rental.endDate)}
           </span>
           ${this.generateActionButton(rental, isOngoing)}
@@ -104,17 +172,31 @@ class RentalHistoryManager {
     `;
   }
 
-  // 獲取狀態文字
+  // 獲取狀態文字和顏色
   getStatusText(rental, dueInfo) {
     if (rental.status === RENTAL_STATUS.COMPLETED) {
+      // 檢查是否逾期完成（wasOverdue 標記）
+      if (rental.wasOverdue) {
+        return '已完成 (逾期)';
+      }
       return '已完成';
     }
     return dueInfo.text;
   }
 
+  // 獲取狀態顏色樣式
+  getStatusColorStyle(rental, dueInfo) {
+    if (rental.status === RENTAL_STATUS.COMPLETED) {
+      return 'style="color: var(--color-success);"';
+    }
+    return dueInfo.needsRedColor ? 'style="color: var(--color-error);"' : '';
+  }
+
   // 生成操作按鈕
   generateActionButton(rental, isOngoing) {
-    const isDisabled = !isOngoing;
+    // 檢查是否可以延期
+    const canExtend = this.canExtendRental(rental);
+    const isDisabled = !isOngoing || !canExtend;
     const disabledStyles = isDisabled ? ' disabled" disabled style="opacity: 0.5; cursor: not-allowed;"' : '"';
 
     return `
@@ -170,10 +252,10 @@ class RentalHistoryManager {
 
     let rentals = this.loadRentalsFromStorage();
 
-    // 如果沒有數據，創建測試數據
+    // 不再自動創建測試數據，保留用戶真實的租借記錄
+    // 如果沒有數據，返回空陣列
     if (rentals.length === 0) {
-      rentals = this.createTestRentalData();
-      this.saveRentalHistoryData(rentals);
+      return [];
     }
 
     return rentals.sort((a, b) => b.startDate - a.startDate);
@@ -193,45 +275,76 @@ class RentalHistoryManager {
   // 創建測試租借數據
   createTestRentalData() {
     const createDate = (year, month, day) => new Date(year, month - 1, day).getTime();
+    const now = Date.now();
 
-    return [
-      {
-        id: 'rental_001',
-        orderNumber: '#2025007',
-        startDate: createDate(2025, 9, 23),
-        endDate: createDate(2025, 9, 30),
-        dueDate: createDate(2025, 9, 30),
-        status: RENTAL_STATUS.ONGOING,
-        items: ['Sony FX3 攝影機', '三腳架']
-      },
-      {
-        id: 'rental_002',
-        orderNumber: '#2025006',
-        startDate: createDate(2025, 9, 20),
-        endDate: createDate(2025, 9, 24),
-        dueDate: createDate(2025, 9, 24),
-        status: RENTAL_STATUS.ONGOING,
-        items: ['Canon R5 相機', '鏡頭組']
-      },
-      {
-        id: 'rental_003',
-        orderNumber: '#2025005',
-        startDate: createDate(2025, 9, 10),
-        endDate: createDate(2025, 9, 15),
-        dueDate: createDate(2025, 9, 15),
-        status: RENTAL_STATUS.COMPLETED,
-        items: ['無線麥克風組']
-      },
-      {
-        id: 'rental_004',
-        orderNumber: '#2025004',
-        startDate: createDate(2025, 9, 5),
-        endDate: createDate(2025, 9, 12),
-        dueDate: createDate(2025, 9, 12),
-        status: RENTAL_STATUS.COMPLETED,
-        items: ['LED燈組', '反光板']
+    // 初始化全域訂單號碼（如果是第一次）
+    const currentOrderNum = globalOrderNumberManager.getCurrentOrderNumber();
+    if (currentOrderNum === 0) {
+      globalOrderNumberManager.setOrderNumber(9);
+    }
+
+    // 生成9筆租借記錄
+    const rentals = [];
+    const today = new Date();
+
+    for (let i = 1; i <= 9; i++) {
+      const orderNumber = globalOrderNumberManager.formatOrderNumber(i);
+
+      // 計算日期（從最舊到最新）
+      const daysAgo = 9 - i;
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - daysAgo - 7); // 開始日期在更早之前
+
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() - daysAgo);
+
+      // 前5筆是已完成，後4筆是進行中
+      const isOngoing = i > 5;
+
+      // 特殊處理：第6筆設為已逾期（進行中）
+      let dueDate = endDate.getTime();
+      if (i === 6) {
+        // 設定到期日為2天前，這樣就是已逾期
+        const overdueDueDate = new Date(today);
+        overdueDueDate.setDate(overdueDueDate.getDate() - 2);
+        dueDate = overdueDueDate.getTime();
       }
+
+      // 特殊處理：第3筆設為已完成但逾期
+      let wasOverdue = false;
+      if (i === 3) {
+        wasOverdue = true;
+      }
+
+      rentals.push({
+        id: orderNumber.replace('#', 'rental_'),
+        orderNumber: orderNumber,
+        startDate: startDate.getTime(),
+        endDate: endDate.getTime(),
+        dueDate: dueDate,
+        status: isOngoing ? RENTAL_STATUS.ONGOING : RENTAL_STATUS.COMPLETED,
+        wasOverdue: wasOverdue,
+        items: this.getTestItems(i)
+      });
+    }
+
+    return rentals;
+  }
+
+  // 獲取測試租借物品
+  getTestItems(index) {
+    const itemSets = [
+      ['Sony FX3 攝影機', '三腳架'],
+      ['Canon R5 相機', '鏡頭組'],
+      ['無線麥克風組'],
+      ['LED燈組', '反光板'],
+      ['Blackmagic 攝影機'],
+      ['DJI Ronin 穩定器'],
+      ['Rode 指向麥克風', '收音錄音器'],
+      ['Godox 閃光燈組'],
+      ['4K 監視器', 'HDMI線']
     ];
+    return itemSets[index - 1] || ['租借設備'];
   }
 
   // 保存租借歷史數據
@@ -304,18 +417,417 @@ class RentalHistoryManager {
     window.location.href = `rental-receipt.html?rental_id=${rentalId}`;
   }
 
+  // 檢查是否可以延期
+  canExtendRental(rental) {
+    // 1. 如果已經逾期，不能延期
+    const dueInfo = this.calculateDueInfo(rental.dueDate);
+    if (dueInfo.isOverdue) {
+      return false;
+    }
+
+    // 2. 如果已經延期過，不能再延期
+    if (rental.hasExtended) {
+      return false;
+    }
+
+    // 3. 必須在到期前3天才能延期（不含到期前3天內）
+    const now = Date.now();
+    const diffMs = rental.dueDate - now;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // 如果剩餘天數 <= 3，不能延期
+    if (diffDays <= 3) {
+      return false;
+    }
+
+    return true;
+  }
+
   // 處理續借請求
   handleExtendRental(rentalId) {
-    console.log('續借請求:', rentalId);
-    alert(`續借申請已提交！租借單號：${rentalId}`);
+    const rentals = this.getRentalHistoryData();
+    const rental = rentals.find(r => r.id === rentalId);
+
+    if (!rental) {
+      console.error('找不到租借記錄');
+      return;
+    }
+
+    // 再次檢查是否可以延期
+    if (!this.canExtendRental(rental)) {
+      return;
+    }
+
+    // 顯示延期對話框
+    this.showExtendDialog(rental);
+  }
+
+  // 顯示延期對話框
+  showExtendDialog(rental) {
+    const today = new Date();
+    const dueDate = new Date(rental.dueDate);
+
+    // 生成日期數字陣列（今天 + 原歸還日 + 後7天）
+    const dates = this.generateExtendDates(today, dueDate);
+
+    // 創建對話框 HTML
+    const dialogHTML = `
+      <div id="extend-dialog-overlay" class="fixed inset-0 z-50 flex items-center justify-center" style="background-color: rgba(0, 0, 0, 0.8);">
+        <div id="extend-dialog" class="bg-black border border-white p-6 mx-4" style="background-color: #000; max-width: 800px; width: 90%;">
+          <!-- 標題 -->
+          <h2 class="font-chinese text-white text-content mb-4">延期規則</h2>
+
+          <!-- 規則說明 -->
+          <div class="mb-6">
+            <div class="font-chinese text-white text-small-title space-y-1">
+              <p>1. 延期申請需在原租借收據歸還日的前三天提出，且僅可以提出乙次申請。</p>
+              <p>2. 延期天數是原歸還日往後開始計算，可最多延期7天。</p>
+              <p class="text-gray-scale2 text-tiny mt-2">例：若租借收據的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。</p>
+            </div>
+          </div>
+
+          <!-- 日期選擇器和狀態提示（置中） -->
+          <div class="flex flex-col items-center mb-6">
+            <!-- 日期選擇器 -->
+            <div class="mb-3">
+              <div id="date-selector" class="flex items-center">
+                ${dates.map((date, index) => this.generateDateCell(date, index, dates.length)).join('')}
+              </div>
+            </div>
+
+            <!-- 狀態提示 -->
+            <div style="min-height: 18px;">
+              <p id="extend-status" class="font-chinese text-white text-tiny">
+                您已延期 <span id="extend-days-count">0</span> 天，新的歸還日是 <span id="new-return-date">--</span>。
+              </p>
+            </div>
+          </div>
+
+          <!-- 按鈕 -->
+          <div class="flex justify-center gap-8">
+            <button id="extend-discard-btn" class="page-button font-english" style="color: var(--color-error2);">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(DISCARD)</span>
+                <span class="menu-text-hidden">(DISCARD)</span>
+              </div>
+            </button>
+            <button id="extend-confirm-btn" class="page-button font-english text-white disabled" disabled style="opacity: 0.3;">
+              <div class="menu-item-wrapper">
+                <span class="menu-text">(EXTEND)</span>
+                <span class="menu-text-hidden">(EXTEND)</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 插入對話框到頁面
+    document.body.insertAdjacentHTML('beforeend', dialogHTML);
+
+    // 設置事件監聽器
+    this.setupExtendDialogEvents(rental, dates);
+  }
+
+  // 生成延期日期陣列
+  generateExtendDates(today, dueDate) {
+    const dates = [];
+
+    // 第1個：今天
+    dates.push({
+      date: new Date(today),
+      day: today.getDate(),
+      type: 'today',
+      disabled: true
+    });
+
+    // 第2個：原歸還日
+    dates.push({
+      date: new Date(dueDate),
+      day: dueDate.getDate(),
+      type: 'due',
+      disabled: true
+    });
+
+    // 第3-9個：原歸還日後7天
+    for (let i = 1; i <= 7; i++) {
+      const extendDate = new Date(dueDate);
+      extendDate.setDate(dueDate.getDate() + i);
+      dates.push({
+        date: extendDate,
+        day: extendDate.getDate(),
+        type: 'extend',
+        disabled: false,
+        extendDays: i
+      });
+    }
+
+    return dates;
+  }
+
+  // 生成日期單元格（完全照抄 booking.html 樣式）
+  generateDateCell(date, index, total) {
+    const isFirst = index === 0;
+    const isSecond = index === 1;
+    const isThird = index === 2;
+    const isDisabled = date.disabled;
+
+    // 基本類別
+    let classes = 'extend-date-cell text-left text-white text-[3.5rem] font-semibold font-[\'Inter\',_sans-serif] tracking-tighter leading-none py-1 min-w-0 relative';
+
+    if (!isDisabled) {
+      classes += ' cursor-pointer';
+    }
+
+    // 第1個數字：白色，完整綠線
+    if (isFirst) {
+      classes += ' in-range';
+    }
+    // 第2個數字：完整綠線（會是綠色數字）
+    else if (isSecond) {
+      classes += ' start-date';
+    }
+    // 第3個數字：白色，半條綠線
+    else if (isThird) {
+      classes += ' extend-start';
+    }
+
+    // 第1和第2個之間間距較大
+    const marginStyle = isSecond ? 'margin-left: 32px;' : '';
+
+    // 禁用的數字不需要 wrapper（避免 hover 動畫）
+    let innerHTML;
+    if (isDisabled) {
+      innerHTML = date.day;
+    } else {
+      innerHTML = `
+        <div class="date-number-wrapper">
+          <span class="date-number-text">${date.day}</span>
+          <span class="date-number-hidden">${date.day}</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="${classes}"
+           data-index="${index}"
+           data-extend-days="${date.extendDays || 0}"
+           data-disabled="${isDisabled}"
+           style="${marginStyle} ${isDisabled ? 'pointer-events: none;' : ''}">
+        ${innerHTML}
+      </div>
+    `;
+  }
+
+  // 設置延期對話框事件
+  setupExtendDialogEvents(rental, dates) {
+    const overlay = document.getElementById('extend-dialog-overlay');
+    const dialog = document.getElementById('extend-dialog');
+    const discardBtn = document.getElementById('extend-discard-btn');
+    const confirmBtn = document.getElementById('extend-confirm-btn');
+    const daysCountSpan = document.getElementById('extend-days-count');
+    const newDateSpan = document.getElementById('new-return-date');
+
+    let selectedIndex = null;
+    let selectedDays = 0;
+
+    // 日期選擇事件
+    const dateCells = document.querySelectorAll('.extend-date-cell');
+
+    dateCells.forEach((cell, index) => {
+      const isDisabled = cell.dataset.disabled === 'true';
+
+      if (isDisabled) return;
+
+      // 點擊事件
+      cell.addEventListener('click', () => {
+        const clickedIndex = parseInt(cell.dataset.index);
+        const extendDays = parseInt(cell.dataset.extendDays);
+
+        // 如果點擊已選擇的日期，取消選擇
+        if (selectedIndex === clickedIndex) {
+          selectedIndex = null;
+          selectedDays = 0;
+          this.resetExtendSelection(dateCells);
+
+          // 更新狀態提示為初始狀態
+          daysCountSpan.textContent = '0';
+          newDateSpan.textContent = '--';
+
+          // 禁用 EXTEND 按鈕
+          confirmBtn.disabled = true;
+          confirmBtn.style.opacity = '0.3';
+          confirmBtn.classList.add('disabled');
+        } else {
+          // 選擇新日期
+          selectedIndex = clickedIndex;
+          selectedDays = extendDays;
+          this.updateExtendSelection(dateCells, clickedIndex);
+
+          // 更新狀態提示
+          const newDueDate = new Date(rental.dueDate);
+          newDueDate.setDate(newDueDate.getDate() + extendDays);
+          daysCountSpan.textContent = extendDays;
+          newDateSpan.textContent = `${newDueDate.getMonth() + 1} 月 ${newDueDate.getDate()} 日`;
+
+          // 啟用 EXTEND 按鈕
+          confirmBtn.disabled = false;
+          confirmBtn.style.opacity = '1';
+          confirmBtn.classList.remove('disabled');
+        }
+      });
+
+      // Hover 效果
+      cell.addEventListener('mouseenter', () => {
+        if (selectedIndex === null) {
+          const hoverIndex = parseInt(cell.dataset.index);
+          this.updateExtendHover(dateCells, hoverIndex);
+        }
+      });
+
+      cell.addEventListener('mouseleave', () => {
+        if (selectedIndex === null) {
+          this.resetExtendSelection(dateCells);
+        }
+      });
+    });
+
+    // DISCARD 按鈕
+    discardBtn.addEventListener('click', () => {
+      overlay.remove();
+    });
+
+    // EXTEND 按鈕
+    confirmBtn.addEventListener('click', () => {
+      if (selectedDays > 0) {
+        this.confirmExtendRental(rental.id, selectedDays);
+        overlay.remove();
+      }
+    });
+  }
+
+  // 重置為初始狀態
+  resetExtendSelection(cells) {
+    cells.forEach((cell, index) => {
+      // 移除所有狀態類別
+      cell.classList.remove('in-range', 'start-date', 'end-date', 'hover-preview', 'complete-line', 'extend-start');
+
+      // 重新設置初始狀態
+      if (index === 0) {
+        // 第1個：白色，完整綠線
+        cell.classList.add('in-range');
+      } else if (index === 1) {
+        // 第2個：綠色，完整綠線
+        cell.classList.add('start-date');
+      } else if (index === 2) {
+        // 第3個：白色，永遠只有左半條實心綠線
+        cell.classList.add('extend-start');
+      }
+    });
+  }
+
+  // 更新延期選擇狀態
+  updateExtendSelection(cells, selectedIndex) {
+    cells.forEach((cell, index) => {
+      // 移除所有狀態類別
+      cell.classList.remove('in-range', 'start-date', 'end-date', 'hover-preview', 'complete-line', 'extend-start');
+
+      if (index === 0) {
+        // 第1個：白色，完整綠線
+        cell.classList.add('in-range');
+      } else if (index === 1) {
+        // 第2個：綠色，完整綠線
+        cell.classList.add('start-date');
+      } else if (index === 2) {
+        // 第3個：永遠只有左半條實心綠線
+        cell.classList.add('extend-start');
+        // 如果選中第3個，數字變綠色
+        if (selectedIndex === 2) {
+          const dateText = cell.querySelectorAll('.date-number-text, .date-number-hidden');
+          dateText.forEach(span => span.style.color = '#00FF80');
+        }
+      } else if (index > 2 && index < selectedIndex) {
+        // 範圍內：白色，完整綠線
+        cell.classList.add('in-range');
+      } else if (index === selectedIndex) {
+        // 選中的日期：綠色，完整綠線
+        cell.classList.add('end-date');
+      }
+    });
+  }
+
+  // 更新 Hover 預覽
+  updateExtendHover(cells, hoverIndex) {
+    cells.forEach((cell, index) => {
+      // 第3個日期（index=2）的特殊處理
+      if (index === 2) {
+        if (hoverIndex === 2) {
+          // hover 第3個：保持半條實心 + 加上右半邊半透明
+          cell.classList.add('hover-preview');
+        } else if (hoverIndex > 2) {
+          // hover 更後面的日期：保持半條實心 + 延伸到選擇的日期
+          // 不移除 only-start，保持左半條實心，然後用 hover-preview 延伸
+          cell.classList.add('hover-preview');
+        }
+      }
+      // 第3個之後的日期
+      else if (index > 2 && index <= hoverIndex) {
+        cell.classList.add('hover-preview');
+      }
+    });
+  }
+
+  // 計算新的到期日
+  calculateNewDueDate(originalDueDate, extendDays) {
+    const newDueDate = new Date(originalDueDate);
+    newDueDate.setDate(newDueDate.getDate() + extendDays);
+    return this.formatDate(newDueDate.getTime());
+  }
+
+  // 格式化日期
+  formatDate(timestamp) {
+    const date = new Date(timestamp);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}`;
+  }
+
+  // 確認延期
+  confirmExtendRental(rentalId, extendDays) {
+    const rentals = this.getRentalHistoryData();
+    const updatedRentals = rentals.map(rental => {
+      if (rental.id === rentalId) {
+        const newDueDate = new Date(rental.dueDate);
+        newDueDate.setDate(newDueDate.getDate() + extendDays);
+
+        return {
+          ...rental,
+          dueDate: newDueDate.getTime(),
+          hasExtended: true,
+          extendedDays: extendDays
+        };
+      }
+      return rental;
+    });
+
+    this.saveRentalHistoryData(updatedRentals);
+
+    // 重新載入頁面內容
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = this.getRentalHistoryContent();
+    this.setupEventListeners();
   }
 
   // 添加新的租借記錄
   addRentalRecord(rentalData) {
     const rentals = this.getRentalHistoryData();
+
+    // 使用全域訂單號碼管理器生成訂單號碼
+    const orderNumber = globalOrderNumberManager.generateNextOrderNumber();
+
     const newRental = {
-      id: `rental_${Date.now()}`,
-      orderNumber: rentalData.orderNumber || `#${Date.now()}`,
+      id: orderNumber.replace('#', 'rental_'),
+      orderNumber: orderNumber,
       startDate: rentalData.startDate,
       endDate: rentalData.endDate,
       dueDate: rentalData.dueDate || rentalData.endDate,
@@ -331,11 +843,24 @@ class RentalHistoryManager {
   // 更新租借狀態
   updateRentalStatus(rentalId, newStatus) {
     const rentals = this.getRentalHistoryData();
-    const updatedRentals = rentals.map(rental =>
-      rental.id === rentalId
-        ? { ...rental, status: newStatus }
-        : rental
-    );
+    const now = Date.now();
+
+    const updatedRentals = rentals.map(rental => {
+      if (rental.id === rentalId) {
+        const updatedRental = { ...rental, status: newStatus };
+
+        // 如果標記為完成，檢查是否逾期
+        if (newStatus === RENTAL_STATUS.COMPLETED) {
+          // 如果歸還時已經超過到期日，標記為逾期完成
+          if (now > rental.dueDate) {
+            updatedRental.wasOverdue = true;
+          }
+        }
+
+        return updatedRental;
+      }
+      return rental;
+    });
 
     this.saveRentalHistoryData(updatedRentals);
     return updatedRentals;
@@ -401,4 +926,5 @@ class RentalHistoryManager {
 if (typeof window !== 'undefined') {
   window.RentalHistoryManager = RentalHistoryManager;
   window.RENTAL_STATUS = RENTAL_STATUS;
+  window.GlobalOrderNumberManager = globalOrderNumberManager;
 }

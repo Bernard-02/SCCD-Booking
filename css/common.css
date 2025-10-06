@@ -9,6 +9,7 @@
   /* 狀態色 */
   --color-success: #00ff80;          /* 綠色 - 有現貨、成功狀態 */
   --color-error: #ff448a;            /* 粉紅色 - 已借出、錯誤狀態 */
+  --color-error2: #ff8698;           /* 淺粉紅色 - 次要錯誤狀態 */
   --color-warning: #ffaa00;          /* 橙色 - 警告狀態 */
   --color-purple: #8787e8;           /* 紫色 - 專案許可區標示 */
   
@@ -43,6 +44,7 @@
 /* 文字顏色 */
 .text-success { color: var(--color-success) !important; }
 .text-error { color: var(--color-error) !important; }
+.text-error2 { color: var(--color-error2) !important; }
 .text-warning { color: var(--color-warning) !important; }
 
 /* 灰階 Scale 系統 */

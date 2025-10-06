@@ -6,37 +6,43 @@ const areaMapping = {
     name: '中庭',
     english: 'Square',
     deposit: 1000,
-    key: 'square'
+    key: 'square',
+    totalBlocks: 0  // 將在初始化時計算
   },
   'Corridor_00000054253696021401463270000011895499425825329057_': {
     name: '走廊',
     english: 'Corridor',
     deposit: 1000,
-    key: 'corridor'
+    key: 'corridor',
+    totalBlocks: 0
   },
   'Front_Terrace_00000090268161127870382690000014504900871044795011_': {
     name: '前陽台',
     english: 'Front Terrace',
     deposit: 1000,
-    key: 'front-terrace'
+    key: 'front-terrace',
+    totalBlocks: 0
   },
   'Back_Terrace_00000056418405994274588460000015042233556369055388_': {
     name: '後陽台',
     english: 'Back Terrace',
     deposit: 2000,
-    key: 'back-terrace'
+    key: 'back-terrace',
+    totalBlocks: 0
   },
   'Glass_Wall_00000000186369360168713920000002393977063800030610_': {
     name: '玻璃牆',
     english: 'Glass Wall',
     deposit: 1000,
-    key: 'glass-wall'
+    key: 'glass-wall',
+    totalBlocks: 0
   },
   'Pillar_00000105403812364892765500000010771666716634094254_': {
     name: '柱子',
     english: 'Pillar',
     deposit: 1000,
-    key: 'pillar'
+    key: 'pillar',
+    totalBlocks: 0
   }
 };
 
@@ -96,6 +102,7 @@ function animateZoomEffect(areaKey, areaName) {
     showRightInfoPanel();
     setMenuSelectedState(areaKey);
     setupGridCellClicking();
+    updateSelectAllButtonState();
   }, 150);
 }
 
@@ -136,6 +143,14 @@ async function initNumberedAreaPage() {
     setupBreadcrumbReset();
     setupBackButton();
 
+    // 如果沒有進入特定區域，顯示購物車中的區塊
+    const areaParam = urlParams.get('area');
+    if (!areaParam) {
+      setTimeout(() => {
+        showCartBlocksInOverview();
+      }, 100);
+    }
+
   } catch (error) {
     console.error('Failed to load A5F Area Booking SVG:', error);
   }
@@ -150,7 +165,16 @@ function setupAreaInteractions(svg) {
     const group = svg.querySelector(`#${areaId}`);
     if (group) {
       group.classList.add('area-group');
-      group.style.cursor = 'pointer';
+
+      // 使用!important強制設置cursor樣式
+      const setCursorRecursively = (element) => {
+        element.style.setProperty('cursor', 'pointer', 'important');
+        Array.from(element.children).forEach(child => {
+          setCursorRecursively(child);
+        });
+      };
+      setCursorRecursively(group);
+
       areaGroups.push(group);
     }
   });
@@ -179,6 +203,12 @@ function setupAreaInteractions(svg) {
     // 滑鼠移動事件
     group.addEventListener('mousemove', (e) => {
       if (isAreaSelected) return;
+
+      // 強制設置當前元素的cursor為pointer
+      if (e.target) {
+        e.target.style.setProperty('cursor', 'pointer', 'important');
+      }
+
       if (tooltip.classList.contains('show')) {
         updateTooltipPosition(e);
       }
@@ -250,6 +280,7 @@ function enterAreaView(areaKey, areaName, fromRentalList = false) {
     setMenuSelectedState(areaKey);
     zoomToArea(areaKey);
     setupGridCellClicking();
+    updateSelectAllButtonState();
   }
 
 }
@@ -334,10 +365,136 @@ function setupLeftMenuInteractions() {
         updateBreadcrumb(areaData.name);
         zoomToArea(areaKey);
         setupGridCellClicking();
+        updateSelectAllButtonState();
       }
 
     });
   });
+
+  // 設置 SELECT ALL 按鈕
+  setupSelectAllButton();
+}
+
+// 設置 SELECT ALL 按鈕
+function setupSelectAllButton() {
+  const selectAllButton = document.getElementById('select-all-button');
+  if (!selectAllButton) return;
+
+  selectAllButton.addEventListener('click', () => {
+    if (selectAllButton.disabled) return;
+    selectAllAvailableBlocks();
+  });
+}
+
+// 全選所有可用區塊
+function selectAllAvailableBlocks() {
+  if (!currentSelectedAreaKey) return;
+
+  const svg = document.getElementById('area-booking-svg');
+  if (!svg) return;
+
+  const allElements = svg.querySelectorAll('[id]');
+
+  // 找到當前區域的所有可用區塊
+  allElements.forEach(element => {
+    if (isGridCellElement(element.id)) {
+      // 確認元素屬於當前區域
+      let parent = element.parentElement;
+      let belongsToCurrentArea = false;
+
+      while (parent && parent !== svg) {
+        if (parent.id && areaMapping[parent.id]) {
+          const groupData = areaMapping[parent.id];
+          if (groupData.key === currentSelectedAreaKey) {
+            belongsToCurrentArea = true;
+          }
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      // 如果屬於當前區域且不在購物車且未被租借，則選中
+      if (belongsToCurrentArea &&
+          !isBlockInCart(element.id, currentSelectedAreaKey) &&
+          !isBlockSubmitted(element.id, currentSelectedAreaKey) &&
+          !isBlockSelected(element.id, currentSelectedAreaKey)) {
+
+        selectedBlocks.push({ areaKey: currentSelectedAreaKey, cellId: element.id });
+        updateGridCellStyle(element.id, true);
+      }
+    }
+  });
+
+  updateRightPanelInfo();
+  updateSelectAllButtonState();
+}
+
+// 更新 SELECT ALL 按鈕狀態
+function updateSelectAllButtonState() {
+  const selectAllButton = document.getElementById('select-all-button');
+  if (!selectAllButton || !currentSelectedAreaKey) return;
+
+  const svg = document.getElementById('area-booking-svg');
+  if (!svg) return;
+
+  // 檢查購物車中該區域是否已經是 ALL 狀態
+  if (window.cartManager) {
+    const cart = window.cartManager.getCart();
+    const areaItem = cart.find(item =>
+      item.category === 'area' && item.areaKey === currentSelectedAreaKey
+    );
+
+    if (areaItem) {
+      const areaData = Object.values(areaMapping).find(area => area.key === currentSelectedAreaKey);
+      // 如果購物車中的區塊數等於該區域總區塊數，說明已經是 ALL
+      if (areaData && areaData.totalBlocks > 0 && areaItem.blocks.length === areaData.totalBlocks) {
+        selectAllButton.disabled = true;
+        return;
+      }
+    }
+  }
+
+  const allElements = svg.querySelectorAll('[id]');
+  let totalAvailableBlocks = 0;
+  let selectedAvailableBlocks = 0;
+
+  // 計算可用區塊數量和已選中的可用區塊數量
+  allElements.forEach(element => {
+    if (isGridCellElement(element.id)) {
+      let parent = element.parentElement;
+      let belongsToCurrentArea = false;
+
+      while (parent && parent !== svg) {
+        if (parent.id && areaMapping[parent.id]) {
+          const groupData = areaMapping[parent.id];
+          if (groupData.key === currentSelectedAreaKey) {
+            belongsToCurrentArea = true;
+          }
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      if (belongsToCurrentArea) {
+        // 只計算未在購物車且未被租借的區塊
+        if (!isBlockInCart(element.id, currentSelectedAreaKey) &&
+            !isBlockSubmitted(element.id, currentSelectedAreaKey)) {
+          totalAvailableBlocks++;
+
+          if (isBlockSelected(element.id, currentSelectedAreaKey)) {
+            selectedAvailableBlocks++;
+          }
+        }
+      }
+    }
+  });
+
+  // 如果所有可用區塊都已選中，則禁用按鈕
+  if (totalAvailableBlocks > 0 && selectedAvailableBlocks === totalAvailableBlocks) {
+    selectAllButton.disabled = true;
+  } else {
+    selectAllButton.disabled = false;
+  }
 }
 
 // 設置選中區域狀態
@@ -411,6 +568,31 @@ function setupGridCellClicking() {
 
   const allElements = svg.querySelectorAll('[id]');
   let gridCellCount = 0;
+  let currentAreaBlockCount = 0;
+
+  // 先計算當前區域的格子數量
+  allElements.forEach(element => {
+    if (isGridCellElement(element.id)) {
+      // 找到元素所屬的區域組
+      let parent = element.parentElement;
+      while (parent && parent !== svg) {
+        if (parent.id && areaMapping[parent.id]) {
+          const groupData = areaMapping[parent.id];
+          if (groupData.key === currentSelectedAreaKey) {
+            currentAreaBlockCount++;
+          }
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+  });
+
+  // 更新當前區域的總區塊數
+  const areaData = Object.values(areaMapping).find(area => area.key === currentSelectedAreaKey);
+  if (areaData) {
+    areaData.totalBlocks = currentAreaBlockCount;
+  }
 
   allElements.forEach(element => {
     const id = element.id;
@@ -427,12 +609,11 @@ function setupGridCellClicking() {
       element.style.filter = 'brightness(1)';
 
       const mouseEnterHandler = () => {
-        if (isBlockInCart(element.id, currentSelectedAreaKey) ||
-            isBlockSubmitted(element.id, currentSelectedAreaKey)) {
+        if (isBlockSubmitted(element.id, currentSelectedAreaKey)) {
           return;
         }
 
-        if (!isBlockSelected(element.id, currentSelectedAreaKey)) {
+        if (!isBlockSelected(element.id, currentSelectedAreaKey) && !isBlockInCart(element.id, currentSelectedAreaKey)) {
           applyColorToElement(element, '#00ff80');
           element.style.filter = 'brightness(0.7)';
         } else {
@@ -441,12 +622,11 @@ function setupGridCellClicking() {
       };
 
       const mouseLeaveHandler = () => {
-        if (isBlockInCart(element.id, currentSelectedAreaKey) ||
-            isBlockSubmitted(element.id, currentSelectedAreaKey)) {
+        if (isBlockSubmitted(element.id, currentSelectedAreaKey)) {
           return;
         }
 
-        if (!isBlockSelected(element.id, currentSelectedAreaKey)) {
+        if (!isBlockSelected(element.id, currentSelectedAreaKey) && !isBlockInCart(element.id, currentSelectedAreaKey)) {
           restoreOriginalStyles(element);
           element.style.filter = 'brightness(1)';
         } else {
@@ -482,7 +662,9 @@ function setupGridCellClicking() {
 // 處理格子點擊
 function handleGridCellClick(cellId) {
 
+  // 如果區塊在購物車中，點擊移除
   if (isBlockInCart(cellId, currentSelectedAreaKey)) {
+    removeBlockFromCart(cellId, currentSelectedAreaKey);
     return;
   }
 
@@ -499,6 +681,7 @@ function handleGridCellClick(cellId) {
   }
 
   updateRightPanelInfo();
+  updateSelectAllButtonState();
 }
 
 // 設置右側面板互動功能
@@ -540,7 +723,14 @@ function updateRightPanelInfo() {
       const groupedBlocks = groupBlocksByArea();
       const displayText = Object.entries(groupedBlocks).map(([areaKey, blocks]) => {
         const areaName = getAreaNameByKey(areaKey);
-        return `${areaName}: ${blocks.join(', ')}`;
+        const areaData = Object.values(areaMapping).find(area => area.key === areaKey);
+
+        // 檢查是否選中了該區域的所有區塊
+        if (areaData && areaData.totalBlocks > 0 && blocks.length === areaData.totalBlocks) {
+          return `${areaName}: ALL`;
+        } else {
+          return `${areaName}: ${blocks.join(', ')}`;
+        }
       }).join('\n');
 
       rentalNumbers.innerHTML = displayText.replace(/\n/g, '<br>');
@@ -630,20 +820,57 @@ function addToCart() {
     const areaData = Object.values(areaMapping).find(area => area.key === areaKey);
     if (!areaData) return;
 
-    const cartItem = {
-      id: `${areaKey}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: `${areaData.name} (${blocks.join(', ')})`,
-      category: 'area',
-      deposit: areaData.deposit * blocks.length,
-      image: '',
-      quantity: 1,
-      areaKey: areaKey,
-      blocks: blocks
-    };
-
     if (window.cartManager) {
-      const success = window.cartManager.addAreaToCart(cartItem);
-      if (success) {
+      const cart = window.cartManager.getCart();
+
+      // 查找購物車中是否已有此區域的項目
+      const existingItem = cart.find(item =>
+        item.category === 'area' && item.areaKey === areaKey
+      );
+
+      if (existingItem) {
+        // 合併區塊：將新區塊加入已存在的項目
+        blocks.forEach(blockId => {
+          if (!existingItem.blocks.includes(blockId)) {
+            existingItem.blocks.push(blockId);
+          }
+        });
+
+        // 重新排序區塊
+        const sortedBlocks = sortBlockIds([...existingItem.blocks]);
+        existingItem.blocks = sortedBlocks;
+
+        // 更新名稱和押金
+        if (areaData.totalBlocks > 0 && existingItem.blocks.length === areaData.totalBlocks) {
+          existingItem.name = `${areaData.name} (ALL)`;
+        } else {
+          existingItem.name = `${areaData.name} (${sortedBlocks.join(', ')})`;
+        }
+        existingItem.deposit = areaData.deposit * existingItem.blocks.length;
+
+        // 保存更新後的購物車
+        window.cartManager.saveCart(cart);
+      } else {
+        // 創建新項目
+        let displayName;
+        if (areaData.totalBlocks > 0 && blocks.length === areaData.totalBlocks) {
+          displayName = `${areaData.name} (ALL)`;
+        } else {
+          displayName = `${areaData.name} (${blocks.join(', ')})`;
+        }
+
+        const cartItem = {
+          id: `${areaKey}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: displayName,
+          category: 'area',
+          deposit: areaData.deposit * blocks.length,
+          image: '',
+          quantity: 1,
+          areaKey: areaKey,
+          blocks: blocks
+        };
+
+        window.cartManager.addAreaToCart(cartItem);
       }
     }
   });
@@ -729,6 +956,8 @@ function clearSelectedBlocks() {
   if (checkbox) {
     checkbox.checked = false;
   }
+
+  updateSelectAllButtonState();
 
 }
 
@@ -874,6 +1103,9 @@ function resetToInitialState() {
 
   removeGridCellInteractions();
 
+  // 顯示購物車中的區塊（綠色）
+  showCartBlocksInOverview();
+
   const tooltip = document.getElementById('area-tooltip');
   tooltip.classList.remove('show');
 
@@ -933,6 +1165,22 @@ function restoreAllGridCellsToOriginalState() {
     }
   });
 
+}
+
+function showCartBlocksInOverview() {
+  const svg = document.getElementById('area-booking-svg');
+  if (!svg) return;
+
+  // 為購物車中的所有區塊添加綠色顯示（但不添加點擊事件）
+  cartBlocks.forEach(block => {
+    const element = svg.querySelector(`#${block.cellId}`);
+    if (element) {
+      applyColorToElement(element, '#00ff80');
+      element.style.filter = 'brightness(1)';
+      element.style.opacity = '1';
+      element.style.cursor = 'default'; // 設為默認游標，表示不可點擊
+    }
+  });
 }
 
 function storeOriginalStyles(element) {
@@ -1028,7 +1276,7 @@ function updateGridCellStyle(cellId, isSelected, isSubmitted = false) {
     applyColorToElement(element, '#00ff80');
     element.style.filter = 'brightness(1)';
     element.style.opacity = '1';
-    setCursorForElementAndChildren(element, 'not-allowed');
+    setCursorForElementAndChildren(element, 'pointer'); // 改為可點擊
   } else {
     restoreOriginalStyles(element);
     element.style.filter = 'brightness(1)';
@@ -1065,6 +1313,29 @@ function restoreCurrentAreaSelectedStyles() {
 
 }
 
+function sortBlockIds(blockIds) {
+  return blockIds.sort((a, b) => {
+    // 提取字母和數字部分
+    const matchA = a.match(/^([A-Z]+)(\d+)$/);
+    const matchB = b.match(/^([A-Z]+)(\d+)$/);
+
+    if (!matchA || !matchB) {
+      return a.localeCompare(b);
+    }
+
+    const [, letterA, numA] = matchA;
+    const [, letterB, numB] = matchB;
+
+    // 先比較字母
+    if (letterA !== letterB) {
+      return letterA.localeCompare(letterB);
+    }
+
+    // 字母相同，比較數字
+    return parseInt(numA) - parseInt(numB);
+  });
+}
+
 function groupBlocksByArea() {
   const grouped = {};
   selectedBlocks.forEach(block => {
@@ -1073,6 +1344,12 @@ function groupBlocksByArea() {
     }
     grouped[block.areaKey].push(block.cellId);
   });
+
+  // 對每個區域的區塊編號進行排序
+  Object.keys(grouped).forEach(areaKey => {
+    grouped[areaKey] = sortBlockIds(grouped[areaKey]);
+  });
+
   return grouped;
 }
 
@@ -1082,11 +1359,104 @@ function getAreaNameByKey(areaKey) {
 }
 
 function calculateTotalDeposit() {
-  return selectedBlocks.reduce((total, block) => {
+  const total = selectedBlocks.reduce((sum, block) => {
     const areaData = Object.values(areaMapping).find(area => area.key === block.areaKey);
     const deposit = areaData ? areaData.deposit : 1000;
-    return total + deposit;
+    return sum + deposit;
   }, 0);
+
+  // 押金總額不超過5000
+  return Math.min(total, 5000);
+}
+
+// 從購物車移除區塊
+function removeBlockFromCart(cellId, areaKey) {
+  // 從 cartBlocks 移除
+  const cartBlockIndex = cartBlocks.findIndex(block =>
+    block.cellId === cellId && block.areaKey === areaKey
+  );
+
+  if (cartBlockIndex === -1) return;
+
+  cartBlocks.splice(cartBlockIndex, 1);
+
+  // 從購物車管理器中移除
+  if (window.cartManager) {
+    const cart = window.cartManager.getCart();
+    let itemToRemove = null;
+    let cartUpdated = false;
+
+    // 找到包含此區塊的項目
+    for (let i = 0; i < cart.length; i++) {
+      const item = cart[i];
+      if (item.category === 'area' && item.areaKey === areaKey && item.blocks && item.blocks.includes(cellId)) {
+        // 從區塊列表中移除此區塊
+        const blockIndex = item.blocks.indexOf(cellId);
+        item.blocks.splice(blockIndex, 1);
+        cartUpdated = true;
+
+        // 如果這個區域沒有區塊了，標記要移除
+        if (item.blocks.length === 0) {
+          itemToRemove = item.id;
+        } else {
+          // 更新名稱和押金
+          const areaData = Object.values(areaMapping).find(area => area.key === areaKey);
+          if (areaData) {
+            const sortedBlocks = sortBlockIds([...item.blocks]);
+
+            // 檢查剩餘區塊是否等於總區塊數
+            if (areaData.totalBlocks > 0 && item.blocks.length === areaData.totalBlocks) {
+              item.name = `${areaData.name} (ALL)`;
+            } else {
+              item.name = `${areaData.name} (${sortedBlocks.join(', ')})`;
+            }
+            item.deposit = areaData.deposit * item.blocks.length;
+          }
+        }
+        break;
+      }
+    }
+
+    // 如果需要移除整個項目
+    if (itemToRemove) {
+      const updatedCart = cart.filter(item => item.id !== itemToRemove);
+      window.cartManager.saveCart(updatedCart);
+    } else if (cartUpdated) {
+      // 只是更新區塊列表
+      window.cartManager.saveCart(cart);
+    }
+  }
+
+  // 更新顯示
+  const svg = document.getElementById('area-booking-svg');
+  if (svg) {
+    const element = svg.querySelector(`#${cellId}`);
+    if (element) {
+      // 移除平面圖上的點擊事件
+      if (element._overviewClickHandler) {
+        element.removeEventListener('click', element._overviewClickHandler);
+        delete element._overviewClickHandler;
+      }
+
+      // 恢復原始樣式
+      if (currentSelectedAreaKey === areaKey) {
+        // 在區域詳細檢視中
+        updateGridCellStyle(cellId, false);
+      } else {
+        // 在平面圖中
+        restoreOriginalStyles(element);
+        element.style.filter = 'brightness(1)';
+        element.style.opacity = '1';
+      }
+    }
+  }
+
+  // 顯示提示
+  if (window.showBookmarkToast) {
+    window.showBookmarkToast(`已從租借清單移除 ${cellId}`, 'success');
+  } else if (window.showToast) {
+    window.showToast(`已從租借清單移除 ${cellId}`, 'success');
+  }
 }
 
 // 初始化

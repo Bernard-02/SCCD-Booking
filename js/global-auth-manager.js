@@ -44,6 +44,9 @@ class GlobalAuthManager {
 
     // 更新手機版導航
     this.updateMobileNavigation(true);
+
+    // 更新 PROFILE 的通知紅點
+    this.updateProfileNotificationIndicator();
   }
 
   // 未登入用戶的導航更新
@@ -115,6 +118,69 @@ class GlobalAuthManager {
   // 登出後的處理
   onLogout() {
     this.updateNavigationForGuestUser();
+  }
+
+  // 更新 PROFILE 連結的通知紅點
+  updateProfileNotificationIndicator() {
+    // 檢查是否有未讀通知
+    const hasUnread = this.checkUnreadNotifications();
+
+    // 桌面版 PROFILE 連結
+    const desktopProfileLinks = document.querySelectorAll('.desktop-nav a[href="profile.html"]');
+    desktopProfileLinks.forEach(link => {
+      this.updateLinkNotificationIndicator(link, hasUnread);
+    });
+
+    // 手機版 PROFILE 連結
+    const mobileProfileLinks = document.querySelectorAll('#mobile-menu a[href="profile.html"]');
+    mobileProfileLinks.forEach(link => {
+      this.updateLinkNotificationIndicator(link, hasUnread);
+    });
+  }
+
+  // 更新連結的通知指示器
+  updateLinkNotificationIndicator(link, hasUnread) {
+    // 移除現有的指示器
+    const existingIndicator = link.querySelector('.notification-indicator');
+    if (existingIndicator) {
+      existingIndicator.remove();
+      link.style.position = '';
+    }
+
+    // 如果有未讀通知，添加紅點
+    if (hasUnread) {
+      link.style.position = 'relative';
+
+      const indicator = document.createElement('div');
+      indicator.className = 'notification-indicator w-2 h-2 rounded-full';
+      indicator.style.backgroundColor = 'var(--color-error)';
+      indicator.style.position = 'absolute';
+      indicator.style.top = '0px';
+      indicator.style.right = '-8px';
+
+      link.appendChild(indicator);
+    }
+  }
+
+  // 檢查是否有未讀通知
+  checkUnreadNotifications() {
+    if (!this.isLoggedIn()) return false;
+
+    const loginData = window.AuthStorage.getLoginData();
+    if (!loginData || !loginData.student) return false;
+
+    const storageKey = `sccd_notifications_${loginData.student.studentId}`;
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (!stored) return false;
+
+      const notifications = JSON.parse(stored);
+      return notifications.some(notification => !notification.isRead);
+    } catch (error) {
+      console.error('檢查未讀通知錯誤:', error);
+      return false;
+    }
   }
 }
 

@@ -102,6 +102,17 @@ class ProfilePage {
   }
 
   switchSection(section) {
+    // 如果從通知頁面切換到其他頁面，標記所有通知為已讀
+    if (this.currentSection === 'notifications' && section !== 'notifications') {
+      this.managers.notifications.markAllNotificationsAsRead();
+      this.updateNotificationIndicator();
+
+      // 同步更新 header 的 PROFILE 紅點
+      if (window.GlobalAuthManager) {
+        window.GlobalAuthManager.updateProfileNotificationIndicator();
+      }
+    }
+
     this.currentSection = section;
     const contentArea = document.getElementById('content-area');
 
@@ -307,8 +318,8 @@ class ProfilePage {
       window.GlobalAuthManager.onLogout();
     }
 
-    // 直接跳轉到登入頁面
-    window.location.href = 'login.html';
+    // 使用 replace 跳轉到登入頁面，防止用戶按返回鍵回到 profile 頁面
+    window.location.replace('login.html');
   }
 
   getDefaultContent() {

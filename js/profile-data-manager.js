@@ -111,8 +111,8 @@ class ProfileDataManager {
       <div>
         <label class="font-chinese text-gray-scale3 text-tiny block mb-2">手機號碼</label>
         <div class="flex items-center gap-3">
-          <p class="font-english text-white text-small-title flex-1">${userData.phone || '未設定'}</p>
-          <button class="page-button">
+          <p id="phone-display" class="font-english text-white text-small-title flex-1">${userData.phone || '未設定'}</p>
+          <button id="set-phone-btn" class="page-button">
             <div class="menu-item-wrapper">
               <span class="menu-text">(${hasPhone ? 'CHANGE' : 'SET'})</span>
               <span class="menu-text-hidden">(${hasPhone ? 'CHANGE' : 'SET'})</span>
@@ -128,32 +128,9 @@ class ProfileDataManager {
     return `
       <div>
         <label class="font-english text-gray-scale3 text-tiny block mb-2">Email</label>
-        <div class="flex items-center gap-3">
-          <p class="font-english text-white text-small-title flex-1">${userData.email}</p>
-          ${this.generateEmailButton(userData.emailVerified)}
-        </div>
+        <p class="font-english text-white text-small-title">${userData.email}</p>
       </div>
     `;
-  }
-
-  // 生成Email按鈕
-  generateEmailButton(isVerified) {
-    if (!isVerified) {
-      return `
-        <button class="page-button">
-          <div class="menu-item-wrapper">
-            <span class="menu-text">(Verify)</span>
-            <span class="menu-text-hidden">(Verify)</span>
-          </div>
-        </button>
-      `;
-    } else {
-      return `
-        <span class="font-english text-green-400 text-small uppercase tracking-wide">
-          Verified
-        </span>
-      `;
-    }
   }
 
   // 設置個人資料頁面事件監聽器
@@ -693,6 +670,14 @@ class ProfileDataManager {
         this.togglePasswordDisplay();
       });
     }
+
+    // 設置手機號碼SET/CHANGE按鈕事件
+    const setPhoneBtn = document.getElementById('set-phone-btn');
+    if (setPhoneBtn) {
+      setPhoneBtn.addEventListener('click', () => {
+        this.showPhoneModal();
+      });
+    }
   }
 
   // 全新的密碼更改modal
@@ -793,7 +778,7 @@ class ProfileDataManager {
 
       <!-- 按鈕 -->
       <div style="display: flex; justify-content: space-between; gap: 1rem;">
-        <button onclick="window.profilePage.managers.profileData.closeNewPasswordModal()" class="page-button" style="flex: 1; background: transparent; border: none; color: white; cursor: pointer; padding: 0.5rem 1rem; position: relative; overflow: hidden;">
+        <button onclick="window.profilePage.managers.profileData.closeNewPasswordModal()" class="page-button" style="flex: 1; background: transparent; border: none; color: #ff8698; cursor: pointer; padding: 0.5rem 1rem; position: relative; overflow: hidden;">
           <div class="menu-item-wrapper">
             <span class="menu-text">(DISCARD)</span>
             <span class="menu-text-hidden">(DISCARD)</span>
@@ -974,11 +959,189 @@ class ProfileDataManager {
       toggleBtn.innerHTML = PASSWORD_ICONS.VISIBLE;
       this.isPasswordVisible = false;
     } else {
-      // 顯示密碼（這裡顯示預設密碼，實際應該從安全來源獲取）
-      passwordDisplay.textContent = '••••••••'; // 保安考量，不顯示真實密碼
+      // 顯示密碼
+      passwordDisplay.textContent = this.getCurrentUserPassword();
       toggleBtn.innerHTML = PASSWORD_ICONS.HIDDEN;
       this.isPasswordVisible = true;
     }
+  }
+
+  // 顯示手機號碼設定/更改modal
+  showPhoneModal() {
+    const userData = this.getCurrentUserData();
+    const hasPhone = !!userData.phone;
+
+    // 移除任何現有的modal
+    const existingModal = document.getElementById('phone-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // 凍結背景滾動
+    document.body.style.overflow = 'hidden';
+
+    // 創建overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'phone-modal';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    `;
+
+    // 創建模態框內容
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      background-color: black;
+      border: 1px solid white;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+    `;
+
+    // 模態框HTML內容
+    modal.innerHTML = `
+      <h3 style="color: white; font-family: 'Noto Sans TC', sans-serif; font-size: 1.25rem; margin-bottom: 18px;">${hasPhone ? '更改手機號碼' : '設定手機號碼'}</h3>
+
+      <!-- 手機號碼輸入框 -->
+      <div style="margin-bottom: 1.5rem;">
+        <label for="phone-input" class="text-gray-scale3 text-tiny font-chinese" style="display: block; margin-bottom: 8px;">手機號碼</label>
+        <input
+          type="tel"
+          id="phone-input"
+          class="input-field"
+          placeholder="0912345678"
+          value="${userData.phone || ''}"
+          maxlength="10"
+          style="width: 100%; padding: 8px; border: none; border-bottom: 1px solid white; background: transparent; color: white; font-family: 'Inter', sans-serif; font-size: 1rem; outline: none;"
+        >
+        <div id="phone-error" class="text-error2 font-chinese" style="font-size: 0.75rem; margin-top: 4px; display: none;"></div>
+      </div>
+
+      <!-- 按鈕 -->
+      <div style="display: flex; justify-content: space-between; gap: 1rem;">
+        <button id="phone-discard-btn" onclick="window.profilePage.managers.profileData.closePhoneModal()" class="page-button" style="flex: 1; background: transparent; border: none; color: #ff8698; cursor: pointer; padding: 0.5rem 1rem;">
+          <div class="menu-item-wrapper">
+            <span class="menu-text">(DISCARD)</span>
+            <span class="menu-text-hidden">(DISCARD)</span>
+          </div>
+        </button>
+        <button id="phone-ok-btn" onclick="window.profilePage.managers.profileData.submitPhoneChange()" class="page-button" style="flex: 1; background: transparent; border: none; color: white; cursor: pointer; padding: 0.5rem 1rem; opacity: 0.3; pointer-events: none;">
+          <div class="menu-item-wrapper">
+            <span class="menu-text">(OKAY)</span>
+            <span class="menu-text-hidden">(OKAY)</span>
+          </div>
+        </button>
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // 設置事件監聽器
+    this.setupPhoneModalEventListeners();
+
+    // 自動聚焦到輸入框
+    setTimeout(() => {
+      document.getElementById('phone-input').focus();
+    }, 100);
+  }
+
+  // 設置手機號碼modal的事件監聽器
+  setupPhoneModalEventListeners() {
+    const phoneInput = document.getElementById('phone-input');
+    const phoneError = document.getElementById('phone-error');
+    const okBtn = document.getElementById('phone-ok-btn');
+
+    if (!phoneInput || !okBtn) return;
+
+    // 監聽輸入變化
+    phoneInput.addEventListener('input', (e) => {
+      const value = e.target.value.trim();
+
+      // 隱藏錯誤訊息（輸入時不顯示錯誤）
+      phoneError.style.display = 'none';
+
+      // 如果有輸入至少一個字符，啟用OK按鈕
+      if (value.length > 0) {
+        okBtn.style.opacity = '1';
+        okBtn.style.pointerEvents = 'auto';
+      } else {
+        // 沒有輸入，禁用OK按鈕
+        okBtn.style.opacity = '0.3';
+        okBtn.style.pointerEvents = 'none';
+      }
+    });
+
+    // 檢查初始值（如果有預填的號碼）
+    if (phoneInput.value.trim().length > 0) {
+      okBtn.style.opacity = '1';
+      okBtn.style.pointerEvents = 'auto';
+    }
+  }
+
+  // 關閉手機號碼modal
+  closePhoneModal() {
+    const modal = document.getElementById('phone-modal');
+    if (modal) {
+      document.body.style.overflow = '';
+      modal.remove();
+    }
+  }
+
+  // 提交手機號碼更改
+  submitPhoneChange() {
+    const phoneInput = document.getElementById('phone-input');
+    const phoneError = document.getElementById('phone-error');
+    const phone = phoneInput.value.trim();
+
+    // 必須有輸入
+    if (!phone) {
+      return;
+    }
+
+    // 驗證手機號碼格式
+    if (!this.isValidPhone(phone)) {
+      phoneError.textContent = '手機號碼格式不正確（格式：0912345678）';
+      phoneError.style.display = 'block';
+      return;
+    }
+
+    // 更新用戶數據（這裡應該調用API）
+    const userData = this.getCurrentUserData();
+    userData.phone = phone;
+
+    // 更新顯示
+    const phoneDisplay = document.getElementById('phone-display');
+    const setPhoneBtn = document.getElementById('set-phone-btn');
+
+    if (phoneDisplay) {
+      phoneDisplay.textContent = phone;
+    }
+
+    if (setPhoneBtn) {
+      const menuText = setPhoneBtn.querySelector('.menu-text');
+      const menuTextHidden = setPhoneBtn.querySelector('.menu-text-hidden');
+
+      if (menuText) menuText.textContent = '(CHANGE)';
+      if (menuTextHidden) menuTextHidden.textContent = '(CHANGE)';
+    }
+
+    // 這裡應該調用API保存到後端
+    console.log('更新手機號碼:', phone);
+
+    // 關閉modal
+    this.closePhoneModal();
+
+    // 顯示成功消息
+    alert('手機號碼已更新！');
   }
 }
 
