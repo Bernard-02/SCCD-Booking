@@ -482,19 +482,21 @@ class LoginForm {
 
 // 使用更安全的初始化方法
 function initLoginPage() {
-  console.log('準備初始化LoginForm...'); // Debug
-
   // 檢查關鍵元素是否存在
   const loginForm = document.getElementById('login-form');
   const loginBtn = document.getElementById('login-cta');
 
   if (loginForm && loginBtn) {
-    console.log('DOM元素已準備好，初始化LoginForm'); // Debug
     new LoginForm();
   } else {
-    console.log('DOM元素尚未準備好，等待中...', { loginForm, loginBtn }); // Debug
-    // 等待500ms後重試
-    setTimeout(initLoginPage, 500);
+    // 等待500ms後重試，最多重試10次（避免在非登入頁面無限重試）
+    if (!initLoginPage.retryCount) {
+      initLoginPage.retryCount = 0;
+    }
+    if (initLoginPage.retryCount < 10) {
+      initLoginPage.retryCount++;
+      setTimeout(initLoginPage, 500);
+    }
   }
 }
 
@@ -502,12 +504,8 @@ function initLoginPage() {
 document.addEventListener('DOMContentLoaded', initLoginPage);
 
 // 如果DOMContentLoaded已經觸發
-if (document.readyState === 'loading') {
-  // 文檔仍在加載中
-  console.log('文檔加載中，等待DOMContentLoaded'); // Debug
-} else {
+if (document.readyState !== 'loading') {
   // 文檔已加載完成
-  console.log('文檔已完成加載，立即初始化'); // Debug
   initLoginPage();
 }
 

@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(copy:*)",
-      "Read(//c/**)"
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

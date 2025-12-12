@@ -113,11 +113,11 @@ class UnifiedBookmarkManager {
   }
 
   // 添加收藏
-  addBookmark(itemName) {
+  addBookmark(itemName, isUndo = false) {
     if (!this.bookmarks.has(itemName)) {
       this.bookmarks.add(itemName);
       this.saveToStorage();
-      this.notifyObservers('add', itemName);
+      this.notifyObservers('add', itemName, isUndo);
       console.log(`已添加收藏: ${itemName}`);
       return true;
     }
@@ -191,7 +191,7 @@ class UnifiedBookmarkManager {
   }
 
   // 通知所有觀察者
-  notifyObservers(action, itemName = null) {
+  notifyObservers(action, itemName = null, isUndo = false) {
     this.observers.forEach(observer => {
       try {
         observer(action, itemName, this.bookmarks);
@@ -202,7 +202,7 @@ class UnifiedBookmarkManager {
 
     // 觸發全域事件
     window.dispatchEvent(new CustomEvent('bookmarkUpdated', {
-      detail: { action, itemName, bookmarks: this.getAllBookmarks() }
+      detail: { action, itemName, bookmarks: this.getAllBookmarks(), isUndo }
     }));
   }
 
@@ -428,15 +428,22 @@ class BookmarkUIManager {
       return;
     }
 
+    // 檢查當前收藏狀態
+    const wasBookmarked = this.bookmarkManager.isBookmarked(itemName);
+
     // 切換收藏狀態
     const isNowBookmarked = this.bookmarkManager.toggleBookmark(itemName);
 
-    // 顯示通知
-    const message = isNowBookmarked
-      ? `${itemName} 已加入收藏夾！`
-      : `${itemName} 已從收藏夾中移除！`;
-
-    this.showToast(message, isNowBookmarked ? 'success' : 'info');
+    // 根據操作類型顯示不同的toast
+    if (isNowBookmarked) {
+      // 添加收藏 - 簡單toast
+      const message = `${itemName} 已加入收藏！`;
+      this.showToast(message, 'success');
+    } else {
+      // 移除收藏 - 帶UNDO的toast
+      const message = `${itemName} 已取消收藏！`;
+      this.showUndoToast(message, itemName);
+    }
   }
 
   // 檢查登入狀態
@@ -460,6 +467,69 @@ class BookmarkUIManager {
     if (typeof window.showToast === 'function') {
       window.showToast(message, type);
     }
+  }
+
+  // 顯示帶UNDO按鈕的toast
+  showUndoToast(message, itemName) {
+    // 移除現有的toast
+    const existingToast = document.getElementById('bookmark-undo-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // 創建toast容器
+    const toast = document.createElement('div');
+    toast.id = 'bookmark-undo-toast';
+    toast.className = 'toast';
+
+    // 創建內容容器
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'flex items-center gap-4';
+
+    // 創建消息文字
+    const messageP = document.createElement('p');
+    messageP.textContent = message;
+
+    // 創建UNDO按鈕
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'font-english font-medium text-tiny uppercase tracking-wide hover:opacity-70 transition-opacity';
+    undoBtn.style.color = '#000000';
+    undoBtn.style.marginLeft = '1rem';
+    undoBtn.textContent = 'UNDO';
+    undoBtn.onclick = () => {
+      // 重新添加收藏，標記為UNDO操作
+      this.bookmarkManager.addBookmark(itemName, true);
+      toast.classList.add('fade-out');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, 300);
+    };
+    undoBtn.style.cursor = 'pointer';
+    undoBtn.style.pointerEvents = 'auto';
+
+    contentWrapper.appendChild(messageP);
+    contentWrapper.appendChild(undoBtn);
+    toast.appendChild(contentWrapper);
+    document.body.appendChild(toast);
+
+    // 顯示toast
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 10);
+
+    // 3秒後自動消失
+    setTimeout(() => {
+      if (toast.parentNode && !toast.classList.contains('fade-out')) {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.remove();
+          }
+        }, 300);
+      }
+    }, 3000);
   }
 }
 

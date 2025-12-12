@@ -31,6 +31,7 @@
     <script src="js/booking-dates-display.js"></script>
 
     <!-- 引入外部CSS文件 -->
+    <link rel="stylesheet" href="css/colors.css" />
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
     <link rel="stylesheet" href="css/typography.css" />
@@ -46,25 +47,25 @@
     <header class="fixed top-0 left-0 right-0 bg-transparent header-main">
       <div class="container">
         <div class="flex justify-between items-center">
-          <a href="index.html" class="font-['Inter',_sans-serif] font-medium text-white text-header">
+          <a href="index.html" class="font-english font-medium text-white text-header">
             SCCD
           </a>
 
           <!-- 桌面版導航 -->
           <nav class="flex items-center header-menu desktop-nav nav-gap">
-            <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a href="booking.html" class="font-english font-medium uppercase transition-colors text-white flex items-center text-header">
               <div class="menu-item-wrapper active">
                 <span class="menu-text">(BOOKING)</span>
                 <span class="menu-text-hidden">(BOOKING)</span>
               </div>
             </a>
-            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a href="rental-list.html" class="font-english font-medium uppercase transition-colors text-white flex items-center text-header">
               <div class="menu-item-wrapper">
                 <span class="menu-text">((<span id="cart-count">0</span>) CART)</span>
                 <span class="menu-text-hidden">((<span class="cart-count-mirror">0</span>) CART)</span>
               </div>
             </a>
-            <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a href="login.html" class="font-english font-medium uppercase transition-colors text-white flex items-center text-header">
               <div class="menu-item-wrapper">
                 <span class="menu-text">(LOGIN)</span>
                 <span class="menu-text-hidden">(LOGIN)</span>
@@ -74,13 +75,13 @@
 
           <!-- 手機版導航 -->
           <nav class="flex items-center mobile-nav mobile-nav-gap">
-            <a href="rental-list.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+            <a href="rental-list.html" class="font-english font-medium uppercase transition-colors text-white flex items-center">
               <div class="menu-item-wrapper">
                 <span class="menu-text">((<span id="mobile-cart-count">0</span>) CART)</span>
                 <span class="menu-text-hidden">((<span class="mobile-cart-count-mirror">0</span>) CART)</span>
               </div>
             </a>
-            <button id="mobile-menu-btn" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center">
+            <button id="mobile-menu-btn" class="font-english font-medium uppercase transition-colors text-white flex items-center">
               <div class="menu-item-wrapper">
                 <span class="menu-text">(MENU)</span>
                 <span class="menu-text-hidden">(MENU)</span>
@@ -119,10 +120,10 @@
           <div class="mt-8">
             <div class="float-up-container">
               <div class="mb-4 float-up float-up-delay-4">
-                <h2 class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny">
+                <h2 class="font-english text-zinc-300 uppercase tracking-wider text-tiny">
                   起租日
                 </h2>
-                <p id="display-start-date" class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight">
+                <p id="display-start-date" class="font-english text-white text-large-title tracking-tight">
                   ----/--/--
                 </p>
               </div>
@@ -130,10 +131,10 @@
 
             <div class="float-up-container">
               <div class="float-up float-up-delay-5">
-                <h2 class="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider text-tiny">
+                <h2 class="font-english text-zinc-300 uppercase tracking-wider text-tiny">
                   歸還日
                 </h2>
-                <p id="display-end-date" class="font-['Inter',_sans-serif] text-white text-medium-title tracking-tight">
+                <p id="display-end-date" class="font-english text-white text-large-title tracking-tight">
                   ----/--/--
                 </p>
               </div>
@@ -208,17 +209,17 @@
               <div class="flex flex-col relative">
                 <div class="relative">
                   <input type="text" id="searchInput" class="bg-transparent border-b border-white text-white placeholder-transparent focus:outline-none focus:border-gray-300 pb-1 pl-0 transition-all duration-200" placeholder="" autocomplete="off" />
-                  <span id="searchLabel" class="absolute left-0 top-0 text-base font-['Inter',_sans-serif] font-medium uppercase tracking-wide pointer-events-none transition-all duration-200">SEARCH</span>
+                  <span id="searchLabel" class="absolute left-0 top-0 text-base font-english font-medium uppercase tracking-wide pointer-events-none transition-all duration-200">SEARCH</span>
                 </div>
               </div>
               <div class="flex space-x-4">
-                <button id="status-available" class="text-white font-['Inter',_sans-serif] cursor-pointer" data-status="有現貨">
+                <button id="status-available" class="text-white font-english cursor-pointer" data-status="有現貨">
                   <div class="menu-item-wrapper active">
                     <span class="menu-text text-lg">(有現貨)</span>
                     <span class="menu-text-hidden text-lg">(有現貨)</span>
                   </div>
                 </button>
-                <button id="status-unavailable" class="text-white font-['Inter',_sans-serif] cursor-pointer" data-status="已借出">
+                <button id="status-unavailable" class="text-white font-english cursor-pointer" data-status="已借出">
                   <div class="menu-item-wrapper red-underline">
                     <span class="menu-text text-lg">(已借出)</span>
                     <span class="menu-text-hidden text-lg">(已借出)</span>
@@ -258,7 +259,7 @@
                 <!-- 右上角狀態標籤 -->
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -269,13 +270,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     燈具
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     黑色喇叭夾燈 長支架
                   </div>
@@ -316,7 +317,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -327,13 +328,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     線材
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     三孔六座延長線
                   </div>
@@ -374,7 +375,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -385,13 +386,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     燈具
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     長桿筒狀夾燈(可伸縮)【白光】
                   </div>
@@ -432,7 +433,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -443,13 +444,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     展桌/畫板
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     H字牆 / 92*200
                   </div>
@@ -491,7 +492,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #ff448a"
                     >已借出</span
                   >
@@ -502,13 +503,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     視聽類
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     KINYO PS 285B 立體擴大音響
                   </div>
@@ -549,7 +550,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -560,13 +561,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     工具
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     鋁梯 / 115
                   </div>
@@ -607,7 +608,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -618,13 +619,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     機具
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     雷射切割機
                   </div>
@@ -665,7 +666,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -676,13 +677,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     線材
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     品字電源線 一般（黑）
                   </div>
@@ -724,7 +725,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -735,13 +736,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     燈具
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     米家檯燈
                   </div>
@@ -782,7 +783,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #ff448a"
                     >已借出</span
                   >
@@ -793,13 +794,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     展桌/畫板
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     畫板
                   </div>
@@ -840,7 +841,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -851,13 +852,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     視聽類
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     電腦螢幕
                   </div>
@@ -898,7 +899,7 @@
 
                 <div class="absolute top-5 right-6 z-10">
                   <span
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #00ff80"
                     >有現貨</span
                   >
@@ -909,13 +910,13 @@
               <div class="flex justify-between items-start mt-5">
                 <div>
                   <div
-                    class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide"
+                    class="text-breadcrumb font-english font-normal tracking-wide"
                     style="color: #cccccc"
                   >
                     工具
                   </div>
                   <div
-                    class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1"
+                    class="text-small-title font-english font-medium text-white tracking-wide mt-1"
                   >
                     大型購物推車（銀色）
                   </div>
@@ -956,7 +957,7 @@
                 />
                 <span
                   id="mobileSearchLabel"
-                  class="absolute left-0 top-0 text-sm font-['Inter',_sans-serif] font-normal uppercase tracking-wide pointer-events-none transition-all duration-200"
+                  class="absolute left-0 top-0 text-sm font-english font-normal uppercase tracking-wide pointer-events-none transition-all duration-200"
                   >SEARCH</span
                 >
               </div>
@@ -965,7 +966,7 @@
             <!-- 篩選器按鈕 -->
             <button
               id="mobile-filters-btn"
-              class="text-sm font-['Inter',_sans-serif] font-normal uppercase tracking-wide text-white"
+              class="text-sm font-english font-normal uppercase tracking-wide text-white"
             >
               FILTERS
             </button>
@@ -984,7 +985,7 @@
     <!-- 回到頂端按鈕 - 固定定位在左下角 -->
     <button
       id="scroll-to-top-btn"
-      class="fixed text-button font-['Inter',_sans-serif] uppercase text-white opacity-0 invisible transition-all duration-300 cursor-pointer z-40 hidden md:block"
+      class="fixed text-button font-english uppercase text-white opacity-0 invisible transition-all duration-300 cursor-pointer z-40 hidden md:block"
       style="bottom: 4rem; left: clamp(1.2rem, 2vw, 2%);"
     >
       <div class="hero-cta-wrapper">
@@ -998,24 +999,24 @@
       <div class="container">
         <div class="hidden md:flex justify-between items-center">
           <div class="flex items-center footer-gap">
-            <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-english font-medium uppercase transition-colors text-white flex items-center text-header">
               <div class="menu-item-wrapper">
                 <span class="menu-text">(TO SCCD)</span>
                 <span class="menu-text-hidden">(TO SCCD)</span>
               </div>
             </a>
-            <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center text-header">
+            <a href="about.html" class="font-english font-medium uppercase transition-colors text-white flex items-center text-header">
               <div class="menu-item-wrapper">
                 <span class="menu-text">(ABOUT)</span>
                 <span class="menu-text-hidden">(ABOUT)</span>
               </div>
             </a>
           </div>
-          <div class="copyright desktop-copyright font-['Inter',_sans-serif] font-medium text-white text-right text-header">
+          <div class="copyright desktop-copyright font-english font-medium text-white text-right text-header">
             <p>
               <span class="copyright-original">
-                <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+                <span class="font-english uppercase">Copyright © 2025 111</span>屆系學會
+                <span class="font-english">All rights reserved.</span>
               </span>
               <span class="copyright-easter-egg" id="easter-egg-text">
                 <!-- 彩蛋文字將由JavaScript生成 -->
@@ -1032,7 +1033,7 @@
         <div class="flex flex-col items-start menu-gap flex-grow">
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-1">
-              <a href="booking.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a href="booking.html" class="font-english font-medium uppercase transition-colors text-white text-large-title">
                 <div class="menu-item-wrapper active">
                   <span class="menu-text">(BOOKING)</span>
                   <span class="menu-text-hidden">(BOOKING)</span>
@@ -1042,7 +1043,7 @@
           </div>
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-2">
-              <a href="login.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a href="login.html" class="font-english font-medium uppercase transition-colors text-white text-large-title">
                 <div class="menu-item-wrapper">
                   <span class="menu-text">(LOGIN)</span>
                   <span class="menu-text-hidden">(LOGIN)</span>
@@ -1052,7 +1053,7 @@
           </div>
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-3">
-              <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a href="https://sccd.usc.edu.tw/" target="_blank" class="font-english font-medium uppercase transition-colors text-white text-large-title">
                 <div class="menu-item-wrapper">
                   <span class="menu-text">(TO SCCD)</span>
                   <span class="menu-text-hidden">(TO SCCD)</span>
@@ -1062,7 +1063,7 @@
           </div>
           <div class="menu-animate-enter">
             <div class="menu-animate-enter-content menu-delay-4">
-              <a href="about.html" class="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-large-title">
+              <a href="about.html" class="font-english font-medium uppercase transition-colors text-white text-large-title">
                 <div class="menu-item-wrapper">
                   <span class="menu-text">(ABOUT)</span>
                   <span class="menu-text-hidden">(ABOUT)</span>
@@ -1074,11 +1075,11 @@
 
         <div class="menu-animate-enter mobile-menu-content-bottom">
           <div class="menu-animate-enter-content menu-delay-5">
-            <div class="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-header">
+            <div class="copyright font-english font-medium text-white text-left text-header">
               <p>
                 <span class="copyright-original">
-                  <span class="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>屆系學會
-                  <span class="font-['Inter',_sans-serif]">All rights reserved.</span>
+                  <span class="font-english uppercase">Copyright © 2025 111</span>屆系學會
+                  <span class="font-english">All rights reserved.</span>
                 </span>
                 <span class="copyright-easter-egg" id="mobile-menu-easter-egg-text">
                   <!-- 彩蛋文字將由JavaScript生成 -->
@@ -1116,7 +1117,7 @@
           </h4>
           <div class="grid grid-cols-2 gap-3">
             <button
-              class="mobile-filter-category text-left py-2 px-3 text-sm font-['Inter',_sans-serif] font-bold text-white"
+              class="mobile-filter-category text-left py-2 px-3 text-sm font-english font-bold text-white"
               data-category="bookmarks"
             >
               常用設備
@@ -1189,7 +1190,7 @@
         <div class="flex justify-center">
           <button
             id="apply-filters-btn"
-            class="bg-transparent border border-white text-white py-3 text-sm font-['Inter',_sans-serif] font-normal"
+            class="bg-transparent border border-white text-white py-3 text-sm font-english font-normal"
             style="width: 200px"
           >
             查看

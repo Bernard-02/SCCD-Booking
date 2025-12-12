@@ -164,7 +164,7 @@ class RentalHistoryManager {
         <!-- 下半部：租借日期和操作按鈕 -->
         <div class="flex justify-between items-start">
           <span class="font-english text-gray-scale2 text-tiny">
-            ${this.formatRentalDateRange(rental.startDate, rental.endDate)}
+            ${this.formatRentalDateRange(rental)}
           </span>
           ${this.generateActionButton(rental, isOngoing)}
         </div>
@@ -258,7 +258,27 @@ class RentalHistoryManager {
       return [];
     }
 
-    return rentals.sort((a, b) => b.startDate - a.startDate);
+    // 智能排序：進行中的按到期日排序，已完成的按單號降序
+    return rentals.sort((a, b) => {
+      const aIsOngoing = a.status === RENTAL_STATUS.ONGOING;
+      const bIsOngoing = b.status === RENTAL_STATUS.ONGOING;
+
+      // 兩者都是進行中 - 按到期日升序（最快到期的在前）
+      if (aIsOngoing && bIsOngoing) {
+        return a.dueDate - b.dueDate;
+      }
+
+      // 兩者都是已完成 - 按單號降序（新的在前）
+      if (!aIsOngoing && !bIsOngoing) {
+        // 從單號中提取數字進行比較（例如 #2025001 -> 2025001）
+        const aNum = parseInt(a.orderNumber.replace('#', ''));
+        const bNum = parseInt(b.orderNumber.replace('#', ''));
+        return bNum - aNum;
+      }
+
+      // 一個進行中一個已完成 - 進行中的排在前面
+      return aIsOngoing ? -1 : 1;
+    });
   }
 
   // 從存儲加載租借數據
@@ -399,7 +419,7 @@ class RentalHistoryManager {
   }
 
   // 格式化租借日期範圍
-  formatRentalDateRange(startDate, endDate) {
+  formatRentalDateRange(rental) {
     const formatDate = (timestamp) => {
       const date = new Date(timestamp);
       const year = date.getFullYear();
@@ -408,7 +428,17 @@ class RentalHistoryManager {
       return `${year}/${month}/${day}`;
     };
 
-    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    const startDateStr = formatDate(rental.startDate);
+
+    // 如果有延期，使用延期後的到期日作為歸還日，並添加「(已延期)」標註
+    if (rental.hasExtended && rental.dueDate) {
+      const extendedEndDateStr = formatDate(rental.dueDate);
+      return `${startDateStr} - ${extendedEndDateStr} <span class="font-chinese">(已延期)</span>`;
+    }
+
+    // 否則使用原始的結束日期
+    const endDateStr = formatDate(rental.endDate);
+    return `${startDateStr} - ${endDateStr}`;
   }
 
   // 跳轉到租借清單頁面
@@ -782,22 +812,36 @@ class RentalHistoryManager {
   // 確認延期
   confirmExtendRental(rentalId, extendDays) {
     const rentals = this.getRentalHistoryData();
+    let extendedRental = null;
+
     const updatedRentals = rentals.map(rental => {
       if (rental.id === rentalId) {
         const newDueDate = new Date(rental.dueDate);
         newDueDate.setDate(newDueDate.getDate() + extendDays);
 
-        return {
+        extendedRental = {
           ...rental,
           dueDate: newDueDate.getTime(),
           hasExtended: true,
           extendedDays: extendDays
         };
+        return extendedRental;
       }
       return rental;
     });
 
     this.saveRentalHistoryData(updatedRentals);
+
+    // 創建「已延期」通知
+    if (extendedRental && window.NotificationManager && this.currentUser) {
+      const notificationManager = new window.NotificationManager();
+      notificationManager.init(this.currentUser);
+      notificationManager.addNotification(
+        `您的租借單 ${extendedRental.orderNumber} 已延期，請以新的歸還日為主。`,
+        'extended'
+      );
+      console.log('✅ 已創建通知: 租借單已延期');
+    }
 
     // 重新載入頁面內容
     const contentArea = document.getElementById('content-area');
@@ -836,11 +880,13 @@ class RentalHistoryManager {
       if (rental.id === rentalId) {
         const updatedRental = { ...rental, status: newStatus };
 
-        // 如果標記為完成，檢查是否逾期
+        // 如果標記為完成，檢查是否逾期並計算逾期天數
         if (newStatus === RENTAL_STATUS.COMPLETED) {
-          // 如果歸還時已經超過到期日，標記為逾期完成
           if (now > rental.dueDate) {
+            // 計算逾期天數並保存為固定值
+            const overdueDays = Math.floor((now - rental.dueDate) / (1000 * 60 * 60 * 24));
             updatedRental.wasOverdue = true;
+            updatedRental.overdueDays = overdueDays;
           }
         }
 
@@ -906,6 +952,100 @@ class RentalHistoryManager {
       overdue: overdue.length,
       upcomingDue: this.getUpcomingDueRentals().length
     };
+  }
+
+  // 計算用戶累計逾期天數（即時計算）
+  calculateTotalOverdueDays() {
+    const rentals = this.getRentalHistoryData();
+    const now = Date.now();
+    let totalOverdueDays = 0;
+
+    rentals.forEach(rental => {
+      if (rental.status === RENTAL_STATUS.COMPLETED && rental.overdueDays) {
+        // 已完成的單子：使用固定的逾期天數
+        totalOverdueDays += rental.overdueDays;
+      } else if (rental.status === RENTAL_STATUS.ONGOING && rental.dueDate < now) {
+        // 進行中且逾期的單子：即時計算逾期天數
+        const overdueDays = Math.floor((now - rental.dueDate) / (1000 * 60 * 60 * 24));
+        totalOverdueDays += overdueDays;
+      }
+    });
+
+    return totalOverdueDays;
+  }
+
+  // 獲取用戶帳號狀態
+  getAccountStatus() {
+    // ========== 測試模式：強制返回逾期1天狀態 ==========
+    // TODO: 測試完畢後請刪除此段代碼,並取消註解下面的真實計算邏輯
+    return {
+      level: 1,
+      status: '您已累積逾期1天',
+      description: '您還剩餘4天的機會，下次請準時歸還租借',
+      color: 'warning',
+      isSuspended: false,
+      totalOverdueDays: 1
+    };
+    // ===================================================
+
+    const totalOverdueDays = this.calculateTotalOverdueDays();
+
+    // 根據累計逾期天數判定狀態
+    if (totalOverdueDays >= 5) {
+      return {
+        level: 5,
+        status: '您已累積嚴重逾期5天',
+        description: '您的帳號已遭停權並不可再次使用，如有任何疑問請洽系學會',
+        color: 'error',
+        isSuspended: true,
+        totalOverdueDays: totalOverdueDays
+      };
+    } else if (totalOverdueDays >= 4) {
+      return {
+        level: 4,
+        status: '您已累積逾期4天',
+        description: '您還剩餘1天的機會，下次請準時歸還租借',
+        color: 'warning',
+        isSuspended: false,
+        totalOverdueDays: totalOverdueDays
+      };
+    } else if (totalOverdueDays >= 3) {
+      return {
+        level: 3,
+        status: '您已累積逾期3天',
+        description: '您還剩餘2天的機會，下次請準時歸還租借',
+        color: 'warning',
+        isSuspended: false,
+        totalOverdueDays: totalOverdueDays
+      };
+    } else if (totalOverdueDays >= 2) {
+      return {
+        level: 2,
+        status: '您已累積逾期2天',
+        description: '您還剩餘3天的機會，下次請準時歸還租借',
+        color: 'warning',
+        isSuspended: false,
+        totalOverdueDays: totalOverdueDays
+      };
+    } else if (totalOverdueDays >= 1) {
+      return {
+        level: 1,
+        status: '您已累積逾期1天',
+        description: '您還剩餘4天的機會，下次請準時歸還租借',
+        color: 'warning',
+        isSuspended: false,
+        totalOverdueDays: totalOverdueDays
+      };
+    } else {
+      return {
+        level: 0,
+        status: '準時',
+        description: '您非常準時地歸還租借，沒有任何逾期記錄',
+        color: 'success',
+        isSuspended: false,
+        totalOverdueDays: 0
+      };
+    }
   }
 }
 

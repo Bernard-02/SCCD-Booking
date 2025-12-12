@@ -1,95 +1,7 @@
 @import "tailwindcss";
 
-/* ===== 顏色系統定義 ===== */
-:root {
-  /* 主要品牌色 */
-  --color-primary: #000000;          /* 黑色 - 主背景 */
-  --color-white: #ffffff;            /* 白色 - 主文字 */
-  
-  /* 狀態色 */
-  --color-success: #00ff80;          /* 綠色 - 有現貨、成功狀態 */
-  --color-error: #ff448a;            /* 粉紅色 - 已借出、錯誤狀態 */
-  --color-error2: #ff8698;           /* 淺粉紅色 - 次要錯誤狀態 */
-  --color-warning: #ffaa00;          /* 橙色 - 警告狀態 */
-  --color-purple: #8787e8;           /* 紫色 - 專案許可區標示 */
-  
-  /* 灰階系統 - Scale 1-5 (淺到深) */
-  --color-gray-scale1: #cccccc;      /* Scale 1 - 最淺灰 - 副標題、標籤 */
-  --color-gray-scale2: #a4a4a4;      /* Scale 2 - 輔助文字 */
-  --color-gray-scale3: #7c7c7c;      /* Scale 3 - 禁用狀態 */
-  --color-gray-scale4: #545454;      /* Scale 4 - 深灰背景 */
-  --color-gray-scale5: #2b2b2b;      /* Scale 5 - 最深灰 - 邊框線 */
-
-  /* 向後兼容的舊命名 */
-  --color-gray-light: var(--color-gray-scale1);
-  --color-gray-medium: var(--color-gray-scale2);
-  --color-gray-dark: var(--color-gray-scale3);
-  
-  /* 背景色 */
-  --color-bg-overlay: rgba(0, 0, 0, 0.75);    /* 半透明黑色覆蓋 */
-  --color-bg-toast: #ffffff;                  /* Toast 背景 */
-  --color-bg-toast-error: #ffd9e0;            /* Toast 錯誤背景 */
-  
-  /* 邊框色 */
-  --color-border-default: #ffffff;            /* 預設邊框 */
-  --color-border-focus: #cccccc;              /* 聚焦邊框 */
-  
-  /* 選取色 */
-  --color-selection-bg: #f7f7f7;              /* 選取背景 */
-  --color-selection-text: #000000;            /* 選取文字 */
-}
-
-/* ===== 顏色工具類別 ===== */
-
-/* 文字顏色 */
-.text-success { color: var(--color-success) !important; }
-.text-error { color: var(--color-error) !important; }
-.text-error2 { color: var(--color-error2) !important; }
-.text-warning { color: var(--color-warning) !important; }
-
-/* 灰階 Scale 系統 */
-.text-gray-scale1 { color: var(--color-gray-scale1) !important; }
-.text-gray-scale2 { color: var(--color-gray-scale2) !important; }
-.text-gray-scale3 { color: var(--color-gray-scale3) !important; }
-.text-gray-scale4 { color: var(--color-gray-scale4) !important; }
-.text-gray-scale5 { color: var(--color-gray-scale5) !important; }
-
-/* 向後兼容的舊命名 */
-.text-gray-light { color: var(--color-gray-light) !important; }
-.text-gray-medium { color: var(--color-gray-medium) !important; }
-.text-gray-dark { color: var(--color-gray-dark) !important; }
-
-/* 背景顏色 */
-.bg-success { background-color: var(--color-success) !important; }
-.bg-error { background-color: var(--color-error) !important; }
-.bg-warning { background-color: var(--color-warning) !important; }
-.bg-overlay { background-color: var(--color-bg-overlay) !important; }
-
-/* 灰階 Scale 系統背景 */
-.bg-gray-scale1 { background-color: var(--color-gray-scale1) !important; }
-.bg-gray-scale2 { background-color: var(--color-gray-scale2) !important; }
-.bg-gray-scale3 { background-color: var(--color-gray-scale3) !important; }
-.bg-gray-scale4 { background-color: var(--color-gray-scale4) !important; }
-.bg-gray-scale5 { background-color: var(--color-gray-scale5) !important; }
-
-/* 邊框顏色 */
-.border-success { border-color: var(--color-success) !important; }
-.border-error { border-color: var(--color-error) !important; }
-.border-warning { border-color: var(--color-warning) !important; }
-.border-default { border-color: var(--color-border-default) !important; }
-.border-focus { border-color: var(--color-border-focus) !important; }
-
-/* 灰階 Scale 系統邊框 */
-.border-gray-scale1 { border-color: var(--color-gray-scale1) !important; }
-.border-gray-scale2 { border-color: var(--color-gray-scale2) !important; }
-.border-gray-scale3 { border-color: var(--color-gray-scale3) !important; }
-.border-gray-scale4 { border-color: var(--color-gray-scale4) !important; }
-.border-gray-scale5 { border-color: var(--color-gray-scale5) !important; }
-
-/* 向後兼容的舊命名 */
-.border-gray-light { border-color: var(--color-gray-light) !important; }
-
 /* ===== 通用樣式 ===== */
+/* 注意：顏色系統已移至 colors.css */
 
 /* 統一容器樣式 */
 .container {
@@ -821,12 +733,112 @@ body::-webkit-scrollbar {
   .equipment-grid {
     height: 200px;
   }
-  
+
   .equipment-item {
     padding: 0.75rem;
   }
-  
+
   .equipment-divider {
     margin: 0 0.75rem;
   }
+}
+
+/* ===== 帳號狀態視覺化樣式 ===== */
+
+.account-status-section {
+  padding-bottom: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-visualization {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* 每個狀態的列（垂直排列：圓點在上，文字在下）*/
+.status-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+/* 圓點和橫線容器（使用相對定位）*/
+.status-dot-container {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+/* 圓點樣式（灰色小圓點，左右各留 7px 給橫線）*/
+.status-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--color-gray-scale4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  margin: 0 7px;
+}
+
+/* 活動狀態的圓點（大圓圈，顯示 SVG 圖標，不需要 margin）*/
+.status-dot.active {
+  width: 36px;
+  height: 36px;
+  background-color: transparent;
+  margin: 0;
+}
+
+/* SVG 圖標樣式 */
+.status-icon {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+
+/* 橫線樣式（使用絕對定位，從圓點右邊緣+7px 開始延伸到下一個圓點的左邊緣-7px）*/
+.status-line {
+  position: absolute;
+  left: calc(50% + 10px + 7px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(100% - 20px - 14px);
+  height: 6px;
+  background-color: var(--color-gray-scale4);
+  z-index: 1;
+}
+
+/* 狀態標籤 */
+.status-label {
+  color: var(--color-gray-scale2);
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.2;
+}
+
+/* 活動狀態的標籤 */
+.status-label.active {
+  font-weight: 600;
+}
+
+/* 根據狀態改變顏色 */
+.status-label.active[data-status="success"] {
+  color: var(--color-success);
+}
+
+.status-label.active[data-status="warning"] {
+  color: var(--color-warning);
+}
+
+.status-label.active[data-status="error"] {
+  color: var(--color-error);
 }

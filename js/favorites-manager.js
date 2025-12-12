@@ -177,6 +177,54 @@ class FavoritesManager {
     `;
   }
 
+  // 生成非收藏設備卡片HTML（0.5亮度）
+  generateNonFavoriteEquipmentCard(equipment, index) {
+    return `
+      <div class="flex flex-col equipment-card non-favorite-card"
+           data-row="${Math.floor(index / GRID_CONFIG.EQUIPMENT_CARDS_PER_ROW) + 1}"
+           data-category="${equipment.category}"
+           data-name="${equipment.name}"
+           data-type="equipment"
+           style="transition: opacity 0.3s ease;">
+        <!-- 設備圖片容器 -->
+        <div class="relative overflow-hidden aspect-[4/5]" style="opacity: 0.5; transition: opacity 0.3s ease;">
+          <!-- 背景圖片 -->
+          <div class="absolute inset-0">
+            <img
+              src="${equipment.image}"
+              alt="${equipment.name}"
+              class="w-full h-full object-cover object-center"
+            />
+          </div>
+
+          <!-- 頂部黑色到透明漸層 -->
+          <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent"></div>
+        </div>
+
+        <!-- 底部產品資訊 -->
+        <div class="flex justify-between items-start mt-4" style="opacity: 0.5; transition: opacity 0.3s ease;">
+          <div class="flex-1">
+            <div class="text-breadcrumb font-['Inter',_sans-serif] font-normal tracking-wide" style="color: #cccccc">
+              ${equipment.category}
+            </div>
+            <div class="text-small-title font-['Inter',_sans-serif] font-medium text-white tracking-wide mt-1 pr-4">
+              ${equipment.name}
+            </div>
+          </div>
+          <div class="ml-2">
+            <img
+              src="Icons/Bookmark Sharp Regular.svg"
+              alt="Add to favorites"
+              class="w-4 h-4 cursor-pointer hover:opacity-70 transition-opacity add-favorite-btn bookmark-icon"
+              data-type="equipment"
+              data-equipment="${equipment.name}"
+            />
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // 生成教室卡片HTML
   generateClassroomCard(classroom, index) {
     return `
@@ -248,6 +296,22 @@ class FavoritesManager {
         this.updateFilterButtonStates(filterButtons, button);
         const category = button.dataset.category;
         this.currentFilter = category;
+
+        // 清空搜尋輸入
+        const searchInput = document.getElementById('favoritesSearchInput');
+        if (searchInput && searchInput.value) {
+          searchInput.value = '';
+          this.currentSearchTerm = '';
+
+          // 重置搜尋label狀態
+          const searchLabel = document.getElementById('favoritesSearchLabel');
+          if (searchLabel) {
+            searchLabel.style.opacity = '1';
+            searchLabel.style.color = '#ffffff';
+            searchLabel.style.transform = 'translateX(0)';
+          }
+        }
+
         this.filterFavoriteEquipment(category);
       });
     });
@@ -323,15 +387,21 @@ class FavoritesManager {
     });
   }
 
-  // 篩選收藏設備 - 簡化邏輯
+  // 篩選收藏設備 - 只顯示已收藏的卡片
   filterFavoriteEquipment(category) {
     const equipmentCards = document.querySelectorAll('.favorites-equipment-card');
+
+    // 移除所有非收藏卡片
+    const nonFavoriteCards = document.querySelectorAll('.non-favorite-card');
+    nonFavoriteCards.forEach(card => card.remove());
 
     this.hideAllCards(equipmentCards);
 
     setTimeout(() => {
       const visibleCount = this.showFilteredCards(equipmentCards, category);
-      this.updateEmptyState('equipment', visibleCount);
+
+      // 更新空狀態訊息 - 使用篩選器的文字
+      this.updateFilterEmptyState('equipment', visibleCount);
 
       setTimeout(() => {
         this.resetCardStyles(equipmentCards);
@@ -341,28 +411,69 @@ class FavoritesManager {
     }, ANIMATION_CONFIG.INITIAL_DELAY);
   }
 
-  // 搜索收藏設備 - 簡化邏輯
+  // 搜索收藏設備 - 同時顯示收藏和非收藏的設備
   searchFavoriteEquipment(searchTerm) {
-    const equipmentCards = document.querySelectorAll('.favorites-equipment-card');
+    const equipmentGrid = document.getElementById('favorites-equipment-grid');
     const searchLower = searchTerm.toLowerCase().trim();
 
-    // 如果搜索詞為空，恢復到當前篩選狀態
+    // 如果搜索詞為空，恢復到之前的篩選狀態
     if (!searchLower) {
+      this.activateFilterButton(this.currentFilter);
       this.filterFavoriteEquipment(this.currentFilter);
       return;
     }
 
-    this.hideAllCards(equipmentCards);
+    // 獲取所有收藏的設備卡片
+    const favoriteCards = document.querySelectorAll('.favorites-equipment-card');
+    this.hideAllCards(favoriteCards);
 
     setTimeout(() => {
-      const visibleCount = this.showSearchedCards(equipmentCards, searchLower);
-      this.updateEmptyState('equipment', visibleCount);
+      // 獲取收藏的設備名稱
+      const favoriteEquipmentNames = this.getFavoriteEquipmentData().map(eq => eq.name);
+
+      // 顯示匹配的收藏卡片
+      const favoriteVisibleCount = this.showSearchedCardsWithTags(favoriteCards, searchLower, true);
+
+      // 獲取所有設備數據，過濾出非收藏的設備
+      const allEquipment = this.getAllEquipmentData();
+      const nonFavoriteEquipment = allEquipment.filter(eq =>
+        !favoriteEquipmentNames.includes(eq.name) &&
+        (eq.name.toLowerCase().includes(searchLower) || eq.category.toLowerCase().includes(searchLower))
+      );
+
+      // 移除之前添加的非收藏卡片
+      const existingNonFavoriteCards = document.querySelectorAll('.non-favorite-card');
+      existingNonFavoriteCards.forEach(card => card.remove());
+
+      // 添加非收藏的匹配設備卡片
+      nonFavoriteEquipment.forEach((equipment, index) => {
+        const cardHTML = this.generateNonFavoriteEquipmentCard(equipment, favoriteVisibleCount + index);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cardHTML;
+        const newCard = tempDiv.firstElementChild;
+        equipmentGrid.appendChild(newCard);
+
+        // 設置事件監聽器
+        this.setupNonFavoriteCardEvents(newCard);
+      });
+
+      const totalVisibleCount = favoriteVisibleCount + nonFavoriteEquipment.length;
+
+      // 更新空狀態訊息 - 使用搜尋的文字
+      this.updateSearchEmptyState('equipment', totalVisibleCount);
 
       // 重置篩選器狀態
       this.resetFilterButtons();
 
       setTimeout(() => {
-        this.resetCardStyles(equipmentCards);
+        this.resetCardStyles(favoriteCards);
+        // 重新獲取所有卡片（包括新添加的非收藏卡片）
+        const allCards = document.querySelectorAll('.favorites-equipment-card, .non-favorite-card');
+        allCards.forEach(card => {
+          if (card.style.display === 'flex') {
+            card.style.opacity = '';
+          }
+        });
         // 搜尋時觸發動畫（用戶主動搜尋）
         this.recalculateRowsAndAnimate('equipment');
       }, ANIMATION_CONFIG.LAYOUT_SETTLE_DELAY);
@@ -393,12 +504,28 @@ class FavoritesManager {
     return visibleCount;
   }
 
-  // 通用函數：顯示搜索後的卡片
+  // 通用函數：顯示搜索後的卡片（支持tag搜尋）
   showSearchedCards(cards, searchTerm) {
     let visibleCount = 0;
     cards.forEach(card => {
       const equipmentName = card.dataset.name.toLowerCase();
       if (equipmentName.includes(searchTerm)) {
+        card.style.display = 'flex';
+        card.style.opacity = '0';
+        visibleCount++;
+      }
+    });
+    return visibleCount;
+  }
+
+  // 支持tag搜尋的卡片顯示方法
+  showSearchedCardsWithTags(cards, searchTerm, isFavorite = true) {
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const equipmentName = card.dataset.name ? card.dataset.name.toLowerCase() : '';
+      const category = card.dataset.category ? card.dataset.category.toLowerCase() : '';
+
+      if (equipmentName.includes(searchTerm) || category.includes(searchTerm)) {
         card.style.display = 'flex';
         card.style.opacity = '0';
         visibleCount++;
@@ -427,11 +554,52 @@ class FavoritesManager {
     });
   }
 
-  // 更新空狀態訊息
+  // 激活指定的篩選器按鈕
+  activateFilterButton(category) {
+    const filterButtons = document.querySelectorAll('#content-area .sccd-filter-item');
+    filterButtons.forEach(btn => {
+      const wrapper = btn.querySelector('.menu-item-wrapper');
+      if (wrapper) {
+        if (btn.dataset.category === category) {
+          wrapper.classList.add('active');
+        } else {
+          wrapper.classList.remove('active');
+        }
+      }
+    });
+  }
+
+  // 更新空狀態訊息（通用）
   updateEmptyState(type, visibleCount) {
     const emptyMessage = document.getElementById(`${type}-empty-message`);
     if (emptyMessage) {
       emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  // 更新篩選器的空狀態訊息
+  updateFilterEmptyState(type, visibleCount) {
+    const emptyMessage = document.getElementById(`${type}-empty-message`);
+    if (emptyMessage) {
+      if (visibleCount === 0) {
+        emptyMessage.innerHTML = '<p class="font-chinese text-gray-scale4 text-small-title">此分類目前還未有任何收藏</p>';
+        emptyMessage.style.display = 'block';
+      } else {
+        emptyMessage.style.display = 'none';
+      }
+    }
+  }
+
+  // 更新搜尋的空狀態訊息
+  updateSearchEmptyState(type, visibleCount) {
+    const emptyMessage = document.getElementById(`${type}-empty-message`);
+    if (emptyMessage) {
+      if (visibleCount === 0) {
+        emptyMessage.innerHTML = '<p class="font-chinese text-gray-scale4 text-small-title">此搜尋沒有任何符合結果</p>';
+        emptyMessage.style.display = 'block';
+      } else {
+        emptyMessage.style.display = 'none';
+      }
     }
   }
 
@@ -649,6 +817,11 @@ class FavoritesManager {
     if (selectBtn) {
       const textSpans = selectBtn.querySelectorAll('.menu-text, .menu-text-hidden');
       textSpans.forEach(span => span.textContent = '(SELECT)');
+
+      // 恢復按鈕為啟用狀態
+      selectBtn.disabled = false;
+      selectBtn.style.opacity = '';
+      selectBtn.style.cursor = 'pointer';
     }
 
     // 隱藏取消按鈕
@@ -679,8 +852,6 @@ class FavoritesManager {
     cards.forEach(card => {
       card.style.cursor = '';
     });
-
-    this.updateSelectionUI();
   }
 
   // 切換卡片選中狀態
@@ -1010,8 +1181,17 @@ class FavoritesManager {
   // 動態恢復被移除的卡片
   restoreRemovedCard(type, itemName) {
     if (type === 'equipment') {
-      // 先檢查是否已經存在相同的卡片，避免重複
-      const existingCard = document.querySelector(`[data-equipment="${itemName}"][data-type="equipment"]`);
+      // 先檢查是否存在非收藏卡片（在搜尋狀態下可能已轉換為非收藏）
+      const existingNonFavoriteCard = document.querySelector(`.non-favorite-card[data-name="${itemName}"][data-type="equipment"]`);
+      if (existingNonFavoriteCard) {
+        // 轉換回收藏卡片
+        this.convertToFavoriteCard(itemName, existingNonFavoriteCard);
+        console.log(`非收藏卡片已轉換回收藏: ${itemName}`);
+        return;
+      }
+
+      // 檢查是否已經存在收藏卡片，避免重複
+      const existingCard = document.querySelector(`[data-name="${itemName}"][data-type="equipment"].favorites-equipment-card`);
       if (existingCard) {
         console.log(`設備卡片已存在，不重複創建: ${itemName}`);
         return;
@@ -1123,6 +1303,253 @@ class FavoritesManager {
     }
   }
 
+  // 設置非收藏卡片的事件
+  setupNonFavoriteCardEvents(card) {
+    const imageContainer = card.querySelector('.aspect-\\[4\\/5\\]');
+    const infoContainer = card.querySelector('.mt-4');
+
+    // Hover效果 - 恢復正常亮度
+    card.addEventListener('mouseenter', () => {
+      if (imageContainer) imageContainer.style.opacity = '1';
+      if (infoContainer) infoContainer.style.opacity = '1';
+    });
+
+    card.addEventListener('mouseleave', () => {
+      if (imageContainer) imageContainer.style.opacity = '0.5';
+      if (infoContainer) infoContainer.style.opacity = '0.5';
+    });
+
+    // 添加收藏按鈕事件
+    const addFavoriteBtn = card.querySelector('.add-favorite-btn');
+    if (addFavoriteBtn) {
+      addFavoriteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const equipmentName = addFavoriteBtn.dataset.equipment;
+        this.addToFavorites(equipmentName, card);
+      });
+    }
+  }
+
+  // 添加到收藏
+  addToFavorites(equipmentName, card) {
+    // 使用統一方法添加bookmark
+    this.performBookmarkOperation(() => {
+      if (window.unifiedBookmarkManager) {
+        window.unifiedBookmarkManager.addBookmark(equipmentName);
+      }
+    });
+
+    // 將卡片轉換為收藏卡片
+    this.convertToFavoriteCard(equipmentName, card);
+
+    // 顯示UNDO toast
+    this.showAddFavoriteToast(equipmentName, card);
+  }
+
+  // 將非收藏卡片轉換為收藏卡片
+  convertToFavoriteCard(equipmentName, nonFavoriteCard) {
+    // 先讓卡片亮起來
+    const imageContainer = nonFavoriteCard.querySelector('.aspect-\\[4\\/5\\]');
+    const infoContainer = nonFavoriteCard.querySelector('.mt-4');
+    if (imageContainer) imageContainer.style.opacity = '1';
+    if (infoContainer) infoContainer.style.opacity = '1';
+
+    // 更改icon為實心
+    const bookmarkIcon = nonFavoriteCard.querySelector('.bookmark-icon');
+    if (bookmarkIcon) {
+      bookmarkIcon.src = 'Icons/Bookmark Sharp Fill.svg';
+      bookmarkIcon.classList.remove('add-favorite-btn');
+      bookmarkIcon.classList.add('remove-favorite-btn');
+      bookmarkIcon.alt = 'Remove from favorites';
+    }
+
+    // 改變class從non-favorite-card變成favorites-equipment-card
+    nonFavoriteCard.classList.remove('non-favorite-card');
+    nonFavoriteCard.classList.add('favorites-equipment-card', 'selectable-card');
+
+    // 獲取設備數據
+    const equipmentData = this.getAllEquipmentData().find(eq => eq.name === equipmentName);
+    if (!equipmentData) return;
+
+    // 移動卡片到收藏區域的最後
+    const grid = document.getElementById('favorites-equipment-grid');
+    const emptyMessage = document.getElementById('equipment-empty-message');
+    const firstNonFavoriteCard = grid.querySelector('.non-favorite-card');
+
+    // 從原位置移除
+    nonFavoriteCard.remove();
+
+    // 插入到收藏卡片的最後，但在非收藏卡片之前
+    if (firstNonFavoriteCard) {
+      grid.insertBefore(nonFavoriteCard, firstNonFavoriteCard);
+    } else {
+      grid.appendChild(nonFavoriteCard);
+    }
+
+    // 更新事件監聽器
+    this.setupRemoveFavoriteButtonForCard(nonFavoriteCard);
+    this.setupCardSelectionForCard(nonFavoriteCard);
+
+    // 添加選擇框（選擇模式需要）
+    const selectionCheckbox = nonFavoriteCard.querySelector('.selection-checkbox');
+    if (!selectionCheckbox) {
+      const imageContainer = nonFavoriteCard.querySelector('.aspect-\\[4\\/5\\]');
+      if (imageContainer) {
+        const checkboxHTML = `
+          <div class="selection-checkbox absolute top-2 left-2 w-5 h-5 rounded-full bg-transparent cursor-pointer z-10" style="display: none; border: 1px solid white;">
+            <div class="selection-fill rounded-full bg-white" style="display: none; width: calc(100% - 4px); height: calc(100% - 4px); margin: 2px;"></div>
+          </div>
+        `;
+        imageContainer.insertAdjacentHTML('afterbegin', checkboxHTML);
+      }
+    }
+
+    // 移除hover事件
+    const newCard = nonFavoriteCard;
+    const clonedCard = newCard.cloneNode(true);
+    newCard.parentNode.replaceChild(clonedCard, newCard);
+
+    // 重新設置事件
+    this.setupRemoveFavoriteButtonForCard(clonedCard);
+    this.setupCardSelectionForCard(clonedCard);
+  }
+
+  // 顯示添加收藏的toast通知
+  showAddFavoriteToast(equipmentName, originalCard) {
+    const message = '該設備已加入收藏';
+
+    // 創建帶UNDO的toast
+    this.createUndoToastForAddition(message, equipmentName, originalCard);
+  }
+
+  // 為添加收藏創建帶UNDO功能的toast
+  createUndoToastForAddition(message, equipmentName, originalCard) {
+    // 移除現有的toast
+    const existingToast = document.getElementById('addition-undo-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // 創建toast容器
+    const toast = document.createElement('div');
+    toast.id = 'addition-undo-toast';
+    toast.className = 'toast';
+
+    // 創建內容容器
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'flex items-center gap-4';
+
+    // 創建消息文字
+    const messageP = document.createElement('p');
+    messageP.textContent = message;
+
+    // 創建UNDO按鈕
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'font-english font-medium text-tiny uppercase tracking-wide hover:opacity-70 transition-opacity';
+    undoBtn.style.color = '#000000';
+    undoBtn.style.marginLeft = '1rem';
+    undoBtn.textContent = 'UNDO';
+    undoBtn.onclick = () => {
+      this.undoAddFavorite(equipmentName);
+      toast.classList.add('fade-out');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, 300);
+    };
+    undoBtn.style.cursor = 'pointer';
+    undoBtn.style.pointerEvents = 'auto';
+
+    contentWrapper.appendChild(messageP);
+    contentWrapper.appendChild(undoBtn);
+    toast.appendChild(contentWrapper);
+    document.body.appendChild(toast);
+
+    // 顯示toast
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 10);
+
+    // 3秒後自動消失
+    setTimeout(() => {
+      if (toast.parentNode && !toast.classList.contains('fade-out')) {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.remove();
+          }
+        }, 300);
+      }
+    }, 3000);
+  }
+
+  // 撤銷添加收藏
+  undoAddFavorite(equipmentName) {
+    // 使用統一方法移除bookmark
+    this.performBookmarkOperation(() => {
+      if (window.unifiedBookmarkManager) {
+        window.unifiedBookmarkManager.removeBookmark(equipmentName);
+      }
+    });
+
+    // 找到收藏卡片
+    const favoriteCard = document.querySelector(`.favorites-equipment-card[data-name="${equipmentName}"]`);
+    if (!favoriteCard) return;
+
+    // 如果在搜尋狀態，轉換回非收藏卡片
+    if (this.currentSearchTerm) {
+      this.convertBackToNonFavoriteCard(equipmentName, favoriteCard);
+    } else {
+      // 不在搜尋狀態，直接移除
+      favoriteCard.remove();
+    }
+  }
+
+  // 將收藏卡片轉換回非收藏卡片
+  convertBackToNonFavoriteCard(equipmentName, favoriteCard) {
+    // 改變class
+    favoriteCard.classList.remove('favorites-equipment-card', 'selectable-card');
+    favoriteCard.classList.add('non-favorite-card');
+
+    // 變暗 - 設置在圖片容器和資訊容器上
+    const imageContainer = favoriteCard.querySelector('.aspect-\\[4\\/5\\]');
+    const infoContainer = favoriteCard.querySelector('.mt-4');
+    if (imageContainer) {
+      imageContainer.style.opacity = '0.5';
+      imageContainer.style.transition = 'opacity 0.3s ease';
+    }
+    if (infoContainer) {
+      infoContainer.style.opacity = '0.5';
+      infoContainer.style.transition = 'opacity 0.3s ease';
+    }
+
+    // 更改icon為空心
+    const bookmarkIcon = favoriteCard.querySelector('.bookmark-icon');
+    if (bookmarkIcon) {
+      bookmarkIcon.src = 'Icons/Bookmark Sharp Regular.svg';
+      bookmarkIcon.classList.remove('remove-favorite-btn');
+      bookmarkIcon.classList.add('add-favorite-btn');
+      bookmarkIcon.alt = 'Add to favorites';
+    }
+
+    // 移除選擇框
+    const selectionCheckbox = favoriteCard.querySelector('.selection-checkbox');
+    if (selectionCheckbox) {
+      selectionCheckbox.remove();
+    }
+
+    // 移動回到非收藏區域（grid的最後）
+    const grid = document.getElementById('favorites-equipment-grid');
+    favoriteCard.remove();
+    grid.appendChild(favoriteCard);
+
+    // 重新設置hover事件（使用clone避免舊事件殘留）
+    const clonedCard = favoriteCard.cloneNode(true);
+    favoriteCard.parentNode.replaceChild(clonedCard, favoriteCard);
+    this.setupNonFavoriteCardEvents(clonedCard);
+  }
+
   // 統一的書籤操作方法 - 避免重複的內部標志設置
   performBookmarkOperation(operation) {
     // 標記為內部操作，防止觸發全局同步
@@ -1171,11 +1598,18 @@ class FavoritesManager {
     if (showToast) {
       const card = this.findCard('equipment', itemName);
       if (card) {
-        card.classList.add('fade-out');
-        setTimeout(() => {
-          card.remove();
+        // 如果在搜尋狀態，直接轉換為非收藏卡片（不fade out，不消失）
+        if (this.currentSearchTerm) {
+          this.convertBackToNonFavoriteCard(itemName, card);
           this.checkEmptyState();
-        }, 500);
+        } else {
+          // 不在搜尋狀態，fade out後移除
+          card.classList.add('fade-out');
+          setTimeout(() => {
+            card.remove();
+            this.checkEmptyState();
+          }, 500);
+        }
       }
     }
   }
@@ -1207,7 +1641,9 @@ class FavoritesManager {
   // 檢查空狀態並顯示訊息（個別移除時不觸發動畫）
   checkEmptyState() {
     const equipmentCards = document.querySelectorAll('.favorites-equipment-card');
-    const visibleCount = Array.from(equipmentCards).filter(card => {
+    const nonFavoriteCards = document.querySelectorAll('.non-favorite-card');
+
+    const favoriteVisibleCount = Array.from(equipmentCards).filter(card => {
       // 排除正在fade-out的卡片
       if (card.classList.contains('fade-out')) {
         return false;
@@ -1217,7 +1653,19 @@ class FavoritesManager {
       return computedStyle.display !== 'none';
     }).length;
 
-    this.updateEmptyState('equipment', visibleCount);
+    const nonFavoriteVisibleCount = Array.from(nonFavoriteCards).filter(card => {
+      const computedStyle = window.getComputedStyle(card);
+      return computedStyle.display !== 'none';
+    }).length;
+
+    const totalVisibleCount = favoriteVisibleCount + nonFavoriteVisibleCount;
+
+    // 如果在搜尋狀態，使用搜尋的空訊息邏輯；否則使用篩選器的空訊息邏輯
+    if (this.currentSearchTerm) {
+      this.updateSearchEmptyState('equipment', totalVisibleCount);
+    } else {
+      this.updateFilterEmptyState('equipment', favoriteVisibleCount);
+    }
     // 不觸發動畫，只更新空狀態顯示
   }
 
@@ -1315,12 +1763,14 @@ class FavoritesManager {
     if (window.innerWidth < 768) return;
 
     const cards = type === 'equipment'
-      ? document.querySelectorAll('.favorites-equipment-card')
+      ? document.querySelectorAll('.favorites-equipment-card, .non-favorite-card')
       : document.querySelectorAll('.favorites-classroom-card');
 
     const visibleCards = Array.from(cards).filter(card =>
       window.getComputedStyle(card).display !== 'none'
     );
+
+    console.log('重新計算動畫 - 可見卡片數:', visibleCards.length);
 
     if (visibleCards.length === 0) return;
 
@@ -1338,7 +1788,7 @@ class FavoritesManager {
       // 重置動畫狀態
       visibleCards.forEach(card => {
         card.classList.remove('animate-in');
-        card.style.opacity = '';
+        card.style.opacity = '';  // 清除inline opacity，讓CSS控制
         card.style.visibility = 'visible';
         card.style.transform = '';
       });

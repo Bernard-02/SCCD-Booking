@@ -75,10 +75,10 @@ class NotificationManager {
 
     let notifications = this.loadNotificationsFromStorage();
 
-    // 如果沒有數據，創建測試數據
+    // 不再自動創建測試數據，保留用戶真實的通知記錄
+    // 如果沒有數據，返回空陣列
     if (notifications.length === 0) {
-      notifications = this.createTestNotifications();
-      this.saveNotificationsData(notifications);
+      return [];
     }
 
     // 自動刪除超過7天的通知

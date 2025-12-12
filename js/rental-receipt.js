@@ -19,7 +19,13 @@ function generateRentalInfo() {
     if (rentalData) {
       rentalNumber = rentalData.orderNumber;
       startDate = formatDate(new Date(rentalData.startDate));
-      endDate = formatDate(new Date(rentalData.endDate));
+
+      // 如果有延期，使用延期後的到期日作為歸還日，並添加「(已延期)」標註
+      if (rentalData.hasExtended && rentalData.dueDate) {
+        endDate = formatDate(new Date(rentalData.dueDate)) + ' (已延期)';
+      } else {
+        endDate = formatDate(new Date(rentalData.endDate));
+      }
     } else {
       // 找不到租借記錄，使用默認值
       rentalNumber = '#2025001';
@@ -139,12 +145,24 @@ function loadEquipmentSummary() {
   const equipmentList = document.getElementById('equipment-summary-list');
   const equipmentListMobile = document.getElementById('equipment-summary-list-mobile');
 
-  // 從localStorage獲取租借時的購物車數據
-  const rentalData = localStorage.getItem('rentalCartData');
+  // 檢查 URL 是否有 rental_id 參數
+  const urlParams = new URLSearchParams(window.location.search);
+  const rentalId = urlParams.get('rental_id');
+
   let cart = [];
 
-  if (rentalData) {
-    cart = JSON.parse(rentalData);
+  if (rentalId) {
+    // 從租借歷史中讀取對應單子的設備數據
+    const rentalData = getRentalDataById(rentalId);
+    if (rentalData && rentalData.cartData) {
+      cart = rentalData.cartData;
+    }
+  } else {
+    // 新租借：從localStorage獲取租借時的購物車數據
+    const rentalCartData = localStorage.getItem('rentalCartData');
+    if (rentalCartData) {
+      cart = JSON.parse(rentalCartData);
+    }
   }
 
   let equipmentDeposit = 0;
@@ -478,12 +496,14 @@ function addRentalToHistory() {
   }
 
   // 從 localStorage 讀取租借的設備
-  const rentalData = localStorage.getItem('rentalCartData');
+  const rentalCartData = localStorage.getItem('rentalCartData');
   let items = [];
-  if (rentalData) {
+  let cartData = [];
+
+  if (rentalCartData) {
     try {
-      const cart = JSON.parse(rentalData);
-      items = cart.map(item => item.name);
+      cartData = JSON.parse(rentalCartData);
+      items = cartData.map(item => item.name);
     } catch (error) {
       console.error('無法解析租借設備資料:', error);
     }
@@ -502,7 +522,7 @@ function addRentalToHistory() {
   // addRentalRecord 會使用全域訂單號碼管理器，但我們要確保使用頁面上顯示的號碼
   const rentals = rentalHistoryManager.getRentalHistoryData();
 
-  // 直接構建租借記錄對象
+  // 直接構建租借記錄對象（保存完整的購物車數據）
   const newRental = {
     id: rentalNumber.replace('#', 'rental_'),
     orderNumber: rentalNumber,
@@ -510,7 +530,8 @@ function addRentalToHistory() {
     endDate: endDate,
     dueDate: dueDate,
     status: window.RENTAL_STATUS.ONGOING,
-    items: items
+    items: items,
+    cartData: cartData  // 保存完整的購物車數據，包含押金、數量等信息
   };
 
   // 添加到租借列表並保存
@@ -518,6 +539,17 @@ function addRentalToHistory() {
   rentalHistoryManager.saveRentalHistoryData(rentals);
 
   console.log('✅ 已添加租借記錄:', newRental);
+
+  // 創建「已通過審核」通知
+  if (window.NotificationManager) {
+    const notificationManager = new window.NotificationManager();
+    notificationManager.init(loginData.student);
+    notificationManager.addNotification(
+      `您的租借申請 ${rentalNumber} 已通過審核。`,
+      'approved'
+    );
+    console.log('✅ 已創建通知: 租借申請已通過審核');
+  }
 
   // 標記此租借記錄已添加
   localStorage.setItem(addedKey, 'true');

@@ -25,6 +25,7 @@ class ProfileDataManager {
     console.log('ProfileDataManager constructor - 新版本v2');
     this.currentUser = null;
     this.isPasswordVisible = false;
+    this.currentPassword = '20030911'; // 預設密碼，實際應從安全來源獲取
   }
 
   // 初始化個人資料管理器
@@ -37,15 +38,133 @@ class ProfileDataManager {
     const userData = this.getCurrentUserData();
 
     return `
-      <div class="space-y-8">
+      <div class="space-y-8" style="width: 80%;">
         <div>
           <h2 class="font-chinese text-white text-medium-title">個人資料</h2>
         </div>
+        <!-- 帳號狀態區塊 -->
+        ${this.generateAccountStatusSection()}
+        <!-- 個人資料欄位 -->
         <div class="space-y-6">
           ${this.generateProfileRows(userData)}
         </div>
       </div>
     `;
+  }
+
+  // 生成帳號狀態區塊
+  generateAccountStatusSection() {
+    // 獲取用戶帳號狀態
+    const accountStatus = this.getAccountStatus();
+    const statusTextHTML = this.formatStatusText(accountStatus);
+
+    return `
+      <div class="account-status-section">
+        <!-- 第一行：狀態文字 -->
+        <div class="font-chinese text-white text-content mb-2">${statusTextHTML}</div>
+
+        <!-- 第二行：描述文字 -->
+        <div class="font-chinese text-gray-scale2 text-tiny mb-14">${accountStatus.description}</div>
+
+        <!-- 第三行：視覺化狀態 -->
+        <div class="status-visualization">
+          ${this.generateStatusDots(accountStatus.level)}
+        </div>
+      </div>
+    `;
+  }
+
+  // 格式化狀態文字（為關鍵詞添加顏色和加粗）
+  formatStatusText(accountStatus) {
+    const { status, color } = accountStatus;
+
+    // 根據不同狀態添加樣式
+    if (accountStatus.level === 0) {
+      // 準時：「您是個守規矩的好寶寶」，「好寶寶」為綠色加粗
+      return '您是個守規矩的<span style="color: var(--color-success); font-weight: 600;">好寶寶</span>';
+    } else if (accountStatus.level >= 5) {
+      // 嚴重逾期：整句紅色
+      return `<span style="color: var(--color-error);">${status}</span>`;
+    } else {
+      // 逾期1-4天：整句橘色
+      return `<span style="color: var(--color-warning);">${status}</span>`;
+    }
+  }
+
+  // 生成狀態圓點和橫線
+  generateStatusDots(currentLevel) {
+    const statuses = [
+      { label: '準時', icon: 'All_Good', color: 'success' },
+      { label: '1天', icon: 'At_Risk', color: 'warning' },
+      { label: '2天', icon: 'At_Risk', color: 'warning' },
+      { label: '3天', icon: 'At_Risk', color: 'warning' },
+      { label: '4天', icon: 'At_Risk', color: 'warning' },
+      { label: '5天\n(嚴重逾期)', icon: 'Suspended', color: 'error' }
+    ];
+
+    let html = '';
+
+    // 為每個狀態生成一列（包含圓點+橫線和文字）
+    statuses.forEach((status, index) => {
+      const isActive = index === currentLevel;
+      const isLast = index === statuses.length - 1;
+
+      html += `<div class="status-column">`;
+
+      // 圓點和橫線容器
+      html += `<div class="status-dot-container">`;
+
+      // 圓點（絕對定位居中，z-index: 2）
+      if (isActive) {
+        html += `
+          <div class="status-dot active">
+            <img src="Icons/${status.icon}.svg" alt="${status.label}" class="status-icon" />
+          </div>
+        `;
+      } else {
+        html += `<div class="status-dot"></div>`;
+      }
+
+      // 橫線（絕對定位，從圓點中心向右延伸，z-index: 1，最後一個不需要）
+      if (!isLast) {
+        html += `<div class="status-line"></div>`;
+      }
+
+      html += `</div>`; // 結束 status-dot-container
+
+      // 標籤
+      const labelClass = isActive ? 'status-label active' : 'status-label';
+      const labelDataAttr = isActive ? `data-status="${status.color}"` : '';
+      html += `
+        <div class="${labelClass} font-chinese text-tiny" ${labelDataAttr}>
+          ${status.label}
+        </div>
+      `;
+
+      html += `</div>`; // 結束 status-column
+    });
+
+    return html;
+  }
+
+  // 獲取用戶帳號狀態
+  getAccountStatus() {
+    // 如果 RentalHistoryManager 可用，從那裡獲取狀態
+    if (window.RentalHistoryManager && this.currentUser) {
+      const rentalHistoryManager = new window.RentalHistoryManager();
+      rentalHistoryManager.init(this.currentUser);
+      return rentalHistoryManager.getAccountStatus();
+    }
+
+    // 預設返回準時狀態
+    return {
+      level: 0,
+      status: '準時',
+      description: '您非常準時地歸還租借，沒有任何逾期記錄',
+      color: 'success',
+      isSuspended: false,
+      totalOverdueDays: 0
+    };
   }
 
   // 生成個人資料行內容
@@ -75,7 +194,7 @@ class ProfileDataManager {
   generateField(label, value, fontClass = 'font-chinese') {
     return `
       <div>
-        <label class="font-chinese text-gray-scale3 text-tiny block mb-2">${label}</label>
+        <label class="font-chinese text-gray-scale2 text-tiny block mb-2">${label}</label>
         <p class="${fontClass} text-white text-small-title">${value}</p>
       </div>
     `;
@@ -85,11 +204,11 @@ class ProfileDataManager {
   generatePasswordField() {
     return `
       <div>
-        <label class="font-chinese text-gray-scale3 text-tiny block mb-2">密碼</label>
+        <label class="font-chinese text-gray-scale2 text-tiny block mb-2">密碼</label>
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 flex-1">
             <span id="password-display" class="font-english text-white text-small-title">••••••••</span>
-            <button id="toggle-password" class="text-gray-scale3 hover:text-gray-scale3 cursor-pointer transition-colors">
+            <button id="toggle-password" class="text-gray-scale2 hover:text-gray-scale2 cursor-pointer transition-colors">
               ${PASSWORD_ICONS.VISIBLE}
             </button>
           </div>
@@ -109,7 +228,7 @@ class ProfileDataManager {
     const hasPhone = userData.phone;
     return `
       <div>
-        <label class="font-chinese text-gray-scale3 text-tiny block mb-2">手機號碼</label>
+        <label class="font-chinese text-gray-scale2 text-tiny block mb-2">手機號碼</label>
         <div class="flex items-center gap-3">
           <p id="phone-display" class="font-english text-white text-small-title flex-1">${userData.phone || '未設定'}</p>
           <button id="set-phone-btn" class="page-button">
@@ -127,7 +246,7 @@ class ProfileDataManager {
   generateEmailField(userData) {
     return `
       <div>
-        <label class="font-english text-gray-scale3 text-tiny block mb-2">Email</label>
+        <label class="font-english text-gray-scale2 text-tiny block mb-2">Email</label>
         <p class="font-english text-white text-small-title">${userData.email}</p>
       </div>
     `;
@@ -166,7 +285,7 @@ class ProfileDataManager {
   getCurrentUserPassword() {
     // 這裡應該實際從安全的地方獲取密碼
     // 目前使用測試數據
-    return '20030911';
+    return this.currentPassword;
   }
 
   // 獲取當前用戶數據
@@ -721,41 +840,54 @@ class ProfileDataManager {
       overflow-y: auto;
     `;
 
+    // 清除按鈕的SVG icon
+    const CLEAR_ICON = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6L18 18" stroke="#a4a4a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
     // 模態框HTML內容
     modal.innerHTML = `
       <h3 style="color: white; font-family: 'Noto Sans TC', sans-serif; font-size: 1.25rem; margin-bottom: 18px;">更改密碼</h3>
 
       <!-- 當前密碼 -->
       <div class="input-group" style="margin-bottom: 1rem;">
-        <label for="new-current-password" class="text-gray-scale1 text-tiny font-english" style="display: block;">當前密碼</label>
+        <label for="new-current-password" class="text-gray-scale1 text-tiny font-chinese" style="display: block; margin-bottom: 4px;">當前密碼<span style="color: #ff8698; margin-left: 2px;">*</span></label>
         <div style="position: relative;">
           <input type="password" id="new-current-password" class="input-field password-field" style="width: 100%; padding: 8px 40px 8px 1px; border: none; border-bottom: 1px solid white; background: transparent; color: white; font-family: 'Inter', sans-serif; font-size: 1rem; outline: none;">
           <button type="button" class="password-toggle-btn" onclick="window.profilePage.managers.profileData.toggleNewPasswordField('new-current-password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; padding: 4px;">
             ${PASSWORD_ICONS.VISIBLE}
           </button>
         </div>
+        <div id="current-password-error" class="font-chinese" style="color: #ff8698; font-size: 0.75rem; margin-top: 4px; display: none;"></div>
       </div>
 
       <!-- 新密碼 -->
       <div class="input-group" style="margin-bottom: 1rem;">
-        <label for="new-new-password" class="text-gray-scale1 text-tiny font-english" style="display: block;">新密碼</label>
+        <label for="new-new-password" class="text-gray-scale1 text-tiny font-chinese" style="display: block; margin-bottom: 4px;">新密碼<span style="color: #ff8698; margin-left: 2px;">*</span></label>
         <div style="position: relative;">
           <input type="password" id="new-new-password" class="input-field password-field" style="width: 100%; padding: 8px 40px 8px 1px; border: none; border-bottom: 1px solid white; background: transparent; color: white; font-family: 'Inter', sans-serif; font-size: 1rem; outline: none;">
           <button type="button" class="password-toggle-btn" onclick="window.profilePage.managers.profileData.toggleNewPasswordField('new-new-password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; padding: 4px;">
             ${PASSWORD_ICONS.VISIBLE}
           </button>
         </div>
+        <div id="new-password-error" class="font-chinese" style="color: #ff8698; font-size: 0.75rem; margin-top: 4px; display: none;"></div>
       </div>
 
       <!-- 確認密碼 -->
       <div class="input-group" style="margin-bottom: 1rem;">
-        <label for="new-confirm-password" class="text-gray-scale1 text-tiny font-english" style="display: block;">確認密碼</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label for="new-confirm-password" class="text-gray-scale1 text-tiny font-chinese">確認密碼<span style="color: #ff8698; margin-left: 2px;">*</span></label>
+          <button type="button" id="clear-confirm-password-btn" onclick="window.profilePage.managers.profileData.clearConfirmPassword()" class="font-chinese" style="background: transparent; border: none; cursor: pointer; color: #ff8698; font-size: 0.75rem; padding: 0 0.55rem 0 0;">清除</button>
+        </div>
         <div style="position: relative;">
           <input type="password" id="new-confirm-password" class="input-field password-field" style="width: 100%; padding: 8px 40px 8px 1px; border: none; border-bottom: 1px solid white; background: transparent; color: white; font-family: 'Inter', sans-serif; font-size: 1rem; outline: none;">
           <button type="button" class="password-toggle-btn" onclick="window.profilePage.managers.profileData.toggleNewPasswordField('new-confirm-password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; padding: 4px;">
             ${PASSWORD_ICONS.VISIBLE}
           </button>
         </div>
+        <div id="confirm-password-error" class="font-chinese" style="color: #ff8698; font-size: 0.75rem; margin-top: 4px; display: none;"></div>
       </div>
 
       <!-- 密碼強度指示器 -->
@@ -784,7 +916,7 @@ class ProfileDataManager {
             <span class="menu-text-hidden">(DISCARD)</span>
           </div>
         </button>
-        <button onclick="window.profilePage.managers.profileData.submitNewPasswordChange()" class="page-button" style="flex: 1; background: transparent; border: none; color: white; cursor: pointer; padding: 0.5rem 1rem; position: relative; overflow: hidden;">
+        <button id="change-password-submit-btn" onclick="window.profilePage.managers.profileData.submitNewPasswordChange()" class="page-button" style="flex: 1; background: transparent; border: none; color: white; cursor: pointer; padding: 0.5rem 1rem; position: relative; overflow: hidden; opacity: 0.3; pointer-events: none;">
           <div class="menu-item-wrapper">
             <span class="menu-text">(CHANGE)</span>
             <span class="menu-text-hidden">(CHANGE)</span>
@@ -796,8 +928,8 @@ class ProfileDataManager {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // 設置密碼強度檢查
-    this.setupNewPasswordStrengthChecker();
+    // 設置所有事件監聽器
+    this.setupNewPasswordModalEventListeners();
   }
 
   // 關閉新密碼modal
@@ -820,6 +952,35 @@ class ProfileDataManager {
     } else {
       field.type = 'password';
       button.innerHTML = PASSWORD_ICONS.VISIBLE;
+    }
+  }
+
+  // 清除確認密碼欄位
+  clearConfirmPassword() {
+    const confirmPasswordInput = document.getElementById('new-confirm-password');
+    const confirmPasswordError = document.getElementById('confirm-password-error');
+
+    if (confirmPasswordInput) {
+      confirmPasswordInput.value = '';
+      // 清除錯誤訊息
+      if (confirmPasswordError) {
+        confirmPasswordError.style.display = 'none';
+      }
+      // 重新檢查Change按鈕的狀態
+      const currentPasswordInput = document.getElementById('new-current-password');
+      const newPasswordInput = document.getElementById('new-new-password');
+      const changeBtn = document.getElementById('change-password-submit-btn');
+
+      const hasCurrentPassword = currentPasswordInput && currentPasswordInput.value.trim().length > 0;
+      const hasNewPassword = newPasswordInput && newPasswordInput.value.trim().length > 0;
+
+      if (hasCurrentPassword || hasNewPassword) {
+        changeBtn.style.opacity = '1';
+        changeBtn.style.pointerEvents = 'auto';
+      } else {
+        changeBtn.style.opacity = '0.3';
+        changeBtn.style.pointerEvents = 'none';
+      }
     }
   }
 
@@ -852,12 +1013,47 @@ class ProfileDataManager {
     });
   }
 
-  // 設置新密碼強度檢查
-  setupNewPasswordStrengthChecker() {
+  // 設置新密碼modal的所有事件監聽器
+  setupNewPasswordModalEventListeners() {
+    const currentPasswordInput = document.getElementById('new-current-password');
     const newPasswordInput = document.getElementById('new-new-password');
+    const confirmPasswordInput = document.getElementById('new-confirm-password');
+    const changeBtn = document.getElementById('change-password-submit-btn');
+
+    // 監聽所有輸入框的input事件，用於啟用/禁用Change按鈕
+    const checkInputs = () => {
+      const hasCurrentPassword = currentPasswordInput.value.trim().length > 0;
+      const hasNewPassword = newPasswordInput.value.trim().length > 0;
+      const hasConfirmPassword = confirmPasswordInput.value.trim().length > 0;
+
+      // 只要有任何輸入，就啟用Change按鈕
+      if (hasCurrentPassword || hasNewPassword || hasConfirmPassword) {
+        changeBtn.style.opacity = '1';
+        changeBtn.style.pointerEvents = 'auto';
+      } else {
+        changeBtn.style.opacity = '0.3';
+        changeBtn.style.pointerEvents = 'none';
+      }
+    };
+
+    // 綁定input事件
+    currentPasswordInput.addEventListener('input', () => {
+      checkInputs();
+      // 清除當前密碼的錯誤訊息
+      document.getElementById('current-password-error').style.display = 'none';
+    });
 
     newPasswordInput.addEventListener('input', (e) => {
+      checkInputs();
       this.updateNewPasswordStrength(e.target.value);
+      // 清除新密碼的錯誤訊息
+      document.getElementById('new-password-error').style.display = 'none';
+    });
+
+    confirmPasswordInput.addEventListener('input', () => {
+      checkInputs();
+      // 清除確認密碼的錯誤訊息
+      document.getElementById('confirm-password-error').style.display = 'none';
     });
   }
 
@@ -922,29 +1118,77 @@ class ProfileDataManager {
 
   // 提交新密碼更改
   submitNewPasswordChange() {
-    const currentPassword = document.getElementById('new-current-password').value;
-    const newPassword = document.getElementById('new-new-password').value;
-    const confirmPassword = document.getElementById('new-confirm-password').value;
+    const currentPassword = document.getElementById('new-current-password').value.trim();
+    const newPassword = document.getElementById('new-new-password').value.trim();
+    const confirmPassword = document.getElementById('new-confirm-password').value.trim();
 
-    // 基本驗證
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert('請填寫所有欄位');
+    // 清除所有錯誤訊息
+    document.getElementById('current-password-error').style.display = 'none';
+    document.getElementById('new-password-error').style.display = 'none';
+    document.getElementById('confirm-password-error').style.display = 'none';
+
+    let hasError = false;
+
+    // 驗證1: 檢查當前密碼是否填寫
+    if (!currentPassword) {
+      const errorEl = document.getElementById('current-password-error');
+      errorEl.textContent = '請輸入當前密碼';
+      errorEl.style.display = 'block';
+      hasError = true;
+    } else {
+      // 驗證2: 檢查當前密碼是否正確
+      const correctPassword = this.getCurrentUserPassword();
+      if (currentPassword !== correctPassword) {
+        const errorEl = document.getElementById('current-password-error');
+        errorEl.textContent = '當前密碼不正確';
+        errorEl.style.display = 'block';
+        hasError = true;
+      }
+    }
+
+    // 驗證3: 檢查新密碼是否填寫
+    if (!newPassword) {
+      const errorEl = document.getElementById('new-password-error');
+      errorEl.textContent = '請輸入新密碼';
+      errorEl.style.display = 'block';
+      hasError = true;
+    }
+
+    // 驗證4: 檢查確認密碼是否填寫
+    if (!confirmPassword) {
+      const errorEl = document.getElementById('confirm-password-error');
+      errorEl.textContent = '請輸入確認密碼';
+      errorEl.style.display = 'block';
+      hasError = true;
+    } else if (newPassword && confirmPassword !== newPassword) {
+      // 驗證5: 檢查新密碼和確認密碼是否一致
+      const errorEl = document.getElementById('confirm-password-error');
+      errorEl.textContent = '新密碼與確認密碼不一致';
+      errorEl.style.display = 'block';
+      hasError = true;
+    }
+
+    // 如果有任何錯誤，停止提交
+    if (hasError) {
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      alert('新密碼與確認密碼不符');
-      return;
-    }
+    // 更新存儲的密碼
+    this.currentPassword = newPassword;
 
-    if (newPassword.length < 8) {
-      alert('密碼長度至少需要8個字符');
-      return;
+    // 如果密碼目前正在顯示，更新顯示的密碼
+    if (this.isPasswordVisible) {
+      const passwordDisplay = document.getElementById('password-display');
+      if (passwordDisplay) {
+        passwordDisplay.textContent = newPassword;
+      }
     }
 
     // 這裡可以調用API
     console.log('提交密碼更改:', { currentPassword, newPassword });
-    alert('密碼更改成功！');
+    console.log('新密碼已保存:', this.currentPassword);
+
+    // 關閉模態框
     this.closeNewPasswordModal();
   }
 

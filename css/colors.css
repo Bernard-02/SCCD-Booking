@@ -1,0 +1,77 @@
+/* ===== SCCD 顏色系統定義 ===== */
+/* 此文件定義整個系統使用的顏色變數和工具類別 */
+
+:root {
+  /* 主要品牌色 */
+  --color-primary: #000000;          /* 黑色 - 主背景 */
+  --color-white: #ffffff;            /* 白色 - 主文字 */
+
+  /* 狀態色 */
+  --color-success: #00ff80;          /* 綠色 - 有現貨、成功狀態 */
+  --color-error: #ff448a;            /* 粉紅色 - 已借出、錯誤狀態 */
+  --color-error2: #ff8698;           /* 淺粉紅色 - 次要錯誤狀態 */
+  --color-warning: #ffaa00;          /* 橙色 - 警告狀態 */
+  --color-purple: #65b4fe;           /* 藍色 - 專案許可區標示 */
+
+  /* 灰階系統 - Scale 1-5 (淺到深) */
+  --color-gray-scale1: #cccccc;      /* Scale 1 - 最淺灰 - 副標題、標籤 */
+  --color-gray-scale2: #a4a4a4;      /* Scale 2 - 輔助文字 */
+  --color-gray-scale3: #7c7c7c;      /* Scale 3 - 禁用狀態 */
+  --color-gray-scale4: #545454;      /* Scale 4 - 深灰背景 */
+  --color-gray-scale5: #2b2b2b;      /* Scale 5 - 最深灰 - 邊框線 */
+
+  /* 背景色 */
+  --color-bg-overlay: rgba(0, 0, 0, 0.75);    /* 半透明黑色覆蓋 */
+  --color-bg-toast: #ffffff;                  /* Toast 背景 */
+  --color-bg-toast-error: #ffd9e0;            /* Toast 錯誤背景 */
+
+  /* 邊框色 */
+  --color-border-default: #ffffff;            /* 預設邊框 */
+  --color-border-focus: #cccccc;              /* 聚焦邊框 */
+
+  /* 選取色 */
+  --color-selection-bg: #f7f7f7;              /* 選取背景 */
+  --color-selection-text: #000000;            /* 選取文字 */
+}
+
+/* ===== 顏色工具類別 ===== */
+
+/* 文字顏色 - 狀態色 */
+.text-success { color: var(--color-success) !important; }
+.text-error { color: var(--color-error) !important; }
+.text-error2 { color: var(--color-error2) !important; }
+.text-warning { color: var(--color-warning) !important; }
+
+/* 文字顏色 - 灰階 Scale 系統 */
+.text-gray-scale1 { color: var(--color-gray-scale1) !important; }
+.text-gray-scale2 { color: var(--color-gray-scale2) !important; }
+.text-gray-scale3 { color: var(--color-gray-scale3) !important; }
+.text-gray-scale4 { color: var(--color-gray-scale4) !important; }
+.text-gray-scale5 { color: var(--color-gray-scale5) !important; }
+
+/* 背景顏色 - 狀態色 */
+.bg-success { background-color: var(--color-success) !important; }
+.bg-error { background-color: var(--color-error) !important; }
+.bg-warning { background-color: var(--color-warning) !important; }
+.bg-overlay { background-color: var(--color-bg-overlay) !important; }
+
+/* 背景顏色 - 灰階 Scale 系統 */
+.bg-gray-scale1 { background-color: var(--color-gray-scale1) !important; }
+.bg-gray-scale2 { background-color: var(--color-gray-scale2) !important; }
+.bg-gray-scale3 { background-color: var(--color-gray-scale3) !important; }
+.bg-gray-scale4 { background-color: var(--color-gray-scale4) !important; }
+.bg-gray-scale5 { background-color: var(--color-gray-scale5) !important; }
+
+/* 邊框顏色 - 狀態色 */
+.border-success { border-color: var(--color-success) !important; }
+.border-error { border-color: var(--color-error) !important; }
+.border-warning { border-color: var(--color-warning) !important; }
+.border-default { border-color: var(--color-border-default) !important; }
+.border-focus { border-color: var(--color-border-focus) !important; }
+
+/* 邊框顏色 - 灰階 Scale 系統 */
+.border-gray-scale1 { border-color: var(--color-gray-scale1) !important; }
+.border-gray-scale2 { border-color: var(--color-gray-scale2) !important; }
+.border-gray-scale3 { border-color: var(--color-gray-scale3) !important; }
+.border-gray-scale4 { border-color: var(--color-gray-scale4) !important; }
+.border-gray-scale5 { border-color: var(--color-gray-scale5) !important; }

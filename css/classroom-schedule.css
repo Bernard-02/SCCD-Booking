@@ -1,357 +1,388 @@
-/* ===== Google Calendar風格教室時間表 ===== */
+/* ===== 教室租借狀況時間軸設計 ===== */
 
-/* 教室時間表主容器 */
-.classroom-schedule-wrapper {
+/* 主容器 */
+.classroom-status-wrapper {
   width: 100%;
-  margin-bottom: 2rem;
-  padding-right: 5rem;
-}
-
-/* 時間表容器 */
-.schedule-container {
-  position: relative;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    "schedule-header"
-    "schedule-body";
-  background-color: transparent;
-}
-
-/* 統一標題區域 */
-.schedule-header {
-  grid-area: schedule-header;
-  display: grid;
-  grid-template-columns: 120px 1fr 1fr 1fr;
-  background-color: transparent;
-  padding: 1rem 0;
-  position: relative;
-}
-
-/* 標題區域下方的分隔線 */
-.schedule-header::after {
-  content: '';
-  position: absolute;
-  left: 120px;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background-color: var(--color-gray-scale5);
-  z-index: 1;
-}
-
-/* 標題區域的時間標題 */
-.time-header {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
-  color: var(--color-gray-light);
-  text-transform: uppercase;
-  font-weight: 500;
-}
-
-/* 主體區域 */
-.schedule-body {
-  grid-area: schedule-body;
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  grid-template-areas: "time-axis schedule-content";
-  background-color: transparent;
-}
-
-/* 時間軸區域 */
-.time-axis {
-  grid-area: time-axis;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 3rem 2rem;
   position: relative;
+}
+
+/* 每一行教室 */
+.classroom-row {
+  display: grid;
+  grid-template-columns: 1fr 6fr;
+  gap: 1rem;
+}
+
+/* ===== 左側：租借狀態區塊 ===== */
+.classroom-status {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem 0;
   background-color: transparent;
 }
 
-/* 時間標記容器 */
-.time-mark {
-  position: absolute;
-  right: 1rem;
-  transform: translateY(-0.75em);
-  font-family: 'Inter', sans-serif;
-  font-size: 0.875rem;
+/* 狀態指示器 */
+.status-indicator {
+  font-family: 'Noto Sans TC', sans-serif;
   font-weight: 500;
-  color: var(--color-gray-light);
-  white-space: nowrap;
+  color: var(--color-success);
+  text-align: left;
+  transition: color 0.3s ease;
 }
 
-/* 時間標記內的span */
-.time-mark span {
-  display: inline-block;
+/* 已借出狀態 */
+.status-indicator.rented {
+  color: var(--color-error);
+}
+
+/* 教室名稱標籤 */
+.classroom-label {
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--color-white);
+  text-align: left;
+  line-height: 1.2;
+}
+
+/* ===== 右側：時間軸區塊 ===== */
+.classroom-timeline {
+  position: relative;
+  width: 100%;
+  padding: 1rem 0 3rem 0;
+}
+
+/* 時間格子容器 */
+.timeline-slots {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 0;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 2;
+  align-items: flex-end;
+}
+
+/* 單個時間格子 */
+.time-slot {
+  width: 100%;
+  aspect-ratio: 1 / 2;
+  background-color: var(--color-success);
+  border: none;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* 當前時間的格子 - 1.5倍高 */
+.time-slot.current-hour {
+  aspect-ratio: 1 / 3;
+}
+
+/* 6AM-7AM 的清潔時段格子 (只有兩個格子: hour 6, 7) */
+.time-slot[data-hour="6"],
+.time-slot[data-hour="7"] {
+  background-color: var(--color-gray-scale5);
+}
+
+/* 格子 hover 效果 */
+.time-slot:hover {
+  filter: brightness(0.7);
   transform: translateY(-2px);
 }
 
-/* 教室標題區域 */
-.classroom-headers {
-  display: contents;
+/* 已被租借的時間格子 */
+.time-slot.occupied {
+  background-color: var(--color-error);
 }
 
-/* 教室標題項目 */
-.classroom-header-item {
-  padding: 1rem;
-  text-align: left;
+.time-slot.occupied:hover {
+  filter: brightness(0.7);
+}
+
+/* 時間軸線 */
+.timeline-axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--color-gray-scale5);
+  bottom: 2rem;
+  z-index: 1;
+}
+
+/* 時間標籤容器 - 使用 grid 對齊 */
+.timeline-labels {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 1.5rem;
+  padding: 0 1rem;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* 夜間使用許可時段標籤 */
+.night-time-label {
+  grid-column: 19 / 25;  /* 從第19格（12AM）到第25格（5AM之後） */
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: 'Noto Sans TC', sans-serif;
+  color: var(--color-gray-scale3);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* 單個時間標籤格子 */
+.time-label-slot {
+  display: flex;
   justify-content: center;
   align-items: flex-start;
   position: relative;
+  bottom: -2.7rem;
 }
 
-.classroom-header-item .classroom-name-zh {
-  font-family: 'Noto Sans TC', sans-serif;
-  font-size: 2rem;
-  color: var(--color-white);
-  font-weight: 400;
-}
+/* 為每個時間標籤格子指定 grid 位置，避免被夜間標籤影響 */
+.time-label-slot:nth-child(1) { grid-column: 1; }
+.time-label-slot:nth-child(2) { grid-column: 2; }
+.time-label-slot:nth-child(3) { grid-column: 3; }
+.time-label-slot:nth-child(4) { grid-column: 4; }
+.time-label-slot:nth-child(5) { grid-column: 5; }
+.time-label-slot:nth-child(6) { grid-column: 6; }
+.time-label-slot:nth-child(7) { grid-column: 7; }
+.time-label-slot:nth-child(8) { grid-column: 8; }
+.time-label-slot:nth-child(9) { grid-column: 9; }
+.time-label-slot:nth-child(10) { grid-column: 10; }
+.time-label-slot:nth-child(11) { grid-column: 11; }
+.time-label-slot:nth-child(12) { grid-column: 12; }
+.time-label-slot:nth-child(13) { grid-column: 13; }
+.time-label-slot:nth-child(14) { grid-column: 14; }
+.time-label-slot:nth-child(15) { grid-column: 15; }
+.time-label-slot:nth-child(16) { grid-column: 16; }
+.time-label-slot:nth-child(17) { grid-column: 17; }
+.time-label-slot:nth-child(18) { grid-column: 18; }
+.time-label-slot:nth-child(19) { grid-column: 19; }
+.time-label-slot:nth-child(20) { grid-column: 20; }
+.time-label-slot:nth-child(21) { grid-column: 21; }
+.time-label-slot:nth-child(22) { grid-column: 22; }
+.time-label-slot:nth-child(23) { grid-column: 23; }
+.time-label-slot:nth-child(24) { grid-column: 24; }
 
-.classroom-header-item .classroom-name-en {
+/* 時間標籤文字 */
+.time-label {
   font-family: 'Inter', sans-serif;
-  font-size: 2rem;
-  color: var(--color-white);
-  text-transform: uppercase;
-  font-weight: 400;
-}
-
-
-/* 內容區域 */
-.schedule-content {
-  grid-area: schedule-content;
-  position: relative;
-  background-color: transparent;
-}
-
-/* 網格背景 */
-.schedule-grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  background-color: transparent;
-}
-
-/* 網格單元格 */
-.grid-cell {
-  min-height: 48px;
-  position: relative;
-}
-
-/* 添加橫線（時間分隔線） */
-.grid-cell::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background-color: var(--color-gray-scale5);
-}
-
-/* 最後一行不需要底部橫線 */
-.grid-cell:nth-last-child(-n+3)::before {
-  display: none;
-}
-
-/* 添加教室分隔線（垂直線） - 只在第1和第2列右邊添加 */
-.grid-cell:nth-child(3n+1)::after,
-.grid-cell:nth-child(3n+2)::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: var(--color-gray-scale5);
-}
-
-/* 課程區塊容器 */
-.course-blocks-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 10;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-/* 課程區塊樣式 */
-.course-block {
-  position: absolute;
-  background-color: #353535;
-  color: var(--color-white);
-  padding: 0.5rem 0.75rem;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-size: 1rem;
   font-weight: 500;
-  cursor: default;
-  pointer-events: all;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  text-align: left;
-  line-height: 1.2;
-  border: none;
+  color: var(--color-gray-scale3);
+  white-space: nowrap;
+  position: relative;
+  padding-top: 1rem;
+}
+
+/* 時間標籤上方的短直線 */
+.time-label::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -0.05rem;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 0.5rem;
+  background-color: var(--color-gray-scale5);
+}
+
+/* NOW 時間指示器 */
+.now-indicator {
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  width: 1px;
+  background-color: var(--color-gray-scale3);
+  z-index: 1;
+  pointer-events: none;
+  transition: left 0.3s ease;
+}
+
+/* NOW 標籤 */
+.now-label {
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  color: var(--color-gray-scale3);
+  white-space: nowrap;
+}
+
+/* ===== 時間格子 Tooltip ===== */
+.time-slot-tooltip {
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: var(--color-white);
+  padding: 1rem;
   border-radius: 0;
-  overflow: hidden;
-  box-sizing: border-box;
-  z-index: 20;
-}
-
-.course-block:hover {
-  background-color: #454545;
-}
-
-/* 課程名稱 */
-.course-name {
-  font-weight: 400;
-  margin-bottom: 0.25rem;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  font-size: 1.125rem;
+  pointer-events: none;
+  z-index: 1000;
+  min-width: 200px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
   font-family: 'Noto Sans TC', sans-serif;
 }
 
-/* 課程時間 */
-.course-time {
-  font-size: 1.125rem;
+.time-slot-tooltip.visible {
+  opacity: 1;
+}
+
+/* Tooltip 狀態標題（小字） */
+.tooltip-status {
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.tooltip-status.available {
+  color: var(--color-success);
+}
+
+.tooltip-status.occupied {
+  color: var(--color-error);
+}
+
+.tooltip-status.closed {
+  color: var(--color-gray-scale3);
+}
+
+.tooltip-status.ended {
+  color: var(--color-gray-scale3);
+}
+
+/* Tooltip 事件名稱 */
+.tooltip-event {
+  font-weight: 500;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
   color: var(--color-white);
+}
+
+/* Tooltip 描述/學號 */
+.tooltip-description {
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: var(--color-gray-scale2);
+  margin-bottom: 0.5rem;
+}
+
+/* Tooltip 時間 */
+.tooltip-time {
   font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--color-gray-scale1);
 }
 
-/* 當前時間高亮 */
-.current-time-row {
-  background-color: rgba(255, 255, 255, 0.02);
+/* 已過去時間段的樣式 */
+.time-slot.past {
+  background-color: var(--color-gray-scale4);
 }
 
-.current-time-row .time-cell {
-  color: var(--color-white);
-  font-weight: 600;
+.time-slot.past.occupied {
+  background-color: var(--color-gray-scale4);
 }
-
 
 /* 響應式設計 */
 @media (max-width: 1024px) {
-  .schedule-container {
-    grid-template-columns: 100px 1fr;
+  .classroom-status-wrapper {
+    padding: 1.5rem;
+    gap: 4rem;
   }
 
-  .time-mark {
-    font-size: 0.75rem;
-    right: 0.75rem;
+  .classroom-row {
+    grid-template-columns: 1fr 5fr;
+    gap: 1rem;
   }
 
-  .classroom-header-item .classroom-name-zh {
-    font-size: 1rem;
+  .classroom-label {
+    font-size: 1.5rem;
   }
 
-  .classroom-header-item .classroom-name-en {
-    font-size: 0.75rem;
+  .timeline-slots {
+    gap: 1rem;
+    padding: 0 0.75rem;
   }
 
-  .grid-cell {
-    min-height: 50px;
-  }
-
-  .course-block {
-    font-size: 0.6875rem;
-    padding: 0.375rem 0.5rem;
-  }
-
-  .course-time {
-    font-size: 0.625rem;
+  .timeline-labels {
+    gap: 1rem;
+    padding: 0 0.75rem;
   }
 }
 
 @media (max-width: 768px) {
-  .schedule-container {
-    grid-template-columns: 80px 1fr;
-    grid-template-rows: 60px 1fr;
+  .classroom-status-wrapper {
+    gap: 3rem;
+    padding: 1rem;
   }
 
-  .time-mark {
-    font-size: 0.6875rem;
-    right: 0.5rem;
+  .classroom-row {
+    grid-template-columns: 1fr 4fr;
+    gap: 1rem;
   }
 
-  .classroom-header-item {
-    padding: 0.75rem 0.5rem;
+  .classroom-label {
+    font-size: 1.25rem;
   }
 
-  .classroom-header-item .classroom-name-zh {
-    font-size: 0.875rem;
+  .timeline-slots {
+    gap: 0.75rem;
+    padding: 0 0.5rem;
   }
 
-  .classroom-header-item .classroom-name-en {
-    font-size: 0.6875rem;
+  .timeline-axis {
+    bottom: 1.75rem;
   }
 
-  .grid-cell {
-    min-height: 40px;
-  }
-
-  .course-block {
-    font-size: 0.625rem;
-    padding: 0.25rem 0.375rem;
-  }
-
-  .course-time {
-    font-size: 0.5625rem;
+  .timeline-labels {
+    gap: 0.75rem;
+    padding: 0 0.5rem;
   }
 }
 
 @media (max-width: 480px) {
-  .classroom-schedule-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .classroom-status-wrapper {
+    padding: 0.5rem;
+    gap: 2rem;
   }
 
-  .schedule-container {
-    min-width: 400px;
+  .classroom-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
-}
 
-/* 載入狀態 */
-.classroom-schedule-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 400px;
-  color: var(--color-gray-light);
-  font-family: 'Noto Sans TC', sans-serif;
-}
+  .classroom-status {
+    flex-direction: row;
+    padding: 0.5rem 0;
+    gap: 0.75rem;
+  }
 
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-gray-dark);
-  border-top: 2px solid var(--color-success);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
-}
+  .classroom-label {
+    font-size: 1rem;
+  }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+  .timeline-slots {
+    gap: 0.5rem;
+    padding: 0 0.25rem;
+  }
 
-/* 錯誤狀態 */
-.classroom-schedule-error {
-  text-align: center;
-  padding: 2rem;
-  color: var(--color-error);
-  font-family: 'Noto Sans TC', sans-serif;
+  .timeline-labels {
+    gap: 0.5rem;
+    padding: 0 0.25rem;
+  }
 }

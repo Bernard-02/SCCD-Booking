@@ -105,7 +105,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 個別移除收藏卡片（帶動畫效果）
     function removeBookmarkedCard(equipmentName) {
-        console.log('Removing bookmarked card:', equipmentName);
+        console.log('=== removeBookmarkedCard called ===');
+        console.log('Equipment name:', equipmentName);
 
         // 找到對應的設備卡片
         let targetCard = null;
@@ -116,7 +117,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        if (targetCard && targetCard.style.display === 'flex') {
+        if (!targetCard) {
+            console.log('❌ Target card not found');
+            return;
+        }
+
+        console.log('✓ Target card found:', targetCard);
+
+        // 檢查卡片是否可見（檢查computed style而不是inline style）
+        const computedStyle = window.getComputedStyle(targetCard);
+        const isVisible = computedStyle.display !== 'none';
+
+        console.log('Computed display:', computedStyle.display);
+        console.log('Is visible:', isVisible);
+        console.log('Inline display:', targetCard.style.display);
+
+        if (isVisible) {
+            console.log('✓ Card is visible, starting fade-out animation');
             // 添加淡出動畫類（使用rental-list的樣式）
             targetCard.classList.add('fade-out');
 
@@ -124,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 targetCard.style.display = 'none';
                 targetCard.classList.remove('fade-out');
+                console.log('✓ Card hidden after fade-out');
 
                 // 檢查是否還有其他可見的收藏卡片
                 checkIfBookmarksEmpty();
@@ -135,6 +153,54 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 50);
                 }
             }, 500); // 等待0.5秒動畫完成
+        } else {
+            console.log('❌ Card is not visible, skipping animation');
+        }
+    }
+
+    // 個別恢復收藏卡片（只為單個卡片添加動畫）
+    function restoreBookmarkedCard(equipmentName) {
+        console.log('Restoring bookmarked card:', equipmentName);
+
+        // 找到對應的設備卡片
+        let targetCard = null;
+        equipmentCards.forEach(card => {
+            const bookmarkBtn = card.querySelector('.bookmark-btn');
+            if (bookmarkBtn && bookmarkBtn.dataset.equipment === equipmentName) {
+                targetCard = card;
+            }
+        });
+
+        if (targetCard) {
+            const computedStyle = window.getComputedStyle(targetCard);
+            const isHidden = computedStyle.display === 'none';
+
+            if (isHidden) {
+                const cardStatus = targetCard.getAttribute('data-status');
+
+                // 檢查狀態是否匹配當前選中的狀態
+                if (cardStatus === currentSelectedStatus) {
+                    // 清除空狀態提示
+                    const existingPrompt = document.querySelector('.login-prompt');
+                    if (existingPrompt) {
+                        existingPrompt.remove();
+                    }
+
+                    // 先設置為透明並顯示
+                    targetCard.style.opacity = '0';
+                    targetCard.style.display = 'flex';
+
+                    // 強制重排
+                    targetCard.offsetHeight;
+
+                    // 短暫延遲後觸發進場動畫並清除opacity
+                    setTimeout(() => {
+                        targetCard.classList.add('animate-in');
+                        // 清除inline opacity讓CSS動畫控制
+                        targetCard.style.opacity = '';
+                    }, 50);
+                }
+            }
         }
     }
 
@@ -149,10 +215,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return; // 不在常用設備分類
         }
 
-        // 檢查是否有可見的設備卡片
-        const visibleCards = Array.from(equipmentCards).filter(card =>
-            card.style.display === 'flex'
-        );
+        // 檢查是否有可見的設備卡片（使用computed style）
+        const visibleCards = Array.from(equipmentCards).filter(card => {
+            const computedStyle = window.getComputedStyle(card);
+            return computedStyle.display !== 'none';
+        });
 
         if (visibleCards.length === 0) {
             // 沒有可見卡片，顯示空狀態提示
@@ -321,12 +388,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     activeWrapper.classList.remove('active');
                 }
 
-                // 搜索並排序結果
+                // 搜索並排序結果 - 包含tag搜尋
                 const searchResults = Array.from(equipmentCards).map(card => {
                     const title = card.querySelector('.text-small-title').textContent.toLowerCase();
-                    const exactMatch = title.includes(searchText);
-                    const consecutiveMatch = title.includes(searchText);
-                    const partialMatches = searchText.split('').filter(char => title.includes(char)).length;
+                    const category = card.dataset.category ? card.dataset.category.toLowerCase() : '';
+
+                    // 檢查名稱或分類是否匹配
+                    const titleMatch = title.includes(searchText);
+                    const categoryMatch = category.includes(searchText);
+                    const exactMatch = titleMatch || categoryMatch;
+                    const consecutiveMatch = titleMatch || categoryMatch;
+                    const partialMatches = searchText.split('').filter(char => title.includes(char) || category.includes(char)).length;
 
                     return {
                         card: card,
@@ -346,12 +418,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 第二步：短暫延遲後重新顯示符合條件的卡片（仍然透明，等待動畫）
                 setTimeout(() => {
+                    let hasResults = false;
                     searchResults.forEach(result => {
                         if (result.score > 0) {
                             result.card.style.display = 'flex';
                             result.card.style.opacity = '0';  // 顯示但透明，準備動畫
+                            hasResults = true;
                         }
                     });
+
+                    // 檢查是否有結果，沒有則顯示空狀態訊息
+                    const equipmentGrid = document.getElementById('equipment-grid');
+                    const existingPrompt = equipmentGrid.querySelector('.login-prompt');
+
+                    if (!hasResults) {
+                        // 移除現有提示
+                        if (existingPrompt) {
+                            existingPrompt.remove();
+                        }
+                        // 添加空搜尋結果訊息
+                        const promptDiv = document.createElement('div');
+                        promptDiv.className = 'login-prompt empty-state-message col-span-4 text-left';
+                        promptDiv.innerHTML = `
+                            <p class="font-chinese text-gray-scale4 text-small-title">此搜尋沒有任何符合結果</p>
+                        `;
+                        equipmentGrid.appendChild(promptDiv);
+                    } else {
+                        // 有結果時移除提示
+                        if (existingPrompt) {
+                            existingPrompt.remove();
+                        }
+                    }
 
                     // 第三步：等待布局完全穩定後觸發進場動畫
                     setTimeout(() => {
@@ -371,17 +468,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         });
 
-        // 監聽離開搜尋欄事件（blur）
-        input.addEventListener('blur', function() {
-            // 短暫延遲檢查，避免點擊篩選器時的衝突
-            setTimeout(() => {
-                const searchText = this.value.toLowerCase().trim();
-                // 只要搜尋欄為空且離開，就恢復原本選項
-                if (!searchText) {
-                    restoreOriginalFilter();
-                }
-            }, 100);
-        });
+        // 不需要blur事件來恢復篩選器
+        // 只在搜尋輸入為空時，透過input事件恢復篩選器（已在上面處理）
     }
 
     // 設置桌面版和手機版搜索
@@ -533,19 +621,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 監聽收藏狀態變化
     window.addEventListener('bookmarkUpdated', function(event) {
-        console.log('Bookmark updated'); // 調試用
-        // 如果當前是在常用設備分類，處理收藏變化
+        console.log('=== bookmarkUpdated event triggered ===');
+        console.log('Event detail:', event.detail);
+
+        // 檢查當前是否在常用設備分類 - 使用更可靠的方法
+        // 方法1: 檢查active wrapper
         const activeWrapper = document.querySelector('.menu-item-wrapper.active');
         const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
-        if (activeButton && activeButton.dataset.category === 'bookmarks') {
+
+        // 方法2: 備用檢查 - 直接檢查bookmarks按鈕的wrapper是否active
+        const bookmarksButton = document.querySelector('[data-category="bookmarks"]');
+        const bookmarksWrapper = bookmarksButton ? bookmarksButton.querySelector('.menu-item-wrapper') : null;
+        const isInBookmarksCategory = (activeButton && activeButton.dataset.category === 'bookmarks') ||
+                                      (bookmarksWrapper && bookmarksWrapper.classList.contains('active'));
+
+        console.log('Active button:', activeButton);
+        console.log('Category:', activeButton ? activeButton.dataset.category : 'none');
+        console.log('Bookmarks wrapper active:', bookmarksWrapper ? bookmarksWrapper.classList.contains('active') : false);
+        console.log('Is in bookmarks category:', isInBookmarksCategory);
+
+        if (isInBookmarksCategory) {
+            console.log('✓ In bookmarks category');
             // 檢查是否為移除操作
             if (event.detail && event.detail.action === 'remove') {
+                console.log('→ Calling removeBookmarkedCard');
                 // 使用動畫移除個別卡片
                 removeBookmarkedCard(event.detail.itemName);
+            } else if (event.detail && event.detail.action === 'add' && event.detail.isUndo) {
+                console.log('→ Calling restoreBookmarkedCard (UNDO)');
+                // UNDO操作 - 只恢復單個卡片並添加動畫
+                restoreBookmarkedCard(event.detail.itemName);
             } else {
+                console.log('→ Calling showBookmarkedEquipment');
                 // 添加操作或初始化，重新篩選整個分類
                 showBookmarkedEquipment();
             }
+        } else {
+            console.log('✗ Not in bookmarks category, ignoring event');
         }
     });
 
@@ -555,26 +667,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Bookmarks storage changed'); // 調試用
             // 如果當前是在常用設備分類，則重新篩選
             const activeWrapper = document.querySelector('.menu-item-wrapper.active');
-        const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
+            const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
             if (activeButton && activeButton.dataset.category === 'bookmarks') {
-                showBookmarkedEquipment();
-            }
-        }
-    });
-
-    // 監聽全域 BookmarkManager 的事件
-    window.addEventListener('bookmarkUpdated', function(event) {
-        console.log('Bookmark updated via BookmarkManager'); // 調試用
-        // 如果當前是在常用設備分類，處理收藏變化
-        const activeWrapper = document.querySelector('.menu-item-wrapper.active');
-        const activeButton = activeWrapper ? activeWrapper.closest('.sccd-filter-item') : null;
-        if (activeButton && activeButton.dataset.category === 'bookmarks') {
-            // 檢查是否為移除操作
-            if (event.detail && event.detail.action === 'remove') {
-                // 使用動畫移除個別卡片
-                removeBookmarkedCard(event.detail.itemName);
-            } else {
-                // 添加操作或初始化，重新篩選整個分類
                 showBookmarkedEquipment();
             }
         }

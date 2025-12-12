@@ -20,7 +20,12 @@
     <script src="js/login-auth.js"></script>
     <script src="js/global-auth-manager.js"></script>
 
+    <!-- 租借歷史和帳號狀態管理 -->
+    <script src="js/rental-history-manager.js"></script>
+    <script src="js/account-status-guard.js"></script>
+
     <!-- 引入通用樣式 -->
+    <link rel="stylesheet" href="css/colors.css" />
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/mobile-menu.css" />
     <link rel="stylesheet" href="css/typography.css" />
@@ -50,13 +55,94 @@
     <!-- 引入教室時間表JS -->
     <script src="js/classroom-schedule.js"></script>
 
-    <!-- 引入教室卡片展開功能JS -->
+    <!-- 引入教室時間軸JS -->
+    <script src="js/classroom-timeline.js"></script>
 
     <!-- 區域hover效果CSS -->
     <style>
-      /* 為hover效果添加平滑過渡 */
-      .area-item {
+      /* Hover Tooltip 樣式 */
+      .area-hover-tooltip {
+        position: fixed;
+        background-color: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 16px;
+        pointer-events: none;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        min-width: 200px;
+      }
+
+      .area-hover-tooltip.show {
+        opacity: 1;
+      }
+
+      /* 狀態文字 */
+      .area-hover-tooltip .tooltip-status {
+        margin-bottom: 12px;
+        text-align: left;
+      }
+
+      .area-hover-tooltip .tooltip-status.available {
+        color: var(--color-success);
+      }
+
+      .area-hover-tooltip .tooltip-status.booked {
+        color: var(--color-error);
+      }
+
+      /* 資訊行（區域名稱 + 編號） */
+      .area-hover-tooltip .tooltip-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+      }
+
+      .area-hover-tooltip .tooltip-left {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .area-hover-tooltip .tooltip-area-name {
+        color: white;
+        font-weight: 400;
+        line-height: 1.3;
+      }
+
+      .area-hover-tooltip .tooltip-area-english {
+        color: white;
+        font-weight: 500;
+        line-height: 1.3;
+        margin-top: 2px;
+      }
+
+      .area-hover-tooltip .tooltip-block-id {
+        color: white;
+        font-weight: 400;
+        line-height: 1.3;
+        flex-shrink: 0;
+      }
+
+      /* 使用者學號 */
+      .area-hover-tooltip .tooltip-user {
+        margin-top: 12px;
+        text-align: left;
+        color: #cccccc;
+      }
+
+      /* SVG 區塊 hover 效果 */
+      .area-block {
         transition: opacity 0.2s ease-in-out;
+      }
+
+      .area-block.available {
+        fill: var(--color-success);
+      }
+
+      .area-block.booked {
+        fill: var(--color-error);
       }
     </style>
 
@@ -415,57 +501,296 @@
         </div>
 
         <!-- 教室租借狀態 -->
-        <div class="mb-32">
+        <div class="mb-16">
           <div class="float-up-container mb-8">
             <h3 class="font-['Noto_Sans_TC',_sans-serif] text-large-title text-left float-up">
               教室
             </h3>
           </div>
 
-          <!-- 教室時間表 -->
-          <div class="classroom-schedule-wrapper">
-            <!-- 時間表容器 -->
-            <div class="schedule-container" id="schedule-container">
-              <!-- 統一標題區域 -->
-              <div class="schedule-header">
-                <!-- 空白時間區域 -->
-                <div class="time-header"></div>
-                <!-- 教室標題 -->
-                <div class="classroom-header-item">
-                  <div class="font-chinese text-tiny font-medium text-success transition-colors duration-300" id="status-A503">可租借</div>
-                  <span class="classroom-name-zh">A503教室</span>
-                  <span class="classroom-name-en">A503 CLASSROOM</span>
-                </div>
-                <div class="classroom-header-item">
-                  <div class="font-chinese text-tiny font-medium text-success transition-colors duration-300" id="status-A507">可租借</div>
-                  <span class="classroom-name-zh">A507教室</span>
-                  <span class="classroom-name-en">A507 CLASSROOM</span>
-                </div>
-                <div class="classroom-header-item">
-                  <div class="font-chinese text-tiny font-medium text-success transition-colors duration-300" id="status-A508">可租借</div>
-                  <span class="classroom-name-zh">A508教室</span>
-                  <span class="classroom-name-en">A508 CLASSROOM</span>
-                </div>
+          <!-- 教室時間表 - 新設計 -->
+          <div class="classroom-status-wrapper">
+            <!-- A503教室 -->
+            <div class="classroom-row">
+              <!-- 左側：租借狀態 -->
+              <div class="classroom-status">
+                <div class="status-indicator text-tiny" id="status-A503">可租借</div>
+                <div class="classroom-label">A503教室</div>
               </div>
 
-              <!-- 主體區域 -->
-              <div class="schedule-body">
-                <!-- 時間軸 -->
-                <div class="time-axis" id="time-axis">
-                  <!-- 時間標記將由JavaScript生成 -->
+              <!-- 右側：時間軸 -->
+              <div class="classroom-timeline">
+                <!-- 24個時間格子 -->
+                <div class="timeline-slots">
+                  <div class="time-slot" data-hour="6"></div>
+                  <div class="time-slot" data-hour="7"></div>
+                  <div class="time-slot" data-hour="8"></div>
+                  <div class="time-slot" data-hour="9"></div>
+                  <div class="time-slot" data-hour="10"></div>
+                  <div class="time-slot" data-hour="11"></div>
+                  <div class="time-slot" data-hour="12"></div>
+                  <div class="time-slot" data-hour="13"></div>
+                  <div class="time-slot" data-hour="14"></div>
+                  <div class="time-slot" data-hour="15"></div>
+                  <div class="time-slot" data-hour="16"></div>
+                  <div class="time-slot" data-hour="17"></div>
+                  <div class="time-slot" data-hour="18"></div>
+                  <div class="time-slot" data-hour="19"></div>
+                  <div class="time-slot" data-hour="20"></div>
+                  <div class="time-slot" data-hour="21"></div>
+                  <div class="time-slot" data-hour="22"></div>
+                  <div class="time-slot" data-hour="23"></div>
+                  <div class="time-slot" data-hour="0"></div>
+                  <div class="time-slot" data-hour="1"></div>
+                  <div class="time-slot" data-hour="2"></div>
+                  <div class="time-slot" data-hour="3"></div>
+                  <div class="time-slot" data-hour="4"></div>
+                  <div class="time-slot" data-hour="5"></div>
                 </div>
 
-                <!-- 內容區域 -->
-                <div class="schedule-content">
-                  <!-- 網格背景 -->
-                  <div class="schedule-grid" id="schedule-grid">
-                    <!-- 網格線將由JavaScript生成 -->
-                  </div>
+                <!-- 時間軸線 -->
+                <div class="timeline-axis"></div>
 
-                  <!-- 課程區塊容器 -->
-                  <div class="course-blocks-container" id="course-blocks">
-                    <!-- 課程區塊將由JavaScript生成 -->
-                  </div>
+                <!-- 時間標籤 -->
+                <div class="timeline-labels">
+                  <!-- 第1格: 6AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">6AM</span></div>
+                  <!-- 第2格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第3格: 8AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">8AM</span></div>
+                  <!-- 第4格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第5格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第6格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第7格: 12PM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">12PM</span></div>
+                  <!-- 第8格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第9格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第10格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第11格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第12格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第13格: 6PM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">6PM</span></div>
+                  <!-- 第14格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第15格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第16格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第17格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第18格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第19格: 12AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">12AM</span></div>
+                  <!-- 第20格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第21格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第22格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第23格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第24格: 5AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">5AM</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- A507教室 -->
+            <div class="classroom-row">
+              <!-- 左側：租借狀態 -->
+              <div class="classroom-status">
+                <div class="status-indicator text-tiny" id="status-A507">可租借</div>
+                <div class="classroom-label">A507教室</div>
+              </div>
+
+              <!-- 右側：時間軸 -->
+              <div class="classroom-timeline">
+                <!-- 24個時間格子 -->
+                <div class="timeline-slots">
+                  <div class="time-slot" data-hour="6"></div>
+                  <div class="time-slot" data-hour="7"></div>
+                  <div class="time-slot" data-hour="8"></div>
+                  <div class="time-slot" data-hour="9"></div>
+                  <div class="time-slot" data-hour="10"></div>
+                  <div class="time-slot" data-hour="11"></div>
+                  <div class="time-slot" data-hour="12"></div>
+                  <div class="time-slot" data-hour="13"></div>
+                  <div class="time-slot" data-hour="14"></div>
+                  <div class="time-slot" data-hour="15"></div>
+                  <div class="time-slot" data-hour="16"></div>
+                  <div class="time-slot" data-hour="17"></div>
+                  <div class="time-slot" data-hour="18"></div>
+                  <div class="time-slot" data-hour="19"></div>
+                  <div class="time-slot" data-hour="20"></div>
+                  <div class="time-slot" data-hour="21"></div>
+                  <div class="time-slot" data-hour="22"></div>
+                  <div class="time-slot" data-hour="23"></div>
+                  <div class="time-slot" data-hour="0"></div>
+                  <div class="time-slot" data-hour="1"></div>
+                  <div class="time-slot" data-hour="2"></div>
+                  <div class="time-slot" data-hour="3"></div>
+                  <div class="time-slot" data-hour="4"></div>
+                  <div class="time-slot" data-hour="5"></div>
+                </div>
+
+                <!-- 時間軸線 -->
+                <div class="timeline-axis"></div>
+
+                <!-- 時間標籤 -->
+                <div class="timeline-labels">
+                  <!-- 第1格: 6AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">6AM</span></div>
+                  <!-- 第2格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第3格: 8AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">8AM</span></div>
+                  <!-- 第4格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第5格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第6格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第7格: 12PM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">12PM</span></div>
+                  <!-- 第8格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第9格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第10格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第11格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第12格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第13格: 6PM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">6PM</span></div>
+                  <!-- 第14格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第15格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第16格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第17格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第18格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第19格: 12AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">12AM</span></div>
+                  <!-- 第20格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第21格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第22格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第23格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第24格: 5AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">5AM</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- A508教室 -->
+            <div class="classroom-row">
+              <!-- 左側：租借狀態 -->
+              <div class="classroom-status">
+                <div class="status-indicator text-tiny" id="status-A508">可租借</div>
+                <div class="classroom-label">A508教室</div>
+              </div>
+
+              <!-- 右側：時間軸 -->
+              <div class="classroom-timeline">
+                <!-- 24個時間格子 -->
+                <div class="timeline-slots">
+                  <div class="time-slot" data-hour="6"></div>
+                  <div class="time-slot" data-hour="7"></div>
+                  <div class="time-slot" data-hour="8"></div>
+                  <div class="time-slot" data-hour="9"></div>
+                  <div class="time-slot" data-hour="10"></div>
+                  <div class="time-slot" data-hour="11"></div>
+                  <div class="time-slot" data-hour="12"></div>
+                  <div class="time-slot" data-hour="13"></div>
+                  <div class="time-slot" data-hour="14"></div>
+                  <div class="time-slot" data-hour="15"></div>
+                  <div class="time-slot" data-hour="16"></div>
+                  <div class="time-slot" data-hour="17"></div>
+                  <div class="time-slot" data-hour="18"></div>
+                  <div class="time-slot" data-hour="19"></div>
+                  <div class="time-slot" data-hour="20"></div>
+                  <div class="time-slot" data-hour="21"></div>
+                  <div class="time-slot" data-hour="22"></div>
+                  <div class="time-slot" data-hour="23"></div>
+                  <div class="time-slot" data-hour="0"></div>
+                  <div class="time-slot" data-hour="1"></div>
+                  <div class="time-slot" data-hour="2"></div>
+                  <div class="time-slot" data-hour="3"></div>
+                  <div class="time-slot" data-hour="4"></div>
+                  <div class="time-slot" data-hour="5"></div>
+                </div>
+
+                <!-- 時間軸線 -->
+                <div class="timeline-axis"></div>
+
+                <!-- 時間標籤 -->
+                <div class="timeline-labels">
+                  <!-- 第1格: 6AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">6AM</span></div>
+                  <!-- 第2格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第3格: 8AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">8AM</span></div>
+                  <!-- 第4格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第5格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第6格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第7格: 12PM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">12PM</span></div>
+                  <!-- 第8格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第9格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第10格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第11格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第12格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第13格: 6PM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">6PM</span></div>
+                  <!-- 第14格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第15格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第16格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第17格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第18格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第19格: 12AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">12AM</span></div>
+                  <!-- 第20格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第21格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第22格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第23格: 空 -->
+                  <div class="time-label-slot"></div>
+                  <!-- 第24格: 5AM -->
+                  <div class="time-label-slot"><span class="time-label text-tiny">5AM</span></div>
                 </div>
               </div>
             </div>
@@ -482,49 +807,24 @@
           </div>
 
           <!-- A5F Area Homepage SVG -->
-          <div class="py-12 text-center relative">
+          <div class="py-12 text-center relative" id="homepage-map-container">
           <!-- A5F Area Homepage SVG 內嵌版本 -->
-          <div style="width: 50%; height: auto; margin: 0 auto;">
+          <div style="width: 65%; height: auto; margin: 0 auto;">
             <!-- SVG內容將在這裡插入 -->
           </div>
 
-          <!-- Status Toggle Button -->
-          <button
-            id="status-toggle-btn"
-            class="absolute hover:bg-white/10 backdrop-blur-sm border border-white/30 px-3 py-2 flex items-center gap-2 transition-all duration-200 hover:scale-105 group cursor-pointer"
-            style="bottom: calc(2rem + 1rem); right: calc(2rem + 1rem);"
-            title="切換狀態圈圈顯示"
-          >
-            <svg class="w-4 h-4 text-white transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <!-- 方格子外框 -->
-              <rect x="4" y="4" width="16" height="16" stroke-width="2" rx="2"/>
-              <!-- 圓圈 (初始顯示) -->
-              <circle id="toggle-circle" cx="12" cy="12" r="4" stroke-width="2" opacity="1"/>
-            </svg>
-            <span id="toggle-text" class="font-['Inter',_sans-serif] text-white text-tiny font-medium">SHOW</span>
-          </button>
-
-          <!-- 區域說明 -->
-          <div class="absolute area-legend" style="top: calc(2rem + 1rem); right: calc(2rem + 1rem);">
-            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #fdf4c9;" data-area="square">
-              中庭 <span class="font-['Inter',_sans-serif] font-semibold">Square</span>
+          <!-- Hover Tooltip (隱藏，僅在hover時顯示) -->
+          <div id="area-hover-tooltip" class="area-hover-tooltip">
+            <div class="tooltip-status font-chinese text-tiny"></div>
+            <div class="tooltip-info-row">
+              <div class="tooltip-left">
+                <div class="tooltip-area-name font-chinese text-content"></div>
+                <div class="tooltip-area-english font-english text-header"></div>
+              </div>
+              <div class="tooltip-block-id font-english text-large-title"></div>
             </div>
-            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #fbe5cd;" data-area="corridor">
-              走廊 <span class="font-['Inter',_sans-serif] font-semibold">Corridor</span>
-            </div>
-            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #f1e6ff;" data-area="front-terrace">
-              前陽台 <span class="font-['Inter',_sans-serif] font-semibold">Front Terrace</span>
-            </div>
-            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #d2fdfa;" data-area="back-terrace">
-              後陽台 <span class="font-['Inter',_sans-serif] font-semibold">Back Terrace</span>
-            </div>
-            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #d6fed7;" data-area="glass-wall">
-              玻璃牆 <span class="font-['Inter',_sans-serif] font-semibold">Glass Wall</span>
-            </div>
-            <div class="area-item px-2 py-1 text-black text-small-title font-['Noto_Sans_TC',_sans-serif] font-semibold text-left cursor-pointer transition-opacity duration-200" style="background-color: #d1f3ff;" data-area="pillar">
-              柱子 <span class="font-['Inter',_sans-serif] font-semibold">Pillar</span>
-            </div>
-            </div>
+            <div class="tooltip-user font-english text-tiny" style="display: none;"></div>
+          </div>
           </div>
         </div>
         </div>

@@ -50,7 +50,7 @@
 }
 
 .deposit-label {
-  color: var(--color-gray-light);
+  color: var(--color-gray-scale1);
   margin-bottom: 2px;
 }
 
@@ -136,7 +136,7 @@
 
 .area-menu-deposit {
   font-family: 'Inter', sans-serif;
-  color: var(--color-gray-light);
+  color: var(--color-gray-scale1);
 }
 
 .area-menu-permission {
@@ -166,7 +166,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 350px;
+  width: 400px;
   height: 100%;
   background-color: rgba(0, 0, 0, 1);
   backdrop-filter: blur(10px);
@@ -241,7 +241,7 @@
 
 .rental-label,
 .deposit-label {
-  color: var(--color-gray-light);
+  color: var(--color-gray-scale1);
   font-family: 'Noto_Sans_TC', sans-serif;
 }
 

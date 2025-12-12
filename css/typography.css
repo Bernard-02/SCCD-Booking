@@ -27,7 +27,7 @@
 /* ===== 3. 中等標題 (金額顯示、重要數字) ===== */
 .text-medium-title {
   font-size: 2rem;         /* 32px - 桌面版 */
-  font-weight: 400;        /* normal */
+  font-weight: 500;        /* normal */
   line-height: 1.4;
 }
 
