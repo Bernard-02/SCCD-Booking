@@ -38,3 +38,15 @@ export interface CartItem {
   endDate: string   // ISO 格式的結束日期
   bookingType?: BookingType // 租借類型
 }
+
+/**
+ * 儲存於 localStorage 的訂單收據
+ */
+export interface Receipt {
+  borrowerName: string
+  rentalDates: string[]
+  rentalNumber: string
+  totalDeposit: number
+  items: CartItem[]
+  createdAt: string
+}

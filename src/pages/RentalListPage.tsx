@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import type { CartItem } from '../types/equipment'
+import type { CartItem, Receipt } from '../types/equipment'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import CartList from '../components/cart/CartList'
@@ -442,7 +442,7 @@ const RentalListPage = () => {
     // 為每個時段生成訂單
     const year = new Date().getFullYear()
     const existingReceipts = JSON.parse(localStorage.getItem(`booking_receipts_${currentUser?.studentId || 'guest'}`) || '[]')
-    const newReceipts: any[] = []
+    const newReceipts: Receipt[] = []
 
     Object.entries(dateGroups).forEach(([dateKey, items]) => {
       const [startDate, endDate] = dateKey.split('_')
@@ -483,7 +483,7 @@ const RentalListPage = () => {
     const notificationsKey = `sccd_notifications_${currentUser?.studentId || 'guest'}`
     const existingNotifications = JSON.parse(localStorage.getItem(notificationsKey) || '[]')
     
-    const newNotifications = newReceipts.map((receipt: any) => ({
+    const newNotifications = newReceipts.map((receipt) => ({
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'success', // 成功狀態
       title: '預約成功',

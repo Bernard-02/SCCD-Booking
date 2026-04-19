@@ -1,13 +1,15 @@
+import type { Receipt, BookingType } from '../types/equipment'
+
 export const checkDuplicateOrder = (
   studentId: string | undefined,
   startDate: Date | null,
   endDate: Date | null,
-  bookingType: string
+  bookingType: BookingType
 ): { isDuplicate: boolean; message: string } => {
   if (!startDate || !endDate) return { isDuplicate: false, message: '' }
 
   const receiptsKey = `booking_receipts_${studentId || 'guest'}`
-  const receipts: any[] = JSON.parse(localStorage.getItem(receiptsKey) || '[]')
+  const receipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsKey) || '[]')
 
   const targetStart = new Date(startDate).getTime()
   const targetEnd = new Date(endDate).getTime()
