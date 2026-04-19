@@ -13,13 +13,13 @@
   },
   "extension-cord": {
     "id": "extension-cord",
-    "category": "線材",
+    "category": "延長線",
     "name": "三孔六座延長線",
-    "status": "有現貨",
-    "statusColor": "#00ff80",
+    "status": "已借出",
+    "statusColor": "#ff448a",
     "mainImage": "Images/Extension Cord.webp",
     "originalQuantity": 5,
-    "availableQuantity": 5,
+    "availableQuantity": 0,
     "deposit": 500,
     "description": "高品質三孔六座延長線，適用於各種攝影設備供電需求。多重安全保護，確保設備安全運行。"
   },
@@ -55,7 +55,7 @@
     "statusColor": "#ff448a",
     "mainImage": "Images/Extension Cord.webp",
     "originalQuantity": 1,
-    "availableQuantity": 1,
+    "availableQuantity": 0,
     "deposit": 500,
     "description": "KINYO PS 285B 立體擴大音響，音質清晰，立體聲效果佳。適合各種音響需求使用。"
   },
@@ -115,7 +115,7 @@
     "statusColor": "#ff448a",
     "mainImage": "Images/Extension Cord.webp",
     "originalQuantity": 3,
-    "availableQuantity": 3,
+    "availableQuantity": 0,
     "deposit": 500,
     "description": "畫板，角度可調，高度可調整。適合各種繪畫和展示需求，穩固耐用。"
   },

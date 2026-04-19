@@ -1,0 +1,45 @@
+/**
+ * 全域樣式
+ * Tailwind CSS v4 + 引入原有的 CSS 文件
+ */
+
+/* Tailwind CSS v4 - 使用 @import 指令 */
+@import "tailwindcss";
+
+/* 基礎樣式 - 必須在這裡定義，因為 @import 必須在最前面 */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined'; /* 確保指定字體 */
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;  /* 預設大小 */
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  
+  /* Google 變數設定 */
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}

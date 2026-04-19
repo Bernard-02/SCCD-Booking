@@ -1,16 +1,31 @@
 // 動態載入並嵌入SVG以支援內部元素控制
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        // 載入SVG內容
-        const response = await fetch('Area/A5F Area Homepage.svg');
-        const svgContent = await response.text();
 
+// 定義全域變數來追蹤選中的區塊
+window.selectedBlocks = new Set();
+
+// 區域價格表
+const AREA_PRICES = {
+    'square': 1000,
+    'corridor': 1000,
+    'front-terrace': 1000,
+    'back-terrace': 2000,
+    'glass-wall': 1000,
+    'pillar': 1000
+};
+
+// 將初始化函數暴露給 window，以便 React 組件調用
+window.initAreaMap = async function() {
+    try {
         // 找到SVG容器
-        const container = document.querySelector('#homepage-map-container > div');
+        const container = document.getElementById('area-map-container');
         if (!container) {
             console.error('SVG container not found');
             return;
         }
+
+        // 載入SVG內容
+        const response = await fetch('Area/A5F Area Homepage.svg');
+        const svgContent = await response.text();
 
         // 插入SVG內容
         container.innerHTML = svgContent;
@@ -34,6 +49,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     } catch (error) {
         console.error('Failed to load SVG:', error);
+    }
+};
+
+// 為了兼容純 HTML 頁面，保留 DOMContentLoaded 監聽
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('area-map-container')) {
+        window.initAreaMap();
     }
 });
 
@@ -240,9 +262,10 @@ function setupAreaHoverEffects(svg) {
                     // 根據狀態設置初始顏色
                     element.classList.add('area-block');
                     if (blockData.status === 'available') {
-                        element.style.fill = 'var(--color-success)';
+                        element.classList.add('is-available');
+                        // 移除這裡的 style.fill，讓 CSS 控制預設顏色（深灰）
                     } else if (blockData.status === 'booked') {
-                        element.style.fill = 'var(--color-error)';
+                        element.classList.add('is-rented');
                     }
 
                     // 為每個格子添加hover事件
@@ -260,6 +283,12 @@ function setupAreaHoverEffects(svg) {
                         hideTooltip();
                         // 恢復所有區域的不透明度
                         resetAreasOpacity(allAreaGroups);
+                    });
+
+                    // 添加點擊事件
+                    element.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleBlockClick(element, blockId, blockData);
                     });
                 }
             });
@@ -289,9 +318,9 @@ function setupGroupBlocks(svg, tooltip, allAreaGroups) {
             childElements.forEach(el => {
                 el.classList.add('area-block');
                 if (blockData.status === 'available') {
-                    el.style.fill = 'var(--color-success)';
+                    el.classList.add('is-available');
                 } else if (blockData.status === 'booked') {
-                    el.style.fill = 'var(--color-error)';
+                    el.classList.add('is-rented');
                 }
             });
 
@@ -310,6 +339,12 @@ function setupGroupBlocks(svg, tooltip, allAreaGroups) {
                 hideTooltip();
                 resetAreasOpacity(allAreaGroups);
             });
+
+            // 為群組添加點擊事件
+            groupElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleBlockClick(groupElement, groupId, blockData);
+            });
         }
     });
 
@@ -324,9 +359,9 @@ function setupGroupBlocks(svg, tooltip, allAreaGroups) {
             childElements.forEach(el => {
                 el.classList.add('area-block');
                 if (blockData.status === 'available') {
-                    el.style.fill = 'var(--color-success)';
+                    el.classList.add('is-available');
                 } else if (blockData.status === 'booked') {
-                    el.style.fill = 'var(--color-error)';
+                    el.classList.add('is-rented');
                 }
             });
 
@@ -345,8 +380,85 @@ function setupGroupBlocks(svg, tooltip, allAreaGroups) {
                 hideTooltip();
                 resetAreasOpacity(allAreaGroups);
             });
+
+            // 為群組添加點擊事件
+            groupElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleBlockClick(groupElement, groupId, blockData);
+            });
         }
     });
+}
+
+// 處理區塊點擊邏輯
+function handleBlockClick(element, blockId, blockData) {
+    // 如果已借出，則無法點擊
+    if (blockData.status === 'booked') return;
+
+    // 處理群組元素的情況 (E1-E6, H1-H10)
+    const isGroup = element.tagName === 'g';
+    const targetElements = isGroup ? element.querySelectorAll('rect, polygon, path') : [element];
+
+    if (window.selectedBlocks.has(blockId)) {
+        // 取消選取
+        window.selectedBlocks.delete(blockId);
+        
+        if (isGroup) {
+            element.classList.remove('is-selected');
+        }
+        
+        targetElements.forEach(el => {
+            el.classList.remove('is-selected');
+        });
+    } else {
+        // 選取
+        window.selectedBlocks.add(blockId);
+        
+        if (isGroup) {
+            element.classList.add('is-selected');
+        }
+
+        targetElements.forEach(el => {
+            el.classList.add('is-selected');
+        });
+    }
+
+    // 更新右側面板資訊
+    updateRightPanel();
+}
+
+// 更新右側面板資訊
+function updateRightPanel() {
+    const numbersEl = document.getElementById('rental-block-numbers');
+    const depositEl = document.getElementById('total-deposit');
+    const addBtn = document.getElementById('add-button');
+    const clearBtn = document.getElementById('clear-button');
+
+    if (!numbersEl || !depositEl) return;
+
+    const selectedArray = Array.from(window.selectedBlocks).sort();
+    
+    // 更新編號列表
+    numbersEl.textContent = selectedArray.length > 0 ? selectedArray.join(', ') : '--';
+
+    // 計算總押金
+    let totalDeposit = 0;
+    selectedArray.forEach(id => {
+        const areaType = areaBlocksData[id]?.area;
+        if (areaType && AREA_PRICES[areaType]) {
+            totalDeposit += AREA_PRICES[areaType];
+        }
+    });
+    depositEl.textContent = `NT ${totalDeposit.toLocaleString()}`;
+
+    // 更新按鈕狀態
+    if (selectedArray.length > 0) {
+        addBtn.removeAttribute('disabled');
+        clearBtn.removeAttribute('disabled');
+    } else {
+        addBtn.setAttribute('disabled', 'true');
+        clearBtn.setAttribute('disabled', 'true');
+    }
 }
 
 function showTooltip(event, blockId, blockData) {
@@ -469,17 +581,21 @@ function updateBlockStatus(blockId, status, user = null) {
                 const childElements = element.querySelectorAll('rect, polygon, path');
                 childElements.forEach(child => {
                     if (status === 'available') {
-                        child.style.fill = 'var(--color-success)';
+                        child.classList.remove('is-rented');
+                        child.classList.add('is-available');
                     } else if (status === 'booked') {
-                        child.style.fill = 'var(--color-error)';
+                        child.classList.remove('is-available');
+                        child.classList.add('is-rented');
                     }
                 });
             } else if (element) {
                 // 單個元素
                 if (status === 'available') {
-                    element.style.fill = 'var(--color-success)';
+                    element.classList.remove('is-rented');
+                    element.classList.add('is-available');
                 } else if (status === 'booked') {
-                    element.style.fill = 'var(--color-error)';
+                    element.classList.remove('is-available');
+                    element.classList.add('is-rented');
                 }
             }
         }

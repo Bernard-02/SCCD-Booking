@@ -11,7 +11,10 @@
   --color-error: #ff448a;            /* 粉紅色 - 已借出、錯誤狀態 */
   --color-error2: #ff8698;           /* 淺粉紅色 - 次要錯誤狀態 */
   --color-warning: #ffaa00;          /* 橙色 - 警告狀態 */
-  --color-purple: #65b4fe;           /* 藍色 - 專案許可區標示 */
+  --color-yellow:  #ffff00;       /* 黃色 - 待銷單 */
+  --color-red: #ff0000;              /* 正紅色 - 已借出區塊編號 */
+  --color-blue: #65b4fe;           /* 藍色 - 專案許可區標示（舊版，保留相容性） */
+  --color-cyan-blue: #00bfff;      /* 青藍色 - 專案許可區新標示色 */
 
   /* 灰階系統 - Scale 1-5 (淺到深) */
   --color-gray-scale1: #cccccc;      /* Scale 1 - 最淺灰 - 副標題、標籤 */
@@ -19,6 +22,7 @@
   --color-gray-scale3: #7c7c7c;      /* Scale 3 - 禁用狀態 */
   --color-gray-scale4: #545454;      /* Scale 4 - 深灰背景 */
   --color-gray-scale5: #2b2b2b;      /* Scale 5 - 最深灰 - 邊框線 */
+  --color-gray-scale6: #151515;     
 
   /* 背景色 */
   --color-bg-overlay: rgba(0, 0, 0, 0.75);    /* 半透明黑色覆蓋 */
@@ -41,6 +45,10 @@
 .text-error { color: var(--color-error) !important; }
 .text-error2 { color: var(--color-error2) !important; }
 .text-warning { color: var(--color-warning) !important; }
+.text-yellow { color: var(--color-yellow) !important; }
+.text-red { color: var(--color-red) !important; }
+.text-blue { color: var(--color-blue) !important; }
+.text-cyan-blue { color: var(--color-cyan-blue) !important; }
 
 /* 文字顏色 - 灰階 Scale 系統 */
 .text-gray-scale1 { color: var(--color-gray-scale1) !important; }
@@ -48,6 +56,7 @@
 .text-gray-scale3 { color: var(--color-gray-scale3) !important; }
 .text-gray-scale4 { color: var(--color-gray-scale4) !important; }
 .text-gray-scale5 { color: var(--color-gray-scale5) !important; }
+.text-gray-scale6 { color: var(--color-gray-scale6) !important; }
 
 /* 背景顏色 - 狀態色 */
 .bg-success { background-color: var(--color-success) !important; }
@@ -61,6 +70,7 @@
 .bg-gray-scale3 { background-color: var(--color-gray-scale3) !important; }
 .bg-gray-scale4 { background-color: var(--color-gray-scale4) !important; }
 .bg-gray-scale5 { background-color: var(--color-gray-scale5) !important; }
+.bg-gray-scale6 { background-color: var(--color-gray-scale6) !important; }
 
 /* 邊框顏色 - 狀態色 */
 .border-success { border-color: var(--color-success) !important; }
@@ -75,3 +85,4 @@
 .border-gray-scale3 { border-color: var(--color-gray-scale3) !important; }
 .border-gray-scale4 { border-color: var(--color-gray-scale4) !important; }
 .border-gray-scale5 { border-color: var(--color-gray-scale5) !important; }
+.border-gray-scale6 { border-color: var(--color-gray-scale6) !important; }

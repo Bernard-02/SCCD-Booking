@@ -108,6 +108,13 @@ function animateZoomEffect(areaKey, areaName) {
 
 // 初始化頁面
 async function initNumberedAreaPage() {
+  // 防止重複初始化
+  // 檢查容器是否已經有 SVG，如果有則視為已初始化，避免重複載入
+  const containerCheck = document.getElementById('area-map-container');
+  if (window.isNumberedAreaInitialized && containerCheck && containerCheck.querySelector('svg')) {
+    return;
+  }
+  
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const fromRentalList = urlParams.get('from') === 'rental-list';
@@ -117,10 +124,11 @@ async function initNumberedAreaPage() {
     }
 
     // 載入SVG內容
-    const response = await fetch('Area/A5F Area Booking.svg');
+    // 使用絕對路徑，避免在子路徑刷新時發生 404 錯誤
+    const response = await fetch('/Area/A5F Area Booking.svg');
     const svgContent = await response.text();
 
-    const container = document.querySelector('.h-full.text-center.relative > div');
+    const container = document.getElementById('area-map-container');
     if (!container) {
       console.error('SVG container not found');
       return;
@@ -151,10 +159,15 @@ async function initNumberedAreaPage() {
       }, 100);
     }
 
+    window.isNumberedAreaInitialized = true;
+
   } catch (error) {
     console.error('Failed to load A5F Area Booking SVG:', error);
   }
 }
+
+// 將初始化函數暴露給 window，供 React 使用
+window.initNumberedAreaPage = initNumberedAreaPage;
 
 // 設置區域互動功能
 function setupAreaInteractions(svg) {
@@ -603,36 +616,26 @@ function setupGridCellClicking() {
       gridCellCount++;
       element.style.cursor = 'pointer';
       element.style.transition = 'opacity 0.2s ease';
+      
+      // 添加基礎類別
+      element.classList.add('area-block');
+      element.removeAttribute('fill'); // 移除 SVG 屬性 fill
+      
+      // 移除可能干擾 CSS 的 inline styles
+      element.style.removeProperty('fill');
+      element.style.removeProperty('stroke');
 
-      storeOriginalStyles(element);
-      restoreOriginalStyles(element);
-      element.style.filter = 'brightness(1)';
-
-      const mouseEnterHandler = () => {
-        if (isBlockSubmitted(element.id, currentSelectedAreaKey)) {
-          return;
-        }
-
-        if (!isBlockSelected(element.id, currentSelectedAreaKey) && !isBlockInCart(element.id, currentSelectedAreaKey)) {
-          applyColorToElement(element, '#00ff80');
-          element.style.filter = 'brightness(0.7)';
-        } else {
-          element.style.filter = 'brightness(0.7)';
-        }
-      };
-
-      const mouseLeaveHandler = () => {
-        if (isBlockSubmitted(element.id, currentSelectedAreaKey)) {
-          return;
-        }
-
-        if (!isBlockSelected(element.id, currentSelectedAreaKey) && !isBlockInCart(element.id, currentSelectedAreaKey)) {
-          restoreOriginalStyles(element);
-          element.style.filter = 'brightness(1)';
-        } else {
-          element.style.filter = 'brightness(1)';
-        }
-      };
+      // 如果是群組，確保所有子元素也加上 class 並移除屬性
+      const children = element.querySelectorAll('*');
+      children.forEach(child => {
+        child.classList.add('area-block');
+        child.removeAttribute('fill');
+        child.style.removeProperty('fill');
+        child.style.removeProperty('stroke');
+      });
+      
+      // 根據狀態設置初始類別
+      updateGridCellStyle(element.id, isBlockSelected(element.id, currentSelectedAreaKey));
 
       const clickHandler = (e) => {
         e.stopPropagation();
@@ -644,13 +647,10 @@ function setupGridCellClicking() {
         handleGridCellClick(element.id);
       };
 
-      element.addEventListener('mouseenter', mouseEnterHandler);
-      element.addEventListener('mouseleave', mouseLeaveHandler);
+      // 只保留點擊事件，Hover 效果由 CSS 處理
       element.addEventListener('click', clickHandler);
 
       element._gridEventHandlers = {
-        mouseenter: mouseEnterHandler,
-        mouseleave: mouseLeaveHandler,
         click: clickHandler
       };
     }
@@ -1108,7 +1108,6 @@ function resetToInitialState() {
 
   const tooltip = document.getElementById('area-tooltip');
   tooltip.classList.remove('show');
-
 }
 
 // 移除格子互動功能
@@ -1132,15 +1131,13 @@ function clearAllGridCellListeners() {
     const isGridCell = isGridCellElement(id);
 
     if (isGridCell && element._gridEventHandlers) {
-      element.removeEventListener('mouseenter', element._gridEventHandlers.mouseenter);
-      element.removeEventListener('mouseleave', element._gridEventHandlers.mouseleave);
       element.removeEventListener('click', element._gridEventHandlers.click);
 
       delete element._gridEventHandlers;
 
       element.style.cursor = '';
       element.style.transition = '';
-      element.style.filter = '';
+      element.classList.remove('area-block', 'is-available', 'is-selected', 'is-rented');
     }
   });
 
@@ -1158,8 +1155,8 @@ function restoreAllGridCellsToOriginalState() {
     const isGridCell = isGridCellElement(id);
 
     if (isGridCell) {
-      restoreOriginalStyles(element);
-      element.style.filter = 'brightness(1)';
+      element.classList.remove('is-selected', 'is-rented');
+      element.classList.add('is-available');
       element.style.opacity = '1';
       element.style.cursor = '';
     }
@@ -1175,8 +1172,8 @@ function showCartBlocksInOverview() {
   cartBlocks.forEach(block => {
     const element = svg.querySelector(`#${block.cellId}`);
     if (element) {
-      applyColorToElement(element, '#00ff80');
-      element.style.filter = 'brightness(1)';
+      element.classList.add('area-block', 'is-selected');
+      element.style.removeProperty('fill');
       element.style.opacity = '1';
       element.style.cursor = 'default'; // 設為默認游標，表示不可點擊
     }
@@ -1263,26 +1260,32 @@ function updateGridCellStyle(cellId, isSelected, isSubmitted = false) {
     return;
   }
 
+  // 定義要操作的元素集合（包含自身與所有子元素）
+  const targets = [element, ...element.querySelectorAll('*')];
+  const statusClasses = ['is-available', 'is-selected', 'is-rented'];
+  
+  let classToAdd = 'is-available';
+  let cursorStyle = 'pointer';
+
   if (isSubmitted || isBlockSubmitted(cellId, currentSelectedAreaKey)) {
-    applyColorToElement(element, '#ff448a');
-    element.style.filter = 'brightness(1)';
-    setCursorForElementAndChildren(element, 'not-allowed');
+    classToAdd = 'is-rented';
+    cursorStyle = 'not-allowed';
   } else if (isSelected) {
-    applyColorToElement(element, '#00ff80');
-    element.style.filter = 'brightness(1)';
-    element.style.opacity = '1';
-    setCursorForElementAndChildren(element, 'pointer');
+    classToAdd = 'is-selected';
+    cursorStyle = 'pointer';
   } else if (isBlockInCart(cellId, currentSelectedAreaKey)) {
-    applyColorToElement(element, '#00ff80');
-    element.style.filter = 'brightness(1)';
-    element.style.opacity = '1';
-    setCursorForElementAndChildren(element, 'pointer'); // 改為可點擊
-  } else {
-    restoreOriginalStyles(element);
-    element.style.filter = 'brightness(1)';
-    element.style.opacity = '1';
-    setCursorForElementAndChildren(element, 'pointer');
+    classToAdd = 'is-selected';
+    cursorStyle = 'pointer';
   }
+
+  // 批量更新所有相關元素
+  targets.forEach(el => {
+    el.classList.remove(...statusClasses);
+    el.classList.add(classToAdd);
+    el.style.removeProperty('fill'); // 再次確保移除 inline style
+    el.style.cursor = cursorStyle;
+    el.style.opacity = '1';
+  });
 }
 
 function setCursorForElementAndChildren(element, cursor) {
@@ -1444,8 +1447,8 @@ function removeBlockFromCart(cellId, areaKey) {
         updateGridCellStyle(cellId, false);
       } else {
         // 在平面圖中
-        restoreOriginalStyles(element);
-        element.style.filter = 'brightness(1)';
+        element.classList.remove('is-selected');
+        element.classList.add('is-available');
         element.style.opacity = '1';
       }
     }
@@ -1461,5 +1464,9 @@ function removeBlockFromCart(cellId, areaKey) {
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
-  initNumberedAreaPage();
+  // 如果不是在 React 環境中（或者 React 還沒接管），則執行初始化
+  // 這裡加個簡單的檢查，或者直接執行，因為 initNumberedAreaPage 內部有防重複機制
+  if (document.getElementById('area-map-container')) {
+    initNumberedAreaPage();
+  }
 });

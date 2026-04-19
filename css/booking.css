@@ -214,6 +214,26 @@
     color: #777777 !important;
 }
 
+/* 過期日期範圍 - 黃色且不可互動 */
+.expired-date {
+    cursor: default !important;
+}
+
+.expired-date:hover {
+    transform: none !important;
+}
+
+.expired-date .date-number-text,
+.expired-date .date-number-hidden {
+    color: #ffff00 !important;
+}
+
+/* 有效日期範圍 - 綠色標記 */
+.valid-range .date-number-text,
+.valid-range .date-number-hidden {
+    color: #00FF80 !important;
+}
+
 /* === 日期數字互動樣式 === */
 .date-number-wrapper {
     position: relative;
@@ -256,150 +276,76 @@
     transform: translateY(-100%);
 }
 
-/* 起租日選擇狀態 - 左半部綠色橫線 */
+/* 起租日選擇狀態 - 綠色數字 */
 .cursor-pointer.start-date {
     position: relative;
 }
 
-.cursor-pointer.start-date::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
-}
-
-/* 當只有起租日時（沒有歸還日），只顯示左半邊 */
-.cursor-pointer.start-date.only-start::after {
-    width: 50%;
-}
-
 .cursor-pointer.start-date .date-number-text,
 .cursor-pointer.start-date .date-number-hidden {
-    color: #00FF80;
+    color: #00FF80 !important;
 }
 
-/* 歸還日選擇狀態 - 完整綠色橫線 */
+/* 歸還日選擇狀態 - 綠色數字 */
 .cursor-pointer.end-date {
     position: relative;
 }
 
-.cursor-pointer.end-date::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0; /* 從左邊開始 */
-    width: 100%; /* 完整橫線 */
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
-}
-
 .cursor-pointer.end-date .date-number-text,
 .cursor-pointer.end-date .date-number-hidden {
-    color: #00FF80;
+    color: #00FF80 !important;
 }
 
-/* 範圍內的日期 - 完整綠色橫線 */
+/* 範圍內的日期 - 綠色數字 */
 .cursor-pointer.in-range {
     position: relative;
 }
 
-.cursor-pointer.in-range::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
+.cursor-pointer.in-range .date-number-text,
+.cursor-pointer.in-range .date-number-hidden {
+    color: #00FF80 !important;
 }
 
-/* Hover 預覽效果 - 50% 透明度 */
+/* Hover 預覽效果 - 深綠色數字 */
 .cursor-pointer.hover-preview {
     position: relative;
 }
 
-.cursor-pointer.hover-preview::before {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: rgba(0, 255, 128, 0.5); /* 50% 透明度的綠色 */
-    z-index: 0;
-    transform: translateY(-50%);
+.cursor-pointer.hover-preview .date-number-text,
+.cursor-pointer.hover-preview .date-number-hidden {
+    color: rgb(0, 128, 64) !important;
 }
 
-/* 起租日的 hover 預覽效果 - 只顯示右半邊 */
-.cursor-pointer.start-date.hover-preview::before {
-    left: 50%;
-    width: 50%;
+/* 起租日在 hover 預覽時保持 100% 綠色 */
+.cursor-pointer.start-date.hover-preview .date-number-text,
+.cursor-pointer.start-date.hover-preview .date-number-hidden {
+    color: #00FF80 !important;
 }
 
-/* 同一天起租日 hover 預覽效果 - 右半邊 50% 透明度 */
+/* 同一天起租日 hover 預覽效果 - 保持 100% 綠色 */
 .cursor-pointer.same-day-hover-preview {
     position: relative;
 }
 
-.cursor-pointer.same-day-hover-preview::before {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 50%; /* 從中間開始 */
-    width: 50%; /* 只填充右半部 */
-    height: 6px;
-    background-color: rgba(0, 255, 128, 0.5); /* 50% 透明度的綠色 */
-    z-index: 0;
-    transform: translateY(-50%);
+.cursor-pointer.same-day-hover-preview .date-number-text,
+.cursor-pointer.same-day-hover-preview .date-number-hidden {
+    color: #00FF80 !important;
 }
 
-/* 起租日選擇了歸還日後的完整橫線 */
-.cursor-pointer.complete-line::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
-}
-
+/* 起租日選擇了歸還日後 - 綠色數字 */
 .cursor-pointer.complete-line .date-number-text,
 .cursor-pointer.complete-line .date-number-hidden {
-    color: #00FF80;
+    color: #00FF80 !important;
 }
 
-/* 同一天選擇狀態 - 完整綠色橫線 */
+/* 同一天選擇狀態 - 綠色數字 */
 .cursor-pointer.same-day-selected {
     position: relative;
 }
 
-.cursor-pointer.same-day-selected::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%; /* 完整橫線 */
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
-}
-
 .cursor-pointer.same-day-selected .date-number-text,
 .cursor-pointer.same-day-selected .date-number-hidden {
-    color: #00FF80;
+    color: #00FF80 !important;
 }
 
 /* ===== 按鈕狀態樣式 ===== */
@@ -424,115 +370,43 @@
 
 /* ===== 延期對話框專用樣式 ===== */
 
-/* 第1個數字 - 完整實心綠線 */
-.extend-line-start::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
+/* 第1個數字（今天）- 黃色數字 */
+.extend-line-start .date-number-text,
+.extend-line-start .date-number-hidden {
+    color: #ffff00 !important;
 }
 
-/* 第2個數字 - 完整實心綠線 */
-.extend-line-end::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
+/* 第2個數字（原歸還日）- 綠色數字 */
+.extend-line-end .date-number-text,
+.extend-line-end .date-number-hidden {
+    color: #00FF80 !important;
 }
 
-/* 第3個數字 - 左半邊實心綠線（初始狀態） */
-.extend-line-third::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 50%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
+/* 第3個數字（延期選項）- 移除顏色覆蓋，使用預設白色 */
+/* .extend-line-third .date-number-text,
+.extend-line-third .date-number-hidden {
+    color: #00FF80 !important;
+} */
+
+/* 範圍內的數字（選中狀態）- 綠色數字 */
+.in-range-extend .date-number-text,
+.in-range-extend .date-number-hidden {
+    color: #00FF80 !important;
 }
 
-/* 第3個數字 hover - 右半邊半透明綠線 */
-.extend-line-third.hover-preview::before {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 50%;
-    width: 50%;
-    height: 6px;
-    background-color: rgba(0, 255, 128, 0.5);
-    z-index: 0;
-    transform: translateY(-50%);
+/* hover 預覽 - 深綠色數字 */
+.hover-preview-extend .date-number-text,
+.hover-preview-extend .date-number-hidden {
+    color: rgb(0, 128, 64) !important;
 }
 
-/* 第3個數字選中範圍內 - 變成完整實心綠線 */
-.extend-line-third.in-range-extend::after {
-    width: 100%; /* 覆蓋原本的 50% */
+/* hover 位置本身 - 深綠色數字 */
+.hover-preview-end .date-number-text,
+.hover-preview-end .date-number-hidden {
+    color: rgb(0, 128, 64) !important;
 }
 
-/* 範圍內的數字（選中狀態）- 完整實心綠線 */
-.in-range-extend::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
-}
-
-/* hover 預覽 - 完整半透明綠線 */
-.hover-preview-extend::before {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: rgba(0, 255, 128, 0.5);
-    z-index: 0;
-    transform: translateY(-50%);
-}
-
-/* hover 位置本身 - 完整半透明綠線 */
-.hover-preview-end::before {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: rgba(0, 255, 128, 0.5);
-    z-index: 0;
-    transform: translateY(-50%);
-}
-
-/* 選中的結束日期 - 完整綠線 + 綠色數字 */
-.end-date-extend::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background-color: #00FF80;
-    z-index: 1;
-    transform: translateY(-50%);
-}
-
+/* 選中的結束日期 - 綠色數字 */
 .end-date-extend .date-number-text,
 .end-date-extend .date-number-hidden {
     color: #00FF80 !important;

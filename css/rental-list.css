@@ -194,3 +194,14 @@ button:disabled .hero-cta-wrapper {
 /* BOOK 按鈕現在使用通用的 sccd-btn 系統 - 在 common.css 中定義 */
 
 /* CLEAR ALL 按鈕現在使用通用的 sccd-btn 系統 - 在 common.css 中定義 */
+
+/* ===== Cart List 樣式 ===== */
+
+/* Equipment/Space 標題列 hover 效果 */
+.cart-section-header {
+  transition: background-color 0.3s ease;
+}
+
+.cart-section-header:hover {
+  background-color: var(--color-gray-scale6);
+}

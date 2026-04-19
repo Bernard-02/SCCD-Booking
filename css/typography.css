@@ -54,9 +54,9 @@
 
 /* ===== 7. 內文 (段落文字) ===== */
 .text-content {
-  font-size: 1.35rem;      /* 21.6px - 桌面版 */
+  font-size: 1.3rem;      /* 21.6px - 桌面版 */
   font-weight: 400;        /* normal */
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 /* ===== 8. Breadcrumb 文字 (導航路徑、說明文字) ===== */
@@ -69,6 +69,13 @@
 /* ===== 9. 極小文字 (細節說明) ===== */
 .text-tiny {
   font-size: 0.875rem;     /* 14px - 與 breadcrumb 相同 */
+  font-weight: 400;        /* normal */
+  line-height: 1.4;
+}
+
+/* ===== 10. PDF 表格標頭 ===== */
+.text-pdf-table-header {
+  font-size: 1rem;         /* 16px - 桌面版 */
   font-weight: 400;        /* normal */
   line-height: 1.4;
 }
@@ -127,6 +134,11 @@
     font-size: 0.75rem;    /* 12px */
     line-height: 1.3;
   }
+
+  /* 10. PDF 表格標頭手機版 (保持與桌面版相同) */
+  .text-pdf-table-header {
+    font-size: 0.875rem;   /* 14px */
+  }
 }
 
 /* ===== 使用指南註解 ===== */
@@ -143,6 +155,7 @@
 7. .text-content：1.35rem → 1rem (段落內文)
 8. .text-breadcrumb：0.875rem → 0.875rem (路徑、說明文字，無手機版縮小)
 9. .text-tiny：0.875rem → 0.75rem (極小文字)
+10. .text-pdf-table-header: 1rem → 0.875rem (PDF表格標頭)
 
 所有樣式已包含完整的響應式設計。
 */

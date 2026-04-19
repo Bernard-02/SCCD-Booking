@@ -338,3 +338,69 @@
     margin-bottom: 2rem;
   }
 }
+
+/* ===== SVG Area Block Styles ===== */
+/* 這些樣式用於 SVG 地圖中的區塊互動 */
+
+.area-block {
+  transition: fill 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  pointer-events: auto; /* 確保 SVG 路徑可以被點擊 */
+}
+
+.area-block.is-available {
+  fill: rgb(0, 128, 64) !important; /* 不透明淺綠色 - 與 legend 顏色一致 */
+  cursor: default; /* 預設不可選擇 */
+}
+
+/* 可互動的區塊（當前選擇區域內的可用區塊） */
+.area-block.is-interactive {
+  cursor: pointer !important; /* 可選擇的區塊顯示 pointer */
+}
+
+/* Hover 效果：只有 is-interactive 的才能 hover 變色 */
+
+/* 獨立元素的個別 hover（直接有 id 的 rect/polygon，不在 <g> 內） */
+/* L, J, G, K, Y, Z 是真正的獨立元素，可以個別 hover */
+:not(g)[id^="L"].area-block.is-available.is-interactive:hover,
+:not(g)[id^="J"].area-block.is-available.is-interactive:hover,
+:not(g)[id^="G"].area-block.is-available.is-interactive:hover,
+:not(g)[id^="K"].area-block.is-available.is-interactive:hover,
+:not(g)[id^="Y"].area-block.is-available.is-interactive:hover,
+:not(g)[id^="Z"].area-block.is-available.is-interactive:hover,
+/* A-E 區塊位於群組內，使用後代選擇器來實現個別 hover */
+g[id^="A"] .area-block.is-available.is-interactive:hover,
+g[id^="B"] .area-block.is-available.is-interactive:hover,
+g[id^="C"] .area-block.is-available.is-interactive:hover,
+g[id^="D"] .area-block.is-available.is-interactive:hover,
+g[id^="E"] .area-block.is-available.is-interactive:hover {
+  fill: rgba(0, 255, 128, 0.5) !important;
+}
+
+/* 群組 hover（整個 <g> 群組一起變色）*/
+/* 目前只有 H1-H10（專案許可區）需要群組 hover */
+g[id^="H"]:hover > .area-block.is-available.is-interactive {
+  fill: rgba(0, 255, 128, 0.5) !important;
+}
+
+/* 被禁用的區塊（不在當前選擇區域內） */
+.area-block.is-disabled {
+  fill: #565656 !important;
+  cursor: default;
+  opacity: 0.3;
+}
+
+/* 被禁用的區塊不應該有 hover 效果 */
+.area-block.is-disabled:hover {
+  fill: #565656 !important;
+  opacity: 0.3;
+}
+
+.area-block.is-selected {
+  fill: var(--color-success) !important; /* 選中變綠色 */
+  opacity: 1 !important; /* 100% 不透明度 */
+}
+
+.area-block.is-rented {
+  fill: var(--color-error) !important; /* 已租借紅色 */
+  cursor: not-allowed;
+}
