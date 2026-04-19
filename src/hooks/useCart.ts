@@ -5,30 +5,16 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { CartItem, Equipment, EquipmentData } from '../types/equipment'
+import equipmentDataRaw from '../data/equipment-data.json'
 
 const CART_STORAGE_KEY = 'sccd-rental-cart'
+const EQUIPMENT_DATA = equipmentDataRaw as EquipmentData
 
 export const useCart = () => {
   const [cart, setCart] = useState<CartItem[]>([])
-  const [equipmentData, setEquipmentData] = useState<EquipmentData>({})
-  const [isEquipmentLoaded, setIsEquipmentLoaded] = useState(false)
-
-  // 載入設備數據
-  const loadEquipmentData = useCallback(async () => {
-    try {
-      const response = await fetch('/equipment-data.json')
-      if (!response.ok) {
-        throw new Error('無法載入設備數據')
-      }
-      const data = await response.json()
-      setEquipmentData(data)
-      setIsEquipmentLoaded(true)
-      console.log('設備數據載入成功')
-    } catch (error) {
-      console.error('載入設備數據時發生錯誤:', error)
-      setIsEquipmentLoaded(false)
-    }
-  }, [])
+  // 設備資料由 bundle 直接載入，初始即可用
+  const [equipmentData] = useState<EquipmentData>(EQUIPMENT_DATA)
+  const [isEquipmentLoaded] = useState(true)
 
   // 從 localStorage 載入購物車
   const loadCart = useCallback(() => {
@@ -503,7 +489,6 @@ export const useCart = () => {
 
   // 初始化
   useEffect(() => {
-    loadEquipmentData()
     loadCart()
 
     // 監聽 storage 事件，用於跨頁面同步
@@ -518,7 +503,7 @@ export const useCart = () => {
     return () => {
       window.removeEventListener('storage', handleStorageChange)
     }
-  }, [loadEquipmentData, loadCart])
+  }, [loadCart])
 
   return {
     cart,

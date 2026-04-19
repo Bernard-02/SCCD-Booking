@@ -12,7 +12,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import Toast from '../common/Toast'
 
 // 匯入設備數據
-import equipmentDataRaw from '../../../equipment-data.json'
+import equipmentDataRaw from '../../data/equipment-data.json'
 
 interface EquipmentGridProps {
   selectedCategory: string

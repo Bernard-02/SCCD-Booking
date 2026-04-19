@@ -30,6 +30,9 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+# tsc --build 產生的 vite.config 編譯產物
+vite.config.js
+vite.config.d.ts
 
 # Temporary files
 *.tmp
