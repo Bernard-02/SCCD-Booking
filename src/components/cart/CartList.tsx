@@ -3,7 +3,7 @@
  * 按照租借日期分組顯示購物車項目
  */
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import type { CartItem, BookingType } from '../../types/equipment'
@@ -12,6 +12,8 @@ import { useCart } from '../../hooks/useCart'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import BookingDetailsDialog from '../common/BookingDetailsDialog'
 import DateEditDialog from './DateEditDialog'
+import { useDateGroups, type DateGroup } from './useDateGroups'
+import { formatDate, getAreaName, getBlockImage, sortBlockIds } from './cartHelpers'
 
 interface BookingDetailsData {
   reason: string
@@ -28,13 +30,6 @@ interface CartListProps {
   expiredDateKeys?: string[]
   selectedGroups?: Set<string>
   onSelectedGroupsChange?: (selectedGroups: Set<string>) => void
-}
-
-interface DateGroup {
-  startDate: string
-  endDate: string
-  category: 'equipment' | 'space'
-  items: CartItem[]
 }
 
 const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveItem, bookingDetails, onBookingDetailsChange, expiredDateKeys = [], selectedGroups: externalSelectedGroups, onSelectedGroupsChange }) => {
@@ -81,89 +76,21 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
   // 圖片預覽狀態
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
-  // 按日期和類別分組 - 設備和空間分開
-  const dateGroups = useMemo(() => {
-    interface SeparateGroup {
-      startDate: string
-      endDate: string
-      category: 'equipment' | 'space'
-      items: CartItem[]
+  // 按日期和類別分組（空間優先、日期較早優先）
+  const dateGroups = useDateGroups(cart)
+
+  // 初次載入時自動展開第一組
+  useEffect(() => {
+    if (initialized || dateGroups.length === 0) return
+    const first = dateGroups[0]
+    const firstKey = `${first.category}_${first.startDate}_${first.endDate}`
+    if (first.category === 'equipment') {
+      setExpandedEquipment(new Set([firstKey]))
+    } else {
+      setExpandedSpace(new Set([firstKey]))
     }
-
-    const groups: SeparateGroup[] = []
-
-    // 先按日期分組
-    const dateMap: Record<string, { equipment: CartItem[], space: CartItem[] }> = {}
-
-    cart.forEach(item => {
-      const key = `${item.startDate}_${item.endDate}`
-
-      if (!dateMap[key]) {
-        dateMap[key] = { equipment: [], space: [] }
-      }
-
-      if (item.category === 'equipment') {
-        dateMap[key].equipment.push(item)
-      } else {
-        dateMap[key].space.push(item)
-      }
-    })
-
-    // 將每個日期的設備和空間拆成獨立組
-    Object.entries(dateMap).forEach(([key, items]) => {
-      const [startDate, endDate] = key.split('_')
-
-      if (items.space.length > 0) {
-        groups.push({
-          startDate,
-          endDate,
-          category: 'space',
-          items: items.space
-        })
-      }
-
-      if (items.equipment.length > 0) {
-        groups.push({
-          startDate,
-          endDate,
-          category: 'equipment',
-          items: items.equipment
-        })
-      }
-    })
-
-    // 按開始日期排序，然後按類別排序（空間優先）
-    const sorted = groups.sort((a, b) => {
-      const dateCompare = new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-      if (dateCompare !== 0) return dateCompare
-      return a.category === 'space' ? -1 : 1
-    })
-
-    // 初始化時展開第一個分組
-    if (!initialized && sorted.length > 0) {
-      const firstGroup = sorted[0]
-      const firstGroupKey = `${firstGroup.category}_${firstGroup.startDate}_${firstGroup.endDate}`
-
-      if (firstGroup.category === 'equipment') {
-        setExpandedEquipment(new Set([firstGroupKey]))
-      } else {
-        setExpandedSpace(new Set([firstGroupKey]))
-      }
-      setInitialized(true)
-    }
-
-    return sorted
-  }, [cart, initialized])
-
-  // 格式化日期顯示
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/\//g, '/')
-  }
+    setInitialized(true)
+  }, [dateGroups, initialized])
 
   // 切換 Equipment 展開狀態
   const toggleEquipment = (key: string) => {
@@ -189,40 +116,6 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
       }
       return newSet
     })
-  }
-
-  // 獲取區塊的區域中文名稱
-  const getAreaName = (blockId: string): string => {
-    const blockData = mockAreaBlocksData[blockId]
-    if (!blockData) return ''
-
-    const areaNameMap: Record<string, string> = {
-      'square': '中庭',
-      'corridor': '專案許可區',
-      'front-terrace': '前陽台',
-      'back-terrace': '後陽台',
-      'glass-wall': '玻璃牆',
-      'pillar': '柱子'
-    }
-
-    return areaNameMap[blockData.area] || ''
-  }
-
-  // 獲取區塊的圖片路徑
-  const getBlockImage = (blockId: string): string => {
-    const blockData = mockAreaBlocksData[blockId]
-    if (!blockData) return '/Images/Glass Wall.webp'
-
-    const areaImageMap: Record<string, string> = {
-      'square': '/Images/Square.webp',
-      'corridor': '/Images/Corridor.webp',
-      'front-terrace': '/Images/Front Terrace.webp',
-      'back-terrace': '/Images/Back Terrace.webp',
-      'glass-wall': '/Images/Glass Wall.webp',
-      'pillar': '/Images/Pillar.webp'
-    }
-
-    return areaImageMap[blockData.area] || '/Images/Glass Wall.webp'
   }
 
   // 處理刪除項目（帶淡出動畫）
@@ -616,15 +509,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
                       const areaName = getAreaName(blocks[0].id)
                       const displayImage = getBlockImage(blocks[0].id)
-                      const blockIds = blocks.map(b => b.id).sort((a, b) => {
-                        const matchA = a.match(/^([A-Z]+)(\d+)$/)
-                        const matchB = b.match(/^([A-Z]+)(\d+)$/)
-                        if (!matchA || !matchB) return a.localeCompare(b)
-                        const [, letterA, numA] = matchA
-                        const [, letterB, numB] = matchB
-                        if (letterA !== letterB) return letterA.localeCompare(letterB)
-                        return parseInt(numA, 10) - parseInt(numB, 10)
-                      })
+                      const blockIds = sortBlockIds(blocks.map(b => b.id))
                       const totalDeposit = blocks.reduce((sum, b) => sum + b.deposit, 0)
                       const areaGroupKey = `${area}_${blockIds.join('_')}`
 
