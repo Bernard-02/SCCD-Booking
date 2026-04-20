@@ -4,15 +4,17 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import type { CartItem, Receipt } from '../types/equipment'
+import type { CartItem } from '../types/equipment'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import CartList from '../components/cart/CartList'
 import { useCart } from '../hooks/useCart'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import { useCartValidation } from '../hooks/useCartValidation'
+import { useOrderSubmission } from '../hooks/useOrderSubmission'
 
 interface BookingDetailsData {
   reason: string
@@ -24,7 +26,6 @@ const STORAGE_KEY = 'sccd_booking_details'
 
 const RentalListPage = () => {
   const location = useLocation()
-  const navigate = useNavigate()
   const { currentUser } = useAuth()
   const {
     cart,
@@ -71,141 +72,13 @@ const RentalListPage = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
   }
 
-  // 驗證購物車規則：大量租借（Mass）需至少 10 件
-  const cartValidation = (() => {
-    const dateGroups: Record<string, CartItem[]> = {}
-    cart.forEach(item => {
-      const key = `${item.startDate}_${item.endDate}`
-      if (!dateGroups[key]) {
-        dateGroups[key] = []
-      }
-      dateGroups[key].push(item)
-    })
-
-    for (const items of Object.values(dateGroups)) {
-      if (items.length === 0) continue
-      const bookingType = items[0].bookingType || 'little'
-
-      if (bookingType === 'mass-personal' || bookingType === 'mass-group') {
-        // 計算總數量 (設備用 quantity, 空間算 1)
-        const totalQuantity = items.reduce((sum, item) => {
-          return sum + (item.category === 'equipment' ? item.quantity : 1)
-        }, 0)
-
-        if (totalQuantity < 10) {
-          return {
-            valid: false,
-            message: '大量租借需滿 10 件項目',
-            detail: 'Mass booking requires min. 10 items'
-          }
-        }
-      }
-    }
-    return { valid: true, message: '', detail: '' }
-  })()
-
-  // 檢查是否有過期的訂單
-  const expiredOrdersValidation = (() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // 設為當天的 00:00:00
-
-    const expiredDates: string[] = []
-    const dateGroups: Record<string, CartItem[]> = {}
-
-    cart.forEach(item => {
-      const key = `${item.startDate}_${item.endDate}`
-      if (!dateGroups[key]) {
-        dateGroups[key] = []
-      }
-      dateGroups[key].push(item)
-    })
-
-    for (const [key, items] of Object.entries(dateGroups)) {
-      if (items.length === 0) continue
-
-      const startDate = new Date(items[0].startDate)
-      startDate.setHours(0, 0, 0, 0)
-
-      // 如果開始日期早於今天，則為過期
-      if (startDate < today) {
-        expiredDates.push(key)
-      }
-    }
-
-    if (expiredDates.length > 0) {
-      return {
-        valid: false,
-        message: `部分訂單日期已過期，請點擊 Edit 編輯日期`,
-        detail: `Some orders have expired dates, please click Edit to update`,
-        expiredKeys: expiredDates
-      }
-    }
-
-    return { valid: true, message: '', detail: '', expiredKeys: [] }
-  })()
-
-  // 檢查是否有缺貨的設備
-  const stockAvailabilityValidation = (() => {
-    const outOfStockItems: string[] = []
-
-    cart.forEach(item => {
-      if (item.category === 'equipment') {
-        const totalStock = getOriginalQuantity(item.id)
-        const otherItemsQty = getCartQuantity(item.id) - item.quantity
-        const maxQtyForThisItem = totalStock - otherItemsQty
-
-        // 如果當前數量超過最大可用數量，表示缺貨
-        if (item.quantity > maxQtyForThisItem) {
-          outOfStockItems.push(item.name)
-        }
-      }
-    })
-
-    if (outOfStockItems.length > 0) {
-      return {
-        valid: false,
-        message: `部分設備缺貨，請調整數量或移除`,
-        detail: `Some equipment is out of stock, please adjust quantity or remove`,
-        outOfStockItems
-      }
-    }
-
-    return { valid: true, message: '', detail: '', outOfStockItems: [] }
-  })()
-
-  // 驗證所有時段是否已填寫借用資訊
-  const bookingDetailsValidation = (() => {
-    const dateGroups: Record<string, CartItem[]> = {}
-    cart.forEach(item => {
-      const key = `${item.startDate}_${item.endDate}`
-      if (!dateGroups[key]) {
-        dateGroups[key] = []
-      }
-      dateGroups[key].push(item)
-    })
-
-    const missingDetails: string[] = []
-    for (const [key, items] of Object.entries(dateGroups)) {
-      if (items.length === 0) continue
-
-      // 檢查該時段是否已填寫資訊
-      if (!bookingDetails[key]) {
-        const startDate = items[0].startDate
-        const endDate = items[0].endDate
-        missingDetails.push(`${startDate} - ${endDate}`)
-      }
-    }
-
-    if (missingDetails.length > 0) {
-      return {
-        valid: false,
-        message: `請完成所有時段的借用資訊填寫`,
-        detail: `Please complete booking details for all periods`
-      }
-    }
-
-    return { valid: true, message: '', detail: '' }
-  })()
+  // 彙整四種購物車驗證規則
+  const {
+    cartValidation,
+    expiredOrdersValidation,
+    stockAvailabilityValidation,
+    bookingDetailsValidation
+  } = useCartValidation({ cart, bookingDetails, getOriginalQuantity, getCartQuantity })
 
   // 計算不同類型的項目數量
   // 設備：累加所有設備的數量 (A設備3個 + B設備2個 = 5)
@@ -417,97 +290,19 @@ const RentalListPage = () => {
     }, 400)
   }
 
-  // 處理結帳
+  // 送單流程（建收據、寫通知、清空購物車、導向 /profile）
+  const submitOrder = useOrderSubmission({ cart, currentUser, clearCart })
+
   const handleCheckout = () => {
     if (!agreedToTerms) {
       alert('請先同意使用規則與條款')
       return
     }
-
     if (cart.length === 0) {
       alert('購物車是空的')
       return
     }
-
-    // 按時段分組購物車項目
-    const dateGroups: Record<string, typeof cart> = {}
-    cart.forEach(item => {
-      const key = `${item.startDate}_${item.endDate}`
-      if (!dateGroups[key]) {
-        dateGroups[key] = []
-      }
-      dateGroups[key].push(item)
-    })
-
-    // 為每個時段生成訂單
-    const year = new Date().getFullYear()
-    const existingReceipts = JSON.parse(localStorage.getItem(`booking_receipts_${currentUser?.studentId || 'guest'}`) || '[]')
-    const newReceipts: Receipt[] = []
-
-    Object.entries(dateGroups).forEach(([dateKey, items]) => {
-      const [startDate, endDate] = dateKey.split('_')
-
-      // 計算該時段的押金（應用上限）
-      const equipmentDeposit = Math.min(
-        items.filter(item => item.category === 'equipment').reduce((sum, item) => sum + (item.deposit * item.quantity), 0),
-        5000
-      )
-      const spaceDeposit = Math.min(
-        items.filter(item => item.category === 'space-block' || item.category === 'classroom').reduce((sum, item) => sum + item.deposit, 0),
-        5000
-      )
-      const periodTotalDeposit = equipmentDeposit + spaceDeposit
-
-      // 生成該時段的租借號碼
-      const sequenceNumber = existingReceipts.length + newReceipts.length + 1
-      const rentalNumber = `#${year}${String(sequenceNumber).padStart(3, '0')}`
-
-      // 準備收據資料
-      const receiptData = {
-        borrowerName: currentUser?.name || '訪客',
-        rentalDates: [startDate, endDate],
-        rentalNumber,
-        totalDeposit: periodTotalDeposit,
-        items: items,
-        createdAt: new Date().toISOString()
-      }
-
-      newReceipts.push(receiptData)
-    })
-
-    // 保存所有收據到 localStorage
-    const userReceipts = [...existingReceipts, ...newReceipts]
-    localStorage.setItem(`booking_receipts_${currentUser?.studentId || 'guest'}`, JSON.stringify(userReceipts))
-
-    // 更新通知 (Notifications) - 使用動態資料取代 Mock Data
-    const notificationsKey = `sccd_notifications_${currentUser?.studentId || 'guest'}`
-    const existingNotifications = JSON.parse(localStorage.getItem(notificationsKey) || '[]')
-    
-    const newNotifications = newReceipts.map((receipt) => ({
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'success', // 成功狀態
-      title: '預約成功',
-      message: `訂單 ${receipt.rentalNumber} 已送出，請於 24 小時內繳交押金。`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-      link: '/profile' // 點擊通知跳轉到訂單記錄
-    }))
-
-    const updatedNotifications = [...newNotifications, ...existingNotifications]
-    localStorage.setItem(notificationsKey, JSON.stringify(updatedNotifications))
-
-    // 觸發自定義事件與 Storage 事件，確保 Header 組件能即時同步更新
-    window.dispatchEvent(new Event('notificationUpdated'))
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: notificationsKey,
-      newValue: JSON.stringify(updatedNotifications)
-    }))
-
-    // 清空購物車
-    clearCart()
-
-    // 跳轉到 ProfilePage 的 Orders 區塊
-    navigate('/profile')
+    submitOrder()
   }
 
   return (
