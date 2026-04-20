@@ -67,14 +67,12 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
     window.addEventListener('storage', (event) => {
       const currentKey = get().getCurrentStorageKey()
       if (event.key === currentKey) {
-        console.log('檢測到收藏數據變化，重新載入')
         get().loadFromStorage()
       }
     })
 
     // 監聽認證狀態變化
     window.addEventListener('authStateChanged', () => {
-      console.log('認證狀態變化，更新收藏管理器')
       get().updateCurrentUser()
     })
 
@@ -86,9 +84,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
     })
 
     set({ isInitialized: true })
-    console.log('BookmarkStore 初始化完成')
-    console.log('當前用戶:', get().currentUserId)
-    console.log('收藏列表:', Array.from(get().bookmarks))
 
     // 觸發全域事件
     window.dispatchEvent(new CustomEvent('bookmarkManagerReady'))
@@ -169,8 +164,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
       } else {
         set({ bookmarks: new Set() })
       }
-
-      console.log(`從 ${storageKey} 載入收藏:`, Array.from(get().bookmarks))
     } catch (error) {
       console.warn('無法載入收藏清單:', error)
       set({ bookmarks: new Set() })
@@ -183,7 +176,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
       const storageKey = get().getCurrentStorageKey()
       const bookmarkArray = Array.from(bookmarks)
       localStorage.setItem(storageKey, JSON.stringify(bookmarkArray))
-      console.log(`收藏清單已保存到 ${storageKey}:`, bookmarkArray)
 
       // 觸發全域事件
       window.dispatchEvent(new CustomEvent('bookmarkUpdated', {
@@ -206,7 +198,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
       newBookmarks.add(itemId)
       set({ bookmarks: newBookmarks })
       get().saveToStorage()
-      console.log(`已添加收藏: ${itemId}`)
       return true
     }
     return false
@@ -219,7 +210,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
       newBookmarks.delete(itemId)
       set({ bookmarks: newBookmarks })
       get().saveToStorage()
-      console.log(`已移除收藏: ${itemId}`)
       return true
     }
     return false
@@ -242,7 +232,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
   clearAllBookmarks: () => {
     set({ bookmarks: new Set() })
     get().saveToStorage()
-    console.log('已清空所有收藏')
   },
 
   // ===== 分類管理 =====

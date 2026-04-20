@@ -40,7 +40,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   reportError(_error: Error, _errorInfo: React.ErrorInfo) {
     // 預留：串接 Sentry 等錯誤追蹤服務
-    console.log('[ErrorBoundary] Reporting error...')
   }
 
   render() {

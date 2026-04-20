@@ -8,7 +8,8 @@
 - **React Router v7** — SPA 路由
 - **Zustand** — 收藏（bookmark）狀態
 - **Tailwind CSS v4** (`@tailwindcss/vite`) 共存於舊的 `css/*.css` 檔案
-- **其他**：framer-motion、animejs、jspdf、html2canvas
+- **動畫**：GSAP（唯一動畫庫，舊的 framer-motion／animejs 已移除）
+- **其他**：jspdf、html2canvas（僅 OrderPage 使用）
 
 ## 目錄結構
 
@@ -85,11 +86,11 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 
 ## 已知 Tech Debt
 
-- **根目錄 `/js/` 仍有 28 個舊 JS 檔**：新 React 架構未 import 它們，可以清理但需先確認 `old-html-backup/` 與 `legacy/` 是否自給自足。
-- **過大頁面**：`RentalListPage.tsx`（937 行）、`OrderPage.tsx`（804 行）、`SpacePage.tsx`（751 行）可拆分 hook。
-- **`any` 型別濫用**：`RentalListPage.tsx`、`orderValidation.ts` 有多處未正確標型。
-- **`firebaseAuthService.example.ts`**：Firebase 整合範本，尚未啟用，未來改用時改名為 `firebaseAuthService.ts`。
-- **`@legacy/*` 路徑 alias**：`tsconfig.json` 仍定義但已無人使用，可移除。
+- **過大頁面／元件**：`CartList.tsx`（944 行）、`RentalListPage.tsx`（937 行）、`OrderPage.tsx`（804 行）、`SpacePage.tsx`（751 行）可拆分 hook。
+- **Bundle 過大**（~982KB）：`jspdf` + `html2canvas` 只用在 `OrderPage`，可配合 `React.lazy` 做路由層 code-splitting。
+- **`DateSelectionContext` 複雜度**：一個 context 同時管設備／空間日期，可拆成兩個 context 降低耦合與 re-render。
+- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（3868 行）共存，長期可漸進遷移。
+- **Storage key 命名混用**：`sccd_login_data`（底線）、`sccd-rental-cart`（連字號）、`booking_receipts_*` 格式不一，建議抽 `storageKeys.ts` 常數並統一。
 
 ## 程式風格規則
 

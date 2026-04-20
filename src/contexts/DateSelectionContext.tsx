@@ -107,12 +107,6 @@ const adjustExpiredStartDate = (dateRange: DateRange): DateRange => {
     newEnd.setDate(newEnd.getDate() + duration)
   }
 
-  console.log('[DateSelection] 小量模式起租日已過期，自動調整：', {
-    原起租日: dateRange.startDate,
-    新起租日: newStart.toISOString(),
-    租借天數: duration
-  })
-
   return {
     startDate: newStart,
     endDate: newEnd
@@ -156,13 +150,6 @@ const adjustMassStartDate = (dateRange: DateRange, type: 'equipment' | 'space'):
   if (newEnd && duration > 0) {
     newEnd.setDate(newEnd.getDate() + duration)
   }
-
-  console.log(`[DateSelection] 大量模式起租日需要調整（${type}）：`, {
-    原起租日: dateRange.startDate,
-    新起租日: newStart.toISOString(),
-    租借天數: duration,
-    規則: type === 'equipment' ? '今天+3天' : '今天'
-  })
 
   return {
     startDate: newStart,

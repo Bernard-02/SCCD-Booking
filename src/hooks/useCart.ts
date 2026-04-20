@@ -217,7 +217,6 @@ export const useCart = () => {
         saveCart([...cart, newItem])
       }
 
-      console.log(`${equipment.name} 已加入購物車`)
       return true
     },
     [cart, hasStock, getOriginalQuantity, saveCart, checkDepositLimit]
@@ -235,7 +234,6 @@ export const useCart = () => {
 
       if (updatedCart.length !== cart.length) {
         saveCart(updatedCart)
-        console.log(`項目 ${itemId} 已從購物車移除`)
         return true
       }
 
@@ -449,7 +447,6 @@ export const useCart = () => {
 
       item.quantity = newQuantity
       saveCart([...cart])
-      console.log(`設備 ${equipmentId} 數量更新為 ${newQuantity}`)
       return true
     },
     [cart, getOriginalQuantity, saveCart, checkDepositLimit, removeFromCart]
@@ -458,7 +455,6 @@ export const useCart = () => {
   // 清空購物車
   const clearCart = useCallback(() => {
     saveCart([])
-    console.log('購物車已清空')
   }, [saveCart])
 
   // 獲取購物車總數量

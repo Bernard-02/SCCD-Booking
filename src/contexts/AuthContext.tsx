@@ -97,7 +97,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authServic
 
   // 登入
   const login = useCallback(async (studentId: string, password: string, rememberMe: boolean = false): Promise<LoginResult> => {
-    console.log('[AuthContext] 開始登入:', { studentId, rememberMe })
     try {
       // 如果提供了自定義認證服務（例如 Firebase），使用它
       let result: LoginResult
@@ -109,16 +108,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, authServic
         result = await mockApiLogin(studentId, password)
       }
 
-      console.log('[AuthContext] 登入結果:', result)
-
       if (result.success && result.student && result.token && result.expiresIn) {
-        console.log('[AuthContext] 登入成功，保存用戶數據')
         // 只有在沒有外部認證服務（使用模擬模式）時，才需要手動保存到 Storage
         if (!authService) {
           saveUserToStorage(result.student, result.token, result.expiresIn, rememberMe)
         }
         setCurrentUser(result.student)
-        console.log('[AuthContext] currentUser 已更新:', result.student)
       }
 
       return result
