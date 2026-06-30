@@ -31,58 +31,7 @@
   }
 }
 
-/* 隱藏滾動條但保持滾動功能 */
-.hide-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
-}
-
 /* ===== 整合自 datepicker.css 的樣式 ===== */
-
-/* 主容器 - 填滿整個div */
-.custom-datepicker {
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    color: white;
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    flex-direction: column;
-}
-
-/* 月份導航區域 */
-.datepicker-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 0 2rem 0;
-    flex-shrink: 0;
-    width: 100%;
-}
-
-.month-navigation {
-    display: flex;
-    gap: 3rem;
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    transform: translateX(calc(-(100% / 7) * 0.5)); /* 向左偏移0.5個星期格，對齊到"三"的中心 */
-}
-
-.month-title {
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: white;
-    text-align: center;
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
 .nav-arrow {
     background: none;
@@ -152,24 +101,6 @@
     transform: rotate(180deg) translateY(-100%);
 }
 
-/* 雙月曆容器 - 填滿剩餘空間 */
-.calendars-container {
-    display: flex;
-    gap: 3rem;
-    height: 100%;
-    width: 100%;
-    flex-grow: 1;
-}
-
-/* 單個月曆 - 填滿可用空間 */
-.calendar-month {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-}
-
 /* 星期標題 - 更寬的間距 */
 .weekdays {
     display: grid;
@@ -186,17 +117,6 @@
     font-size: 1rem;
     color: white;
     padding: 0.5rem 0;
-}
-
-/* 日期網格 - 填滿剩餘高度 */
-.days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 1fr;
-    gap: 16px;
-    width: 100%;
-    height: 100%;
-    flex-grow: 1;
 }
 
 /* 過去的日期 - 灰色且不可互動 */
@@ -264,15 +184,6 @@
 }
 
 .cursor-pointer:hover .date-number-hidden {
-    transform: translateY(-100%);
-}
-
-/* 延期對話框的 hover 效果 */
-.extend-date-cell.cursor-pointer:hover .date-number-text {
-    transform: translateY(-100%);
-}
-
-.extend-date-cell.cursor-pointer:hover .date-number-hidden {
     transform: translateY(-100%);
 }
 

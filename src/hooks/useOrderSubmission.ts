@@ -10,6 +10,7 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CartItem, Receipt } from '../types/equipment'
 import type { Student } from '../utils/testAuthData'
+import { receiptsKey, notificationsKey } from '../utils/storageKeys'
 
 const DEPOSIT_CAP_PER_CATEGORY = 5000
 
@@ -25,9 +26,8 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSub
   return useCallback(() => {
     if (cart.length === 0) return
 
-    const userKey = currentUser?.studentId || 'guest'
-    const receiptsKey = `booking_receipts_${userKey}`
-    const notificationsKey = `sccd_notifications_${userKey}`
+    const receiptsStorageKey = receiptsKey(currentUser?.studentId)
+    const notificationsStorageKey = notificationsKey(currentUser?.studentId)
 
     // 按時段分組
     const dateGroups: Record<string, CartItem[]> = {}
@@ -38,7 +38,7 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSub
     })
 
     const year = new Date().getFullYear()
-    const existingReceipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsKey) || '[]')
+    const existingReceipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsStorageKey) || '[]')
     const newReceipts: Receipt[] = []
 
     Object.entries(dateGroups).forEach(([dateKey, items]) => {
@@ -71,12 +71,12 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSub
     })
 
     // 寫入 receipts
-    localStorage.setItem(receiptsKey, JSON.stringify([...existingReceipts, ...newReceipts]))
+    localStorage.setItem(receiptsStorageKey, JSON.stringify([...existingReceipts, ...newReceipts]))
 
     // 寫入通知
-    const existingNotifications = JSON.parse(localStorage.getItem(notificationsKey) || '[]')
+    const existingNotifications = JSON.parse(localStorage.getItem(notificationsStorageKey) || '[]')
     const newNotifications = newReceipts.map(receipt => ({
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: 'notif_' + crypto.randomUUID(),
       type: 'success',
       title: '預約成功',
       message: `訂單 ${receipt.rentalNumber} 已送出，請於 24 小時內繳交押金。`,
@@ -85,12 +85,12 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSub
       link: '/profile'
     }))
     const updatedNotifications = [...newNotifications, ...existingNotifications]
-    localStorage.setItem(notificationsKey, JSON.stringify(updatedNotifications))
+    localStorage.setItem(notificationsStorageKey, JSON.stringify(updatedNotifications))
 
     // 通知 Header 立即更新
     window.dispatchEvent(new Event('notificationUpdated'))
     window.dispatchEvent(new StorageEvent('storage', {
-      key: notificationsKey,
+      key: notificationsStorageKey,
       newValue: JSON.stringify(updatedNotifications)
     }))
 

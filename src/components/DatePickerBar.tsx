@@ -6,8 +6,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import Calendar from './Calendar'
+import { readCart, formatYmd } from './cart/cartHelpers'
 import { useDateSelection } from '../contexts/DateSelectionContext'
-import type { BookingType, CartItem } from '../types/equipment'
+import type { BookingType } from '../types/equipment'
 
 interface DatePickerBarProps {
   type: 'equipment' | 'space'
@@ -34,21 +35,19 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     switchSpaceBookingType
   } = useDateSelection()
 
-  // 不再支援鎖定模式
-  const isLocked = false
-
   // 根據 type 選擇對應的日期
   const currentDates = type === 'equipment' ? getCurrentEquipmentDates() : getCurrentSpaceDates()
   const startDate = currentDates.startDate
   const endDate = currentDates.endDate
   const bookingType = currentDates.bookingType
+  const isMass = bookingType === 'mass-personal' || bookingType === 'mass-group'
 
   // 計算最小可選日期
   const getMinSelectableDate = (): Date => {
     const now = new Date()
     const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-    if (bookingType === 'mass-personal' || bookingType === 'mass-group') {
+    if (isMass) {
       // 大量 - 個人 或 大量 - 團體
       if (type === 'equipment') {
         // 設備：今天 + 3天
@@ -67,10 +66,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   // 格式化日期顯示
   const formatDate = (date: Date | null): string => {
     if (!date) return '----/--/--'
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}/${month}/${day}`
+    return formatYmd(date)
   }
 
   // 處理日期選擇
@@ -172,17 +168,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
   // 判斷按鈕狀態
   const hasAnyDate = startDate !== null
-  const isResetEnabled = hasAnyDate && !isLocked
+  const isResetEnabled = hasAnyDate
 
   // 計算樣式（簡化條件邏輯）
   const getButtonStyles = (isActive: boolean) => {
-    if (isLocked) {
-      return {
-        radio: isActive ? 'border-white' : 'border-gray-scale2',
-        dot: 'bg-white',
-        text: isActive ? 'text-white' : 'text-gray-scale2'
-      }
-    }
     return {
       radio: isActive ? 'border-white' : 'border-gray-scale2 group-hover:border-white',
       dot: 'bg-white',
@@ -191,12 +180,12 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   }
 
   const littleStyles = getButtonStyles(bookingType === 'little')
-  const massStyles = getButtonStyles(bookingType === 'mass-personal' || bookingType === 'mass-group')
+  const massStyles = getButtonStyles(isMass)
 
   // 從購物車獲取已選日期（僅未過期的）
   const existingCartDates = useMemo(() => {
     try {
-      const cart = JSON.parse(localStorage.getItem('sccd-rental-cart') || '[]') as CartItem[]
+      const cart = readCart()
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
@@ -300,11 +289,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
   // 格式化日期顯示（完整版本）
   const formatDateFull = (dateString: string): string => {
-    const date = new Date(dateString)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}/${month}/${day}`
+    return formatYmd(new Date(dateString))
   }
 
   // 點擊外部關閉彈出視窗
@@ -357,9 +342,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <Calendar
                 startDate={startDate}
                 endDate={endDate}
-                onDateSelect={isLocked ? () => {} : handleDateSelect}
+                onDateSelect={handleDateSelect}
                 minSelectableDate={minSelectableDate}
-                bookingType={bookingType === 'mass-personal' || bookingType === 'mass-group' ? 'group' : 'personal'}
+                bookingType={isMass ? 'group' : 'personal'}
                 maxDays={type === 'space' ? 14 : 30}
               />
             </div>
@@ -381,9 +366,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               {/* 租借類型選擇 - 橫向排列 */}
               <div className="flex items-center gap-8 flex-shrink-0">
                 <button
-                  onClick={() => !isLocked && handleBookingTypeChange('little')}
-                  disabled={isLocked}
-                  className={`flex items-center gap-2 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'} group`}
+                  onClick={() => handleBookingTypeChange('little')}
+                  className="flex items-center gap-2 cursor-pointer group"
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${littleStyles.radio}`}>
                     {bookingType === 'little' && (
@@ -401,12 +385,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                 </button>
 
                 <button
-                  onClick={() => !isLocked && handleBookingTypeChange('mass-personal')}
-                  disabled={isLocked}
-                  className={`flex items-center gap-2 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'} group`}
+                  onClick={() => handleBookingTypeChange('mass-personal')}
+                  className="flex items-center gap-2 cursor-pointer group"
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${massStyles.radio}`}>
-                    {(bookingType === 'mass-personal' || bookingType === 'mass-group') && (
+                    {(isMass) && (
                       <div className={`w-2 h-2 rounded-full ${massStyles.dot}`}></div>
                     )}
                   </div>
@@ -426,8 +409,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <div className="flex items-center gap-16 flex-shrink-0 ml-12">
               {/* 起租日 - 可點擊開啟日曆 */}
               <div
-                className={`flex items-center gap-8 flex-shrink-0 ${isLocked ? '' : 'cursor-pointer hover:opacity-70'} transition-opacity`}
-                onClick={isLocked ? undefined : handleStartDateClick}
+                className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
+                onClick={handleStartDateClick}
               >
               <div className="flex flex-col gap-1">
                 <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">

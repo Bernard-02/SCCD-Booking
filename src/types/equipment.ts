@@ -7,7 +7,6 @@ export interface Equipment {
   category: string
   name: string
   status: string
-  statusColor: string
   mainImage: string
   originalQuantity: number
   availableQuantity: number
@@ -16,8 +15,6 @@ export interface Equipment {
 }
 
 export type EquipmentData = Record<string, Equipment>
-
-export type EquipmentCategory = '全部' | '燈具' | '線材' | '攝影設備' | '展桌/畫板' | '其他'
 
 /**
  * 租借類型

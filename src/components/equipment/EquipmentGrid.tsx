@@ -212,35 +212,14 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   // 獲取設備狀態（綠色/黃色/紅色）
   // 目前使用簡化邏輯，未來需要接入實際預訂數據
   const getEquipmentStatus = (itemId: string): 'available' | 'partial' | 'unavailable' => {
-    const availableQty = getAvailableQuantity(itemId)
-
-    // 如果沒有選擇日期，只檢查今天的借出情況
-    if (!hasSelectedDates) {
-      return availableQty > 0 ? 'available' : 'unavailable'
-    }
-
-    // 如果選擇了日期範圍，需要檢查整個範圍
-    // TODO: 這裡需要接入實際的預訂數據來判斷
-    // 目前使用簡化邏輯：
-    // - 如果 availableQty > 0，視為完全可借（綠色）
-    // - 如果 availableQty === 0，視為完全不可借（紅色）
-    // - 未來需要實現部分可借（黃色）的邏輯
-
-    return availableQty > 0 ? 'available' : 'unavailable'
+    // 目前無論是否選日期，邏輯相同：有庫存→可借，無庫存→不可借
+    // TODO: 接入實際預訂數據後，可依日期範圍實作部分可借（黃色 'partial'）
+    return getAvailableQuantity(itemId) > 0 ? 'available' : 'unavailable'
   }
 
   // 獲取狀態顏色
   const getStatusColor = (status: 'available' | 'partial' | 'unavailable'): string => {
-    switch (status) {
-      case 'available':
-        return 'var(--color-success)' // 綠色
-      case 'partial':
-        return 'var(--color-warning)' // 橙色
-      case 'unavailable':
-        return 'var(--color-error)'   // 紅色
-      default:
-        return 'var(--color-gray-scale3)'
-    }
+    return status === 'available' ? 'var(--color-success)' : 'var(--color-error)'
   }
 
   return (

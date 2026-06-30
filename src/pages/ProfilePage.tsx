@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import ExtendDialog from '../components/profile/ExtendDialog'
+import { receiptsKey } from '../utils/storageKeys'
 
 type ProfileSection = 'history' | 'profile'
 
@@ -190,7 +191,7 @@ const RentalHistorySection: React.FC = () => {
   useEffect(() => {
     // 從 localStorage 讀取該用戶的收據記錄
     const userReceipts = JSON.parse(
-      localStorage.getItem(`booking_receipts_${currentUser?.studentId || 'guest'}`) || '[]'
+      localStorage.getItem(receiptsKey(currentUser?.studentId)) || '[]'
     ) as Receipt[]
 
     // 檢查並更新過期的 Pending 訂單
@@ -209,7 +210,7 @@ const RentalHistorySection: React.FC = () => {
 
     if (hasUpdates) {
       localStorage.setItem(
-        `booking_receipts_${currentUser?.studentId || 'guest'}`,
+        receiptsKey(currentUser?.studentId),
         JSON.stringify(updatedReceipts)
       )
     }
@@ -236,7 +237,7 @@ const RentalHistorySection: React.FC = () => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    }).replace(/\//g, '/')
+    })
   }
 
   // 格式化日期範圍
@@ -292,7 +293,7 @@ const RentalHistorySection: React.FC = () => {
 
     // 保存到 localStorage
     localStorage.setItem(
-      `booking_receipts_${currentUser?.studentId || 'guest'}`,
+      receiptsKey(currentUser?.studentId),
       JSON.stringify(updatedReceipts)
     )
 
@@ -423,11 +424,8 @@ const RentalHistorySection: React.FC = () => {
 
   // 渲染收據項目
   const renderReceiptItem = (receipt: Receipt, index: number) => {
-    // 使用 receipt.status 或重新計算 (如果是 pending)
-    let status = receipt.status || 'pending'
-    if (status === 'pending') {
-        status = calculateOrderStatus(receipt)
-    }
+    // 顯示狀態：後台已標記則沿用，否則（pending/未設）依工作時間判定
+    const status = calculateOrderStatus(receipt)
     
     const statusInfo = getStatusInfo(status)
     const bookingType = receipt.items.length > 0 ? receipt.items[0].bookingType : 'little'

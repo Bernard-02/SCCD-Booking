@@ -8,6 +8,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import Calendar from '../components/Calendar'
+import { formatYmd } from '../components/cart/cartHelpers'
 
 const BookingPage = () => {
   const navigate = useNavigate()
@@ -17,10 +18,7 @@ const BookingPage = () => {
   // 格式化日期顯示
   const formatDateDisplay = (date: Date | null): string => {
     if (!date) return '----/--/--'
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}/${month}/${day}`
+    return formatYmd(date)
   }
 
   // 從 localStorage 載入暫存的日期
@@ -52,10 +50,8 @@ const BookingPage = () => {
           endDate: newEndDate ? newEndDate.toISOString() : null
         })
       )
-      localStorage.setItem('dateSelectionTime', Date.now().toString())
     } else {
       localStorage.removeItem('tempSelectedDates')
-      localStorage.removeItem('dateSelectionTime')
     }
   }
 
@@ -63,18 +59,10 @@ const BookingPage = () => {
     setStartDate(null)
     setEndDate(null)
     localStorage.removeItem('tempSelectedDates')
-    localStorage.removeItem('dateSelectionTime')
   }
 
   const handleConfirmDate = () => {
     if (startDate && endDate) {
-      // 保存選擇的日期到 localStorage
-      const rentalDateData = {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      }
-      localStorage.setItem('selectedRentalDates', JSON.stringify(rentalDateData))
-
       // 導航到設備選擇頁面
       navigate('/equipment')
     }

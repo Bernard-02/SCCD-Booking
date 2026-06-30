@@ -4,20 +4,7 @@
  */
 
 import { create } from 'zustand'
-
-// 擴展 Window 類型以支持舊版認證系統
-declare global {
-  interface Window {
-    AuthStorage?: {
-      isLoggedIn: () => boolean
-      getLoginData: () => {
-        student: {
-          studentId: string
-        }
-      } | null
-    }
-  }
-}
+import { getCurrentStudentId } from '../utils/authStorage'
 
 interface BookmarkState {
   bookmarks: Set<string>
@@ -41,11 +28,6 @@ interface BookmarkState {
   removeBookmark: (itemId: string) => boolean
   toggleBookmark: (itemId: string) => boolean
   getAllBookmarks: () => string[]
-  clearAllBookmarks: () => void
-
-  // 分類管理
-  getEquipmentBookmarks: () => string[]
-  getClassroomBookmarks: () => string[]
 }
 
 const BASE_STORAGE_KEY = 'sccd_bookmarks'
@@ -71,11 +53,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
       }
     })
 
-    // 監聽認證狀態變化
-    window.addEventListener('authStateChanged', () => {
-      get().updateCurrentUser()
-    })
-
     // 監聽頁面可見性變化
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
@@ -84,62 +61,24 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
     })
 
     set({ isInitialized: true })
-
-    // 觸發全域事件
-    window.dispatchEvent(new CustomEvent('bookmarkManagerReady'))
   },
 
   // ===== 用戶管理 =====
   updateCurrentUser: () => {
-    try {
-      // 檢查是否有 AuthStorage (舊版認證系統)
-      if (typeof window.AuthStorage !== 'undefined' && window.AuthStorage.isLoggedIn()) {
-        const loginData = window.AuthStorage.getLoginData()
-        if (loginData && loginData.student && loginData.student.studentId) {
-          const newUserId = loginData.student.studentId
-          const currentUserId = get().currentUserId
+    // 從 localStorage→sessionStorage 讀取目前登入者學號（無資料/未登入回傳 null）
+    const newUserId = getCurrentStudentId()
+    const currentUserId = get().currentUserId
 
-          // 只有在用戶變更時才重新載入數據
-          if (currentUserId !== newUserId) {
-            set({ currentUserId: newUserId })
-            if (get().isInitialized) {
-              get().loadFromStorage()
-            }
-          }
-          return
+    if (newUserId) {
+      // 已登入：用戶變更時才重新載入書籤
+      if (currentUserId !== newUserId) {
+        set({ currentUserId: newUserId })
+        if (get().isInitialized) {
+          get().loadFromStorage()
         }
       }
-
-      // 嘗試從 localStorage 或 sessionStorage 獲取登入信息（React 版本）
-      let authData = localStorage.getItem('sccd_login_data')
-      if (!authData) {
-        authData = sessionStorage.getItem('sccd_login_data')
-      }
-
-      if (authData) {
-        try {
-          const parsedAuth = JSON.parse(authData)
-          if (parsedAuth.student && parsedAuth.student.studentId) {
-            const newUserId = parsedAuth.student.studentId
-            const currentUserId = get().currentUserId
-
-            if (currentUserId !== newUserId) {
-              set({ currentUserId: newUserId })
-              if (get().isInitialized) {
-                get().loadFromStorage()
-              }
-            }
-            return
-          }
-        } catch (e) {
-          console.warn('解析認證數據失敗:', e)
-        }
-      }
-
-      // 如果都沒有，設為 null
-      set({ currentUserId: null })
-    } catch (error) {
-      console.error('更新用戶狀態失敗:', error)
+    } else {
+      // 未登入：重設為匿名（切回預設書籤 key）
       set({ currentUserId: null })
     }
   },
@@ -227,20 +166,6 @@ export const useBookmarkStore = create<BookmarkState>((set, get) => ({
 
   getAllBookmarks: () => {
     return Array.from(get().bookmarks)
-  },
-
-  clearAllBookmarks: () => {
-    set({ bookmarks: new Set() })
-    get().saveToStorage()
-  },
-
-  // ===== 分類管理 =====
-  getEquipmentBookmarks: () => {
-    return get().getAllBookmarks().filter(item => !item.includes('教室'))
-  },
-
-  getClassroomBookmarks: () => {
-    return get().getAllBookmarks().filter(item => item.includes('教室'))
   },
 }))
 

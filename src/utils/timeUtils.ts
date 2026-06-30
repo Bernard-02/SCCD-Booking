@@ -4,7 +4,7 @@
  */
 
 // 判斷是否為公休日（週六或週日）
-export const isOffDay = (date: Date): boolean => {
+const isOffDay = (date: Date): boolean => {
   const day = date.getDay()
   return day === 0 || day === 6 // 0 is Sunday, 6 is Saturday
 }
@@ -46,18 +46,4 @@ export const calculateValidHoursPassed = (startDateStr: string): number => {
   }
   
   return totalTimeMs / (1000 * 60 * 60)
-}
-
-// 取得有效到期日（若遇公休順延至下個工作日 19:00）
-export const getEffectiveDueDate = (endDateStr: string): Date => {
-  const date = new Date(endDateStr)
-  // 設定為當天 19:00
-  date.setHours(19, 0, 0, 0)
-  
-  // 如果是公休日，順延至下一個工作日
-  while (isOffDay(date)) {
-    date.setDate(date.getDate() + 1)
-  }
-  
-  return date
 }

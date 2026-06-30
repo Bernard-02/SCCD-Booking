@@ -53,23 +53,6 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
     return !checkLittleBookingLimit(tempItem).allowed
   }
 
-  // 獲取教室狀態（目前簡化為：在購物車中 = unavailable，否則 = available）
-  const getClassroomStatus = (id: string): 'available' | 'unavailable' => {
-    return isInCart(id) ? 'unavailable' : 'available'
-  }
-
-  // 獲取狀態顏色
-  const getStatusColor = (status: 'available' | 'unavailable'): string => {
-    switch (status) {
-      case 'available':
-        return 'var(--color-success)' // 綠色
-      case 'unavailable':
-        return 'var(--color-error)'   // 紅色
-      default:
-        return 'var(--color-gray-scale3)'
-    }
-  }
-
   // 處理圖片點擊 - 全螢幕顯示
   const handleImageClick = (e: React.MouseEvent, imageSrc: string) => {
     e.stopPropagation()
@@ -162,8 +145,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
           {classrooms.map(classroom => {
             const inCart = isInCart(classroom.id)
             const isAvailable = !inCart
-            const status = getClassroomStatus(classroom.id)
-            const statusColor = getStatusColor(status)
+            const statusColor = inCart ? 'var(--color-error)' : 'var(--color-success)'
             const wouldExceedLimit = wouldExceedLightLimit(classroom)
 
             return (

@@ -76,18 +76,6 @@ export const TEST_STUDENTS: Student[] = [
   }
 ]
 
-// 驗證學號格式
-export function validateStudentId(studentId: string): boolean {
-  const pattern = /^A\d{3}(144|141)\d{3}$/
-  return pattern.test(studentId)
-}
-
-// 驗證學校Email格式
-export function validateSchoolEmail(email: string): boolean {
-  const pattern = /^A\d{3}(144|141)\d{3}@gm2\.usc\.edu\.tw$/i
-  return pattern.test(email)
-}
-
 // 登入結果接口
 export interface LoginResult {
   success: boolean

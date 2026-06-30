@@ -15,7 +15,7 @@ interface ConfirmOptions {
   confirmTextZh?: string
   cancelText?: string
   cancelTextZh?: string
-  variant?: 'default' | 'danger' | 'warning'
+  variant?: 'default' | 'danger'
 }
 
 export const useConfirmDialog = () => {

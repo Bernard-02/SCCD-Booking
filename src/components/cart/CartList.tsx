@@ -13,7 +13,7 @@ import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import BookingDetailsDialog from '../common/BookingDetailsDialog'
 import DateEditDialog from './DateEditDialog'
 import { useDateGroups, type DateGroup } from './useDateGroups'
-import { formatDate, getAreaName, getBlockImage, sortBlockIds } from './cartHelpers'
+import { formatDate, getAreaName, getBlockImage, sortBlockIds, readCart, writeCart } from './cartHelpers'
 
 interface BookingDetailsData {
   reason: string
@@ -43,8 +43,6 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
   const [initialized, setInitialized] = useState(false)
   // 追蹤正在刪除的項目
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set())
-  // Toast 狀態
-  const [showToast, setShowToast] = useState(false)
   // 追蹤選中的訂單組 - 如果外部傳入則使用外部狀態，否則使用內部狀態
   const [internalSelectedGroups, setInternalSelectedGroups] = useState<Set<string>>(new Set())
   const selectedGroups = externalSelectedGroups !== undefined ? externalSelectedGroups : internalSelectedGroups
@@ -55,9 +53,6 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
       setInternalSelectedGroups(newSelectedGroups)
     }
   }
-  const [toastVisible, setToastVisible] = useState(false) // 控制動畫 class
-  const [deletedItems, setDeletedItems] = useState<CartItem[]>([])
-  const [undoTimeout, setUndoTimeout] = useState<NodeJS.Timeout | null>(null)
   // BookingDetails Dialog 狀態
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [currentEditingGroup, setCurrentEditingGroup] = useState<string | null>(null)
@@ -141,38 +136,6 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
     setPreviewImage(imageSrc)
   }
 
-  // 處理 Undo
-  const handleUndo = () => {
-    if (undoTimeout) {
-      clearTimeout(undoTimeout)
-      setUndoTimeout(null)
-    }
-
-    // 恢復被刪除的項目
-    // 改為直接操作 localStorage，以避免使用 onAddToCart 時觸發多個 Toast 通知
-    const currentCart = JSON.parse(localStorage.getItem('sccd-rental-cart') || '[]')
-
-    // 確保不重複加入
-    const currentIds = new Set(currentCart.map((item: CartItem) => item.id))
-    const itemsToRestore = deletedItems.filter(item => !currentIds.has(item.id))
-
-    if (itemsToRestore.length > 0) {
-      const restoredCart = [...currentCart, ...itemsToRestore]
-      localStorage.setItem('sccd-rental-cart', JSON.stringify(restoredCart))
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'sccd-rental-cart',
-        newValue: JSON.stringify(restoredCart)
-      }))
-    }
-
-    // 關閉 toast
-    setToastVisible(false)
-    setTimeout(() => {
-      setShowToast(false)
-      setDeletedItems([])
-    }, 400)
-  }
-
   // 處理編輯日期
   const handleEditDate = (startDate: string, endDate: string, dateKey: string, category: 'equipment' | 'space', bookingType: 'little' | 'mass-personal' | 'mass-group') => {
     setEditingDateGroup({ startDate, endDate, dateKey, category, bookingType })
@@ -186,7 +149,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
     const { dateKey, category } = editingDateGroup
 
     // 更新購物車中該時段和類別的所有項目
-    const currentCart = JSON.parse(localStorage.getItem('sccd-rental-cart') || '[]') as CartItem[]
+    const currentCart = readCart()
     const updatedCart = currentCart.map((item: CartItem) => {
       const itemDateKey = `${item.startDate}_${item.endDate}`
       const itemCategory = item.category === 'equipment' ? 'equipment' : 'space'
@@ -202,40 +165,15 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
     })
 
     // 保存到 localStorage
-    localStorage.setItem('sccd-rental-cart', JSON.stringify(updatedCart))
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'sccd-rental-cart',
-      newValue: JSON.stringify(updatedCart)
-    }))
+    writeCart(updatedCart)
 
     // 關閉對話框
     setIsDateEditDialogOpen(false)
     setEditingDateGroup(null)
   }
 
-  // 組件卸載時清理 Toast
-  React.useEffect(() => {
-    return () => {
-      // 清理 Toast 狀態和 timeout
-      if (undoTimeout) {
-        clearTimeout(undoTimeout)
-      }
-      setShowToast(false)
-      setToastVisible(false)
-    }
-  }, [undoTimeout])
-
   // 處理 Add More - 導航到對應頁面
   const handleAddMore = (category: 'space' | 'equipment', startDate: string, endDate: string, bookingType: BookingType) => {
-    // 導航前清理 Toast
-    if (undoTimeout) {
-      clearTimeout(undoTimeout)
-      setUndoTimeout(null)
-    }
-    // 立即關閉 Toast，避免過場時殘留在畫面上或造成狀態衝突
-    setToastVisible(false)
-    setShowToast(false)
-
     // 使用 URL 參數傳遞鎖定信息
     const params = new URLSearchParams({
       startDate,
@@ -736,29 +674,6 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
           </div>
         )
       })}
-
-      {/* Toast 通知 - 使用 Portal 渲染到 body 層級 */}
-      {showToast && createPortal(
-        <div
-          className={`toast ${toastVisible ? 'show' : ''}`}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem'
-          }}
-        >
-          <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">
-            已刪除時段內的所有項目
-          </span>
-          <button
-            onClick={handleUndo}
-            className="font-['Inter',_sans-serif] text-tiny text-black hover:opacity-50 transition-opacity cursor-pointer underline-offset-2"
-          >
-            Undo
-          </button>
-        </div>,
-        document.body
-      )}
 
       {/* 圖片預覽 Modal - 與 EquipmentGrid 相同樣式 */}
       {previewImage && createPortal(

@@ -26,13 +26,8 @@ const Footer: React.FC = () => {
 
   const getRandomChar = () => randomChars[Math.floor(Math.random() * randomChars.length)]
 
-  const generateRandomString = (length: number) => {
-    let result = ''
-    for (let i = 0; i < length; i++) {
-      result += getRandomChar()
-    }
-    return result
-  }
+  const generateRandomString = (length: number) =>
+    Array.from({ length }, getRandomChar).join('')
 
   const animateToTarget = () => {
     if (isAnimatingRef.current) return

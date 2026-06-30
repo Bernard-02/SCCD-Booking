@@ -18,7 +18,7 @@ interface ConfirmDialogProps {
   cancelTextZh?: string
   onConfirm: () => void
   onCancel: () => void
-  variant?: 'default' | 'danger' | 'warning'
+  variant?: 'default' | 'danger'
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -61,15 +61,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   if (!isOpen) return null
 
   // 根據 variant 設置確認按鈕文字顏色
-  const getConfirmButtonTextColor = () => {
-    switch (variant) {
-      case 'danger':
-      case 'warning':
-        return 'text-[#ff8698]' // error2 顏色
-      default:
-        return 'text-white'
-    }
-  }
+  const getConfirmButtonTextColor = () =>
+    variant === 'danger' ? 'text-[#ff8698]' : 'text-white'
 
   return createPortal(
     <div

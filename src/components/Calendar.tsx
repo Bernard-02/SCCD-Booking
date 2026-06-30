@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react'
+import { toDateKey } from './cart/cartHelpers'
 
 interface CalendarProps {
   startDate: Date | null
@@ -49,17 +50,6 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const minAllowedDate = getMinAllowedDate()
 
-  // 移除自動修正日期的 useEffect
-  // 因為小量和大量模式現在各自獨立保存日期，切換時不需要自動調整
-
-  // 格式化日期為 YYYY-MM-DD
-  const formatDateKey = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
   // 比較兩個日期是否相同
   const isSameDay = (date1: Date | null, date2: Date | null): boolean => {
     if (!date1 || !date2) return false
@@ -91,6 +81,7 @@ const Calendar: React.FC<CalendarProps> = ({
 
   // 生成月曆
   const generateMonthCalendar = (displayDate: Date) => {
+    const cellSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
     const month = displayDate.getMonth()
     const year = displayDate.getFullYear()
     const firstDay = new Date(year, month, 1)
@@ -115,7 +106,6 @@ const Calendar: React.FC<CalendarProps> = ({
     const rowsNeeded = Math.ceil(totalNeededCells / 7)
 
     const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-    const weekdaySize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
 
     // 生成星期標題行
     const weekdayCells: JSX.Element[] = []
@@ -123,7 +113,7 @@ const Calendar: React.FC<CalendarProps> = ({
       weekdayCells.push(
         <div
           key={`weekday-${index}`}
-          className={`text-left text-white ${weekdaySize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+          className={`text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
         >
           {day}
         </div>
@@ -186,8 +176,7 @@ const Calendar: React.FC<CalendarProps> = ({
             currentDateOnly >= startDate && currentDateOnly <= hoveredDate &&
             hoveredDate >= startDate
 
-          const dateSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
-          let dateClasses = `text-left text-white ${dateSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
+          let dateClasses = `text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
 
           if (isExpiredRange) {
             // 過期範圍：黃色，不可選擇
@@ -218,7 +207,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <div
               key={`date-${i}`}
               className={dateClasses}
-              data-date={formatDateKey(currentDateOnly)}
+              data-date={toDateKey(currentDateOnly)}
               onClick={() => !isPastDate && !isOutOfRange && !isExpiredRange && handleDateClick(currentDateOnly)}
               onMouseEnter={() => !isPastDate && !isOutOfRange && !isExpiredRange && setHoveredDate(currentDateOnly)}
               onMouseLeave={() => setHoveredDate(null)}
@@ -231,11 +220,10 @@ const Calendar: React.FC<CalendarProps> = ({
           )
         } else {
           // 其他月份的日期：空白
-          const emptySize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
           dateCells.push(
             <div
               key={`empty-${i}`}
-              className={`text-left text-white ${emptySize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+              className={`text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
             />
           )
         }

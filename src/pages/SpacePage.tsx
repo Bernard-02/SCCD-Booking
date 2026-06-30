@@ -14,6 +14,7 @@ import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
 import { checkDuplicateOrder } from '../utils/orderValidation'
+import { sortBlockIds } from '../components/cart/cartHelpers'
 
 const SpacePage: React.FC = () => {
   const { cart, addToCart, removeFromCart, checkLittleBookingLimit } = useCart()
@@ -347,23 +348,7 @@ const SpacePage: React.FC = () => {
 
   // 排序選取的區塊 ID (A-Z, 1-10)
   const sortedSelectedBlocks = useMemo(() => {
-    return [...selectedBlocks].sort((a, b) => {
-      const matchA = a.match(/^([A-Z]+)(\d+)$/)
-      const matchB = b.match(/^([A-Z]+)(\d+)$/)
-
-      if (!matchA || !matchB) {
-        return a.localeCompare(b)
-      }
-
-      const [, letterA, numA] = matchA
-      const [, letterB, numB] = matchB
-
-      if (letterA !== letterB) {
-        return letterA.localeCompare(letterB)
-      }
-
-      return parseInt(numA, 10) - parseInt(numB, 10)
-    })
+    return sortBlockIds(selectedBlocks)
   }, [selectedBlocks])
 
   // 檢查是否有選中專案許可區的區塊

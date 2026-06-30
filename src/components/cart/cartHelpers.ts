@@ -3,6 +3,37 @@
  */
 
 import { mockAreaBlocksData } from '../space/SpaceAreaMap'
+import type { CartItem } from '../../types/equipment'
+
+/** 購物車 localStorage key（連字號，非底線） */
+export const CART_STORAGE_KEY = 'sccd-rental-cart'
+
+/** 讀取購物車（無資料回傳空陣列） */
+export const readCart = (): CartItem[] =>
+  JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]') as CartItem[]
+
+/** 寫入購物車並廣播 storage 事件（跨頁/跨分頁同步） */
+export const writeCart = (items: CartItem[]): void => {
+  const json = JSON.stringify(items)
+  localStorage.setItem(CART_STORAGE_KEY, json)
+  window.dispatchEvent(new StorageEvent('storage', { key: CART_STORAGE_KEY, newValue: json }))
+}
+
+/** Date → 'YYYY/MM/DD'（補零） */
+export const formatYmd = (date: Date): string => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}/${m}/${d}`
+}
+
+/** Date → 'YYYY-MM-DD'（補零，用作日期 key） */
+export const toDateKey = (date: Date): string => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 export const AREA_NAME_MAP: Record<string, string> = {
   'square': '中庭',

@@ -1,4 +1,5 @@
 import type { Receipt, BookingType } from '../types/equipment'
+import { receiptsKey } from './storageKeys'
 
 export const checkDuplicateOrder = (
   studentId: string | undefined,
@@ -8,8 +9,7 @@ export const checkDuplicateOrder = (
 ): { isDuplicate: boolean; message: string } => {
   if (!startDate || !endDate) return { isDuplicate: false, message: '' }
 
-  const receiptsKey = `booking_receipts_${studentId || 'guest'}`
-  const receipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsKey) || '[]')
+  const receipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsKey(studentId)) || '[]')
 
   const targetStart = new Date(startDate).getTime()
   const targetEnd = new Date(endDate).getTime()

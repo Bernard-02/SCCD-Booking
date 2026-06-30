@@ -26,18 +26,18 @@ src/
     space/                      # ClassroomList、SpaceAreaMap
     profile/                    # ExtendDialog
   contexts/                     # AuthContext、DateSelectionContext
-  hooks/                        # useCart、useConfirmDialog
+  hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
   stores/bookmarkStore.ts       # Zustand 收藏 store
-  services/                     # Firebase 示例（尚未啟用）
-  utils/                        # testAuthData（mock 登入）、timeUtils、orderValidation
+  services/                     # 空資料夾（保留給未來真實後端，目前無檔案）
+  utils/                        # testAuthData（mock 登入）、authStorage、storageKeys、timeUtils、orderValidation
+  data/equipment-data.json      # 設備主資料（包含庫存、分類）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
 js/                             # 舊靜態版本的 JS（已不再由新架構使用，可逐步移除）
-Images/、Icons/                 # 靜態資源
+Images/、Icons/                 # 靜態資源（已移入 public/）
 public/Area/                    # SVG 區域圖
-equipment-data.json             # 設備主資料（包含庫存、分類）
 legacy/                         # 遷移前備份（已 gitignore）
-old-html-backup/                # 舊 HTML 備份（尚未 gitignore）
+old-html-backup/                # 舊 HTML 備份（已 gitignore）
 docs/bookmark-system.md         # 收藏系統設計文檔
 ```
 
@@ -58,8 +58,9 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 - **已刪除**：所有根目錄的 `*.html`、多數 `js/*.js`（git status 中列為 D）
 - **新入口**：`index.html` → `src/main.tsx` → `App.tsx`
 - **SPA fallback**：`vite.config.ts` 的 `appType: 'spa'` 確保 `/space`、`/equipment` 等路徑 fallback 到 `index.html`
+- **下一步**：前端流程已完整（mock 資料跑得通），尚未完成的是接真實後端 API 與管理後台——詳見「尚未完成」一節。
 
-`legacy/` 存放遷移前備份並已 gitignore；`old-html-backup/` 是額外備份，尚未加入 gitignore。
+`legacy/` 與 `old-html-backup/` 皆為遷移前備份，兩者都已 gitignore。
 
 ## 認證流程
 
@@ -79,18 +80,37 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 | `sccd_space_dates` | 空間日期選擇（24h 過期） |
 | `sccd_bookmarks` 或 `sccd_bookmarks_{studentId}` | 收藏（依是否登入） |
 | `sccd_favorites_equipment` / `sccd_favorites_classroom` | 舊的收藏 key（legacy-bridge 使用） |
+| `booking_receipts_{studentId\|guest}` | 訂單收據（`storageKeys.ts` 的 `receiptsKey`） |
+| `sccd_notifications_{studentId\|guest}` | 通知（`notificationsKey`） |
+| `sccd_read_notifications_{studentId\|guest}` | 已讀通知（`readNotificationsKey`） |
 
 ## 日期選擇邏輯
 
 `DateSelectionContext` 同時管理「設備日期」與「空間日期」，各自又有 `littleDates`（小量）與 `massDates`（大量）兩組。`bookingType` 可為 `little`、`mass-personal`、`mass-group`。超過 24 小時未送單會自動清除過期的日期選擇。
 
+## 尚未完成（製作中的租借系統還缺什麼）
+
+整體現況：**前端流程完整，但所有資料都是 mock／只存 localStorage，沒有真實後端**。要變成可上線的系統，缺：
+
+- **後端 / API**（最大缺口）：以下全是假資料，需換成真實資料來源——
+  - 登入：`mockApiLogin`（`testAuthData.ts`）寫死驗證，未接學校帳號。
+  - 設備庫存：讀靜態 `src/data/equipment-data.json`，借出**不會扣庫存**（`EquipmentGrid.tsx` 有 TODO「需接入實際預訂數據」）。
+  - 空間可借狀態：`mockAreaBlocksData`（`SpaceAreaMap.tsx`）寫死，非真實佔用。
+  - 通知：Header 用 `mockNotifications`。
+  - 送單：`useOrderSubmission` 只寫 localStorage receipts，沒送伺服器。
+  - 介面已抽乾淨（`AuthProvider` 的 `authService` prop、`storageKeys.ts`），接線時換掉 mock 函式即可，不必重構架構。
+- **管理後台**：完全沒有。無法審核訂單、確認押金繳交、標記歸還、管理庫存。
+- **跨裝置 / 多人**：全在 localStorage，換瀏覽器即清空，多人看不到彼此的預約衝突。
+- **測試**：`npm test` 是 stub，零測試。
+- **零散 TODO**：`EquipmentGrid.tsx:184` 延長線用佔位圖、`ProfilePage.tsx:591` 狀態圓點未做。
+
 ## 已知 Tech Debt
 
-- **過大頁面／元件**：`CartList.tsx`（944 行）、`RentalListPage.tsx`（937 行）、`OrderPage.tsx`（804 行）、`SpacePage.tsx`（751 行）可拆分 hook。
-- **Bundle 過大**（~982KB）：`jspdf` + `html2canvas` 只用在 `OrderPage`，可配合 `React.lazy` 做路由層 code-splitting。
+- **過大頁面／元件**：`CartList.tsx`（744 行）、`OrderPage.tsx`（737 行）、`SpacePage.tsx`（736 行）、`RentalListPage.tsx`（712 行）仍可續拆 hook。
 - **`DateSelectionContext` 複雜度**：一個 context 同時管設備／空間日期，可拆成兩個 context 降低耦合與 re-render。
 - **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（3868 行）共存，長期可漸進遷移。
-- **Storage key 命名混用**：`sccd_login_data`（底線）、`sccd-rental-cart`（連字號）、`booking_receipts_*` 格式不一，建議抽 `storageKeys.ts` 常數並統一。
+- ~~**Bundle 過大**~~：已用 `React.lazy` 做路由層 code-splitting（`App.tsx`），`jspdf`+`html2canvas` 隨 `OrderPage` 分離出 initial bundle。
+- ~~**Storage key 命名混用**~~：已抽 `utils/storageKeys.ts`（receipts／notifications）與 `utils/authStorage.ts`（登入）集中管理。
 
 ## 程式風格規則
 

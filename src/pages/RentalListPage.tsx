@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useCartValidation } from '../hooks/useCartValidation'
 import { useOrderSubmission } from '../hooks/useOrderSubmission'
+import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
 
 interface BookingDetailsData {
   reason: string
@@ -23,6 +24,14 @@ interface BookingDetailsData {
 }
 
 const STORAGE_KEY = 'sccd_booking_details'
+
+// 解析 groupKey（格式："equipment_<start>_<end>" 或 "space_<start>_<end>"）
+// 日期僅含連字號不含底線，故第一個底線後即為 start，最後一個底線後即為 end
+const parseGroupKey = (key: string): { category: string; startDate: string; endDate: string } | null => {
+  const match = key.match(/^(equipment|space)_(.+)_(.+)$/)
+  if (!match) return null
+  return { category: match[1], startDate: match[2], endDate: match[3] }
+}
 
 const RentalListPage = () => {
   const location = useLocation()
@@ -117,10 +126,10 @@ const RentalListPage = () => {
     let total = 0
     selectedGroups.forEach(groupKey => {
       // groupKey 格式: "equipment_2026-01-20_2026-01-25" 或 "space_2026-01-20_2026-01-25"
-      const parts = groupKey.split('_')
-      if (parts.length >= 3) {
-        const category = parts[0] // 'equipment' 或 'space'
-        const dateKey = `${parts[1]}_${parts[2]}` // "2026-01-20_2026-01-25"
+      const parsed = parseGroupKey(groupKey)
+      if (parsed) {
+        const { category, startDate, endDate } = parsed
+        const dateKey = `${startDate}_${endDate}` // "2026-01-20_2026-01-25"
 
         // 檢查該訂單是否過期,過期的不計入押金
         if (expiredOrdersValidation.expiredKeys.includes(dateKey)) {
@@ -154,16 +163,6 @@ const RentalListPage = () => {
     }
   }, [location])
 
-  // 處理數量變更
-  const handleQuantityChange = (itemId: string, newQuantity: number) => {
-    updateEquipmentQuantity(itemId, newQuantity)
-  }
-
-  // 處理項目移除
-  const handleRemoveItem = (itemId: string, startDate?: string, endDate?: string) => {
-    removeFromCart(itemId, startDate, endDate)
-  }
-
   // 處理清除選中的訂單組
   const handleClearAll = async () => {
     if (selectedGroups.size === 0) return
@@ -173,12 +172,9 @@ const RentalListPage = () => {
 
     selectedGroups.forEach(groupKey => {
       // groupKey 格式: "equipment_2026-01-20_2026-01-25" 或 "space_2026-01-20_2026-01-25"
-      // 使用正則表達式更準確地解析 groupKey
-      const match = groupKey.match(/^(equipment|space)_(.+)_(.+)$/)
-      if (match) {
-        const category = match[1] // 'equipment' 或 'space'
-        const startDate = match[2] // 起始日期
-        const endDate = match[3] // 結束日期
+      const parsed = parseGroupKey(groupKey)
+      if (parsed) {
+        const { category, startDate, endDate } = parsed
 
         // 找出該時段和類別的所有項目
         cart.forEach(item => {
@@ -235,11 +231,7 @@ const RentalListPage = () => {
       })
 
       // 直接更新購物車（使用 localStorage）
-      localStorage.setItem('sccd-rental-cart', JSON.stringify(updatedCart))
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'sccd-rental-cart',
-        newValue: JSON.stringify(updatedCart)
-      }))
+      writeCart(updatedCart)
 
       // 顯示 toast
       setShowToast(true)
@@ -266,17 +258,13 @@ const RentalListPage = () => {
     }
 
     // 恢復被刪除的項目
-    const currentCart = JSON.parse(localStorage.getItem('sccd-rental-cart') || '[]')
+    const currentCart = readCart()
     const currentIds = new Set(currentCart.map((item: CartItem) => item.id))
     const itemsToRestore = deletedItems.filter(item => !currentIds.has(item.id))
 
     if (itemsToRestore.length > 0) {
       const restoredCart = [...currentCart, ...itemsToRestore]
-      localStorage.setItem('sccd-rental-cart', JSON.stringify(restoredCart))
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'sccd-rental-cart',
-        newValue: JSON.stringify(restoredCart)
-      }))
+      writeCart(restoredCart)
     }
 
     // 確保選中狀態被清空（恢復的訂單不應該是選中狀態）
@@ -376,8 +364,8 @@ const RentalListPage = () => {
               <div className="flex-1 overflow-y-auto pb-8">
                 <CartList
                   cart={cart}
-                  onQuantityChange={handleQuantityChange}
-                  onRemoveItem={handleRemoveItem}
+                  onQuantityChange={updateEquipmentQuantity}
+                  onRemoveItem={removeFromCart}
                   bookingDetails={bookingDetails}
                   onBookingDetailsChange={handleBookingDetailsChange}
                   expiredDateKeys={expiredOrdersValidation.expiredKeys}
@@ -455,10 +443,10 @@ const RentalListPage = () => {
 
                       // 標記哪些組被選中
                       selectedGroups.forEach(groupKey => {
-                        const parts = groupKey.split('_')
-                        if (parts.length >= 3) {
-                          const category = parts[0]
-                          const dateKey = `${parts[1]}_${parts[2]}`
+                        const parsed = parseGroupKey(groupKey)
+                        if (parsed) {
+                          const { category, startDate, endDate } = parsed
+                          const dateKey = `${startDate}_${endDate}`
                           if (dateGroups[dateKey]) {
                             if (category === 'equipment') {
                               dateGroups[dateKey].equipmentSelected = true
@@ -501,20 +489,12 @@ const RentalListPage = () => {
 
                       return selectedGroupsList.map((group, index) => {
                         // 格式化日期為 2026/01/20 格式
-                        const formatDate = (dateStr: string) => {
-                          const date = new Date(dateStr)
-                          const year = date.getFullYear()
-                          const month = String(date.getMonth() + 1).padStart(2, '0')
-                          const day = String(date.getDate()).padStart(2, '0')
-                          return `${year}/${month}/${day}`
-                        }
-
                         return (
                           <div key={index} className="flex gap-2 text-tiny text-white mb-1">
                             <span className="font-['Inter',_sans-serif]">{index + 1}</span>
                             <span className="font-['Inter',_sans-serif]">|</span>
                             <span className="font-['Inter',_sans-serif]">
-                              {formatDate(group.startDate)} - {formatDate(group.endDate)}
+                              {formatYmd(new Date(group.startDate))} - {formatYmd(new Date(group.endDate))}
                             </span>
                             <span className="font-['Inter',_sans-serif]">
                               NT$ {group.deposit.toLocaleString()}

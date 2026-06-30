@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
@@ -58,22 +58,8 @@ const HomePage = () => {
           <div className="flex justify-between items-end">
             {/* 桌面版佈局 */}
             <div className="hidden md:flex justify-end items-end w-full">
-              {/* 右側 - 根據登入狀態顯示不同內容 */}
-              {isAuthenticated ? (
-                // 已登入：顯示 BOOK 按鈕
-                <div className="flex-shrink-0">
-                  <div className="float-up-container">
-                    <Link
-                      to="/booking"
-                      className="text-small-title font-medium whitespace-nowrap text-white hover:opacity-70 transition-opacity float-up float-up-delay-5"
-                    >
-                      <span className="font-['Inter',_sans-serif]">Book</span> <span className="font-['Noto_Sans_TC',_sans-serif]">預約</span>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                // 未登入：顯示登入表單
-                <div className="flex-shrink-0">
+              {/* 右側 - 顯示登入表單 */}
+              <div className="flex-shrink-0">
                   <div className="float-up-container">
                     <div className="flex gap-4 float-up float-up-delay-5">
                       {/* 左側：Login 區塊 */}
@@ -245,7 +231,6 @@ const HomePage = () => {
                     </div>
                   </div>
                 </div>
-              )}
             </div>
 
             {/* 手機版佈局 */}

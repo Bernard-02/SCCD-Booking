@@ -12,9 +12,8 @@ const EQUIPMENT_DATA = equipmentDataRaw as EquipmentData
 
 export const useCart = () => {
   const [cart, setCart] = useState<CartItem[]>([])
-  // 設備資料由 bundle 直接載入，初始即可用
-  const [equipmentData] = useState<EquipmentData>(EQUIPMENT_DATA)
-  const [isEquipmentLoaded] = useState(true)
+  // 設備資料由 bundle 直接載入（同步 JSON import），初始即可用
+  const equipmentData = EQUIPMENT_DATA
 
   // 從 localStorage 載入購物車
   const loadCart = useCallback(() => {
@@ -81,14 +80,6 @@ export const useCart = () => {
       return Math.max(0, originalQty - cartQty)
     },
     [getOriginalQuantity, getCartQuantity]
-  )
-
-  // 檢查是否有庫存
-  const hasStock = useCallback(
-    (equipmentId: string): boolean => {
-      return getAvailableQuantity(equipmentId) > 0
-    },
-    [getAvailableQuantity]
   )
 
   // 檢查添加項目後是否超過時段押金上限
@@ -159,67 +150,6 @@ export const useCart = () => {
       return { allowed: true }
     },
     [cart]
-  )
-
-  // 添加設備到購物車
-  const addEquipmentToCart = useCallback(
-    (equipment: Equipment, startDate: string, endDate: string): boolean => {
-      // 檢查是否有庫存
-      if (!hasStock(equipment.id)) {
-        console.warn('設備無庫存:', equipment.id)
-        return false
-      }
-
-      const existingItem = cart.find((item) => item.id === equipment.id)
-
-      if (existingItem) {
-        // 檢查是否超過庫存限制
-        if (existingItem.quantity >= getOriginalQuantity(equipment.id)) {
-          console.warn('已達庫存上限:', equipment.id)
-          return false
-        }
-
-        // 檢查押金上限（假設增加 1 個數量）
-        const tempItem: CartItem = {
-          ...existingItem,
-          quantity: 1
-        }
-        const limitCheck = checkDepositLimit(tempItem)
-        if (!limitCheck.allowed) {
-          console.warn('無法加入購物車:', limitCheck.reason)
-          alert(limitCheck.reason)
-          return false
-        }
-
-        existingItem.quantity += 1
-        saveCart([...cart])
-      } else {
-        // 新增項目
-        const newItem: CartItem = {
-          id: equipment.id,
-          name: equipment.name,
-          category: equipment.category,
-          deposit: equipment.deposit,
-          image: equipment.mainImage,
-          quantity: 1,
-          startDate,
-          endDate
-        }
-
-        // 檢查押金上限
-        const limitCheck = checkDepositLimit(newItem)
-        if (!limitCheck.allowed) {
-          console.warn('無法加入購物車:', limitCheck.reason)
-          alert(limitCheck.reason)
-          return false
-        }
-
-        saveCart([...cart, newItem])
-      }
-
-      return true
-    },
-    [cart, hasStock, getOriginalQuantity, saveCart, checkDepositLimit]
   )
 
   // 從購物車移除項目
@@ -457,32 +387,6 @@ export const useCart = () => {
     saveCart([])
   }, [saveCart])
 
-  // 獲取購物車總數量
-  const getTotalQuantity = useCallback(() => {
-    return cart.reduce((total, item) => total + item.quantity, 0)
-  }, [cart])
-
-  // 獲取設備押金（上限 5000）
-  const getEquipmentDeposit = useCallback(() => {
-    const total = cart
-      .filter((item) => item.category === 'equipment')
-      .reduce((sum, item) => sum + item.deposit * item.quantity, 0)
-    return Math.min(total, 5000)
-  }, [cart])
-
-  // 獲取空間押金（上限 5000）
-  const getSpaceDeposit = useCallback(() => {
-    const total = cart
-      .filter((item) => item.category === 'space-block' || item.category === 'classroom')
-      .reduce((sum, item) => sum + item.deposit * item.quantity, 0)
-    return Math.min(total, 5000)
-  }, [cart])
-
-  // 獲取購物車總押金（設備和空間各上限 5000，總上限 10000）
-  const getTotalDeposit = useCallback(() => {
-    return getEquipmentDeposit() + getSpaceDeposit()
-  }, [getEquipmentDeposit, getSpaceDeposit])
-
   // 初始化
   useEffect(() => {
     loadCart()
@@ -504,21 +408,13 @@ export const useCart = () => {
   return {
     cart,
     equipmentData,
-    isEquipmentLoaded,
-    getEquipmentById,
     getOriginalQuantity,
     getCartQuantity,
     getAvailableQuantity,
-    hasStock,
-    addEquipmentToCart,
     addToCart,
     updateEquipmentQuantity,
     removeFromCart,
     clearCart,
-    getTotalQuantity,
-    getTotalDeposit,
-    getEquipmentDeposit,
-    getSpaceDeposit,
     checkLittleBookingLimit
   }
 }

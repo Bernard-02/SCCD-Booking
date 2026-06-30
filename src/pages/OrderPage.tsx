@@ -10,6 +10,7 @@ import jsPDF from 'jspdf'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import { mockAreaBlocksData } from '../components/space/SpaceAreaMap'
+import { getAreaName, getBlockImage, sortBlockIds } from '../components/cart/cartHelpers'
 import { calculateValidHoursPassed } from '../utils/timeUtils'
 
 interface OrderItem {
@@ -105,7 +106,6 @@ const OrderPage: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const receiptRef = React.useRef<HTMLDivElement>(null)
-  const [showReceiptDebug, setShowReceiptDebug] = React.useState(false) // 用於開發階段預覽收據樣式
 
   // 從 location.state 獲取租借資料
   const rentalData = location.state as OrderData | null
@@ -161,7 +161,7 @@ const OrderPage: React.FC = () => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    }).replace(/\//g, '/')
+    })
   }
 
   // 格式化送單時間（日期 + 時間）
@@ -172,47 +172,13 @@ const OrderPage: React.FC = () => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    }).replace(/\//g, '/')
+    })
     const timeStr = date.toLocaleTimeString('zh-TW', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
     })
     return `${dateStr} ${timeStr}`
-  }
-
-  // 獲取區塊的區域中文名稱
-  const getAreaName = (blockId: string): string => {
-    const blockData = mockAreaBlocksData[blockId]
-    if (!blockData) return ''
-
-    const areaNameMap: Record<string, string> = {
-      'square': '中庭',
-      'corridor': '專案許可區',
-      'front-terrace': '前陽台',
-      'back-terrace': '後陽台',
-      'glass-wall': '玻璃牆',
-      'pillar': '柱子'
-    }
-
-    return areaNameMap[blockData.area] || ''
-  }
-
-  // 獲取區塊的圖片路徑
-  const getBlockImage = (blockId: string): string => {
-    const blockData = mockAreaBlocksData[blockId]
-    if (!blockData) return '/Images/Glass Wall.webp'
-
-    const areaImageMap: Record<string, string> = {
-      'square': '/Images/Square.webp',
-      'corridor': '/Images/Corridor.webp',
-      'front-terrace': '/Images/Front Terrace.webp',
-      'back-terrace': '/Images/Back Terrace.webp',
-      'glass-wall': '/Images/Glass Wall.webp',
-      'pillar': '/Images/Pillar.webp'
-    }
-
-    return areaImageMap[blockData.area] || '/Images/Glass Wall.webp'
   }
 
   // 下載收據 PDF
@@ -421,15 +387,7 @@ const OrderPage: React.FC = () => {
 
                                 const areaName = getAreaName(blocks[0].id)
                                 const displayImage = getBlockImage(blocks[0].id)
-                                const blockIds = blocks.map(b => b.id).sort((a, b) => {
-                                  const matchA = a.match(/^([A-Z]+)(\d+)$/)
-                                  const matchB = b.match(/^([A-Z]+)(\d+)$/)
-                                  if (!matchA || !matchB) return a.localeCompare(b)
-                                  const [, letterA, numA] = matchA
-                                  const [, letterB, numB] = matchB
-                                  if (letterA !== letterB) return letterA.localeCompare(letterB)
-                                  return parseInt(numA, 10) - parseInt(numB, 10)
-                                })
+                                const blockIds = sortBlockIds(blocks.map(b => b.id))
                                 const totalDeposit = blocks.reduce((sum, b) => sum + b.deposit, 0)
                                 const groupKey = `${area}_${blockIds.join('_')}`
 
@@ -600,14 +558,6 @@ const OrderPage: React.FC = () => {
                 >
                   <img src="/Icons/Download White.svg" alt="Download" className="w-10 h-10" />
                 </button>
-                
-                {/* 開發用：預覽收據樣式按鈕 (正式上線可移除) */}
-                <button
-                  onClick={() => setShowReceiptDebug(!showReceiptDebug)}
-                  className="ml-4 text-tiny text-gray-500 hover:text-white transition-colors"
-                >
-                  {showReceiptDebug ? '隱藏預覽' : '預覽樣式'}
-                </button>
               </div>
             </div>
           </div>
@@ -617,27 +567,11 @@ const OrderPage: React.FC = () => {
       <Footer />
 
       {/* A4 收據模板 (用於生成 PDF) */}
-      {/* 透過 showReceiptDebug 切換顯示狀態，方便視覺化設計。使用 Overlay 覆蓋全螢幕，比開新分頁更方便即時預覽修改。 */}
-      <div 
-        className={showReceiptDebug ? "fixed inset-0 z-[9999] bg-black/90 flex flex-col items-center overflow-auto py-10" : ""}
-        style={!showReceiptDebug ? { position: 'absolute', top: '-9999px', left: '-9999px' } : {}}
-      >
-        {/* 預覽模式下的控制列 */}
-        {showReceiptDebug && (
-          <div className="sticky top-0 z-50 mb-8 flex items-center gap-4 bg-black/50 backdrop-blur-md px-6 py-3 rounded-full border border-white/20">
-            <span className="text-white font-bold font-['Noto_Sans_TC',_sans-serif]">收據預覽模式 (A4)</span>
-            <button 
-              onClick={() => setShowReceiptDebug(false)}
-              className="px-4 py-1.5 bg-[#ff448a] hover:bg-[#e03e7a] text-white text-sm rounded-full transition-colors font-['Noto_Sans_TC',_sans-serif]"
-            >
-              關閉預覽
-            </button>
-          </div>
-        )}
-
+      {/* 永遠在 DOM 中，移到螢幕外，供 html2canvas 擷取 */}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
         <div
           ref={receiptRef}
-          className={`w-[210mm] min-h-[297mm] bg-white text-black p-8 box-border flex flex-col ${showReceiptDebug ? 'shadow-2xl scale-90 origin-top' : ''}`}
+          className="w-[210mm] min-h-[297mm] bg-white text-black p-8 box-border flex flex-col"
           style={{ fontFamily: 'Inter, Noto Sans TC, sans-serif' }}
         >
           {/* A. 第一部分：Header */}

@@ -94,11 +94,9 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   }
 
   // 檢查是否可以提交
-  const canSubmit = () => {
-    if (!reason.trim()) return false
-    if (isMassBooking && (!className.trim() || !teacher.trim())) return false
-    return true
-  }
+  const isValid =
+    reason.trim() !== '' &&
+    (!isMassBooking || (className.trim() !== '' && teacher.trim() !== ''))
 
   return createPortal(
     <div
@@ -212,9 +210,9 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {/* 確認按鈕 */}
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit()}
+            disabled={!isValid}
             className={`transition-opacity cursor-pointer ${
-              canSubmit()
+              isValid
                 ? 'text-white hover:opacity-70'
                 : 'text-gray-scale3 cursor-not-allowed'
             }`}

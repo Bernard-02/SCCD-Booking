@@ -7,6 +7,7 @@ import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
+import { readNotificationsKey } from '../../utils/storageKeys'
 
 interface HeaderProps {
   hideNavigation?: boolean // 是否隱藏右側導航按鈕
@@ -83,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
     // 讀取本地存儲的已讀狀態
     // 使用用戶 ID 作為 key 的一部分，區分不同用戶的已讀狀態
-    const storageKey = `sccd_read_notifications_${currentUser?.studentId || 'guest'}`
+    const storageKey = readNotificationsKey(currentUser?.studentId)
     const readIds = JSON.parse(localStorage.getItem(storageKey) || '[]') as string[]
 
     // 合併已讀狀態
@@ -100,13 +101,11 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
   // 固定旋轉角度
   const rotationAngles: Record<string, number> = {
-    '/about': -2,
     '/guide': 1,
     '/sa': -3,
     '/catalog': -1,
     '/rental-list': 3,
-    '/profile': -5,
-    'https://sccd.usc.edu.tw/': -3
+    '/profile': -5
   }
 
   // 獲取固定角度
@@ -140,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
       const updated = prev.map(n => ({ ...n, read: true }))
       // 保存已讀 ID 到 localStorage
       const readIds = updated.map(n => n.id)
-      const storageKey = `sccd_read_notifications_${currentUser?.studentId || 'guest'}`
+      const storageKey = readNotificationsKey(currentUser?.studentId)
       localStorage.setItem(storageKey, JSON.stringify(readIds))
       return updated
     })

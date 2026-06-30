@@ -6,6 +6,7 @@
 import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
+import { formatYmd, toDateKey } from './cartHelpers'
 
 interface DateEditDialogProps {
   isOpen: boolean
@@ -38,14 +39,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 
   const handleConfirm = () => {
     if (startDate && endDate) {
-      const formatDate = (date: Date): string => {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-      }
-
-      onConfirm(formatDate(startDate), formatDate(endDate))
+      onConfirm(toDateKey(startDate), toDateKey(endDate))
     }
   }
 
@@ -127,13 +121,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               </span>
               <span className="text-tiny text-white font-['Inter',_sans-serif]">
                 {(() => {
-                  const formatDate = (dateStr: string) => {
-                    const date = new Date(dateStr)
-                    const year = date.getFullYear()
-                    const month = String(date.getMonth() + 1).padStart(2, '0')
-                    const day = String(date.getDate()).padStart(2, '0')
-                    return `${year}/${month}/${day}`
-                  }
+                  const formatDate = (dateStr: string) => formatYmd(new Date(dateStr))
                   return `${formatDate(currentStartDate)} - ${formatDate(currentEndDate)}`
                 })()}
               </span>
@@ -168,15 +156,8 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             </div>
             <div className="text-medium-title text-white font-['Inter',_sans-serif]">
               {(() => {
-                const formatDate = (date: Date) => {
-                  const year = date.getFullYear()
-                  const month = String(date.getMonth() + 1).padStart(2, '0')
-                  const day = String(date.getDate()).padStart(2, '0')
-                  return `${year}/${month}/${day}`
-                }
-
-                const startStr = startDate ? formatDate(startDate) : '----/--/--'
-                const endStr = endDate ? formatDate(endDate) : '----/--/--'
+                const startStr = startDate ? formatYmd(startDate) : '----/--/--'
+                const endStr = endDate ? formatYmd(endDate) : '----/--/--'
                 return `${startStr} - ${endStr}`
               })()}
             </div>
