@@ -176,7 +176,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     }
 
     // 加入購物車（包含日期資訊）
-    addToCart({
+    const result = addToCart({
       id: item.id,
       name: item.name,
       category: 'equipment',
@@ -187,6 +187,12 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       endDate: equipmentDates.endDate!.toISOString(),
       bookingType: equipmentDates.bookingType
     })
+
+    if (!result.ok) {
+      // 加入失敗（押金上限／類型衝突／9 件上限），顯示原因而非假的成功訊息
+      setToastMessage(result.reason || '無法加入清單')
+      return
+    }
 
     // 顯示成功訊息
     setToastMessage(`已成功加入 ${item.name} x${quantity} 到清單！`)
@@ -344,27 +350,20 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       e.stopPropagation()
                       toggleBookmark(item.id, item.name)
                     }}
-                    className="w-4 h-4 flex items-center justify-center cursor-pointer"
+                    className="w-6 h-6 flex items-center justify-center cursor-pointer"
                     aria-label={isBookmarked ? '取消收藏' : '加入收藏'}
                   >
-                    {isBookmarked ? (
-                      <img
-                        src="/Icons/Bookmark Sharp Fill.svg"
-                        alt="已收藏"
-                        className="w-4 h-4"
-                      />
-                    ) : (
-                      <img
-                        src="/Icons/Bookmark Sharp Regular.svg"
-                        alt="收藏"
-                        className="w-4 h-4"
-                      />
-                    )}
+                    <span
+                      className="material-symbols-outlined text-white"
+                      style={{ fontSize: '24px', fontVariationSettings: isBookmarked ? "'FILL' 1" : "'FILL' 0" }}
+                    >
+                      bookmark
+                    </span>
                   </button>
 
                   {/* 設備圖片 */}
                   <div
-                    className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden"
+                    className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
                     onClick={(e) => handleImageClick(e, '/Images/Extension Cord.webp')}
                   >
                     <img
