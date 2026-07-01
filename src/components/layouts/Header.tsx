@@ -8,6 +8,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
 import { readNotificationsKey } from '../../utils/storageKeys'
+import GuideDialog from '../common/GuideDialog'
+import SaDialog from '../common/SaDialog'
 
 interface HeaderProps {
   hideNavigation?: boolean // 是否隱藏右側導航按鈕
@@ -29,6 +31,8 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = React.useState(false)
   const [notificationMenuOpen, setNotificationMenuOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Notification[]>([])
+  const [guideOpen, setGuideOpen] = React.useState(false)
+  const [saOpen, setSaOpen] = React.useState(false)
 
   // 初始化模擬通知數據
   React.useEffect(() => {
@@ -104,7 +108,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     '/guide': 1,
     '/sa': -3,
     '/catalog': -1,
-    '/rental-list': 3,
+    '/cart': 3,
     '/profile': -5
   }
 
@@ -245,30 +249,32 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 SCCDSA Booking
               </Link>
 
-              {/* Guide - 放在 logo 右邊 */}
+              {/* Guide - 放在 logo 右邊；點擊開啟教學 lightbox，不換頁 */}
               {!hideNavigation && (
-                <Link
-                  to="/guide"
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/guide') ? 'active' : ''}`}
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen(true)}
+                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link cursor-pointer ${guideOpen ? 'active' : ''}`}
                   style={{ '--rotation-angle': `${getAngle('/guide')}deg` } as React.CSSProperties}
                 >
                   <span>Guide</span>
                   <span className="chinese-label">&nbsp;教學</span>
-                </Link>
+                </button>
               )}
             </div>
 
             {/* 桌面版導航 - 如果 hideNavigation 為 true 則隱藏 */}
             {!hideNavigation && (
               <nav className="flex items-center header-menu desktop-nav nav-gap relative">
-                <Link
-                  to="/sa"
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/sa') ? 'active' : ''}`}
+                <button
+                  type="button"
+                  onClick={() => setSaOpen(true)}
+                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link cursor-pointer ${saOpen ? 'active' : ''}`}
                   style={{ '--rotation-angle': `${getAngle('/sa')}deg` } as React.CSSProperties}
                 >
                   <span>SA</span>
                   <span className="chinese-label">&nbsp;系學會</span>
-                </Link>
+                </button>
                 <Link
                   to="/catalog"
                   className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/catalog') ? 'active' : ''}`}
@@ -278,10 +284,10 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   <span className="chinese-label">&nbsp;型錄</span>
                 </Link>
                 <Link
-                  to="/rental-list"
+                  to="/cart"
                   state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/rental-list') ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${getAngle('/rental-list')}deg` } as React.CSSProperties}
+                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/cart') ? 'active' : ''}`}
+                  style={{ '--rotation-angle': `${getAngle('/cart')}deg` } as React.CSSProperties}
                 >
                   <span>Cart<span className="chinese-label">&nbsp;清單</span> (<span id="cart-count">{cartCount}</span>)</span>
                 </Link>
@@ -342,7 +348,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   {/* Notification Dropdown */}
                   {notificationMenuOpen && (
                     <div
-                      className="absolute top-full right-0 mt-6 w-[450px] bg-[#151515] border border-[#545454] rounded-2xl overflow-hidden"
+                      className="absolute top-full right-0 mt-6 w-[450px] bg-[#151515] border border-[#545454] rounded-lg overflow-hidden"
                       style={{ zIndex: 1000 }}
                     >
                       {/* Header */}
@@ -394,7 +400,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                               </div>
                               {/* Separator */}
                               {index < notifications.length - 1 && (
-                                <div className="h-[1px] bg-[#545454] mx-6"></div>
+                                <div className="h-[1px] bg-[#545454]"></div>
                               )}
                             </React.Fragment>
                           ))
@@ -410,7 +416,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
             {!hideNavigation && (
               <nav className="flex items-center mobile-nav mobile-nav-gap">
                 <Link
-                  to="/rental-list"
+                  to="/cart"
                   state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
                   className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
                 >
@@ -518,6 +524,12 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
           </div>
         </div>
       </div>
+
+      {/* 使用教學 lightbox */}
+      <GuideDialog isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
+
+      {/* 系學會資訊 lightbox */}
+      <SaDialog isOpen={saOpen} onClose={() => setSaOpen(false)} />
     </>
   )
 }
