@@ -19,6 +19,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const BookingPage = lazy(() => import('./pages/BookingPage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -46,7 +47,7 @@ function App() {
                 <Route path="/booking-date" element={<BookingPage />} />
                 <Route path="/equipment" element={<EquipmentPage />} />
                 <Route path="/space" element={<SpacePage />} />
-                <Route path="/rental-list" element={<RentalListPage />} />
+                <Route path="/cart" element={<RentalListPage />} />
 
                 {/* 用戶相關 */}
                 <Route
@@ -60,6 +61,9 @@ function App() {
 
                 {/* 訂單詳情 */}
                 <Route path="/order" element={<OrderPage />} />
+
+                {/* 關於 */}
+                <Route path="/about" element={<AboutPage />} />
 
                 {/* 404 重定向到首頁 */}
                 <Route path="*" element={<Navigate to="/" replace />} />

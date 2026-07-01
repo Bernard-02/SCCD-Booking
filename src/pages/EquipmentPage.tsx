@@ -41,7 +41,7 @@ const EquipmentPage: React.FC = () => {
     e.preventDefault()
     if (fromCart) {
       // 鎖定模式：直接返回購物車
-      navigate('/rental-list')
+      navigate('/cart')
     } else {
       // 正常模式：返回上一頁
       navigate(-1)
