@@ -293,15 +293,15 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                   }
                   setSelectedGroups(newSelected)
                 }}
-                className={`w-6 h-6 border-2 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                  isSelected
-                    ? 'border-white bg-white'
-                    : 'border-white hover:bg-white/10'
-                }`}
+                className="flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                aria-label={isSelected ? '取消選取' : '選取'}
               >
-                {isSelected && (
-                  <span className="material-icons text-black text-[18px]">check</span>
-                )}
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: '24px', color: isSelected ? '#00ff80' : '#cccccc' }}
+                >
+                  {isSelected ? 'check_circle' : 'radio_button_unchecked'}
+                </span>
               </button>
 
               {/* 時間 */}
@@ -337,7 +337,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
             {/* 第二行：Tags + 填寫資訊按鈕 + Add 按鈕 */}
             <div className="flex items-center gap-3 py-4 pl-9">
               {/* 類別標籤 (SPC 空間 / EQPT 設備) */}
-              <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center">
+              <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
                 <span className={`font-['Inter',_sans-serif] text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
                   {categoryLabel.en}{' '}
                   <span className="font-['Noto_Sans_TC',_sans-serif]">{categoryLabel.zh}</span>
@@ -345,7 +345,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
               </div>
 
               {/* 租借類型標籤 (個人/團體 或 小量/大量) */}
-              <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center">
+              <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
                 <span className={`font-['Inter',_sans-serif] text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
                   {bookingTypeLabel.en}{' '}
                   <span className="font-['Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
@@ -362,7 +362,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     setIsDetailsDialogOpen(true)
                   }}
                   disabled={isExpired}
-                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 transition-colors ${
+                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 transition-colors rounded-lg ${
                     isExpired
                       ? 'bg-gray-scale4 cursor-not-allowed'
                       : bookingDetails[dateKey]
@@ -373,8 +373,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                   <span className={`material-icons text-[20px] ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
                     {bookingDetails[dateKey] ? 'check' : 'edit'}
                   </span>
-                  <span className={`font-['Noto_Sans_TC',_sans-serif] text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
-                    {bookingDetails[dateKey] ? '資訊已填' : '填寫借用資訊'}
+                  <span className={`text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
+                    {bookingDetails[dateKey] ? (
+                      <><span className="font-['Inter',_sans-serif]">Filled</span> <span className="font-['Noto_Sans_TC',_sans-serif]">資訊已填</span></>
+                    ) : (
+                      <><span className="font-['Inter',_sans-serif]">Details</span> <span className="font-['Noto_Sans_TC',_sans-serif]">借用資訊</span></>
+                    )}
                   </span>
                 </button>
 
@@ -385,7 +389,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     handleAddMore(group.category, group.startDate, group.endDate, bookingType)
                   }}
                   disabled={isLittleBookingLimitReached(group) || isExpired}
-                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 border transition-colors ${
+                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 border transition-colors rounded-lg ${
                     isLittleBookingLimitReached(group) || isExpired
                       ? 'border-gray-scale4 text-gray-scale4 cursor-not-allowed'
                       : 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
@@ -417,7 +421,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
             {/* 項目列表 - 只有展開時顯示 */}
             {isExpanded && (
-              <div className="pl-12 pr-4">
+              <div className="pl-9">
                 {group.category === 'space' ? (
                   // Space 項目渲染
                   (() => {
@@ -463,13 +467,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         >
                           {/* 縮圖 */}
                           <div
-                            className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer"
+                            className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
                             onClick={(e) => handleImageClick(e, displayImage)}
                           >
                             <img
                               src={displayImage}
                               alt={areaName}
-                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110 hover:rotate-[-3deg]"
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                             />
                           </div>
 
@@ -511,13 +515,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         >
                           {/* 縮圖 */}
                           <div
-                            className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer"
+                            className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
                             onClick={(e) => handleImageClick(e, item.image)}
                           >
                             <img
                               src={item.image}
                               alt={item.name}
-                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110 hover:rotate-[-3deg]"
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                             />
                           </div>
 
@@ -594,13 +598,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       >
                         {/* 縮圖 */}
                         <div
-                          className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer"
+                          className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
                           onClick={(e) => handleImageClick(e, item.image)}
                         >
                           <img
                             src={item.image}
                             alt={item.name}
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-110 hover:rotate-[-3deg]"
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                           />
                         </div>
 

@@ -39,7 +39,6 @@ const RentalListPage = () => {
   const {
     cart,
     updateEquipmentQuantity,
-    removeFromCart,
     clearCart,
     getOriginalQuantity,
     getCartQuantity
@@ -53,7 +52,8 @@ const RentalListPage = () => {
   const [showToast, setShowToast] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
   const [deletedItems, setDeletedItems] = useState<CartItem[]>([])
-  const [undoTimeout, setUndoTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [toastMessage, setToastMessage] = useState('已刪除選中的訂單')
   // Booking Details 狀態
   const [bookingDetails, setBookingDetails] = useState<Record<string, BookingDetailsData>>({})
   // 選中的訂單組
@@ -163,6 +163,38 @@ const RentalListPage = () => {
     }
   }, [location])
 
+  // 顯示可 undo 的 toast（清除訂單組與單項刪除共用）
+  // ponytail: toast 開啟期間的多次刪除會累加進 deletedItems，Undo 一次全復原（涵蓋多區塊區域一次刪除）
+  const showUndoToast = (removed: CartItem[], message: string) => {
+    if (removed.length === 0) return
+    if (undoTimeout) clearTimeout(undoTimeout)
+    setDeletedItems(prev => [...prev, ...removed])
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setToastVisible(true), 10)
+    const timeout = setTimeout(() => {
+      setToastVisible(false)
+      setTimeout(() => {
+        setShowToast(false)
+        setDeletedItems([])
+      }, 400)
+    }, 5000)
+    setUndoTimeout(timeout)
+  }
+
+  // 刪除單一項目（點 ✕）→ 直接改 localStorage 並跳可 undo 的 toast
+  const handleRemoveSingleItem = (itemId: string, startDate?: string, endDate?: string) => {
+    const current = readCart()
+    const isMatch = (item: CartItem) =>
+      startDate && endDate
+        ? item.id === itemId && item.startDate === startDate && item.endDate === endDate
+        : item.id === itemId
+    const removed = current.filter(isMatch)
+    if (removed.length === 0) return
+    writeCart(current.filter(item => !isMatch(item)))
+    showUndoToast(removed, `已刪除「${removed[0].name}」`)
+  }
+
   // 處理清除選中的訂單組
   const handleClearAll = async () => {
     if (selectedGroups.size === 0) return
@@ -210,43 +242,14 @@ const RentalListPage = () => {
       // 立即清空選中狀態（在刪除之前）
       setSelectedGroups(new Set())
 
-      // 清除之前的 undo timeout
-      if (undoTimeout) {
-        clearTimeout(undoTimeout)
-        setUndoTimeout(null)
-      }
-
-      // 保存被刪除的項目（用於 undo）
-      setDeletedItems(itemsToDelete)
-
-      // 創建一個 Set 來快速查找要刪除的項目
+      // 過濾掉要刪除的項目後寫回 localStorage
       const itemsToDeleteSet = new Set(
         itemsToDelete.map(item => `${item.id}_${item.startDate}_${item.endDate}`)
       )
+      writeCart(cart.filter(item => !itemsToDeleteSet.has(`${item.id}_${item.startDate}_${item.endDate}`)))
 
-      // 一次性過濾出要保留的項目
-      const updatedCart = cart.filter(item => {
-        const itemKey = `${item.id}_${item.startDate}_${item.endDate}`
-        return !itemsToDeleteSet.has(itemKey)
-      })
-
-      // 直接更新購物車（使用 localStorage）
-      writeCart(updatedCart)
-
-      // 顯示 toast
-      setShowToast(true)
-      setTimeout(() => setToastVisible(true), 10)
-
-      // 5 秒後自動關閉 toast
-      const timeout = setTimeout(() => {
-        setToastVisible(false)
-        setTimeout(() => {
-          setShowToast(false)
-          setDeletedItems([])
-        }, 400)
-      }, 5000)
-
-      setUndoTimeout(timeout)
+      // 顯示可 undo 的 toast
+      showUndoToast(itemsToDelete, '已刪除選中的訂單')
     }
   }
 
@@ -257,10 +260,10 @@ const RentalListPage = () => {
       setUndoTimeout(null)
     }
 
-    // 恢復被刪除的項目
+    // 恢復被刪除的項目（以 id+日期 為鍵，避免同設備不同時段被誤判為已存在）
     const currentCart = readCart()
-    const currentIds = new Set(currentCart.map((item: CartItem) => item.id))
-    const itemsToRestore = deletedItems.filter(item => !currentIds.has(item.id))
+    const currentKeys = new Set(currentCart.map((item: CartItem) => `${item.id}_${item.startDate}_${item.endDate}`))
+    const itemsToRestore = deletedItems.filter(item => !currentKeys.has(`${item.id}_${item.startDate}_${item.endDate}`))
 
     if (itemsToRestore.length > 0) {
       const restoredCart = [...currentCart, ...itemsToRestore]
@@ -279,7 +282,7 @@ const RentalListPage = () => {
   }
 
   // 送單流程（建收據、寫通知、清空購物車、導向 /profile）
-  const submitOrder = useOrderSubmission({ cart, currentUser, clearCart })
+  const submitOrder = useOrderSubmission({ cart, currentUser, clearCart, bookingDetails })
 
   const handleCheckout = () => {
     if (!agreedToTerms) {
@@ -365,7 +368,7 @@ const RentalListPage = () => {
                 <CartList
                   cart={cart}
                   onQuantityChange={updateEquipmentQuantity}
-                  onRemoveItem={removeFromCart}
+                  onRemoveItem={handleRemoveSingleItem}
                   bookingDetails={bookingDetails}
                   onBookingDetailsChange={handleBookingDetailsChange}
                   expiredDateKeys={expiredOrdersValidation.expiredKeys}
@@ -490,9 +493,11 @@ const RentalListPage = () => {
                       return selectedGroupsList.map((group, index) => {
                         // 格式化日期為 2026/01/20 格式
                         return (
-                          <div key={index} className="flex gap-2 text-tiny text-white mb-1">
-                            <span className="font-['Inter',_sans-serif]">{index + 1}</span>
-                            <span className="font-['Inter',_sans-serif]">|</span>
+                          <div key={index} className="flex items-center gap-3 text-tiny text-white mb-3">
+                            {/* 數字符號：自製圓圈＋數字（像 Guide，無數量上限；固定寬度讓後面日期對齊） */}
+                            <span className="flex-shrink-0 w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[10px] font-['Inter',_sans-serif] leading-none">
+                              {index + 1}
+                            </span>
                             <span className="font-['Inter',_sans-serif]">
                               {formatYmd(new Date(group.startDate))} - {formatYmd(new Date(group.endDate))}
                             </span>
@@ -547,15 +552,17 @@ const RentalListPage = () => {
                         />
                       </svg>
                     </div>
-                    <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white leading-tight">
-                      我已閱讀並同意系上租借設備與空間的
+                    <span className="text-tiny text-white leading-tight">
+                      <span className="font-['Inter',_sans-serif]">I have read and agree to the department&apos;s equipment &amp; space rental </span>
+                      <span className="font-['Noto_Sans_TC',_sans-serif]">我已閱讀並同意系上租借設備與空間的</span>
                       <a
                         href="https://docs.google.com/document/d/1gSzAqyPO922dO6Y61sYF070jZmntP8Kyjz24YQbp4uA/edit?usp=sharing"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline cursor-pointer hover:text-zinc-300 transition-colors"
                       >
-                        使用規則與條款
+                        <span className="font-['Inter',_sans-serif]">Terms &amp; Conditions </span>
+                        <span className="font-['Noto_Sans_TC',_sans-serif]">使用規則與條款</span>
                       </a>
                     </span>
                   </div>
@@ -691,7 +698,7 @@ const RentalListPage = () => {
           }}
         >
           <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">
-            已刪除選中的訂單
+            {toastMessage}
           </span>
           <button
             onClick={handleUndo}

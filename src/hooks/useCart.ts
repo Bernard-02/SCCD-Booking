@@ -263,30 +263,28 @@ export const useCart = () => {
   )
 
   // 通用加入購物車 (不檢查庫存，用於教室或強制加入)
+  // 回傳 { ok, reason }，由呼叫端以 toast 呈現，不再用原生 alert
   const addToCart = useCallback(
-    (item: CartItem) => {
+    (item: CartItem): { ok: boolean; reason?: string } => {
       // 檢查租借類型衝突
       const typeCheck = checkBookingTypeConflict(item)
       if (!typeCheck.allowed) {
         console.warn('無法加入購物車:', typeCheck.reason)
-        alert(typeCheck.reason)
-        return false
+        return { ok: false, reason: typeCheck.reason }
       }
 
-      // 檢查小量訂單 9 件限制（靜默失敗，不顯示 alert，應該在 UI 層面 disable 按鈕）
+      // 檢查小量訂單 9 件限制
       const limitCheck9 = checkLittleBookingLimit(item)
       if (!limitCheck9.allowed) {
         console.warn('無法加入購物車:', limitCheck9.reason)
-        // 不顯示 alert，應該在 UI 上 disable
-        return false
+        return { ok: false, reason: limitCheck9.reason }
       }
 
       // 檢查押金上限
       const limitCheck = checkDepositLimit(item)
       if (!limitCheck.allowed) {
         console.warn('無法加入購物車:', limitCheck.reason)
-        alert(limitCheck.reason)
-        return false
+        return { ok: false, reason: limitCheck.reason }
       }
 
       // 需要同時比對 id、startDate 和 endDate，因為同一設備可能在不同時段被租借
@@ -302,7 +300,7 @@ export const useCart = () => {
       } else {
         saveCart([...cart, item])
       }
-      return true
+      return { ok: true }
     },
     [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit]
   )
