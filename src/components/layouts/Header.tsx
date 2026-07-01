@@ -342,7 +342,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   {/* Notification Dropdown */}
                   {notificationMenuOpen && (
                     <div
-                      className="absolute top-full right-0 mt-6 w-[450px] bg-[#151515] border border-[#545454] overflow-hidden"
+                      className="absolute top-full right-0 mt-6 w-[450px] bg-[#151515] border border-[#545454] rounded-2xl overflow-hidden"
                       style={{ zIndex: 1000 }}
                     >
                       {/* Header */}

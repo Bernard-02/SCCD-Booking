@@ -370,7 +370,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     <img
                       src="/Images/Extension Cord.webp"
                       alt={item.name}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-110 hover:rotate-[-3deg]"
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                     />
                   </div>
 

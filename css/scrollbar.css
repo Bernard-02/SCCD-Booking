@@ -1,0 +1,49 @@
+/**
+ * 可重用的自訂捲軸：白色、方角、無上下箭頭。
+ * 用法：在會捲動的容器加 class="... custom-scrollbar"（容器需有 overflow 才會出現捲軸）。
+ *
+ * 為什麼這樣寫（重要，別亂改）：
+ * 1) common.css 全域把捲軸藏了：`* { scrollbar-width: none }`、`*::-webkit-scrollbar { display:none }`。
+ * 2) Chrome 121+ 起：元素的 `scrollbar-width` / `scrollbar-color` 只要是「非 auto」值，
+ *    Chrome 就改用「標準捲軸」渲染、並「忽略」::-webkit-scrollbar（無法自訂形狀/寬度，只能給色）。
+ *    → 所以先把全域繼承來的 `scrollbar-width: none` 覆蓋回 `auto`，Chrome/Safari 才會回去吃 ::-webkit-scrollbar。
+ * 3) Firefox 沒有 ::-webkit-scrollbar，改用 `@supports not selector(::-webkit-scrollbar)` 只在 Firefox
+ *    套標準屬性；此條在 Chrome/Safari 為 false，不會干擾上面的 webkit 自訂。
+ * 參考：Chrome for Developers「Scrollbar styling」、Frontend Masters / Syntackle 對 Chrome 121 變更的說明。
+ */
+
+/* 關鍵：覆蓋全域 scrollbar-width:none → auto，Chrome/Safari 才會改用 ::-webkit-scrollbar 完整自訂 */
+.custom-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+
+/* Chrome / Edge / Safari：完整自訂 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: block !important; /* 覆蓋 common.css 全域 *::-webkit-scrollbar { display:none } */
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none; /* 去掉上下箭頭 */
+  width: 0;
+  height: 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #ffffff;
+  border-radius: 0; /* 方角 */
+}
+
+/* Firefox 專用（不支援 ::-webkit-scrollbar 時才套；Chrome/Safari 不會進來） */
+@supports not selector(::-webkit-scrollbar) {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff transparent;
+  }
+}

@@ -20,6 +20,7 @@ import '../css/breadcrumb.css'
 import '../css/rental-list.css'
 import '../css/forms.css'
 import '../css/numbered-area.css'
+import '../css/scrollbar.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

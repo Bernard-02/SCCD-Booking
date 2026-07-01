@@ -26,7 +26,7 @@ const BookingResourcesPage = () => {
             {/* 空間卡片 */}
             <Link
               to="/space"
-              className="border border-white relative overflow-hidden group cursor-pointer block card-slide-in h-full"
+              className="border border-white relative overflow-hidden rounded-2xl group cursor-pointer block card-slide-in h-full"
               style={{ padding: '2rem', aspectRatio: '4/5' }}
             >
               {/* 背景圖片 */}
@@ -57,7 +57,7 @@ const BookingResourcesPage = () => {
             {/* 設備卡片 */}
             <Link
               to="/equipment"
-              className="border border-white relative overflow-hidden group cursor-pointer block card-slide-in h-full"
+              className="border border-white relative overflow-hidden rounded-2xl group cursor-pointer block card-slide-in h-full"
               style={{ padding: '2rem', aspectRatio: '4/5' }}
             >
               {/* 背景圖片 */}
@@ -90,7 +90,7 @@ const BookingResourcesPage = () => {
         {/* 手機版：兩個卡片垂直排列 */}
         <div className="md:hidden flex flex-col gap-6 w-full container">
             {/* 空間卡片 */}
-            <Link to="/space" className="relative overflow-hidden block mobile-card mobile-card-slide-in">
+            <Link to="/space" className="relative overflow-hidden rounded-2xl block mobile-card mobile-card-slide-in">
               <div className="absolute inset-0">
                 <img
                   src="/Images/Space Image.webp"
@@ -116,7 +116,7 @@ const BookingResourcesPage = () => {
             {/* 設備卡片 */}
             <Link
               to="/equipment"
-              className="relative overflow-hidden block mobile-card mobile-card-slide-in"
+              className="relative overflow-hidden rounded-2xl block mobile-card mobile-card-slide-in"
             >
               <div className="absolute inset-0">
                 <img

@@ -63,9 +63,10 @@ const HomePage = () => {
                   <div className="float-up-container">
                     <div className="flex gap-4 float-up float-up-delay-5">
                       {/* 左側：Login 區塊 */}
-                      <div className="h-[300px] border border-[#7c7c7c] rounded-3xl bg-black/80 backdrop-blur-sm p-8 flex flex-col relative" style={{ width: 'fit-content' }}>
-                        {/* 標題 */}
-                        <div className="mb-8 flex gap-6">
+                      <div className="h-[300px] border border-white rounded-2xl bg-black/80 backdrop-blur-sm p-8 flex flex-col relative" style={{ width: 'fit-content' }}>
+                        {/* 標題：往上對齊右上 Studio 第一行（Studio 雙行置中會頂出 padding，單行標題用負 margin 追上去） */}
+                        {/* ponytail: -mt-3 是純視覺對齊值，字級或 Studio 高度改了就微調這個數字 */}
+                        <div className="-mt-3 mb-8 flex gap-6">
                           <h2 className="font-['Inter',_sans-serif] text-medium-title text-white leading-tight whitespace-nowrap">
                             Space <span className="font-['Noto_Sans_TC',_sans-serif] text-white">空間</span>
                           </h2>
@@ -195,7 +196,7 @@ const HomePage = () => {
                           href="https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 border border-[#7c7c7c] rounded-3xl flex items-center justify-between p-8 hover:bg-white/10 transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
+                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white/10 transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
                         >
                           <div className="flex flex-col z-10">
                             <span className="font-['Inter',_sans-serif] text-medium-title text-white">Studio</span>
@@ -214,7 +215,7 @@ const HomePage = () => {
                           href="https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 border border-[#7c7c7c] rounded-3xl flex items-center justify-between p-8 hover:bg-white/10 transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
+                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white/10 transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
                         >
                           <div className="flex flex-col z-10">
                             <span className="font-['Inter',_sans-serif] text-medium-title text-white">Film Studio</span>

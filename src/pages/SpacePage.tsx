@@ -361,26 +361,6 @@ const SpacePage: React.FC = () => {
 
   return (
     <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
-      <style>{`
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: white transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px !important;
-          display: block !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar-button {
-          display: none;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: white;
-          border-radius: 0;
-        }
-      `}</style>
       <Header />
 
       <main className="flex-1 pt-20 flex flex-col overflow-hidden relative">
