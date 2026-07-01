@@ -106,7 +106,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
     >
       {/* 對話框容器 */}
       <div
-        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col"
+        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-lg"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -134,7 +134,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white resize-none"
+              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white resize-none rounded-lg"
               style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               rows={3}
               placeholder="Please fill in the reason for use 請填寫使用原因"
@@ -159,7 +159,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   type="text"
                   value={className}
                   onChange={(e) => setClassName(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white"
+                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white rounded-lg"
                   style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
                   placeholder="Please fill in the class 請填寫使用班級"
                 />
@@ -180,7 +180,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   type="text"
                   value={teacher}
                   onChange={(e) => setTeacher(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white"
+                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white rounded-lg"
                   style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
                   placeholder="Please fill in the teacher in charge 請填寫負責老師"
                 />
@@ -211,9 +211,9 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           <button
             onClick={handleSubmit}
             disabled={!isValid}
-            className={`transition-opacity cursor-pointer ${
+            className={`transition-opacity ${
               isValid
-                ? 'text-white hover:opacity-70'
+                ? 'text-white hover:opacity-70 cursor-pointer'
                 : 'text-gray-scale3 cursor-not-allowed'
             }`}
           >

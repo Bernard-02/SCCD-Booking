@@ -412,11 +412,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                 className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
                 onClick={handleStartDateClick}
               >
-              <div className="flex flex-col gap-1">
-                <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">
+              <div className="flex flex-col">
+                <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
                   Start Date
                 </span>
-                <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-gray-scale2">
+                <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
                   起租日
                 </span>
               </div>
@@ -427,11 +427,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
             {/* 歸還日 */}
             <div className="flex items-center gap-8 flex-shrink-0">
-              <div className="flex flex-col gap-1">
-                <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">
+              <div className="flex flex-col">
+                <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
                   End Date
                 </span>
-                <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-gray-scale2">
+                <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
                   歸還日
                 </span>
               </div>
@@ -471,9 +471,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
             {/* 彈出視窗 - 在按鈕上方顯示 */}
             {showExistingDates && existingCartDates.length > 0 && (
-              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 py-4 min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
+              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-lg min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
-                <div className="mb-3 pb-2 border-b border-gray-scale4 px-4">
+                <div className="px-4 py-3 border-b border-gray-scale4">
                   <span className="text-small-title font-['Inter',_sans-serif] text-white">
                     Existing Cart Dates{' '}
                   </span>

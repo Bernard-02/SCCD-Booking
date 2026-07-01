@@ -53,8 +53,8 @@
   right: -400px; /* 初始位置在右側外面 */
   background-color: var(--color-bg-toast);
   color: var(--color-primary);
-  padding: 0.75rem 1.5rem; /* 增加 padding 讓文字有適當間距 */
-  border-radius: 2px; /* 添加 1px border radius */
+  padding: 0.75rem 1rem; /* 上下 0.75 / 左右 1 */
+  border-radius: 0.5rem; /* lg 圓角 */
   z-index: 2000; /* 提高層級確保在最上層 (高於 Header 的 1000) */
   opacity: 0;
   pointer-events: none;
@@ -210,7 +210,7 @@
     min-width: 160px !important; /* 手機版較小的最小寬度 */
     max-width: 280px !important; /* 手機版最大寬度 */
     transform: none !important;
-    padding: 0.75rem 1.25rem !important; /* 手機版適當的 padding */
+    padding: 0.75rem 1rem !important; /* 手機版：上下 0.75 / 左右 1 */
   }
   
   .toast.show, #notification.show {
@@ -504,9 +504,4 @@ body::-webkit-scrollbar {
 
 
 /* ===== 帳號狀態視覺化樣式 ===== */
-
-.account-status-section {
-  padding-bottom: 2.5rem;
-  margin-bottom: 2rem;
-}
 

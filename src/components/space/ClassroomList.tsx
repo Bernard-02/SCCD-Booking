@@ -163,7 +163,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
 
                 {/* 教室圖片 */}
                 <div
-                  className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden"
+                  className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
                   onClick={(e) => handleImageClick(e, classroom.image)}
                 >
                   <img

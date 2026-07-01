@@ -19,6 +19,28 @@ interface CalendarProps {
   originalEndDate?: string
 }
 
+// 日期區固定顯示的行數；6 是任何月份可能的最大行數，固定成 6 讓 month title 永遠不位移
+const MIN_CALENDAR_ROWS = 6
+
+// 用不可見的佔位格補滿到指定行數，讓每個月的日期區高度一致（佔位格高度與真實日期格相同）
+const padToRows = (cells: JSX.Element[], rows: number, cellSize: string): JSX.Element[] => {
+  const padded = [...cells]
+  for (let i = padded.length; i < rows * 7; i++) {
+    padded.push(
+      <div
+        key={`pad-${i}`}
+        aria-hidden
+        className={`text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+      >
+        <div className="date-number-wrapper">
+          <span className="date-number-text invisible">0</span>
+        </div>
+      </div>
+    )
+  }
+  return padded
+}
+
 const Calendar: React.FC<CalendarProps> = ({
   startDate,
   endDate,
@@ -280,8 +302,11 @@ const Calendar: React.FC<CalendarProps> = ({
     const nextMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
     const secondMonth = generateMonthCalendar(nextMonthDate)
 
-    // 找出兩個月曆中較大的行數
-    const maxRows = Math.max(firstMonth.rowsNeeded, secondMonth.rowsNeeded)
+    // 兩個月取較大行數，且至少 MIN_CALENDAR_ROWS 行，讓日期區高度恆定、month title 不位移
+    const cellSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
+    const displayRows = Math.max(firstMonth.rowsNeeded, secondMonth.rowsNeeded, MIN_CALENDAR_ROWS)
+    const firstCells = padToRows(firstMonth.dateCells, displayRows, cellSize)
+    const secondCells = padToRows(secondMonth.dateCells, displayRows, cellSize)
 
     const prevButtonClasses = `nav-arrow prev text-white text-[2rem] select-none ${
       canGoPrev() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
@@ -324,8 +349,8 @@ const Calendar: React.FC<CalendarProps> = ({
               {firstMonth.weekdayCells}
             </div>
             {/* 日期數字行 */}
-            <div className={`grid grid-cols-7 w-full`} style={{ gridTemplateRows: `repeat(${maxRows}, 1fr)` }}>
-              {firstMonth.dateCells}
+            <div className={`grid grid-cols-7 w-full`} style={{ gridTemplateRows: `repeat(${displayRows}, 1fr)` }}>
+              {firstCells}
             </div>
           </div>
 
@@ -358,8 +383,8 @@ const Calendar: React.FC<CalendarProps> = ({
               {secondMonth.weekdayCells}
             </div>
             {/* 日期數字行 */}
-            <div className={`grid grid-cols-7 w-full`} style={{ gridTemplateRows: `repeat(${maxRows}, 1fr)` }}>
-              {secondMonth.dateCells}
+            <div className={`grid grid-cols-7 w-full`} style={{ gridTemplateRows: `repeat(${displayRows}, 1fr)` }}>
+              {secondCells}
             </div>
           </div>
         </div>
@@ -369,6 +394,9 @@ const Calendar: React.FC<CalendarProps> = ({
 
   // 手機版：單月顯示
   const monthCalendar = generateMonthCalendar(currentDate)
+  const mobileCellSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
+  const mobileRows = Math.max(monthCalendar.rowsNeeded, MIN_CALENDAR_ROWS)
+  const mobileCells = padToRows(monthCalendar.dateCells, mobileRows, mobileCellSize)
 
   return (
     <div className="w-full">
@@ -396,8 +424,8 @@ const Calendar: React.FC<CalendarProps> = ({
         {monthCalendar.weekdayCells}
       </div>
       {/* 日期數字行 */}
-      <div className={`grid grid-cols-7 gap-1`} style={{ gridTemplateRows: `repeat(${monthCalendar.rowsNeeded}, 1fr)` }}>
-        {monthCalendar.dateCells}
+      <div className={`grid grid-cols-7 gap-1`} style={{ gridTemplateRows: `repeat(${mobileRows}, 1fr)` }}>
+        {mobileCells}
       </div>
     </div>
   )

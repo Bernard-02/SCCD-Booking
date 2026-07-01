@@ -161,6 +161,9 @@
     overflow: hidden;
     line-height: 1;
     height: 1em;
+    /* 右邊留一點空間：cell 的 tracking-tighter（負字距）會縮掉最後一位的 advance，
+       否則數字右緣墨跡會被 overflow:hidden 裁掉。只加右邊、不加左邊，才不會影響 text/hidden 的 left:0 對齊 */
+    padding-right: 0.1em;
 }
 
 .date-number-text {
