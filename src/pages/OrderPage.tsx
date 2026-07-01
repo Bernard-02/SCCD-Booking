@@ -36,6 +36,7 @@ interface OrderData {
   createdAt: string
   status?: OrderStatus
   statusUpdatedAt?: string
+  reason?: string // 借用使用原因
 }
 
 interface DateGroup {
@@ -188,21 +189,22 @@ const OrderPage: React.FC = () => {
     try {
       // 將隱藏的收據元素轉換為 Canvas
       const canvas = await html2canvas(receiptRef.current, {
-        scale: 4, // 提高解析度至約 300 DPI (96*4=384)，適合印刷
+        scale: 2, // 約 192 DPI，收據（純文字白底）已足夠清晰
         useCORS: true, // 允許跨域圖片
         backgroundColor: '#ffffff' // 強制白底
       } as any)
 
       // 計算 PDF 尺寸
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('p', 'mm', 'a4') // A4 直向
+      // JPEG（白底不需透明）+ compress：檔案由數十 MB 降到約 1MB
+      const imgData = canvas.toDataURL('image/jpeg', 0.9)
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true }) // A4 直向
       const pdfWidth = pdf.internal.pageSize.getWidth()
 
       // 調整圖片大小以適應 A4 寬度
       const imgWidth = pdfWidth
       const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight)
       pdf.save(`SCCD_Receipt_${rentalData.rentalNumber}.pdf`)
     } catch (error) {
       console.error('PDF generation failed:', error)
@@ -252,7 +254,7 @@ const OrderPage: React.FC = () => {
             </h1>
             {/* 狀態標籤 */}
             <div
-              className="px-4 py-2 flex items-center justify-center"
+              className="px-4 py-2 rounded-lg flex items-center justify-center"
               style={{ backgroundColor: statusInfo.color }}
             >
               <span
@@ -556,7 +558,7 @@ const OrderPage: React.FC = () => {
                   className="w-10 h-10 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
                   title="下載 PDF 收據"
                 >
-                  <img src="/Icons/Download White.svg" alt="Download" className="w-10 h-10" />
+                  <span className="material-symbols-outlined text-white" style={{ fontSize: '32px' }}>download</span>
                 </button>
               </div>
             </div>
@@ -613,7 +615,7 @@ const OrderPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-black mb-1 font-semibold">Reason 使用原因</p>
-              <p className="text-base font-semibold text-black"> </p> {/* 暫時留空 */}
+              <p className="text-base font-semibold text-black">{rentalData.reason || '—'}</p>
             </div>
           </div>
 

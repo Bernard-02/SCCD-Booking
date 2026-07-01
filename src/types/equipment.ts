@@ -46,4 +46,5 @@ export interface Receipt {
   totalDeposit: number
   items: CartItem[]
   createdAt: string
+  reason?: string // 借用使用原因（填寫借用資訊時取得）
 }

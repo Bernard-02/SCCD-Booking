@@ -18,9 +18,11 @@ interface UseOrderSubmissionArgs {
   cart: CartItem[]
   currentUser: Student | null
   clearCart: () => void
+  // 借用資訊，依 `${startDate}_${endDate}` 為 key（與下方分組相同）
+  bookingDetails?: Record<string, { reason?: string }>
 }
 
-export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSubmissionArgs) => {
+export const useOrderSubmission = ({ cart, currentUser, clearCart, bookingDetails = {} }: UseOrderSubmissionArgs) => {
   const navigate = useNavigate()
 
   return useCallback(() => {
@@ -66,7 +68,8 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSub
         rentalNumber,
         totalDeposit: equipmentDeposit + spaceDeposit,
         items,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        reason: bookingDetails[dateKey]?.reason
       })
     })
 
@@ -96,5 +99,5 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart }: UseOrderSub
 
     clearCart()
     navigate('/profile')
-  }, [cart, currentUser, clearCart, navigate])
+  }, [cart, currentUser, clearCart, navigate, bookingDetails])
 }
