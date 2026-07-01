@@ -257,25 +257,27 @@ const SpacePage: React.FC = () => {
     // 複製一份要加入的區塊 ID，避免狀態清除後拿不到
     const blocksToAdd = [...selectedBlocks]
 
-    // 顯示加入購物車的 Toast
-    if (blocksToAdd.length > 0) {
-      const displayIds = blocksToAdd.slice(0, 3).join('、')
-      const message = blocksToAdd.length > 3
-        ? `已成功加入${displayIds}等編號到清單！`
-        : `已成功加入${displayIds}到清單！`
-      showToast(message)
-    }
-
     // 清空選取狀態
     setSelectedBlocks([])
 
     // 使用遞迴方式依序加入，確保 React 狀態更新週期完成
     // 解決 forEach + setTimeout 可能因間隔太短導致的狀態覆蓋問題
-    const addNext = (index: number) => {
-      if (index >= blocksToAdd.length) return
+    // Toast 移到全部加入完成後才顯示，並回報加入失敗的原因
+    const addNext = (index: number, added: string[], failReason?: string) => {
+      if (index >= blocksToAdd.length) {
+        if (added.length > 0) {
+          const displayIds = added.slice(0, 3).join('、')
+          showToast(added.length > 3
+            ? `已成功加入${displayIds}等編號到清單！`
+            : `已成功加入${displayIds}到清單！`)
+        } else if (failReason) {
+          showToast(failReason, 'error')
+        }
+        return
+      }
 
       const blockId = blocksToAdd[index]
-      addToCartRef.current({
+      const result = addToCartRef.current({
         id: blockId,
         name: `區塊 ${blockId}`,
         category: 'space-block',
@@ -287,13 +289,16 @@ const SpacePage: React.FC = () => {
         bookingType: spaceDates.bookingType
       })
 
+      const nextAdded = result.ok ? [...added, blockId] : added
+      const nextFail = result.ok ? failReason : (result.reason || failReason)
+
       // 增加延遲至 100ms，確保上一次的狀態更新已寫入
       setTimeout(() => {
-        addNext(index + 1)
+        addNext(index + 1, nextAdded, nextFail)
       }, 100)
     }
 
-    addNext(0)
+    addNext(0, [])
   }
 
   // A5F 編號區子分類
@@ -328,7 +333,7 @@ const SpacePage: React.FC = () => {
 
     const classroom = classroomData.find(c => c.id === id)
     if (classroom) {
-      addToCart({
+      const result = addToCart({
         id: classroom.id,
         name: classroom.name,
         category: 'classroom',
@@ -339,7 +344,11 @@ const SpacePage: React.FC = () => {
         endDate: spaceDates.endDate!.toISOString(),
         bookingType: spaceDates.bookingType
       })
-      showToast(`已成功加入 ${classroom.name} 到清單！`)
+      if (result.ok) {
+        showToast(`已成功加入 ${classroom.name} 到清單！`)
+      } else {
+        showToast(result.reason || '無法加入清單', 'error')
+      }
     }
   }
 
@@ -424,7 +433,7 @@ const SpacePage: React.FC = () => {
                       const isCasePermit = category.id === 'CasePermitArea'
                       const isSelected = selectedSubCategory === category.id
                       const activeColor = isCasePermit ? 'text-yellow' : 'text-white'
-                      const hoverColor = isCasePermit ? 'hover:!text-yellow' : 'hover:!text-white'
+                      const hoverColor = isCasePermit ? 'permit-hover' : 'hover:!text-white'
 
                       return (
                         <div key={category.id} className="text-left">

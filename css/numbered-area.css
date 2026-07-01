@@ -68,3 +68,9 @@ g[id^="H"]:hover > .area-block.is-available.is-interactive {
   fill: var(--color-error) !important; /* 已租借紅色 */
   cursor: not-allowed;
 }
+
+/* 左側「專案許可區」選項未選取時 hover：黃色
+   （純 CSS :hover，因 .text-yellow 是普通 class，hover:!text-yellow 不會被 Tailwind 產生變體） */
+.permit-hover:hover {
+  color: var(--color-yellow) !important;
+}
