@@ -9,6 +9,8 @@ import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import ExtendDialog from '../components/profile/ExtendDialog'
+import EditProfileDialog from '../components/profile/EditProfileDialog'
+import Toast from '../components/common/Toast'
 import { receiptsKey } from '../utils/storageKeys'
 
 type ProfileSection = 'history' | 'profile'
@@ -73,25 +75,27 @@ const ProfilePage: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 pt-20 flex flex-col overflow-hidden">
         <div className="container h-full flex flex-col">
-          {/* 上半部：問候區塊 */}
+          {/* 上半部：問候區塊（問候語小、放名字上方；名字靠左） */}
           <div className="mb-12 flex-shrink-0">
-            <p className="font-['Inter',_sans-serif] text-white text-medium-title">
+            <p className="font-['Inter',_sans-serif] text-white text-small-title mb-2">
               {greeting} <span className="font-['Noto_Sans_TC',_sans-serif]">{greetingZh}</span>
-              <span className="ml-8">{currentUser?.studentId || 'A1234567'}</span>
+            </p>
+            <p className="font-['Inter',_sans-serif] text-white text-medium-title">
+              {currentUser?.studentId || 'A1234567'}
               <span className="font-['Noto_Sans_TC',_sans-serif] ml-4">{currentUser?.name || '阿志'}</span>
             </p>
           </div>
 
           {/* 下半部：左右分割佈局 */}
           <div className="flex flex-1 overflow-hidden pb-4">
-            {/* 左側：功能選單 */}
-            <div className="w-1/6 flex-shrink-0 pr-3">
+            {/* 左側：功能選單（佔 3） */}
+            <div className="w-[30%] flex-shrink-0 pr-3">
               <nav className="flex flex-col gap-6">
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setCurrentSection(item.id)}
-                    className={`text-small-title transition-colors cursor-pointer text-left ${
+                    className={`text-small-title transition-colors cursor-pointer text-left self-start ${
                       currentSection === item.id
                         ? 'text-white font-bold'
                         : 'text-gray-scale2 hover:!text-white'
@@ -435,7 +439,7 @@ const RentalHistorySection: React.FC = () => {
       <div
         key={index}
         onClick={() => handleReceiptClick(receipt)}
-        className="group py-6 border-b border-gray-scale4 cursor-pointer hover:opacity-70 transition-opacity"
+        className="group py-6 first:pt-0 border-b border-gray-scale4 cursor-pointer hover:opacity-70 transition-opacity"
       >
         <div className="flex justify-between">
           {/* 左側：單號、日期和押金 */}
@@ -447,9 +451,9 @@ const RentalHistorySection: React.FC = () => {
               </span>
               {/* 訂單種類標籤 */}
               <div
-                className="px-3 py-1 flex items-center justify-center bg-gray-scale4"
+                className="px-3 py-1 flex items-center justify-center bg-gray-scale4 rounded-lg border border-transparent"
               >
-                <span className="font-['Inter',_sans-serif] text-tiny font-medium text-white">
+                <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap text-white">
                   {bookingTypeLabel.en} <span className="font-['Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
                 </span>
               </div>
@@ -476,24 +480,24 @@ const RentalHistorySection: React.FC = () => {
                   handleExtendClick(receipt, status)
                 }}
                 disabled={status !== 'in-progress' && status !== 'canceled'}
-                className={`px-3 py-1 border group-hover:!opacity-100 transition-colors ${
+                className={`px-3 py-1 flex items-center justify-center border rounded-lg group-hover:!opacity-100 transition-colors ${
                   status === 'in-progress' || status === 'canceled'
                     ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
                     : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
                 }`}
               >
-                <span className="font-['Inter',_sans-serif] text-tiny font-medium">
+                <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap">
                   Extend <span className="font-['Noto_Sans_TC',_sans-serif]">延期</span>
                 </span>
               </button>
 
               {/* 狀態標籤 */}
               <div
-                className="px-3 py-1 flex items-center justify-center"
+                className="px-3 py-1 flex items-center justify-center rounded-lg border border-transparent"
                 style={{ backgroundColor: statusInfo.color }}
               >
                 <span
-                  className="font-['Inter',_sans-serif] text-tiny font-medium"
+                  className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap"
                   style={{ color: statusInfo.textColor }}
                 >
                   {statusInfo.en} <span className="font-['Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
@@ -534,26 +538,45 @@ const RentalHistorySection: React.FC = () => {
   )
 }
 
+// 遮蓋部分內容顯示（Airbnb 式）：手機保留前 4 後 3；Email 保留 local 前 2 + 完整網域
+const maskPhone = (p: string): string =>
+  p.length < 7 ? p : `${p.slice(0, 4)}${'*'.repeat(p.length - 7)}${p.slice(-3)}`
+
+const maskEmail = (e: string): string => {
+  const [local, domain] = e.split('@')
+  if (!domain) return e
+  return `${local.slice(0, 2)}${'*'.repeat(Math.max(3, local.length - 2))}@${domain}`
+}
+
 // 個人資料區塊
 const ProfileDataSection: React.FC = () => {
   const { currentUser } = useAuth()
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
-  const currentPassword = '20030911' // 預設密碼，實際應從安全來源獲取
+  // ponytail: 密碼／手機改用本機 state，供對話框做「樂觀更新」顯示；尚未接後端（見 docs/firebase-backend-plan.md）
+  const [password, setPassword] = useState('20030911') // 預設密碼，實際應從安全來源獲取
+  const [phone, setPhone] = useState(currentUser?.phone || '')
+  const [editMode, setEditMode] = useState<'password' | 'phone' | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
-  // 密碼顯示圖標
+  // 對話框確認 → 樂觀更新本機顯示（尚未寫入後端）
+  const handleEditConfirm = (value: string) => {
+    if (editMode === 'password') {
+      setPassword(value)
+      setToastMessage('密碼已更新（僅本機顯示，尚未接後端）')
+    } else if (editMode === 'phone') {
+      setPhone(value)
+      setToastMessage('手機號碼已更新（僅本機顯示，尚未接後端）')
+    }
+    setEditMode(null)
+  }
+
+  // 密碼顯示圖標（Google Material Symbols）
   const PASSWORD_ICONS = {
     VISIBLE: (
-      <svg width="18" height="12" viewBox="0 0 409.19 260.49" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="m.31,127.88c1.02-3.69,3.59-6.84,5.95-9.8,28.79-36.09,62.2-67.03,102.37-90.18C135.08,12.66,163.29,2.42,193.99.36c28.12-1.89,55.03,3.64,80.83,14.67,36.97,15.81,68.59,39.44,96.71,67.8,11.68,11.78,22.35,24.59,33.14,37.22,6.13,7.17,5.91,13.07.05,20.48-28.95,36.67-62.57,68.16-103.17,91.65-32.1,18.57-66.35,29.82-103.97,28.15-25.73-1.14-50.01-8.08-73.05-19.39-48.37-23.76-87.09-59.08-120.22-100.99-2.66-3.32-5.21-7.67-4-12.07Zm378.8,2.65c-8.32-9-15.68-17.4-23.51-25.34-26.33-26.72-55.47-49.65-90.16-64.7-17.29-7.5-35.29-12.43-54.27-13.32-29.01-1.37-55.69,6.73-81.1,19.87-28.4,14.68-52.96,34.5-75.32,57.13-8.2,8.3-15.89,17.09-24.21,26.09,8.08,8.73,15.51,17.22,23.43,25.23,26.26,26.6,55.27,49.46,89.84,64.47,17.3,7.51,35.28,12.47,54.25,13.4,29.01,1.42,55.69-6.68,81.13-19.75,24.67-12.68,46.56-29.33,66.49-48.47,11.39-10.94,21.99-22.7,33.44-34.61Z" fill="#a4a4a4"/>
-        <path d="m285.48,130.42c-.14,44.62-36.28,80.67-80.82,80.62-44.73-.05-81.05-36.55-80.72-81.12.33-44.71,36.55-80.65,81.01-80.42,44.66.24,80.66,36.41,80.52,80.92Zm-26.93-.23c-.09-29.73-24.15-53.78-53.82-53.81-29.63-.02-53.73,24.02-53.9,53.76-.17,29.67,24.43,54.24,54.06,54.01,29.8-.24,53.75-24.32,53.66-53.96Z" fill="#a4a4a4"/>
-      </svg>
+      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
     ),
     HIDDEN: (
-      <svg width="18" height="12" viewBox="0 0 409.19 274.6" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="m308.4,237.8s0,0,0,0l-19.66-19.66s0,0,0,0l-24.06-24.06s0,0,0,0l-19.07-19.07s0,0,0,0l-75.9-75.9s0,0,0,0l-19.09-19.09s0,0,0,0l-22.31-22.31s0,0,0,0l-19.93-19.93s0,0,0,0L74.99,4.39c-5.86-5.86-15.36-5.86-21.21,0-5.86,5.86-5.86,15.35,0,21.21l28.79,28.79C53.7,74.95,28.59,99.8,6.26,127.78c-2.36,2.96-4.93,6.12-5.95,9.8-1.22,4.4,1.34,8.75,4,12.07,33.14,41.91,71.86,77.23,120.22,100.99,23.03,11.31,47.31,18.25,73.05,19.39,29.64,1.31,57.2-5.4,83.25-17.38l17.56,17.56c2.93,2.93,6.77,4.39,10.61,4.39s7.68-1.46,10.61-4.39c5.86-5.86,5.86-15.36,0-21.21l-11.2-11.2Zm-155.37-112.94l66.8,66.8c-4.74,1.39-9.75,2.17-14.95,2.21-29.62.24-54.23-24.34-54.06-54.01.03-5.21.8-10.24,2.2-15Zm45.02,118.22c-18.97-.93-36.96-5.89-54.25-13.4-34.57-15.01-63.58-37.88-89.84-64.47-7.91-8.02-15.35-16.51-23.43-25.23,8.32-9,16.02-17.8,24.21-26.09,14.63-14.8,30.21-28.39,47.18-40.13l30.42,30.42c-5.29,10.69-8.3,22.72-8.4,35.46-.33,44.57,35.99,81.07,80.72,81.12,12.89.01,25.08-3,35.89-8.37l19.62,19.62c-19.69,7.81-40.25,12.15-62.12,11.08Z" fill="#a4a4a4"/>
-        <path d="m404.67,129.77c-10.79-12.63-21.46-25.43-33.14-37.22-28.12-28.36-59.74-51.99-96.71-67.8-25.8-11.04-52.71-16.56-80.83-14.67-25.52,1.71-49.32,9.09-71.81,20.28l20.42,20.42c21.64-9.52,44.29-15.03,68.58-13.89,18.98.89,36.98,5.82,54.27,13.32,34.69,15.05,63.83,37.98,90.16,64.7,7.83,7.94,15.19,16.34,23.51,25.34-11.46,11.91-22.05,23.67-33.44,34.61-13.59,13.06-28.1,24.95-43.77,35.22l19.39,19.39c31.94-21.73,59.32-48.66,83.44-79.21,5.85-7.41,6.07-13.31-.05-20.48Z" fill="#a4a4a4"/>
-        <path d="m273.74,181.91c7.41-12.18,11.69-26.47,11.74-41.78.14-44.51-35.86-80.68-80.52-80.92-15.45-.08-29.9,4.21-42.2,11.72l19.9,19.9c6.74-3.04,14.2-4.74,22.07-4.74,29.67.02,53.73,24.08,53.82,53.81.02,7.88-1.67,15.36-4.7,22.12l19.89,19.89Z" fill="#a4a4a4"/>
-      </svg>
+      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility_off</span>
     )
   }
 
@@ -576,28 +599,43 @@ const ProfileDataSection: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8" style={{ width: '80%' }}>
-      {/* 帳號狀態區塊 */}
+    <div style={{ width: '80%' }}>
+      {/* 帳號狀態區塊（英上中下；狀態用功能性英文，highlight 維持綠色） */}
       <div className="account-status-section">
-        <div className="font-chinese text-white text-content mb-2">
-          您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
+        {/* 狀態 */}
+        <div className="mb-6">
+          <p className="font-['Inter',_sans-serif] text-white text-content">
+            You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
+          </p>
+          <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+            您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
+          </p>
         </div>
-        <div className="font-chinese text-gray-scale2 text-tiny mb-14">
-          您非常準時地歸還租借，沒有任何逾期記錄
+        {/* 說明 */}
+        <div>
+          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+            You return your rentals right on time, with no overdue records.
+          </p>
+          <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+            您非常準時地歸還租借，沒有任何逾期記錄
+          </p>
         </div>
         {/* TODO: 狀態視覺化圓點 */}
       </div>
 
+      {/* 分割線（上下對稱間距） */}
+      <div className="border-t border-gray-scale4 my-12"></div>
+
       {/* 個人資料欄位 */}
-      <div className="space-y-6">
+      <div className="space-y-10">
         {/* 第一行：姓名和班級 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="font-chinese text-gray-scale2 text-tiny block mb-2">姓名</label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Name</span> <span className="font-chinese">姓名</span></label>
             <p className="font-chinese text-white text-small-title">{currentUser?.name || '阿志'}</p>
           </div>
           <div>
-            <label className="font-chinese text-gray-scale2 text-tiny block mb-2">班級</label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Class</span> <span className="font-chinese">班級</span></label>
             <p className="font-chinese text-white text-small-title">
               {formatClassName(currentUser?.studentId)}
             </p>
@@ -607,15 +645,15 @@ const ProfileDataSection: React.FC = () => {
         {/* 第二行：帳號和密碼 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="font-chinese text-gray-scale2 text-tiny block mb-2">帳號</label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Account</span> <span className="font-chinese">帳號</span></label>
             <p className="font-english text-white text-small-title">{currentUser?.studentId || 'A111144001'}</p>
           </div>
           <div>
-            <label className="font-chinese text-gray-scale2 text-tiny block mb-2">密碼</label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Password</span> <span className="font-chinese">密碼</span></label>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 flex-1">
                 <span className="font-english text-white text-small-title">
-                  {isPasswordVisible ? currentPassword : '••••••••'}
+                  {isPasswordVisible ? password : '••••••••'}
                 </span>
                 <button
                   onClick={() => setIsPasswordVisible(!isPasswordVisible)}
@@ -624,11 +662,13 @@ const ProfileDataSection: React.FC = () => {
                   {isPasswordVisible ? PASSWORD_ICONS.HIDDEN : PASSWORD_ICONS.VISIBLE}
                 </button>
               </div>
-              <button className="page-button">
-                <div className="menu-item-wrapper">
-                  <span className="menu-text">(Change)</span>
-                  <span className="menu-text-hidden">(Change)</span>
-                </div>
+              <button
+                onClick={() => setEditMode('password')}
+                className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
+                aria-label="修改密碼"
+                title="修改密碼"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span>
               </button>
             </div>
           </div>
@@ -637,27 +677,40 @@ const ProfileDataSection: React.FC = () => {
         {/* 第三行：手機號碼和Email */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="font-chinese text-gray-scale2 text-tiny block mb-2">手機號碼</label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Phone</span> <span className="font-chinese">手機號碼</span></label>
             <div className="flex items-center gap-3">
               <p className="font-english text-white text-small-title flex-1">
-                {currentUser?.phone || '未設定'}
+                {phone ? maskPhone(phone) : '未設定'}
               </p>
-              <button className="page-button">
-                <div className="menu-item-wrapper">
-                  <span className="menu-text">({currentUser?.phone ? 'CHANGE' : 'SET'})</span>
-                  <span className="menu-text-hidden">({currentUser?.phone ? 'CHANGE' : 'SET'})</span>
-                </div>
+              <button
+                onClick={() => setEditMode('phone')}
+                className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
+                aria-label={phone ? '修改手機號碼' : '設定手機號碼'}
+                title={phone ? '修改手機號碼' : '設定手機號碼'}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span>
               </button>
             </div>
           </div>
           <div>
-            <label className="font-english text-gray-scale2 text-tiny block mb-2">Email</label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Email</span> <span className="font-chinese">電子郵件</span></label>
             <p className="font-english text-white text-small-title">
-              {currentUser?.email || `${currentUser?.studentId}@gm2.usc.edu.tw`}
+              {maskEmail((currentUser?.email || `${currentUser?.studentId}@gm2.usc.edu.tw`).toLowerCase())}
             </p>
           </div>
         </div>
       </div>
+
+      {/* 修改密碼／手機對話框 + 通知 */}
+      <EditProfileDialog
+        isOpen={editMode !== null}
+        mode={editMode ?? 'password'}
+        currentPhone={phone}
+        expectedPassword={password}
+        onConfirm={handleEditConfirm}
+        onCancel={() => setEditMode(null)}
+      />
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
     </div>
   )
 }
