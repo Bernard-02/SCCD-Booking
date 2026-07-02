@@ -5,11 +5,13 @@
 
 export interface Contact {
   labelEn: string
-  labelZh: string
+  labelZh?: string
   zh?: string
   en?: string
   link?: string
   linkText?: string
+  note?: string
+  noteEn?: string
 }
 
 export const CONTACTS: Contact[] = [
@@ -22,11 +24,12 @@ export const CONTACTS: Contact[] = [
   {
     labelEn: 'Hours',
     labelZh: '營業時間',
-    zh: '週一（Mon）至週五（Fri） 12:00–13:00、17:00–19:00'
+    zh: '週一（Mon）至週五（Fri） 12:00–13:00、17:00–19:00',
+    note: '＊營業時間可能變動，請以 Facebook 公告為準。',
+    noteEn: '*Hours may change; please refer to Facebook announcements.'
   },
   {
     labelEn: 'Facebook',
-    labelZh: 'FB',
     zh: '實踐大學媒傳系系學會',
     link: 'https://www.facebook.com/sccdstudentassoc'
   },

@@ -11,8 +11,13 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
     {contacts.map((c, i) => (
       <div key={i}>
         <div className="text-tiny text-[#cccccc] mb-0.5">
-          <span className="font-['Inter',_sans-serif]">{c.labelEn}</span>{' '}
-          <span className="font-['Noto_Sans_TC',_sans-serif]">{c.labelZh}</span>
+          <span className="font-['Inter',_sans-serif]">{c.labelEn}</span>
+          {c.labelZh && (
+            <>
+              {' '}
+              <span className="font-['Noto_Sans_TC',_sans-serif]">{c.labelZh}</span>
+            </>
+          )}
         </div>
         {c.link ? (
           <a
@@ -37,6 +42,19 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
         {c.en && (
           <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
             {c.en}
+          </p>
+        )}
+        {c.noteEn && (
+          <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed mt-0.5">
+            {c.noteEn}
+          </p>
+        )}
+        {c.note && (
+          <p
+            className="text-tiny text-[#cccccc] leading-relaxed"
+            style={{ fontFamily: "Inter, 'Noto Sans TC', sans-serif" }}
+          >
+            {c.note}
           </p>
         )}
       </div>
