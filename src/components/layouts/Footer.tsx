@@ -5,9 +5,10 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 const Footer: React.FC = () => {
+  const { pathname } = useLocation()
   const [isHovering, setIsHovering] = useState(false)
   const [easterEggText, setEasterEggText] = useState('')
   const [showEasterEgg, setShowEasterEgg] = useState(false)
@@ -124,7 +125,7 @@ const Footer: React.FC = () => {
           <div className="flex items-center header-menu nav-gap">
             <Link
               to="/about"
-              className="font-['Inter',_sans-serif] font-medium text-white flex items-center text-header header-nav-link"
+              className={`font-['Inter',_sans-serif] font-medium text-white flex items-center text-header header-nav-link ${pathname === '/about' ? 'active' : ''}`}
               style={{ '--rotation-angle': '-2deg' } as React.CSSProperties}
             >
               <span>About</span>

@@ -33,18 +33,6 @@ const QUOTE = {
   zh: '「解決問題也是設計的一種，未來大家都可以依照這個基礎去改進」——媒傳系一位德高望重的老師高捷，曾經說過。'
 }
 
-// float-up 浮入段落（依序錯開）
-const Para = ({ text, chinese, delay }: { text: string; chinese?: boolean; delay: number }) => (
-  <div className="float-up-container">
-    <p
-      className={`float-up ${chinese ? "font-['Noto_Sans_TC',_sans-serif]" : "font-['Inter',_sans-serif]"} text-tiny text-white leading-relaxed`}
-      style={{ animationDelay: `${delay}s` }}
-    >
-      {text}
-    </p>
-  </div>
-)
-
 const AboutPage = () => {
   return (
     <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
@@ -63,44 +51,46 @@ const AboutPage = () => {
               </h1>
             </div>
 
-            {/* 右：內文（靠右、佔 50% 寬、內部捲動、隱藏捲軸） */}
+            {/* 右：內文（靠右、佔 50% 寬、內部捲動、隱藏捲軸）；以整段為單位浮入 */}
             <div className="w-full md:w-1/2 md:ml-auto overflow-y-auto md:pr-4 space-y-10">
-              {/* 所有英文 */}
-              <div className="space-y-4">
-                {PARAGRAPHS.map((p, i) => (
-                  <Para key={`en-${i}`} text={p.en} delay={i * 0.1} />
-                ))}
+              {/* 所有英文（整段一起浮入） */}
+              <div className="float-up-container">
+                <div className="float-up space-y-4">
+                  {PARAGRAPHS.map((p, i) => (
+                    <p key={`en-${i}`} className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+                      {p.en}
+                    </p>
+                  ))}
+                </div>
               </div>
 
-              {/* 所有中文 */}
-              <div className="space-y-4">
-                {PARAGRAPHS.map((p, i) => (
-                  <Para key={`zh-${i}`} text={p.zh} chinese delay={(PARAGRAPHS.length + i) * 0.1} />
-                ))}
+              {/* 所有中文（整段一起浮入） */}
+              <div className="float-up-container">
+                <div className="float-up space-y-4" style={{ animationDelay: '0.15s' }}>
+                  {PARAGRAPHS.map((p, i) => (
+                    <p key={`zh-${i}`} className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+                      {p.zh}
+                    </p>
+                  ))}
+                </div>
               </div>
 
-              {/* 引言（英中成對）；左側線段 fade-in，delay 對齊文字，不比文字早出現 */}
-              <blockquote className="relative pl-4 space-y-2">
+              {/* 引言（整段一起浮入）；左側線段 fade-in，不比文字早出現 */}
+              <blockquote className="relative pl-4">
                 <span
                   aria-hidden={true}
                   className="fade-in absolute left-0 top-0 bottom-0 w-0.5 bg-[#545454]"
-                  style={{ animationDelay: `${(PARAGRAPHS.length * 2 + 1) * 0.1}s` }}
+                  style={{ animationDelay: '0.3s' }}
                 />
                 <div className="float-up-container">
-                  <p
-                    className="float-up font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed"
-                    style={{ animationDelay: `${PARAGRAPHS.length * 2 * 0.1}s` }}
-                  >
-                    {QUOTE.en}
-                  </p>
-                </div>
-                <div className="float-up-container">
-                  <p
-                    className="float-up font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed"
-                    style={{ animationDelay: `${(PARAGRAPHS.length * 2 + 1) * 0.1}s` }}
-                  >
-                    {QUOTE.zh}
-                  </p>
+                  <div className="float-up space-y-2" style={{ animationDelay: '0.3s' }}>
+                    <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                      {QUOTE.en}
+                    </p>
+                    <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                      {QUOTE.zh}
+                    </p>
+                  </div>
                 </div>
               </blockquote>
             </div>

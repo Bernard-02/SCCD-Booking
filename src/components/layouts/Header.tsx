@@ -305,24 +305,17 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   {/* Dropdown Menu */}
                   {profileDropdownOpen && location.pathname === '/profile' && (
                     <div
-                      className="absolute top-full right-0 mt-6 bg-[#151515] border border-[#545454] overflow-hidden"
+                      className="absolute top-full right-0 mt-6 bg-[#151515] border border-[#545454] overflow-hidden rounded-lg"
                       style={{ zIndex: 1000 }}
                     >
                       {/* Content */}
-                      <div className="flex justify-between items-center p-4 gap-4">
+                      <div className="py-3 px-4">
                         <button
                           onClick={handleLogout}
                           className="text-white hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
                         >
-                          <span className="font-['Inter',_sans-serif] text-tiny">Log Out</span>{' '}
+                          <span className="font-['Inter',_sans-serif] text-tiny">Log out</span>{' '}
                           <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">登出</span>
-                        </button>
-                        <button
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className="text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center"
-                          aria-label="Close"
-                        >
-                          <span className="material-icons text-[24px]">close</span>
                         </button>
                       </div>
                     </div>
