@@ -404,7 +404,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
             {/* 第三行：過期提示 + 編輯日期按鈕（僅過期時顯示） */}
             {isExpired && (
-              <div className="flex items-center justify-between py-2 px-4 ml-9 mb-4 bg-[#ffff00]">
+              <div className="flex items-center justify-between py-2 px-4 ml-9 mb-4 bg-[#ffff00] rounded-lg">
                 <span className="text-tiny text-black">
                   <span className="font-['Inter',_sans-serif]">Some orders have expired dates, please click Edit to update</span>
                   {' '}

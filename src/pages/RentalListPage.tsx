@@ -670,10 +670,10 @@ const RentalListPage = () => {
                   <button
                     onClick={handleCheckout}
                     disabled={cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid}
-                    className={`text-small-title font-medium whitespace-nowrap ${
+                    className={`px-8 py-2 rounded-lg text-small-title font-medium whitespace-nowrap transition ${
                       cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid
-                        ? 'text-gray-scale4 cursor-not-allowed'
-                        : 'text-white hover:opacity-70 transition-opacity cursor-pointer'
+                        ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
+                        : 'bg-white text-black hover:opacity-70 cursor-pointer'
                     }`}
                   >
                     <span className="font-['Inter',_sans-serif]">Book</span> <span className="font-['Noto_Sans_TC',_sans-serif]">送出</span>
