@@ -96,12 +96,12 @@ export const useCart = () => {
         ? (itemsInSamePeriod[0].bookingType || 'little')
         : (newItem.bookingType || 'little')
 
-      // 大量訂單不檢查押金上限（押金會在結算時 cap 在 5000）
-      if (bookingType === 'mass-personal' || bookingType === 'mass-group') {
+      // 只有大量-團體不檢查押金上限（押金會在結算時 cap 在 5000）
+      if (bookingType === 'mass-group') {
         return { allowed: true }
       }
 
-      // 小量訂單才檢查押金上限
+      // 個人租借（小量、大量-個人）檢查押金上限
       // 計算該時段設備押金
       let equipmentDeposit = itemsInSamePeriod
         .filter((item) => item.category === 'equipment')

@@ -16,6 +16,15 @@ import { useAuth } from '../contexts/AuthContext'
 import { checkDuplicateOrder } from '../utils/orderValidation'
 import { sortBlockIds } from '../components/cart/cartHelpers'
 
+// 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
+const AREA_MAPPING: Record<string, string[]> = {
+  'Square': ['square'],
+  'FrontTerrace': ['front-terrace'],
+  'BackTerrace': ['back-terrace'],
+  'GlassWall': ['glass-wall'],
+  'CasePermitArea': ['corridor', 'pillar']
+}
+
 const SpacePage: React.FC = () => {
   const { cart, addToCart, removeFromCart, checkLittleBookingLimit } = useCart()
   const { getCurrentSpaceDates } = useDateSelection()
@@ -27,6 +36,9 @@ const SpacePage: React.FC = () => {
 
   // 檢查是否已選擇日期
   const hasSelectedDates = spaceDates.startDate !== null && spaceDates.endDate !== null
+
+  // 個人租借（小量／大量-個人）：受每時段押金上限 5,000 約束，全選必定超標
+  const isPersonalBooking = spaceDates.bookingType !== 'mass-group'
 
   // 使用 Ref 來保存最新的 addToCart 函數，解決閉包導致的狀態覆蓋問題
   const addToCartRef = useRef(addToCart)
@@ -147,11 +159,38 @@ const SpacePage: React.FC = () => {
       return
     }
 
-    setSelectedBlocks(prev =>
-      prev.includes(blockId)
-        ? prev.filter(id => id !== blockId)
-        : [...prev, blockId]
-    )
+    // 尚未選日期前不開放選格子（格子的可借狀態取決於日期區間）
+    if (!hasSelectedDates) {
+      showToast('請先選擇租借日期', 'error')
+      return
+    }
+
+    // 取消選取一律允許
+    if (selectedBlocks.includes(blockId)) {
+      setSelectedBlocks(prev => prev.filter(id => id !== blockId))
+      return
+    }
+
+    // 個人租借：選取總押金不可超過每時段空間押金上限 5,000
+    // （計入該時段購物車中既有的空間押金——區塊與教室共用同一個上限）
+    if (isPersonalBooking) {
+      const start = spaceDates.startDate!.toISOString()
+      const end = spaceDates.endDate!.toISOString()
+      const cartSpaceDeposit = cart
+        .filter(item =>
+          (item.category === 'space-block' || item.category === 'classroom') &&
+          item.startDate === start && item.endDate === end
+        )
+        .reduce((sum, item) => sum + item.deposit * item.quantity, 0)
+      const selectedDeposit = selectedBlocks.reduce((sum, id) => sum + getBlockDeposit(id), 0)
+
+      if (cartSpaceDeposit + selectedDeposit + getBlockDeposit(blockId) > 5000) {
+        showToast('個人租借每時段空間押金上限 NT$ 5,000，無法再選取更多區塊', 'error')
+        return
+      }
+    }
+
+    setSelectedBlocks(prev => [...prev, blockId])
   }
 
   // 處理子分類切換
@@ -183,34 +222,37 @@ const SpacePage: React.FC = () => {
     return Math.min(total, 5000) // 上限 NT$5,000
   }
 
-  // 全選當前區域的所有可用區塊
-  const handleSelectAll = () => {
-    if (!selectedSubCategory) return
-
-    // 修改：支援多個區域對應 (例如專案許可區包含 corridor 和 pillar)
-    const areaMapping: Record<string, string[]> = {
-      'Square': ['square'],
-      'FrontTerrace': ['front-terrace'],
-      'BackTerrace': ['back-terrace'],
-      'GlassWall': ['glass-wall'],
-      'CasePermitArea': ['corridor', 'pillar']
-    }
-
-    const targetAreas = areaMapping[selectedSubCategory]
-    if (!targetAreas) return
-
-    const availableBlocks = Object.entries(mockAreaBlocksData)
+  // 當前子分類尚可選取的區塊（未租出、不在購物車）
+  const availableBlockIds = useMemo(() => {
+    const targetAreas = selectedSubCategory ? AREA_MAPPING[selectedSubCategory] : undefined
+    if (!targetAreas) return []
+    return Object.entries(mockAreaBlocksData)
       .filter(([id, data]) => {
         const blockData = data as any
-        return targetAreas.includes(blockData.area) && blockData.status !== 'rented' && !cartBlockIds.includes(id)
+        // 注意：mock 資料的狀態值是 'booked'（與 SpaceAreaMap 的判斷一致）
+        return targetAreas.includes(blockData.area) && blockData.status !== 'booked' && !cartBlockIds.includes(id)
       })
       .map(([id]) => id)
+  }, [selectedSubCategory, cartBlockIds])
 
-    // 修正：保留之前的選擇，而不是清空
-    setSelectedBlocks(prev => {
-      const newBlocks = availableBlocks.filter(id => !prev.includes(id))
-      return [...prev, ...newBlocks]
-    })
+  // 可選區塊已全數選取（或根本無可選區塊）→ Select All 無事可做
+  const allAvailableSelected = availableBlockIds.every(id => selectedBlocks.includes(id))
+
+  // 全選當前區域的所有可用區塊（僅開放大量-團體；個人租借全選必超押金上限，
+  // 且格子位置應由使用者自選，不代選「前 N 格」）
+  const handleSelectAll = () => {
+    if (!hasSelectedDates) {
+      showToast('請先選擇租借日期', 'error')
+      return
+    }
+
+    if (isPersonalBooking) {
+      showToast('個人租借每時段空間押金上限 NT$ 5,000，無法全選，請手動選取或改用大量-團體', 'error')
+      return
+    }
+
+    // 保留之前的選擇，只補上尚未選取的
+    setSelectedBlocks(prev => [...prev, ...availableBlockIds.filter(id => !prev.includes(id))])
   }
 
   // 檢查加入所有選中的區塊後是否超過小量訂單 9 件限制
@@ -249,6 +291,16 @@ const SpacePage: React.FC = () => {
       spaceDates.bookingType
     )
 
+    if (selectedBlocks.length === 0) {
+      showToast('請先選擇區塊', 'error')
+      return
+    }
+
+    if (hasCasePermitBlocks && !hasProjectPermission) {
+      showToast('請先勾選專案許可確認', 'error')
+      return
+    }
+
     if (validation.isDuplicate) {
       showToast(validation.message, 'error')
       return
@@ -265,8 +317,15 @@ const SpacePage: React.FC = () => {
     // Toast 移到全部加入完成後才顯示，並回報加入失敗的原因
     const addNext = (index: number, added: string[], failReason?: string) => {
       if (index >= blocksToAdd.length) {
-        if (added.length > 0) {
-          const displayIds = added.slice(0, 3).join('、')
+        const failedCount = blocksToAdd.length - added.length
+        const displayIds = added.slice(0, 3).join('、')
+        if (added.length > 0 && failedCount > 0) {
+          // 部分成功：同時回報加入數量與未加入的原因，避免使用者以為全部都加進去了
+          showToast(
+            `已加入 ${displayIds}${added.length > 3 ? ' 等' : ''} ${added.length} 件，其餘 ${failedCount} 件未加入：${failReason || '無法加入'}`,
+            'error'
+          )
+        } else if (added.length > 0) {
           showToast(added.length > 3
             ? `已成功加入${displayIds}等編號到清單！`
             : `已成功加入${displayIds}到清單！`)
@@ -367,6 +426,9 @@ const SpacePage: React.FC = () => {
       return blockData && (blockData.area === 'corridor' || blockData.area === 'pillar')
     })
   }, [selectedBlocks])
+
+  // Add 按鈕的阻擋條件（僅控制外觀；仍可點擊，點擊時 toast 提示缺什麼）
+  const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks
 
   return (
     <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
@@ -605,11 +667,12 @@ const SpacePage: React.FC = () => {
 
                       {/* 全選和清除按鈕 - 靠左對齊 */}
                       <div className="flex gap-8">
+                        {/* 可選區塊全數選完時 disable；未選日期／個人租借時保持可點，點擊 toast 說明原因 */}
                         <button
                           onClick={handleSelectAll}
-                          disabled={!selectedSubCategory}
+                          disabled={!selectedSubCategory || allAvailableSelected}
                           className={`text-small-title font-['Inter',_sans-serif] font-medium transition-colors ${
-                            !selectedSubCategory ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
+                            !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
                           Select All 全選
@@ -675,13 +738,15 @@ const SpacePage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Add 按鈕 - 靠左對齊 */}
+                    {/* Add 按鈕 - 白底黑字框；被阻擋時仍可點擊，點擊會 toast 提示缺什麼 */}
                     <div className="flex">
                       <button
                         onClick={handleAddBlocks}
-                        disabled={!selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks}
-                        className={`text-small-title font-['Inter',_sans-serif] font-medium transition-colors ${
-                          !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
+                        aria-disabled={isAddBlocked}
+                        className={`px-8 py-2 rounded-lg text-small-title font-['Inter',_sans-serif] font-medium transition ${
+                          isAddBlocked
+                            ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
+                            : 'bg-white text-black hover:opacity-70 cursor-pointer'
                         }`}
                       >
                         Add
