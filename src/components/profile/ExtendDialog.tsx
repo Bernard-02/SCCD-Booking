@@ -179,7 +179,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] max-w-[800px] w-[90%] mx-4"
+        className="bg-[#151515] border border-[#545454] rounded-lg max-w-[800px] w-[90%] mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 標題和關閉按鈕 */}
@@ -210,12 +210,22 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
         <div className="px-6 py-6">
           {/* 規則說明 */}
           <div className="mb-6">
-            <div className="font-['Noto_Sans_TC',_sans-serif] text-white text-tiny space-y-1">
-              <p>1. 延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。</p>
-              <p>2. 若訂單內的所有空間/設備無法同時延期，則無法提出申請。</p>
-              <p>3. 延期天數是原歸還日往後開始計算，可最多延期7天。</p>
+            <div className="text-white text-tiny space-y-1">
+              <p>
+                <span className="font-['Inter',_sans-serif]">1. Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.</span>{' '}
+                <span className="font-['Noto_Sans_TC',_sans-serif]">延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。</span>
+              </p>
+              <p>
+                <span className="font-['Inter',_sans-serif]">2. If all spaces/equipment in the order cannot be extended together, the request cannot be submitted.</span>{' '}
+                <span className="font-['Noto_Sans_TC',_sans-serif]">若訂單內的所有空間/設備無法同時延期，則無法提出申請。</span>
+              </p>
+              <p>
+                <span className="font-['Inter',_sans-serif]">3. Extension days are counted from the original return date, up to a maximum of 7 days.</span>{' '}
+                <span className="font-['Noto_Sans_TC',_sans-serif]">延期天數是原歸還日往後開始計算，可最多延期7天。</span>
+              </p>
               <p className="text-gray-scale2 mt-2">
-                例：假設訂單的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。
+                <span className="font-['Inter',_sans-serif]">e.g. If the original return date is 1/20, you must apply by 1/17 (inclusive). You may extend up to 7 days; extending 7 days changes the new return date to 1/27.</span>{' '}
+                <span className="font-['Noto_Sans_TC',_sans-serif]">例：假設訂單的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。</span>
               </p>
             </div>
           </div>

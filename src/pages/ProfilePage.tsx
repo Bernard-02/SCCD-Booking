@@ -258,8 +258,9 @@ const RentalHistorySection: React.FC = () => {
 
   // 處理延期按鈕點擊
   const handleExtendClick = (receipt: Receipt, status: OrderStatus) => {
-    // 只有 in-progress 和 canceled 狀態才能延期
-    if (status !== 'in-progress' && status !== 'canceled') {
+    // 只有租借中且未延期過的訂單才能延期；
+    // 過期／取消的訂單已失效，延期沒有意義（overdue、returned、pending 同樣不可）
+    if (status !== 'in-progress' || receipt.hasExtended) {
       return
     }
 
@@ -473,15 +474,16 @@ const RentalHistorySection: React.FC = () => {
           <div className="flex flex-col items-end justify-between">
             {/* Extend 按鈕和狀態標籤 */}
             <div className="flex items-center gap-3">
-              {/* Extend 延期按鈕 - 始終顯示，但只在 in-progress 或 canceled 狀態時可點擊 */}
+              {/* Extend 延期按鈕 - 始終顯示，但只在租借中（in-progress）且未延期過時可點擊；
+                  過期／取消／已歸還的訂單已失效，不可延期 */}
               <button
                 onClick={(e) => {
                   e.stopPropagation() // 防止觸發訂單點擊事件
                   handleExtendClick(receipt, status)
                 }}
-                disabled={status !== 'in-progress' && status !== 'canceled'}
+                disabled={status !== 'in-progress' || receipt.hasExtended}
                 className={`px-3 py-1 flex items-center justify-center border rounded-lg group-hover:!opacity-100 transition-colors ${
-                  status === 'in-progress' || status === 'canceled'
+                  status === 'in-progress' && !receipt.hasExtended
                     ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
                     : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
                 }`}
@@ -645,7 +647,7 @@ const ProfileDataSection: React.FC = () => {
         {/* 第二行：帳號和密碼 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Account</span> <span className="font-chinese">帳號</span></label>
+            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Student ID</span> <span className="font-chinese">學號</span></label>
             <p className="font-english text-white text-small-title">{currentUser?.studentId || 'A111144001'}</p>
           </div>
           <div>
