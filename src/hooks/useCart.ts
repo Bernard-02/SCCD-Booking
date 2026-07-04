@@ -96,12 +96,13 @@ export const useCart = () => {
         ? (itemsInSamePeriod[0].bookingType || 'little')
         : (newItem.bookingType || 'little')
 
-      // 只有大量-團體不檢查押金上限（押金會在結算時 cap 在 5000）
+      // 大量-團體完全不檢查押金上限（押金會在結算時 cap 在 5000）
       if (bookingType === 'mass-group') {
         return { allowed: true }
       }
 
-      // 個人租借（小量、大量-個人）檢查押金上限
+      // 大量訂單設備數量不限、不檢查設備押金（押金結算時 cap 在 5000）
+      const isMass = bookingType === 'mass-personal'
       // 計算該時段設備押金
       let equipmentDeposit = itemsInSamePeriod
         .filter((item) => item.category === 'equipment')
@@ -122,28 +123,19 @@ export const useCart = () => {
         spaceDeposit += newItemDeposit
       }
 
-      // 檢查設備押金上限
-      if (equipmentDeposit > 5000) {
+      // 檢查設備押金上限（僅小量；大量設備不限量，押金結算時 cap 5000）
+      if (!isMass && equipmentDeposit > 5000) {
         return {
           allowed: false,
           reason: '該時段設備押金已達上限 NT$ 5,000'
         }
       }
 
-      // 檢查空間押金上限
+      // 檢查空間押金上限（個人租借：小量／大量-個人）
       if (spaceDeposit > 5000) {
         return {
           allowed: false,
           reason: '該時段空間押金已達上限 NT$ 5,000'
-        }
-      }
-
-      // 檢查總押金上限
-      const totalDeposit = equipmentDeposit + spaceDeposit
-      if (totalDeposit > 10000) {
-        return {
-          allowed: false,
-          reason: '該時段總押金已達上限 NT$ 10,000'
         }
       }
 

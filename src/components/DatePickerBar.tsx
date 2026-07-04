@@ -6,7 +6,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import Calendar from './Calendar'
-import { readCart, formatYmd } from './cart/cartHelpers'
+import DateEditDialog from './cart/DateEditDialog'
+import { readCart, writeCart, formatYmd } from './cart/cartHelpers'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import type { BookingType } from '../types/equipment'
 
@@ -21,6 +22,14 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     endDate: Date | null
   }>({ startDate: null, endDate: null })
   const [showExistingDates, setShowExistingDates] = useState(false)
+  // 已選日期中過期的時段：點擊後直接開啟日期編輯對話框
+  const [editingExpired, setEditingExpired] = useState<{
+    startDate: string
+    endDate: string
+    bookingType: BookingType
+  } | null>(null)
+  // 編輯過期日期後 bump，讓 existingCartDates 重新讀取購物車
+  const [cartVersion, setCartVersion] = useState(0)
 
   const {
     equipmentDates,
@@ -84,12 +93,12 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   }
 
   // 處理租借類型變更
-  const handleBookingTypeChange = (newType: 'little' | 'mass-personal') => {
+  const handleBookingTypeChange = (newType: 'little' | 'mass-personal' | 'mass-group') => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
     // 檢查是從小量切換到大量
-    const switchingFromLittleToMass = bookingType === 'little' && newType === 'mass-personal'
+    const switchingFromLittleToMass = bookingType === 'little' && newType !== 'little'
 
     // 獲取完整的日期狀態
     const fullDates = type === 'equipment' ? equipmentDates : spaceDates
@@ -212,16 +221,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         }
       })
 
-      // 按 category 過濾並去重
+      // 按 category 過濾並去重（過期時段保留，以 isExpired 標記，點擊改為編輯日期）
       const filteredCart = cart.filter(item => {
-        // 過濾當前類型（equipment 或 space）
         const itemCategory = item.category === 'equipment' ? 'equipment' : 'space'
-        if (itemCategory !== type) return false
-
-        // 檢查是否過期
-        const startDate = new Date(item.startDate)
-        startDate.setHours(0, 0, 0, 0)
-        return startDate >= today
+        return itemCategory === type
       })
 
       // 按日期分組（去重並計算數量）
@@ -231,6 +234,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         bookingType: BookingType
         itemCount: number
         isDisabled: boolean
+        isExpired: boolean
       }>()
 
       filteredCart.forEach(item => {
@@ -240,15 +244,20 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           const bookingType = item.bookingType || 'little'
           const periodTotal = periodTotals.get(periodKey) || 0
 
-          // 小量訂單且已達到 9 件限制時禁用
-          const isDisabled = bookingType === 'little' && periodTotal >= 9
+          const groupStartDate = new Date(item.startDate)
+          groupStartDate.setHours(0, 0, 0, 0)
+          const isExpired = groupStartDate < today
+
+          // 小量訂單且已達到 9 件限制時禁用（過期時段不禁用，開放點擊編輯日期）
+          const isDisabled = !isExpired && bookingType === 'little' && periodTotal >= 9
 
           dateGroups.set(key, {
             startDate: item.startDate,
             endDate: item.endDate,
             bookingType: bookingType,
             itemCount: 0,
-            isDisabled: isDisabled
+            isDisabled: isDisabled,
+            isExpired: isExpired
           })
         }
 
@@ -268,7 +277,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     } catch {
       return []
     }
-  }, [type])
+  }, [type, cartVersion])
 
   // 處理選擇已有日期
   const handleSelectExistingDate = (startDate: string, endDate: string, selectedBookingType: BookingType) => {
@@ -285,6 +294,24 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
     // 關閉彈出視窗
     setShowExistingDates(false)
+  }
+
+  // 確認編輯過期時段的日期：更新購物車後直接帶入新日期
+  const handleConfirmExpiredEdit = (newStartDate: string, newEndDate: string) => {
+    if (!editingExpired) return
+
+    const dateKey = `${editingExpired.startDate}_${editingExpired.endDate}`
+    const updatedCart = readCart().map(item => {
+      const itemCategory = item.category === 'equipment' ? 'equipment' : 'space'
+      return `${item.startDate}_${item.endDate}` === dateKey && itemCategory === type
+        ? { ...item, startDate: newStartDate, endDate: newEndDate }
+        : item
+    })
+    writeCart(updatedCart)
+
+    handleSelectExistingDate(newStartDate, newEndDate, editingExpired.bookingType)
+    setEditingExpired(null)
+    setCartVersion(v => v + 1)
   }
 
   // 格式化日期顯示（完整版本）
@@ -385,7 +412,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                 </button>
 
                 <button
-                  onClick={() => handleBookingTypeChange('mass-personal')}
+                  onClick={() => handleBookingTypeChange(type === 'space' ? 'mass-group' : 'mass-personal')}
                   className="flex items-center gap-2 cursor-pointer group"
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${massStyles.radio}`}>
@@ -503,7 +530,20 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     return (
                       <button
                         key={index}
-                        onClick={() => !dateGroup.isDisabled && handleSelectExistingDate(dateGroup.startDate, dateGroup.endDate, dateGroup.bookingType)}
+                        onClick={() => {
+                          if (dateGroup.isDisabled) return
+                          if (dateGroup.isExpired) {
+                            // 過期時段：改為開啟日期編輯對話框
+                            setEditingExpired({
+                              startDate: dateGroup.startDate,
+                              endDate: dateGroup.endDate,
+                              bookingType: dateGroup.bookingType
+                            })
+                            setShowExistingDates(false)
+                          } else {
+                            handleSelectExistingDate(dateGroup.startDate, dateGroup.endDate, dateGroup.bookingType)
+                          }
+                        }}
                         disabled={dateGroup.isDisabled}
                         className={`existing-date-item text-left py-3 px-4 transition-all duration-200 ${
                           index !== 0 ? 'border-t border-gray-scale4' : ''
@@ -539,6 +579,12 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                               (已達上限)
                             </span>
                           )}
+                          {dateGroup.isExpired && (
+                            <span className="text-tiny text-[#ffff00]">
+                              <span className="font-['Inter',_sans-serif]">Expired</span>{' '}
+                              <span className="font-['Noto_Sans_TC',_sans-serif]">已過期，點擊重選日期</span>
+                            </span>
+                          )}
                         </div>
                       </button>
                     )
@@ -549,6 +595,19 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           </div>
         </div>
       </div>
+
+      {/* 過期時段的日期編輯對話框（與購物車共用同一個元件） */}
+      {editingExpired && (
+        <DateEditDialog
+          isOpen
+          currentStartDate={editingExpired.startDate}
+          currentEndDate={editingExpired.endDate}
+          bookingType={editingExpired.bookingType}
+          category={type}
+          onConfirm={handleConfirmExpiredEdit}
+          onCancel={() => setEditingExpired(null)}
+        />
+      )}
     </div>
   )
 }

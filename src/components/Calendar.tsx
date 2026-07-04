@@ -267,7 +267,7 @@ const Calendar: React.FC<CalendarProps> = ({
     const currentYear = today.getFullYear()
     return (
       currentDate.getFullYear() > currentYear ||
-      (currentDate.getFullYear() === currentYear && currentDate.getMonth() > currentMonth - 1)
+      (currentDate.getFullYear() === currentYear && currentDate.getMonth() > currentMonth)
     )
   }
 

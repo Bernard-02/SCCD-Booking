@@ -136,7 +136,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             endDate={endDate}
             onDateSelect={handleDateSelect}
             bookingType={bookingType === 'mass-group' ? 'group' : 'personal'}
-            maxDays={30}
+            maxDays={category === 'space' ? 14 : 30}
             variant="dialog"
             originalStartDate={currentStartDate}
             originalEndDate={currentEndDate}
