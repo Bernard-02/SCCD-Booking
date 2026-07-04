@@ -743,13 +743,13 @@ const SpacePage: React.FC = () => {
                       <button
                         onClick={handleAddBlocks}
                         aria-disabled={isAddBlocked}
-                        className={`px-8 py-2 rounded-lg text-small-title font-['Inter',_sans-serif] font-medium transition ${
+                        className={`px-6 py-3 rounded-lg text-small-title font-['Inter',_sans-serif] font-medium transition ${
                           isAddBlocked
                             ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                             : 'bg-white text-black hover:opacity-70 cursor-pointer'
                         }`}
                       >
-                        Add
+                        Add 加入清單
                       </button>
                     </div>
                   </div>

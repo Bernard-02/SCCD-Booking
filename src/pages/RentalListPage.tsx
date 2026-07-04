@@ -617,7 +617,7 @@ const RentalListPage = () => {
                         {bookingDetailsValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                       <span className={`text-tiny ${
-                        bookingDetailsValidation.valid ? 'text-white' : 'text-gray-scale2'
+                        bookingDetailsValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Fill in booking details</span>{' '}
                         <span className="font-['Noto_Sans_TC',_sans-serif]">填寫借用資訊</span>
@@ -639,7 +639,7 @@ const RentalListPage = () => {
                             {cartValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
                           </span>
                           <span className={`text-tiny ${
-                            cartValidation.valid ? 'text-white' : 'text-gray-scale2'
+                            cartValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
                           }`}>
                             <span className="font-['Inter',_sans-serif]">Min. 10 items</span>{' '}
                             <span className="font-['Noto_Sans_TC',_sans-serif]">大量租借需滿 10 件</span>
@@ -656,7 +656,7 @@ const RentalListPage = () => {
                         {agreedToTerms ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                       <span className={`text-tiny ${
-                        agreedToTerms ? 'text-white' : 'text-gray-scale2'
+                        agreedToTerms ? 'text-[#00ff80]' : 'text-gray-scale2'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Agree to terms</span>{' '}
                         <span className="font-['Noto_Sans_TC',_sans-serif]">同意借用條款</span>

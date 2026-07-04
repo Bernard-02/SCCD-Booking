@@ -22,7 +22,8 @@ interface EquipmentGridProps {
 const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusFilters }) => {
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([])
-  const [quantities, setQuantities] = useState<Record<string, number>>({})
+  // 數量允許暫存空字串：使用者可先清空再輸入，失焦時若無有效值會回到 1
+  const [quantities, setQuantities] = useState<Record<string, number | ''>>({})
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
@@ -150,12 +151,21 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         [id]: numValue
       }))
     } else if (value === '') {
-      // 如果清空輸入，暫時設為 1
+      // 清空輸入：暫存空字串，讓使用者直接填入想要的數字
       setQuantities(prev => ({
         ...prev,
-        [id]: 1
+        [id]: ''
       }))
     }
+  }
+
+  // 失焦時若沒有有效數字，自動回到 1
+  const handleQuantityBlur = (id: string) => {
+    setQuantities(prev => {
+      const current = prev[id]
+      if (typeof current === 'number' && current >= 1) return prev
+      return { ...prev, [id]: 1 }
+    })
   }
 
   // 加入購物車
@@ -428,8 +438,9 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       type="number"
                       min="1"
                       max={availableQty}
-                      value={quantity}
+                      value={quantities[item.id] ?? 1}
                       onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                      onBlur={() => handleQuantityBlur(item.id)}
                       onClick={(e) => e.stopPropagation()}
                       disabled={!isAvailable}
                       className={`font-['Inter',_sans-serif] text-small-title w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${

@@ -262,6 +262,9 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             </div>
           </div>
 
+          {/* 橫線 */}
+          <div className="border-t border-[#545454] my-4"></div>
+
           {/* 按鈕 */}
           <div className="flex justify-end gap-6">
             {/* 取消按鈕 */}

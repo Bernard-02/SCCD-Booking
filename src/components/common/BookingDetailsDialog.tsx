@@ -118,8 +118,8 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           </h2>
         </div>
 
-        {/* 表單區 */}
-        <div className="px-6 pt-4 space-y-4">
+        {/* 表單區（pb 讓橫線與最後一個輸入框保持距離，與 ConfirmDialog 一致） */}
+        <div className="px-6 pt-4 pb-4 space-y-4">
           {/* 使用原因 */}
           <div>
             <label className="block mb-2">
@@ -187,6 +187,11 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               </div>
             </>
           )}
+        </div>
+
+        {/* 橫線 */}
+        <div className="px-6">
+          <div className="border-t border-[#545454]"></div>
         </div>
 
         {/* 按鈕區 */}
