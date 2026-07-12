@@ -38,6 +38,8 @@ Images/、Icons/                 # 靜態資源（已移入 public/）
 public/Area/                    # SVG 區域圖
 legacy/                         # 遷移前備份（已 gitignore）
 old-html-backup/                # 舊 HTML 備份（已 gitignore）
+docs/rental-rules.md            # 租借規則單一事實來源（改租借邏輯前必讀）
+docs/roadmap.md                 # 完成路線圖（階段 1-5 與任務清單）
 docs/bookmark-system.md         # 收藏系統設計文檔
 ```
 
@@ -88,21 +90,21 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 
 `DateSelectionContext` 同時管理「設備日期」與「空間日期」，各自又有 `littleDates`（小量）與 `massDates`（大量）兩組。`bookingType` 可為 `little`、`mass-personal`、`mass-group`。超過 24 小時未送單會自動清除過期的日期選擇。
 
-## 尚未完成（製作中的租借系統還缺什麼）
+## 租借規則（改租借邏輯前必讀）
 
-整體現況：**前端流程完整，但所有資料都是 mock／只存 localStorage，沒有真實後端**。要變成可上線的系統，缺：
+業務規則的單一事實來源是 **`docs/rental-rules.md`**——包含三種 bookingType 在設備／空間頁的 UI 對應表、押金「即時擋 vs 結算 cap」分工、數量與天數上限、逾期罰款等，以及每條規則在程式裡的位置。規則的權威來源（系學會使用說明 Google 文件）連結也在該文件開頭。
 
-- **後端 / API**（最大缺口）：以下全是假資料，需換成真實資料來源——
-  - 登入：`mockApiLogin`（`testAuthData.ts`）寫死驗證，未接學校帳號。
-  - 設備庫存：讀靜態 `src/data/equipment-data.json`，借出**不會扣庫存**（`EquipmentGrid.tsx` 有 TODO「需接入實際預訂數據」）。
-  - 空間可借狀態：`mockAreaBlocksData`（`SpaceAreaMap.tsx`）寫死，非真實佔用。
-  - 通知：Header 用 `mockNotifications`。
-  - 送單：`useOrderSubmission` 只寫 localStorage receipts，沒送伺服器。
-  - 介面已抽乾淨（`AuthProvider` 的 `authService` prop、`storageKeys.ts`），接線時換掉 mock 函式即可，不必重構架構。
-- **管理後台**：完全沒有。無法審核訂單、確認押金繳交、標記歸還、管理庫存。
-- **跨裝置 / 多人**：全在 localStorage，換瀏覽器即清空，多人看不到彼此的預約衝突。
-- **測試**：`npm test` 是 stub，零測試。
-- **零散 TODO**：`EquipmentGrid.tsx:184` 延長線用佔位圖、`ProfilePage.tsx:591` 狀態圓點未做。
+最容易踩的坑：空間頁的 Group 團體對應 `mass-group`、設備頁的 Mass 大量對應 `mass-personal`，兩者押金與豁免邏輯不同——動這些判斷前先讀 rental-rules.md 第 1、4 節。
+
+## 尚未完成 → 見 docs/roadmap.md
+
+整體現況：**前端流程完整，但所有資料都是 mock／只存 localStorage，沒有真實後端**。距離上線的完整階段拆解（Firebase 接線 → 管理後台 → 規則補完 → 品質 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
+
+- **階段 1 後端**（最大缺口）：後端定案用 **Firebase**（Auth + Firestore）。mock 清單：登入 `mockApiLogin`、庫存 `equipment-data.json`（借出不扣庫存）、空間佔用 `mockAreaBlocksData`、通知 `mockNotifications`、送單只寫 localStorage。接線介面已抽好（`authService` prop、`storageKeys.ts`），換掉 mock 函式即可。
+- **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態（依累計逾期天數，滿 5 天停權）。
+- **階段 3 規則補完**：需要學生年級欄位（空間 14 天的四年級／碩士例外、A508 限大二以上）。
+- **階段 4 品質**：測試零覆蓋（優先蓋 `useCart`／`useCartValidation`）、tech debt、零散 TODO。
+- **階段 5 部署**：Firebase Hosting、正式資料填入。
 
 ## 已知 Tech Debt
 
