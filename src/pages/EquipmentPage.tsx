@@ -70,17 +70,16 @@ const EquipmentPage: React.FC = () => {
     })
   }
 
-  // 分類列表
+  // 分類列表（對應 Supabase equipment.category 的大類；搖頭燈已併入燈具、延長線改稱電源線）
   const categories = [
     { en: 'All', zh: '全部' },
     { en: 'Cables', zh: '線材' },
-    { en: 'Tools', zh: '工具' },
-    { en: 'Extension Cords', zh: '延長線' },
-    { en: 'Audio/Video', zh: '視聽類' },
+    { en: 'Power Cords', zh: '電源線' },
+    { en: 'Audio/Video', zh: '視聽' },
     { en: 'Lighting', zh: '燈具' },
-    { en: 'Boards/Tables', zh: '畫板/展桌/展台' },
+    { en: 'Displays/Tables', zh: '展版/展桌/展台' },
+    { en: 'Tools', zh: '工具' },
     { en: 'Machinery', zh: '機具' },
-    { en: 'Moving Heads', zh: '搖頭燈' },
     { en: 'Favorites', zh: '收藏' }
   ]
 

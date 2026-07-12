@@ -4,16 +4,15 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import type { CartItem, Equipment, EquipmentData } from '../types/equipment'
-import equipmentDataRaw from '../data/equipment-data.json'
+import type { CartItem, Equipment } from '../types/equipment'
+import { useEquipmentData } from '../services/equipmentService'
 
 const CART_STORAGE_KEY = 'sccd-rental-cart'
-const EQUIPMENT_DATA = equipmentDataRaw as EquipmentData
 
 export const useCart = () => {
   const [cart, setCart] = useState<CartItem[]>([])
-  // 設備資料由 bundle 直接載入（同步 JSON import），初始即可用
-  const equipmentData = EQUIPMENT_DATA
+  // 設備資料來自 Supabase（模組層快取，全 app 只抓一次；載入完成前為空物件）
+  const equipmentData = useEquipmentData()
 
   // 從 localStorage 載入購物車
   const loadCart = useCallback(() => {

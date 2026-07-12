@@ -4,15 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import type { Equipment, EquipmentData } from '../../types/equipment'
+import type { Equipment } from '../../types/equipment'
 import { useBookmarkStore } from '../../stores/bookmarkStore'
 import { useCart } from '../../hooks/useCart'
 import { useDateSelection } from '../../contexts/DateSelectionContext'
 import { useAuth } from '../../contexts/AuthContext'
+import { useEquipmentData } from '../../services/equipmentService'
 import Toast from '../common/Toast'
-
-// 匯入設備數據
-import equipmentDataRaw from '../../data/equipment-data.json'
 
 interface EquipmentGridProps {
   selectedCategory: string
@@ -66,9 +64,12 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     return () => window.removeEventListener('bookmarkUpdated', handleBookmarkUpdate)
   }, [])
 
+  // 設備數據（來自 Supabase，模組層快取）
+  const equipmentData = useEquipmentData()
+
   // 載入設備數據
   useEffect(() => {
-    const equipmentArray = Object.values(equipmentDataRaw as EquipmentData)
+    const equipmentArray = Object.values(equipmentData)
     setEquipment(equipmentArray)
     setFilteredEquipment(equipmentArray)
 
@@ -78,7 +79,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       initialQuantities[item.id] = 1
     })
     setQuantities(initialQuantities)
-  }, [])
+  }, [equipmentData])
 
   // 篩選邏輯
   useEffect(() => {
