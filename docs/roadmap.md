@@ -1,25 +1,25 @@
 ﻿# 完成路線圖（Roadmap）
 
-> 距離可上線，剩下的階段與任務。整體現況：**前端流程完整（mock 跑得通），沒有真實後端**。
-> 業務規則見 [rental-rules.md](./rental-rules.md)；後端已定案用 **Supabase**（Auth + PostgreSQL + RLS）。
-> 階段 1 → 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
+> 距離可上線，剩下的階段與任務。整體現況（2026-07 更新）：**階段 1 後端接線已完成**——
+> 登入／訂單／庫存／空間／通知全部走 Supabase，mock 僅剩測試帳號定義檔。
+> 業務規則見 [rental-rules.md](./rental-rules.md)；後端用 **Supabase**（Auth + PostgreSQL + RLS）。
+> 階段 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
 
-## 階段 1：Supabase 後端接線（最大缺口）
+## 階段 1：Supabase 後端接線 ✅（2026-07 完成）
 
-前端接口都已抽好（`AuthProvider` 的 `authService` prop、`utils/storageKeys.ts`），接線時換掉 mock 函式即可，不必重構。
-選 Supabase 的理由：關聯式（Postgres）合適訂單／庫存／時段衝突查詢、transaction＋constraint 在資料庫層把關併發、RLS 做列級權限、Studio 表格介面可當過渡期後台。
+資料庫端 SQL 都在 `supabase/`（schema、seeds、auth-setup、orders-rpc），前端統一走 `src/services/`。
+關鍵設計：送單 `submit_orders` RPC 為單一 transaction（訂單＋品項＋通知全成立或全撤銷），
+庫存與空間衝突於伺服器端鎖列檢查；押金與流水號伺服器端計算；RLS 為權限真防線。
 
-詳細規劃（資料表草稿、接線順序、學號↔email 的坑）見 [supabase-backend-plan.md](./supabase-backend-plan.md)。
-
-- [ ] Supabase 專案建立（region 選 Tokyo）＋ `.env` 環境變數（`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`）
-- [ ] 資料表 schema：students（含**年級／學制**與 **role**：student/admin/staff）、equipment、orders、order_items、space、notifications；RLS 政策（學生只讀自己的訂單）
-- [ ] 登入換掉 `mockApiLogin`（`utils/testAuthData.ts`），注入 Supabase `authService`
-- [ ] 忘記密碼：Supabase Auth 自助重設流程
-- [ ] 設備資料與庫存入庫（`equipment-data.json` 匯入）：借出**真實扣庫存**，併發用 transaction 把關（`EquipmentGrid.tsx` TODO「需接入實際預訂數據」）
-- [ ] 空間佔用：`mockAreaBlocksData`（`SpaceAreaMap.tsx`）換成真實預約資料，多人可見彼此衝突
-- [ ] 送單：`useOrderSubmission` 改寫 Supabase；receipts／notifications 脫離 localStorage
-- [ ] 通知：Header 的 `mockNotifications` 換真實來源
-- [ ] 決定購物車與日期選擇是否跟帳號走（跨裝置同步）
+- [x] Supabase 專案（Singapore）＋ `.env`（`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`）
+- [x] schema：students（年級＋role 三種）、equipment、space（含教室）、orders、order_items、notifications＋RLS
+- [x] 登入（學號→email→Auth）、忘記密碼自助重設（`/reset-password`）、Profile 改密碼／手機
+- [x] 設備 118 筆（官方編號 #MASA001 式）＋空間 130 筆（venue_code）入庫
+- [x] 送單 RPC＋庫存扣減（`equipment_reserved`）＋空間佔用（`space_occupied`）＋延期（`extend_my_order`）
+- [x] Profile 讀真實訂單、Header 讀真實通知（已讀入庫）
+- [ ] 決定購物車與日期選擇是否跟帳號走（跨裝置同步）——未定案，不擋上線
+- [ ] 收尾：`orderValidation` 重複下單檢查仍讀 localStorage receipts（階段 3 搬 server 端後，
+      `useOrderSubmission` 的 receipts 雙寫一併移除）；`testAuthData.ts` 僅剩型別與測試帳號說明可再瘦身
 
 ## 階段 2：管理後台（目前完全沒有）
 

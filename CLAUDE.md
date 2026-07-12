@@ -97,16 +97,17 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 
 最容易踩的坑：空間頁的 Group 團體對應 `mass-group`、設備頁的 Mass 大量對應 `mass-personal`，兩者押金與豁免邏輯不同——動這些判斷前先讀 rental-rules.md 第 1、4 節。
 
-## 尚未完成 → 見 docs/roadmap.md
+## 後端（Supabase，已接線）與尚未完成 → 見 docs/roadmap.md
 
-整體現況：**前端流程完整，但所有資料都是 mock／只存 localStorage，沒有真實後端**。距離上線的完整階段拆解（Firebase 接線 → 管理後台 → 規則補完 → 品質 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
+整體現況（2026-07）：**階段 1 後端接線已完成**——登入（學號→email→Auth）、訂單（`submit_orders` RPC transaction）、庫存扣減、空間佔用、通知、延期全部走 **Supabase**（Auth + PostgreSQL + RLS）。資料庫端 SQL 在 `supabase/`（schema、seed、auth-setup、orders-rpc），前端統一走 `src/services/`（supabase client、equipment、space、orders、notifications、auth）。環境變數 `.env`（範本 `.env.example`）。
 
-- **階段 1 後端**（最大缺口）：後端定案用 **Supabase**（Auth + PostgreSQL + RLS）。mock 清單：登入 `mockApiLogin`、庫存 `equipment-data.json`（借出不扣庫存）、空間佔用 `mockAreaBlocksData`、通知 `mockNotifications`、送單只寫 localStorage。接線介面已抽好（`authService` prop、`storageKeys.ts`），換掉 mock 函式即可。
-- **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態（依累計逾期天數，滿 5 天停權）。
-- **階段 3 規則補完**：需要學生年級欄位（空間 14 天的四年級／碩士例外、A508 限大二以上）。
+**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
+
+- **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態；過渡期用 Supabase Studio 人工操作。
+- **階段 3 規則補完**：空間 14 天的四年級／碩士例外（年級欄位已有）、A508 限大二以上、重複下單檢查搬 server 端。
 - **階段 4 品質**：測試零覆蓋（優先蓋 `useCart`／`useCartValidation`）、tech debt、零散 TODO。
 - **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」。
-- **階段 6 部署**：靜態託管（Vercel／Netlify／Cloudflare Pages）、正式資料填入。
+- **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
 
 ## 手機版（RWD）標準
 
