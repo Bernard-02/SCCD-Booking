@@ -59,6 +59,29 @@ export const loadEquipmentData = (): Promise<EquipmentData> => {
   return inflight
 }
 
+export interface ReservedInfo {
+  reserved: number // 該時段被生效訂單（pending/in-progress/overdue）佔用的數量
+  onHold: number   // 其中待繳押金（pending）的部分
+}
+
+/** 查詢指定時段各設備的佔用量（RPC，只回統計不含個資）。日期格式 YYYY-MM-DD */
+export async function fetchEquipmentReserved(
+  startDate: string,
+  endDate: string
+): Promise<Record<string, ReservedInfo>> {
+  const { data, error } = await supabase.rpc('equipment_reserved', {
+    p_start: startDate,
+    p_end: endDate
+  })
+  if (error) throw error
+  return Object.fromEntries(
+    (data as { item_id: string; reserved: number; on_hold: number }[]).map(row => [
+      row.item_id,
+      { reserved: Number(row.reserved), onHold: Number(row.on_hold) }
+    ])
+  )
+}
+
 /** 取得設備資料（載入完成前為空物件，庫存判斷會暫時視為 0） */
 export const useEquipmentData = (): EquipmentData => {
   const [data, setData] = useState<EquipmentData>(cache ?? {})

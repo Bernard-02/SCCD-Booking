@@ -13,11 +13,14 @@ declare
   v_year int := extract(year from now())::int;
   v_seq int;
   v_order jsonb;
+  v_item jsonb;
   v_order_id bigint;
   v_rental text;
   v_numbers text[] := '{}';
   v_equip_dep int;
   v_space_dep int;
+  v_stock int;
+  v_reserved int;
 begin
   if v_uid is null then
     raise exception '未登入';
@@ -27,6 +30,34 @@ begin
   end if;
 
   for v_order in select * from jsonb_array_elements(p_orders) loop
+    -- 庫存檢查：鎖定設備列（for update），避免兩人同時搶最後一件。
+    -- 佔用 = 生效訂單（pending / in-progress / overdue）中與本時段重疊的數量
+    for v_item in select * from jsonb_array_elements(v_order -> 'items') loop
+      if v_item ->> 'item_type' = 'equipment' then
+        select stock_quantity into v_stock
+          from public.equipment
+          where id = v_item ->> 'item_id'
+          for update;
+        if not found then
+          raise exception '設備不存在：%', v_item ->> 'name';
+        end if;
+
+        select coalesce(sum(oi.quantity), 0) into v_reserved
+          from public.order_items oi
+          join public.orders o on o.id = oi.order_id
+          where oi.item_type = 'equipment'
+            and oi.item_id = v_item ->> 'item_id'
+            and o.status in ('pending', 'in-progress', 'overdue')
+            and o.start_date <= (v_order ->> 'end_date')::date
+            and o.end_date >= (v_order ->> 'start_date')::date;
+
+        if (v_item ->> 'quantity')::int > v_stock - v_reserved then
+          raise exception '「%」該時段庫存不足（剩餘 %）',
+            v_item ->> 'name', greatest(v_stock - v_reserved, 0);
+        end if;
+      end if;
+    end loop;
+
     -- 押金於伺服器端計算：設備／空間各 cap 5,000（不信任前端傳值）
     select coalesce(sum((i ->> 'deposit')::int * (i ->> 'quantity')::int), 0)
       into v_equip_dep
@@ -75,6 +106,26 @@ begin
 
   return v_numbers;
 end;
+$$;
+
+-- 查詢設備在指定時段的佔用量（給型錄顯示可借數量；只回傳統計，不含個資）
+-- reserved = pending + in-progress + overdue 的重疊訂單數量；on_hold = 其中 pending 的部分
+create or replace function public.equipment_reserved(p_start date, p_end date)
+returns table(item_id text, reserved bigint, on_hold bigint)
+language sql
+security definer set search_path = public
+stable
+as $$
+  select oi.item_id,
+         sum(oi.quantity)::bigint as reserved,
+         coalesce(sum(oi.quantity) filter (where o.status = 'pending'), 0)::bigint as on_hold
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where oi.item_type = 'equipment'
+    and o.status in ('pending', 'in-progress', 'overdue')
+    and o.start_date <= p_end
+    and o.end_date >= p_start
+  group by oi.item_id;
 $$;
 
 -- 延期自己的訂單：僅限租借中（in-progress）、未延期過、1-7 天

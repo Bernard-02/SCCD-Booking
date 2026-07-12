@@ -9,7 +9,9 @@ import { useBookmarkStore } from '../../stores/bookmarkStore'
 import { useCart } from '../../hooks/useCart'
 import { useDateSelection } from '../../contexts/DateSelectionContext'
 import { useAuth } from '../../contexts/AuthContext'
-import { useEquipmentData } from '../../services/equipmentService'
+import { useEquipmentData, fetchEquipmentReserved } from '../../services/equipmentService'
+import type { ReservedInfo } from '../../services/equipmentService'
+import { toDateKey } from '../cart/cartHelpers'
 import Toast from '../common/Toast'
 
 interface EquipmentGridProps {
@@ -35,7 +37,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const {
     cart,
     addToCart,
-    getAvailableQuantity,
+    getCartQuantity,
     checkLittleBookingLimit
   } = useCart()
 
@@ -47,6 +49,31 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
   // 檢查是否已選擇日期
   const hasSelectedDates = equipmentDates.startDate !== null && equipmentDates.endDate !== null
+
+  // 該時段各設備的真實佔用量（來自生效訂單）
+  const [reservedMap, setReservedMap] = useState<Record<string, ReservedInfo>>({})
+
+  const startKey = equipmentDates.startDate ? toDateKey(equipmentDates.startDate) : null
+  const endKey = equipmentDates.endDate ? toDateKey(equipmentDates.endDate) : null
+
+  useEffect(() => {
+    if (!startKey || !endKey) {
+      setReservedMap({})
+      return
+    }
+    let mounted = true
+    fetchEquipmentReserved(startKey, endKey)
+      .then(map => { if (mounted) setReservedMap(map) })
+      .catch(err => console.error('讀取設備佔用失敗:', err))
+    return () => { mounted = false }
+  }, [startKey, endKey])
+
+  // 可借數量 = 在庫 − 該時段生效訂單佔用 − 購物車內已加入數量
+  const getAvailableQuantity = (id: string): number => {
+    const stock = equipmentData[id]?.originalQuantity ?? 0
+    const reserved = reservedMap[id]?.reserved ?? 0
+    return Math.max(0, stock - reserved - getCartQuantity(id))
+  }
 
   // 使用 state 來存儲 bookmarked IDs，避免每次渲染都創建新 Set
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
@@ -103,7 +130,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     }
 
     setFilteredEquipment(filtered)
-  }, [equipment, selectedCategory, statusFilters, bookmarkedIds, cart, getAvailableQuantity, hasSelectedDates])
+  }, [equipment, selectedCategory, statusFilters, bookmarkedIds, cart, reservedMap, hasSelectedDates])
 
   // 切換書籤
   const toggleBookmark = (id: string, itemName: string) => {
@@ -405,11 +432,11 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     {availableQty}
                   </div>
 
-                  {/* 保留中數量 - 暫時顯示假數據 */}
+                  {/* 待繳押金數量（該時段 pending 訂單佔用） */}
                   <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
-                    0
+                    {reservedMap[item.id]?.onHold ?? 0}
                   </div>
 
                   {/* 押金/個 */}
