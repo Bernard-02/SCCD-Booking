@@ -20,6 +20,7 @@ const BookingPage = lazy(() => import('./pages/BookingPage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -40,6 +41,9 @@ function App() {
               <Routes>
                 {/* 首頁 - 登入頁面 */}
                 <Route path="/" element={<HomePage />} />
+
+                {/* 忘記密碼：重設信連結的落地頁 */}
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                 {/* 租借流程 */}
                 <Route path="/booking" element={<BookingResourcesPage />} />

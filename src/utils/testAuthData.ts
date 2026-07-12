@@ -23,6 +23,8 @@ export interface Student {
   department: string
   className: string
   year: string
+  role?: 'student' | 'admin' | 'staff' // Supabase students.role；mock 帳號視為 student
+  accountLevel?: number // 帳號狀態 0-5（依累計逾期天數）
   passwordHash: string
   isFirstLogin: boolean
   emailVerified: boolean

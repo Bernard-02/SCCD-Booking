@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { requestPasswordReset } from '../services/authService'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 
@@ -19,6 +20,10 @@ const HomePage = () => {
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false)
   const [studentIdError, setStudentIdError] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  // 忘記密碼流程狀態
+  const [resetStudentId, setResetStudentId] = useState('')
+  const [resetSent, setResetSent] = useState('') // 已寄出：存遮罩後的 email
+  const [resetError, setResetError] = useState('')
 
   // 如果已登入，自動導向到 BookingResourcesPage
   useEffect(() => {
@@ -374,16 +379,57 @@ const HomePage = () => {
             <h3 className="text-medium-title font-['Noto_Sans_TC',_sans-serif] text-white mb-4">
               忘記密碼？
             </h3>
-            
+
             <div className="space-y-4 text-content text-gray-scale1 font-['Noto_Sans_TC',_sans-serif]">
-              <p>由於帳號與學號綁定，若您忘記密碼，請聯繫系辦公室或系統管理員進行重設。</p>
-              
-              <div className="bg-[#2b2b2b] p-4 rounded-lg mt-4">
-                <p className="text-white font-medium mb-2">聯絡資訊</p>
-                <p className="text-tiny text-gray-scale2">地點：A棟 5樓 系辦公室</p>
-                <p className="text-tiny text-gray-scale2">電話：(02) 2538-1111 分機 7001</p>
-                <p className="text-tiny text-gray-scale2">信箱：sccd@g2.usc.edu.tw</p>
-              </div>
+              {resetSent ? (
+                <p>
+                  重設密碼信已寄至 <span className="font-['Inter',_sans-serif] text-white">{resetSent}</span>
+                  ，請至信箱點擊連結設定新密碼。
+                </p>
+              ) : (
+                <>
+                  <p>輸入學號，系統會寄送重設密碼連結到你的學校信箱。</p>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault()
+                      setResetError('')
+                      const result = await requestPasswordReset(resetStudentId.trim())
+                      if (result.ok && result.maskedEmail) {
+                        setResetSent(result.maskedEmail)
+                      } else {
+                        setResetError(result.message || '寄送失敗')
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <input
+                      type="text"
+                      value={resetStudentId}
+                      onChange={(e) => setResetStudentId(e.target.value)}
+                      placeholder="Student ID 學號"
+                      className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-content focus:outline-none focus:border-white"
+                      style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
+                    />
+                    {resetError && (
+                      <p className="text-tiny text-[#ff8698]">{resetError}</p>
+                    )}
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={!resetStudentId.trim()}
+                        className={`px-6 py-2 rounded-lg text-content font-medium transition ${
+                          resetStudentId.trim()
+                            ? 'bg-white text-black hover:opacity-70 cursor-pointer'
+                            : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className="font-['Inter',_sans-serif]">Send</span>{' '}
+                        <span className="font-['Noto_Sans_TC',_sans-serif]">寄送重設信</span>
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </div>

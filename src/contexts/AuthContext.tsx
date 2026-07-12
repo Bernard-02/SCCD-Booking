@@ -4,7 +4,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { Student, LoginResult, mockApiLogin } from '../utils/testAuthData'
+import type { Student, LoginResult } from '../utils/testAuthData'
+import { supabaseLogin, supabaseLogout } from '../services/authService'
 import { readLoginData } from '../utils/authStorage'
 import type { LoginData } from '../utils/authStorage'
 
@@ -70,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 登入
   const login = useCallback(async (studentId: string, password: string, rememberMe: boolean = false): Promise<LoginResult> => {
     try {
-      const result = await mockApiLogin(studentId, password)
+      const result = await supabaseLogin(studentId, password)
 
       if (result.success && result.student && result.token && result.expiresIn) {
         saveUserToStorage(result.student, result.token, result.expiresIn, rememberMe)
@@ -87,9 +88,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
-  // 登出
+  // 登出（同時結束 Supabase session）
   const logout = useCallback(async () => {
     try {
+      await supabaseLogout()
       clearStorage()
       setCurrentUser(null)
     } catch (error) {
