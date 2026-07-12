@@ -104,7 +104,16 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 - **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態（依累計逾期天數，滿 5 天停權）。
 - **階段 3 規則補完**：需要學生年級欄位（空間 14 天的四年級／碩士例外、A508 限大二以上）。
 - **階段 4 品質**：測試零覆蓋（優先蓋 `useCart`／`useCartValidation`）、tech debt、零散 TODO。
-- **階段 5 部署**：Firebase Hosting、正式資料填入。
+- **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」。
+- **階段 6 部署**：Firebase Hosting、正式資料填入。
+
+## 手機版（RWD）標準
+
+- **斷點**：以 Tailwind 的 `md`（768px）為手機／桌機唯一分界，不另設自訂斷點。
+- **模式**：複雜頁面採「同頁兩份 JSX」——桌機 `hidden md:block`／`md:flex`、手機 `md:hidden`（參考 `BookingPage`、`HomePage`、`BookingResourcesPage` 既有做法）；簡單版面優先用響應式 class 寫成單份 JSX（參考 `AboutPage`）。
+- **日曆**：`Calendar` 已有 `isMobile` prop（單月顯示），手機版直接傳 `isMobile={true}`。
+- **觸控**：hover-only 的互動（tooltip、hover 預覽）必須有觸控替代；可點擊目標最小 44×44px。
+- **驗證寬度**：手機以 375px 為基準寬度檢查，橫向不得出現頁面級卷軸。
 
 ## 已知 Tech Debt
 

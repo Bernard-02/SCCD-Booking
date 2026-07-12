@@ -2,7 +2,7 @@
 
 > 距離可上線，剩下的階段與任務。整體現況：**前端流程完整（mock 跑得通），沒有真實後端**。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端已定案用 **Firebase**（Auth + DB）。
-> 階段 1 → 2 → 3 有依賴順序；階段 4 可與任何階段並行。
+> 階段 1 → 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
 
 ## 階段 1：Firebase 後端接線（最大缺口）
 
@@ -40,7 +40,19 @@
 - [ ] Tech debt：拆 700 行大檔（`CartList`、`OrderPage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
 - [ ] 零散 TODO：延長線佔位圖（`EquipmentGrid.tsx:184`）、`ProfilePage` 狀態圓點
 
-## 階段 5：部署上線
+## 階段 5：手機版（純前端，可與階段 1-3 並行）
+
+RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：Home、Booking、BookingResources、About、Header（mobile menu）。
+
+- [ ] Equipment 設備頁手機版（目前 `hidden md:block`，手機無內容）
+- [ ] Space 空間頁手機版（同上；區域地圖 SVG 的觸控操作要特別設計）
+- [ ] RentalList 清單頁手機版
+- [ ] Order 訂單頁手機版（含 PDF 輸出的手機行為）
+- [ ] Profile 頁手機版檢查（無 `md:` 斷點，需逐一驗證）
+- [ ] Footer 手機版（目前 `hidden md:flex`）
+- [ ] 對話框（DateEditDialog、GuideDialog 等 max-w 較大的）在小螢幕的呈現
+
+## 階段 6：部署上線
 
 - [ ] Hosting（順理成章是 Firebase Hosting）＋環境變數管理
 - [ ] 正式資料填入：真實學號名單、設備清單與庫存、空間資料
