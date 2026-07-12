@@ -304,7 +304,7 @@ const OrderPage: React.FC = () => {
                                 className="grid grid-cols-[80px_1fr_140px_120px] gap-6 py-3 border-b border-[#7c7c7c] items-center"
                               >
                                 {/* 縮圖 */}
-                                <div className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden">
+                                <div className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden rounded-lg">
                                   <img
                                     src={item.image}
                                     alt={item.name}
@@ -399,7 +399,7 @@ const OrderPage: React.FC = () => {
                                     className="grid grid-cols-[80px_1fr_140px_120px] gap-6 py-3 border-b border-[#7c7c7c] items-center"
                                   >
                                     {/* 縮圖 */}
-                                    <div className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden">
+                                    <div className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden rounded-lg">
                                       <img
                                         src={displayImage}
                                         alt={areaName}
@@ -433,7 +433,7 @@ const OrderPage: React.FC = () => {
                                     className="grid grid-cols-[80px_1fr_140px_120px] gap-6 py-3 border-b border-[#7c7c7c] items-center"
                                   >
                                     {/* 縮圖 */}
-                                    <div className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden">
+                                    <div className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden rounded-lg">
                                       <img
                                         src={item.image}
                                         alt={item.name}

@@ -76,3 +76,42 @@ begin
   return v_numbers;
 end;
 $$;
+
+-- 延期自己的訂單：僅限租借中（in-progress）、未延期過、1-7 天
+create or replace function public.extend_my_order(p_rental_number text, p_days int)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_order public.orders%rowtype;
+begin
+  if v_uid is null then
+    raise exception '未登入';
+  end if;
+  if p_days < 1 or p_days > 7 then
+    raise exception '延期天數需為 1-7 天';
+  end if;
+
+  select * into v_order
+    from public.orders
+    where rental_number = p_rental_number and student_id = v_uid
+    for update;
+
+  if not found then
+    raise exception '查無此訂單';
+  end if;
+  if v_order.status <> 'in-progress' then
+    raise exception '僅租借中的訂單可延期';
+  end if;
+  if v_order.has_extended then
+    raise exception '此訂單已延期過（僅可延期乙次）';
+  end if;
+
+  update public.orders
+    set end_date = v_order.end_date + p_days,
+        has_extended = true
+    where id = v_order.id;
+end;
+$$;

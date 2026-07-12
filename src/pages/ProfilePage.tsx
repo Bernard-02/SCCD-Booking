@@ -12,7 +12,9 @@ import ExtendDialog from '../components/profile/ExtendDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
 import Toast from '../components/common/Toast'
 import { changePassword, updateMyPhone } from '../services/authService'
-import { receiptsKey } from '../utils/storageKeys'
+import { fetchMyOrders, extendMyOrder } from '../services/ordersService'
+import type { OrderRow } from '../services/ordersService'
+import { loadEquipmentData } from '../services/equipmentService'
 
 type ProfileSection = 'history' | 'profile'
 
@@ -193,38 +195,49 @@ const RentalHistorySection: React.FC = () => {
   const [isExtendDialogOpen, setIsExtendDialogOpen] = useState(false)
   const [extendingReceipt, setExtendingReceipt] = useState<Receipt | null>(null)
 
-  useEffect(() => {
-    // 從 localStorage 讀取該用戶的收據記錄
-    const userReceipts = JSON.parse(
-      localStorage.getItem(receiptsKey(currentUser?.studentId)) || '[]'
-    ) as Receipt[]
+  // 從 Supabase 讀取自己的訂單（RLS 只回本人的），組成畫面用的 Receipt 形狀
+  const loadOrders = React.useCallback(async () => {
+    try {
+      const [orders, equipmentData] = await Promise.all([fetchMyOrders(), loadEquipmentData()])
 
-    // 檢查並更新過期的 Pending 訂單
-    let hasUpdates = false
-    const updatedReceipts = userReceipts.map(receipt => {
-      if (!receipt.status || receipt.status === 'pending') {
-        const status = calculateOrderStatus(receipt)
-        // 如果計算出的新狀態是 'canceled'，則更新訂單
-        if (status === 'canceled') {
-          hasUpdates = true
-          return { ...receipt, status: 'canceled' as OrderStatus }
+      const itemImage = (item: OrderRow['order_items'][number]): string => {
+        if (item.item_type === 'equipment') {
+          return equipmentData[item.item_id]?.mainImage || 'Images/Extension Cord.webp'
         }
+        if (item.item_type === 'classroom') return `/Images/${item.item_id}.webp`
+        return '/Area/A5F Area Booking.svg'
       }
-      return receipt
-    })
 
-    if (hasUpdates) {
-      localStorage.setItem(
-        receiptsKey(currentUser?.studentId),
-        JSON.stringify(updatedReceipts)
-      )
+      const receipts: Receipt[] = orders.map(order => ({
+        borrowerName: currentUser?.name || '',
+        rentalDates: [order.start_date, order.end_date],
+        rentalNumber: order.rental_number,
+        totalDeposit: order.deposit_total,
+        items: order.order_items.map(item => ({
+          id: item.item_id,
+          name: item.name,
+          category: item.item_type,
+          quantity: item.quantity,
+          deposit: item.deposit,
+          startDate: order.start_date,
+          endDate: order.end_date,
+          image: itemImage(item),
+          bookingType: order.booking_type
+        })),
+        createdAt: order.created_at,
+        status: order.status,
+        hasExtended: order.has_extended
+      }))
+
+      setAllReceipts(receipts)
+    } catch (error) {
+      console.error('讀取訂單失敗:', error)
     }
-
-    // 按創建時間降序排序（最新的在前）
-    updatedReceipts.sort((a: Receipt, b: Receipt) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-    setAllReceipts(updatedReceipts)
   }, [currentUser])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
 
   // 每分鐘更新一次時間，觸發倒數計時重繪
   useEffect(() => {
@@ -269,42 +282,19 @@ const RentalHistorySection: React.FC = () => {
     setIsExtendDialogOpen(true)
   }
 
-  // 確認延期
-  const handleConfirmExtend = (extendDays: number) => {
+  // 確認延期（RPC：資料庫端驗證僅限租借中、未延期過、1-7 天）
+  const handleConfirmExtend = async (extendDays: number) => {
     if (!extendingReceipt) return
 
-    // 計算新的結束日期
-    const newEndDate = new Date(extendingReceipt.rentalDates[extendingReceipt.rentalDates.length - 1])
-    newEndDate.setDate(newEndDate.getDate() + extendDays)
+    const result = await extendMyOrder(extendingReceipt.rentalNumber, extendDays)
+    if (!result.ok) {
+      console.error('延期失敗:', result.message)
+      alert(result.message || '延期失敗，請再試一次')
+      return
+    }
 
-    // 更新收據的日期
-    const updatedReceipts = allReceipts.map(r => {
-      if (r.rentalNumber === extendingReceipt.rentalNumber) {
-        const updatedDates = [...r.rentalDates]
-        // 添加延期的日期
-        const lastDate = new Date(updatedDates[updatedDates.length - 1])
-        for (let i = 1; i <= extendDays; i++) {
-          const extendDate = new Date(lastDate)
-          extendDate.setDate(lastDate.getDate() + i)
-          updatedDates.push(extendDate.toISOString().split('T')[0])
-        }
-        return {
-          ...r,
-          rentalDates: updatedDates,
-          hasExtended: true
-        }
-      }
-      return r
-    })
-
-    // 保存到 localStorage
-    localStorage.setItem(
-      receiptsKey(currentUser?.studentId),
-      JSON.stringify(updatedReceipts)
-    )
-
-    // 更新狀態
-    setAllReceipts(updatedReceipts)
+    // 重新讀取訂單（新歸還日與已延期標記以資料庫為準）
+    await loadOrders()
     setIsExtendDialogOpen(false)
     setExtendingReceipt(null)
   }
