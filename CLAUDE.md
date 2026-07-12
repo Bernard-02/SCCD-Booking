@@ -39,7 +39,8 @@ public/Area/                    # SVG 區域圖
 legacy/                         # 遷移前備份（已 gitignore）
 old-html-backup/                # 舊 HTML 備份（已 gitignore）
 docs/rental-rules.md            # 租借規則單一事實來源（改租借邏輯前必讀）
-docs/roadmap.md                 # 完成路線圖（階段 1-5 與任務清單）
+docs/roadmap.md                 # 完成路線圖（階段 1-6 與任務清單）
+docs/supabase-backend-plan.md   # 後端定案與接線規劃（Supabase）
 docs/bookmark-system.md         # 收藏系統設計文檔
 ```
 
@@ -100,12 +101,12 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 
 整體現況：**前端流程完整，但所有資料都是 mock／只存 localStorage，沒有真實後端**。距離上線的完整階段拆解（Firebase 接線 → 管理後台 → 規則補完 → 品質 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 1 後端**（最大缺口）：後端定案用 **Firebase**（Auth + Firestore）。mock 清單：登入 `mockApiLogin`、庫存 `equipment-data.json`（借出不扣庫存）、空間佔用 `mockAreaBlocksData`、通知 `mockNotifications`、送單只寫 localStorage。接線介面已抽好（`authService` prop、`storageKeys.ts`），換掉 mock 函式即可。
+- **階段 1 後端**（最大缺口）：後端定案用 **Supabase**（Auth + PostgreSQL + RLS）。mock 清單：登入 `mockApiLogin`、庫存 `equipment-data.json`（借出不扣庫存）、空間佔用 `mockAreaBlocksData`、通知 `mockNotifications`、送單只寫 localStorage。接線介面已抽好（`authService` prop、`storageKeys.ts`），換掉 mock 函式即可。
 - **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態（依累計逾期天數，滿 5 天停權）。
 - **階段 3 規則補完**：需要學生年級欄位（空間 14 天的四年級／碩士例外、A508 限大二以上）。
 - **階段 4 品質**：測試零覆蓋（優先蓋 `useCart`／`useCartValidation`）、tech debt、零散 TODO。
 - **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」。
-- **階段 6 部署**：Firebase Hosting、正式資料填入。
+- **階段 6 部署**：靜態託管（Vercel／Netlify／Cloudflare Pages）、正式資料填入。
 
 ## 手機版（RWD）標準
 

@@ -1,20 +1,23 @@
 # 完成路線圖（Roadmap）
 
 > 距離可上線，剩下的階段與任務。整體現況：**前端流程完整（mock 跑得通），沒有真實後端**。
-> 業務規則見 [rental-rules.md](./rental-rules.md)；後端已定案用 **Firebase**（Auth + DB）。
+> 業務規則見 [rental-rules.md](./rental-rules.md)；後端已定案用 **Supabase**（Auth + PostgreSQL + RLS）。
 > 階段 1 → 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
 
-## 階段 1：Firebase 後端接線（最大缺口）
+## 階段 1：Supabase 後端接線（最大缺口）
 
 前端接口都已抽好（`AuthProvider` 的 `authService` prop、`utils/storageKeys.ts`），接線時換掉 mock 函式即可，不必重構。
+選 Supabase 的理由：關聯式（Postgres）合適訂單／庫存／時段衝突查詢、transaction＋constraint 在資料庫層把關併發、RLS 做列級權限、Studio 表格介面可當過渡期後台。
 
-- [ ] Firebase 專案建立：Auth（學號帳號）＋ Firestore（DB 種類待最終確認）
-- [ ] 登入換掉 `mockApiLogin`（`utils/testAuthData.ts`），注入真實 `authService`
-- [ ] 忘記密碼：Firebase 自助重設流程
-- [ ] 學生資料模型：補**年級／學制欄位**（階段 3 的天數例外、A508 限制都靠它）
-- [ ] 設備資料與庫存上 Firestore：借出**真實扣庫存**（`EquipmentGrid.tsx` TODO「需接入實際預訂數據」）
+詳細規劃（資料表草稿、接線順序、學號↔email 的坑）見 [supabase-backend-plan.md](./supabase-backend-plan.md)。
+
+- [ ] Supabase 專案建立（region 選 Tokyo）＋ `.env` 環境變數（`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`）
+- [ ] 資料表 schema：students（含**年級／學制**與 **role**：student/admin/staff）、equipment、orders、order_items、space_blocks、notifications；RLS 政策（學生只讀自己的訂單）
+- [ ] 登入換掉 `mockApiLogin`（`utils/testAuthData.ts`），注入 Supabase `authService`
+- [ ] 忘記密碼：Supabase Auth 自助重設流程
+- [ ] 設備資料與庫存入庫（`equipment-data.json` 匯入）：借出**真實扣庫存**，併發用 transaction 把關（`EquipmentGrid.tsx` TODO「需接入實際預訂數據」）
 - [ ] 空間佔用：`mockAreaBlocksData`（`SpaceAreaMap.tsx`）換成真實預約資料，多人可見彼此衝突
-- [ ] 送單：`useOrderSubmission` 改寫伺服器；receipts／notifications 脫離 localStorage
+- [ ] 送單：`useOrderSubmission` 改寫 Supabase；receipts／notifications 脫離 localStorage
 - [ ] 通知：Header 的 `mockNotifications` 換真實來源
 - [ ] 決定購物車與日期選擇是否跟帳號走（跨裝置同步）
 
@@ -63,6 +66,6 @@ RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：
 
 ## 階段 6：部署上線
 
-- [ ] Hosting（順理成章是 Firebase Hosting）＋環境變數管理
+- [ ] Hosting：**維持 Vercel**（`vercel.json` 已設好）＋環境變數管理（Supabase URL／anon key）
 - [ ] 正式資料填入：真實學號名單、設備清單與庫存、空間資料
 - [ ] 上線前驗收：照 [rental-rules.md](./rental-rules.md) 逐條走一遍真實流程
