@@ -1,8 +1,8 @@
 /**
  * 修改個人資料對話框（密碼 / 手機號碼）
- * 目前僅前端界面與驗證，onConfirm 由上層做樂觀更新；尚未接後端。
- * 接 Firebase 時：密碼→Auth updatePassword（需先 reauthenticate）、手機→Firestore 或 Auth OTP。
- * 見 docs/firebase-backend-plan.md
+ * 密碼：由上層以目前密碼重新驗證後更新（Supabase Auth）；
+ * 手機：由上層寫入 students 表（RPC update_my_phone）。
+ * onConfirm 回傳結果，失敗時在對話框內顯示錯誤、不關閉。
  */
 
 import React, { useState, useEffect } from 'react'
@@ -14,17 +14,24 @@ type EditMode = 'password' | 'phone'
 const ERRORS = {
   currentRequired: { en: 'Enter current password', zh: '請輸入目前密碼' },
   currentWrong: { en: 'Incorrect password', zh: '目前密碼錯誤' },
-  tooShort: { en: 'Min. 6 characters', zh: '新密碼至少 6 個字元' },
+  tooShort: { en: 'Min. 8 characters', zh: '新密碼至少 8 個字元' },
   mismatch: { en: "Passwords don't match", zh: '兩次密碼不一致' },
-  phoneInvalid: { en: 'Invalid phone number', zh: '手機號碼格式錯誤' }
+  phoneInvalid: { en: 'Invalid phone number', zh: '手機號碼格式錯誤' },
+  saveFailed: { en: 'Save failed, try again', zh: '儲存失敗，請再試一次' }
+}
+
+export interface EditConfirmResult {
+  ok: boolean
+  // 密碼模式：目前密碼錯誤時 wrongCurrent = true；其他失敗給 message
+  wrongCurrent?: boolean
+  message?: { en: string; zh: string }
 }
 
 interface EditProfileDialogProps {
   isOpen: boolean
   mode: EditMode
   currentPhone?: string
-  expectedPassword?: string // 目前密碼（mock 比對用；接後端後改由 Auth reauthenticate 驗證）
-  onConfirm: (value: string) => void
+  onConfirm: (value: string, currentPassword?: string) => Promise<EditConfirmResult>
   onCancel: () => void
 }
 
@@ -32,7 +39,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   isOpen,
   mode,
   currentPhone = '',
-  expectedPassword,
   onConfirm,
   onCancel
 }) => {
@@ -41,6 +47,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<{ en: string; zh: string } | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   // 開啟時重置欄位
   useEffect(() => {
@@ -70,16 +77,29 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
 
   const isPassword = mode === 'password'
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return
+
     if (isPassword) {
       if (!currentPassword) return setError(ERRORS.currentRequired)
-      if (expectedPassword !== undefined && currentPassword !== expectedPassword) return setError(ERRORS.currentWrong)
-      if (newPassword.length < 6) return setError(ERRORS.tooShort)
+      if (newPassword.length < 8) return setError(ERRORS.tooShort)
       if (newPassword !== confirmPassword) return setError(ERRORS.mismatch)
-      onConfirm(newPassword)
+
+      setSubmitting(true)
+      const result = await onConfirm(newPassword, currentPassword)
+      setSubmitting(false)
+      if (!result.ok) {
+        setError(result.wrongCurrent ? ERRORS.currentWrong : (result.message ?? ERRORS.saveFailed))
+      }
     } else {
       if (!/^09\d{8}$/.test(phone)) return setError(ERRORS.phoneInvalid)
-      onConfirm(phone)
+
+      setSubmitting(true)
+      const result = await onConfirm(phone)
+      setSubmitting(false)
+      if (!result.ok) {
+        setError(result.message ?? ERRORS.saveFailed)
+      }
     }
   }
 
@@ -137,7 +157,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={inputClass}
-                  placeholder="至少 6 個字元"
+                  placeholder="至少 8 個字元"
                 />
               </div>
               <div>
@@ -179,11 +199,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             </p>
           )}
 
-          {/* 尚未接後端提示 */}
-          <p className="text-tiny text-gray-scale2">
-            <span className="font-english">Demo only, changes are not saved. </span>
-            <span className="font-chinese">此功能尚未接後端，變更不會儲存。</span>
-          </p>
         </div>
 
         {/* 橫線 */}
@@ -203,7 +218,8 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            className="text-white hover:opacity-70 transition-opacity cursor-pointer"
+            disabled={submitting}
+            className={`transition-opacity ${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
               Save <span className="font-['Noto_Sans_TC',_sans-serif]">儲存</span>

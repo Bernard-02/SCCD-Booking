@@ -11,6 +11,7 @@ import Footer from '../components/layouts/Footer'
 import ExtendDialog from '../components/profile/ExtendDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
 import Toast from '../components/common/Toast'
+import { changePassword, updateMyPhone } from '../services/authService'
 import { receiptsKey } from '../utils/storageKeys'
 
 type ProfileSection = 'history' | 'profile'
@@ -553,33 +554,26 @@ const maskEmail = (e: string): string => {
 // 個人資料區塊
 const ProfileDataSection: React.FC = () => {
   const { currentUser } = useAuth()
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
-  // ponytail: 密碼／手機改用本機 state，供對話框做「樂觀更新」顯示；尚未接後端（見 docs/firebase-backend-plan.md）
-  const [password, setPassword] = useState('20030911') // 預設密碼，實際應從安全來源獲取
   const [phone, setPhone] = useState(currentUser?.phone || '')
   const [editMode, setEditMode] = useState<'password' | 'phone' | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
-  // 對話框確認 → 樂觀更新本機顯示（尚未寫入後端）
-  const handleEditConfirm = (value: string) => {
+  // 對話框確認 → 寫入 Supabase（密碼：重新驗證後更新；手機：RPC 只改本人 phone）
+  const handleEditConfirm = async (value: string, currentPassword?: string) => {
     if (editMode === 'password') {
-      setPassword(value)
-      setToastMessage('密碼已更新（僅本機顯示，尚未接後端）')
+      const result = await changePassword(currentUser?.email || '', currentPassword || '', value)
+      if (!result.ok) {
+        return { ok: false, wrongCurrent: result.wrongCurrent }
+      }
+      setToastMessage('密碼已更新')
     } else if (editMode === 'phone') {
+      const result = await updateMyPhone(value)
+      if (!result.ok) return { ok: false }
       setPhone(value)
-      setToastMessage('手機號碼已更新（僅本機顯示，尚未接後端）')
+      setToastMessage('手機號碼已更新')
     }
     setEditMode(null)
-  }
-
-  // 密碼顯示圖標（Google Material Symbols）
-  const PASSWORD_ICONS = {
-    VISIBLE: (
-      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility</span>
-    ),
-    HIDDEN: (
-      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>visibility_off</span>
-    )
+    return { ok: true }
   }
 
   // 格式化班級名稱
@@ -653,17 +647,8 @@ const ProfileDataSection: React.FC = () => {
           <div>
             <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Password</span> <span className="font-chinese">密碼</span></label>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <span className="font-english text-white text-small-title">
-                  {isPasswordVisible ? password : '••••••••'}
-                </span>
-                <button
-                  onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                  className="text-gray-scale2 hover:text-gray-scale2 cursor-pointer transition-colors"
-                >
-                  {isPasswordVisible ? PASSWORD_ICONS.HIDDEN : PASSWORD_ICONS.VISIBLE}
-                </button>
-              </div>
+              {/* 密碼僅存雜湊，無法顯示明文；此處固定遮罩，變更走右側編輯 */}
+              <span className="font-english text-white text-small-title flex-1">••••••••</span>
               <button
                 onClick={() => setEditMode('password')}
                 className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
@@ -708,7 +693,6 @@ const ProfileDataSection: React.FC = () => {
         isOpen={editMode !== null}
         mode={editMode ?? 'password'}
         currentPhone={phone}
-        expectedPassword={password}
         onConfirm={handleEditConfirm}
         onCancel={() => setEditMode(null)}
       />

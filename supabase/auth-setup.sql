@@ -37,3 +37,13 @@ stable
 as $$
   select email from public.students where student_id = sid;
 $$;
+
+-- 更新自己的手機號碼（students 的 update RLS 只開放 admin，
+-- 一般使用者透過此函式只能改本人的 phone 一個欄位，避免自改 role/grade）
+create or replace function public.update_my_phone(p_phone text)
+returns void
+language sql
+security definer set search_path = public
+as $$
+  update public.students set phone = p_phone where id = auth.uid();
+$$;

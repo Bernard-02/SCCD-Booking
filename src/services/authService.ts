@@ -99,3 +99,24 @@ export async function updatePassword(newPassword: string): Promise<{ ok: boolean
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
+
+/** 修改密碼（Profile 頁）：先以目前密碼重新驗證，再更新 */
+export async function changePassword(
+  email: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ ok: boolean; wrongCurrent?: boolean; message?: string }> {
+  const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+  if (reauthError) return { ok: false, wrongCurrent: true }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 更新自己的手機號碼（RPC：security definer，只能改本人的 phone 欄位） */
+export async function updateMyPhone(phone: string): Promise<{ ok: boolean }> {
+  const { error } = await supabase.rpc('update_my_phone', { p_phone: phone })
+  if (error) console.error('更新手機號碼失敗:', error)
+  return { ok: !error }
+}
