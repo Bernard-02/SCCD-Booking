@@ -59,7 +59,9 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart, bookingDetail
         DEPOSIT_CAP_PER_CATEGORY
       )
 
-      const sequenceNumber = existingReceipts.length + newReceipts.length + 1
+      // 流水號每年重置：只計當年度的既有收據
+      const receiptsThisYear = existingReceipts.filter(r => r.rentalNumber.startsWith(`#${year}`)).length
+      const sequenceNumber = receiptsThisYear + newReceipts.length + 1
       const rentalNumber = `#${year}${String(sequenceNumber).padStart(3, '0')}`
 
       newReceipts.push({
