@@ -3,8 +3,8 @@
  * - 將購物車依時段分組，呼叫 Supabase RPC submit_orders
  *   （訂單＋品項＋通知包在同一個 transaction，要嘛全成立要嘛全不算）
  * - 失敗時回傳原因，購物車保留，由呼叫端提示重送
- * - 成功後（過渡期）同步寫一份 localStorage receipts／notifications，
- *   Profile 與 Header 尚未改讀資料庫前先維持既有行為
+ * - 成功後仍寫一份 localStorage receipts：orderValidation 的重複下單檢查
+ *   尚依賴它（roadmap 階段 3 搬 server 端後移除）
  */
 
 import { useCallback } from 'react'
@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import type { CartItem, Receipt } from '../types/equipment'
 import type { Student } from '../utils/testAuthData'
-import { receiptsKey, notificationsKey } from '../utils/storageKeys'
+import { receiptsKey } from '../utils/storageKeys'
 
 const DEPOSIT_CAP_PER_CATEGORY = 5000
 
@@ -79,9 +79,8 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart, bookingDetail
       return { ok: false, reason: '送出失敗，請再試一次' }
     }
 
-    // ---- 以下為過渡期 localStorage 同步（Profile／Header 改讀 DB 後移除） ----
+    // ---- localStorage receipts 同步（僅供 orderValidation 重複下單檢查，階段 3 移除） ----
     const receiptsStorageKey = receiptsKey(currentUser?.studentId)
-    const notificationsStorageKey = notificationsKey(currentUser?.studentId)
     const existingReceipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsStorageKey) || '[]')
 
     const newReceipts: Receipt[] = Object.entries(dateGroups).map(([dateKey, items], index) => {
@@ -104,26 +103,10 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart, bookingDetail
       }
     })
     localStorage.setItem(receiptsStorageKey, JSON.stringify([...existingReceipts, ...newReceipts]))
+    // ---- receipts 同步結束 ----
 
-    const existingNotifications = JSON.parse(localStorage.getItem(notificationsStorageKey) || '[]')
-    const newNotifications = newReceipts.map(receipt => ({
-      id: 'notif_' + crypto.randomUUID(),
-      type: 'success',
-      title: '預約成功',
-      message: `訂單 ${receipt.rentalNumber} 已送出，請於 24 小時內繳交押金。`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-      link: '/profile'
-    }))
-    const updatedNotifications = [...newNotifications, ...existingNotifications]
-    localStorage.setItem(notificationsStorageKey, JSON.stringify(updatedNotifications))
-
+    // 通知已由 submit_orders 在資料庫端寫入，這裡只通知 Header 重新讀取
     window.dispatchEvent(new Event('notificationUpdated'))
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: notificationsStorageKey,
-      newValue: JSON.stringify(updatedNotifications)
-    }))
-    // ---- 過渡期同步結束 ----
 
     clearCart()
     navigate('/profile')

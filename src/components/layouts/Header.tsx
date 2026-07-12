@@ -7,19 +7,13 @@ import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
-import { readNotificationsKey } from '../../utils/storageKeys'
+import { fetchMyNotifications, markAllNotificationsRead } from '../../services/notificationsService'
+import type { AppNotification as Notification } from '../../services/notificationsService'
 import GuideDialog from '../common/GuideDialog'
 import SaDialog from '../common/SaDialog'
 
 interface HeaderProps {
   hideNavigation?: boolean // 是否隱藏右側導航按鈕
-}
-
-interface Notification {
-  id: string
-  content: string
-  timestamp: number
-  read: boolean
 }
 
 const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
@@ -34,71 +28,28 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   const [guideOpen, setGuideOpen] = React.useState(false)
   const [saOpen, setSaOpen] = React.useState(false)
 
-  // 初始化模擬通知數據
+  // 讀取通知（Supabase，7 天內；已讀狀態存資料庫）
   React.useEffect(() => {
-    const now = Date.now()
-    const dayMs = 86400000
-    const hourMs = 3600000
-    const minuteMs = 60000
+    if (!isAuthenticated) {
+      setNotifications([])
+      return
+    }
 
-    // 模擬數據：包含各種狀態，分佈在不同時間
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        content: '您的訂單 #2026005 已通過審核',
-        timestamp: now - 5 * minuteMs, // 5分鐘前
-        read: false
-      },
-      {
-        id: '2',
-        content: '您的訂單 #2026006 已送出，請及時至系學會繳交押金',
-        timestamp: now - 2 * hourMs, // 2小時前
-        read: false
-      },
-      {
-        id: '3',
-        content: '您的訂單 #2026004 剩3天到期，請及時至系學會完成清潔歸還',
-        timestamp: now - 1 * dayMs, // 1天前
-        read: true // 已讀
-      },
-      {
-        id: '4',
-        content: '系學會工作時間異動：2026/02/28 12:00-13:00 暫不開放',
-        timestamp: now - 3 * dayMs, // 3天前
-        read: false
-      },
-      {
-        id: '5',
-        content: '您的訂單 #2026003 已完成清潔歸還',
-        timestamp: now - 5 * dayMs, // 5天前
-        read: true
-      },
-      {
-        id: '6',
-        content: '您的訂單 #2026002 已逾期',
-        timestamp: now - 8 * dayMs, // 8天前 (應該被過濾掉)
-        read: false
-      }
-    ]
+    let mounted = true
+    const load = () => {
+      fetchMyNotifications()
+        .then(list => { if (mounted) setNotifications(list) })
+        .catch(err => console.error('讀取通知失敗:', err))
+    }
 
-    // 過濾掉超過7天的通知，並按時間倒序排列
-    const validNotifications = mockNotifications
-      .filter(n => now - n.timestamp < 7 * dayMs)
-      .sort((a, b) => b.timestamp - a.timestamp)
-
-    // 讀取本地存儲的已讀狀態
-    // 使用用戶 ID 作為 key 的一部分，區分不同用戶的已讀狀態
-    const storageKey = readNotificationsKey(currentUser?.studentId)
-    const readIds = JSON.parse(localStorage.getItem(storageKey) || '[]') as string[]
-
-    // 合併已讀狀態
-    const finalNotifications = validNotifications.map(n => ({
-      ...n,
-      read: n.read || readIds.includes(n.id)
-    }))
-
-    setNotifications(finalNotifications)
-  }, [currentUser])
+    load()
+    // 送單成功後（useOrderSubmission dispatch）即時刷新
+    window.addEventListener('notificationUpdated', load)
+    return () => {
+      mounted = false
+      window.removeEventListener('notificationUpdated', load)
+    }
+  }, [isAuthenticated, currentUser])
 
   // 計算未讀數量
   const unreadCount = notifications.filter(n => !n.read).length
@@ -135,18 +86,11 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     }
   }
 
-  // 關閉通知選單（並標記所有為已讀）
+  // 關閉通知選單（並標記所有為已讀：本地樂觀更新 + 寫入資料庫）
   const closeNotificationMenu = () => {
     setNotificationMenuOpen(false)
-    // 關閉時將所有通知標記為已讀
-    setNotifications(prev => {
-      const updated = prev.map(n => ({ ...n, read: true }))
-      // 保存已讀 ID 到 localStorage
-      const readIds = updated.map(n => n.id)
-      const storageKey = readNotificationsKey(currentUser?.studentId)
-      localStorage.setItem(storageKey, JSON.stringify(readIds))
-      return updated
-    })
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    markAllNotificationsRead()
   }
 
   // 處理 Profile 按鈕點擊
