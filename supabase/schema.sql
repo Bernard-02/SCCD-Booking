@@ -65,8 +65,8 @@ create table public.equipment (
   created_at timestamptz not null default now()
 );
 
--- ---------- 3. 空間區塊／教室 ----------
-create table public.space_blocks (
+-- ---------- 3. 空間（編號區塊＋教室） ----------
+create table public.space (
   id text primary key,                      -- 前端 SVG 的格子代號：'A1'…'L6'、'Z9'、'A503'
   venue_code text unique,                   -- 官方編號（Platform Venues）：'#A5NA001'、'#A5CA003'
   name text,                                -- 顯示名稱（教室用「A503 教室」，區塊同 id）
@@ -126,7 +126,7 @@ create index notifications_student_id_idx on public.notifications (student_id);
 -- =============================================================
 alter table public.students enable row level security;
 alter table public.equipment enable row level security;
-alter table public.space_blocks enable row level security;
+alter table public.space enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.notifications enable row level security;
@@ -144,9 +144,9 @@ create policy "equipment: public read" on public.equipment
   for select using (true);
 create policy "equipment: admin write" on public.equipment
   for all using (public.user_role() = 'admin');
-create policy "space_blocks: public read" on public.space_blocks
+create policy "space: public read" on public.space
   for select using (true);
-create policy "space_blocks: admin write" on public.space_blocks
+create policy "space: admin write" on public.space
   for all using (public.user_role() = 'admin');
 
 -- orders：本人建立／讀取自己的；admin 全權；staff 建單免審核（狀態直接 in-progress 由應用層帶）

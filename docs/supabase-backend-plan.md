@@ -1,4 +1,4 @@
-# Supabase 後端規劃
+﻿# Supabase 後端規劃
 
 > 已定案（2026-07，取代原 firebase-backend-plan.md）。目前全站仍是 mock／localStorage。
 > 任務 checklist 在 [roadmap.md](./roadmap.md) 階段 1；業務規則在 [rental-rules.md](./rental-rules.md)。
@@ -35,7 +35,7 @@ equipment      id、名稱、分類、庫存量、押金、image_url
 orders         訂單號、學號(FK)、起訖日、booking_type、狀態(待繳押金/租借中/逾期/已歸還/取消)、
                押金金額、已延期、借用資訊(原因/班級/老師)
 order_items    訂單號(FK)、設備id 或 空間區塊id、數量
-space_blocks   區塊id、區域、押金
+space   區塊id、區域、押金
 notifications  id、學號(FK)、內容、已讀、時間
 ```
 

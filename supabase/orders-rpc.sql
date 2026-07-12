@@ -58,7 +58,7 @@ begin
 
       elsif v_item ->> 'item_type' in ('space-block', 'classroom') then
         -- 空間衝突檢查：鎖定該格（序列化同格併發），時段重疊即擋
-        perform 1 from public.space_blocks
+        perform 1 from public.space
           where id = v_item ->> 'item_id'
           for update;
         if not found then

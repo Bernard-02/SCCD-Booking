@@ -1,4 +1,4 @@
-# 完成路線圖（Roadmap）
+﻿# 完成路線圖（Roadmap）
 
 > 距離可上線，剩下的階段與任務。整體現況：**前端流程完整（mock 跑得通），沒有真實後端**。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端已定案用 **Supabase**（Auth + PostgreSQL + RLS）。
@@ -12,7 +12,7 @@
 詳細規劃（資料表草稿、接線順序、學號↔email 的坑）見 [supabase-backend-plan.md](./supabase-backend-plan.md)。
 
 - [ ] Supabase 專案建立（region 選 Tokyo）＋ `.env` 環境變數（`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`）
-- [ ] 資料表 schema：students（含**年級／學制**與 **role**：student/admin/staff）、equipment、orders、order_items、space_blocks、notifications；RLS 政策（學生只讀自己的訂單）
+- [ ] 資料表 schema：students（含**年級／學制**與 **role**：student/admin/staff）、equipment、orders、order_items、space、notifications；RLS 政策（學生只讀自己的訂單）
 - [ ] 登入換掉 `mockApiLogin`（`utils/testAuthData.ts`），注入 Supabase `authService`
 - [ ] 忘記密碼：Supabase Auth 自助重設流程
 - [ ] 設備資料與庫存入庫（`equipment-data.json` 匯入）：借出**真實扣庫存**，併發用 transaction 把關（`EquipmentGrid.tsx` TODO「需接入實際預訂數據」）

@@ -1,5 +1,5 @@
 /**
- * 空間資料來源：Supabase public.space_blocks + 佔用查詢
+ * 空間資料來源：Supabase public.space（編號區塊＋教室）+ 佔用查詢
  * 取代 SpaceAreaMap 裡寫死的 mockAreaBlocksData。
  * 區塊定義（id→區域/押金）模組層快取；佔用狀態依所選時段即時查詢。
  */
@@ -25,7 +25,7 @@ export const loadSpaceBlocks = (): Promise<SpaceBlocksMap> => {
   inflight = (async () => {
     try {
       const { data, error } = await supabase
-        .from('space_blocks')
+        .from('space')
         .select('id, area, deposit, name')
         .eq('is_active', true)
       if (error) throw error

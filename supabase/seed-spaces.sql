@@ -1,15 +1,15 @@
--- SCCD Booking — 空間區塊／教室 seed（由「SCCD Platform alpha ver.」Venues 產生）
+﻿-- SCCD Booking — 空間區塊／教室 seed（由「SCCD Platform alpha ver.」Venues 產生）
 -- id 沿用前端 SVG 的格子代號（A1、L3、Z9、A503），venue_code 為官方編號（#A5NA001）。
 -- 押金依規則文件：後陽台 2,000／磚、教室 5,000／間、其餘 1,000（Venues 表的一律 1000 不採用）。
 -- F1–F6 前端地圖無此格，先 is_active=false 待確認。
 -- 使用方式：SQL Editor 貼上執行一次。
 
-alter table public.space_blocks add column if not exists venue_code text unique;
-alter table public.space_blocks add column if not exists name text;
+alter table public.space add column if not exists venue_code text unique;
+alter table public.space add column if not exists name text;
 
-truncate table public.space_blocks cascade;
+truncate table public.space cascade;
 
-insert into public.space_blocks (id, venue_code, name, area, deposit, is_active)
+insert into public.space (id, venue_code, name, area, deposit, is_active)
 values
   ('A1', '#A5NA001', 'A1', 'square', 1000, true),
   ('A2', '#A5NA002', 'A2', 'square', 1000, true),
