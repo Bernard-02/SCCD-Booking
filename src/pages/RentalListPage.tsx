@@ -284,7 +284,7 @@ const RentalListPage = () => {
   // 送單流程（建收據、寫通知、清空購物車、導向 /profile）
   const submitOrder = useOrderSubmission({ cart, currentUser, clearCart, bookingDetails })
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!agreedToTerms) {
       alert('請先同意使用規則與條款')
       return
@@ -293,7 +293,11 @@ const RentalListPage = () => {
       alert('購物車是空的')
       return
     }
-    submitOrder()
+    // 失敗時購物車保留原樣，提示重送即可
+    const result = await submitOrder()
+    if (!result.ok) {
+      alert(result.reason || '送出失敗，請再試一次')
+    }
   }
 
   return (
