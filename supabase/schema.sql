@@ -67,9 +67,11 @@ create table public.equipment (
 
 -- ---------- 3. 空間區塊／教室 ----------
 create table public.space_blocks (
-  id text primary key,                      -- 'A1'…'L6'、'A503' 等
-  area text not null,                       -- square / front-terrace / back-terrace / glass-wall / case-permit / classroom
-  deposit int not null default 1000,
+  id text primary key,                      -- 前端 SVG 的格子代號：'A1'…'L6'、'Z9'、'A503'
+  venue_code text unique,                   -- 官方編號（Platform Venues）：'#A5NA001'、'#A5CA003'
+  name text,                                -- 顯示名稱（教室用「A503 教室」，區塊同 id）
+  area text not null,                       -- square / corridor(專案許可區) / front-terrace / back-terrace / glass-wall / pillar / classroom
+  deposit int not null default 1000,        -- 後陽台 2000、教室 5000、其餘 1000
   is_active boolean not null default true
 );
 
