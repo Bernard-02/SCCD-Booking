@@ -1,147 +1,13 @@
-/**
+﻿/**
  * 空間地圖組件
  * 載入 A5F 平面圖 SVG 並支援區域縮放與區塊選擇
  */
 
 import React, { useEffect, useRef, useState } from 'react'
+import { useSpaceBlocks } from '../../services/spaceService'
 
 // --- CONSTANTS ---
 
-// 模擬後端數據結構
-export const mockAreaBlocksData: Record<string, { area: string; status: 'available' | 'booked'; user: string | null }> = {
-    // 中庭 Square
-    'A1': { area: 'square', status: 'available', user: null },
-    'A2': { area: 'square', status: 'booked', user: 'A111144001' },
-    'A3': { area: 'square', status: 'available', user: null },
-    'A4': { area: 'square', status: 'available', user: null },
-    'A5': { area: 'square', status: 'available', user: null },
-    'A6': { area: 'square', status: 'available', user: null },
-    'A7': { area: 'square', status: 'booked', user: 'A111155002' },
-    'A8': { area: 'square', status: 'available', user: null },
-    'A9': { area: 'square', status: 'available', user: null },
-    'A10': { area: 'square', status: 'available', user: null },
-    'A11': { area: 'square', status: 'available', user: null },
-    'B1': { area: 'square', status: 'available', user: null },
-    'B2': { area: 'square', status: 'available', user: null },
-    'B3': { area: 'square', status: 'available', user: null },
-    'B4': { area: 'square', status: 'available', user: null },
-    'B5': { area: 'square', status: 'available', user: null },
-    'B6': { area: 'square', status: 'available', user: null },
-    'B7': { area: 'square', status: 'available', user: null },
-    'B8': { area: 'square', status: 'available', user: null },
-    'B9': { area: 'square', status: 'available', user: null },
-    'B10': { area: 'square', status: 'available', user: null },
-    'B11': { area: 'square', status: 'available', user: null },
-    'C3': { area: 'square', status: 'available', user: null },
-    'C4': { area: 'square', status: 'available', user: null },
-    'C5': { area: 'square', status: 'available', user: null },
-    'C6': { area: 'square', status: 'available', user: null },
-    'C7': { area: 'square', status: 'available', user: null },
-    'C8': { area: 'square', status: 'available', user: null },
-    'C9': { area: 'square', status: 'available', user: null },
-    'C10': { area: 'square', status: 'available', user: null },
-    'C11': { area: 'square', status: 'available', user: null },
-    'D3': { area: 'square', status: 'available', user: null },
-    'D4': { area: 'square', status: 'available', user: null },
-    'D5': { area: 'square', status: 'available', user: null },
-    'D6': { area: 'square', status: 'available', user: null },
-    'D7': { area: 'square', status: 'available', user: null },
-    'D8': { area: 'square', status: 'available', user: null },
-    'D9': { area: 'square', status: 'available', user: null },
-    'D10': { area: 'square', status: 'available', user: null },
-    'D11': { area: 'square', status: 'available', user: null },
-    'E1': { area: 'square', status: 'available', user: null },
-    'E2': { area: 'square', status: 'available', user: null },
-    'E3': { area: 'square', status: 'available', user: null },
-    'E4': { area: 'square', status: 'available', user: null },
-    'E5': { area: 'square', status: 'available', user: null },
-    'E6': { area: 'square', status: 'available', user: null },
-    'E7': { area: 'square', status: 'available', user: null },
-    'E8': { area: 'square', status: 'available', user: null },
-    'E9': { area: 'square', status: 'available', user: null },
-    'E10': { area: 'square', status: 'available', user: null },
-    'E11': { area: 'square', status: 'available', user: null },
-
-    // 走廊 Corridor
-    'H1': { area: 'corridor', status: 'available', user: null },
-    'H2': { area: 'corridor', status: 'available', user: null },
-    'H3': { area: 'corridor', status: 'available', user: null },
-    'H4': { area: 'corridor', status: 'available', user: null },
-    'H5': { area: 'corridor', status: 'available', user: null },
-    'H6': { area: 'corridor', status: 'available', user: null },
-    'H7': { area: 'corridor', status: 'available', user: null },
-    'H8': { area: 'corridor', status: 'available', user: null },
-    'H9': { area: 'corridor', status: 'available', user: null },
-    'H10': { area: 'corridor', status: 'available', user: null },
-    'G5': { area: 'corridor', status: 'available', user: null },
-    'G6': { area: 'corridor', status: 'available', user: null },
-    'G7': { area: 'corridor', status: 'available', user: null },
-    'G8': { area: 'corridor', status: 'available', user: null },
-    'G9': { area: 'corridor', status: 'available', user: null },
-    'G10': { area: 'corridor', status: 'available', user: null },
-    'J1': { area: 'corridor', status: 'available', user: null },
-    'J2': { area: 'corridor', status: 'available', user: null },
-    'J3': { area: 'corridor', status: 'available', user: null },
-
-    // 前陽台 Front Terrace
-    'K1': { area: 'front-terrace', status: 'available', user: null },
-    'K2': { area: 'front-terrace', status: 'available', user: null },
-    'K3': { area: 'front-terrace', status: 'available', user: null },
-    'K4': { area: 'front-terrace', status: 'available', user: null },
-    'K5': { area: 'front-terrace', status: 'available', user: null },
-    'K6': { area: 'front-terrace', status: 'available', user: null },
-    'K7': { area: 'front-terrace', status: 'available', user: null },
-    'K8': { area: 'front-terrace', status: 'available', user: null },
-    'K9': { area: 'front-terrace', status: 'available', user: null },
-    'K10': { area: 'front-terrace', status: 'available', user: null },
-
-    // 後陽台 Back Terrace
-    'L1': { area: 'back-terrace', status: 'available', user: null },
-    'L2': { area: 'back-terrace', status: 'available', user: null },
-    'L3': { area: 'back-terrace', status: 'available', user: null },
-    'L4': { area: 'back-terrace', status: 'available', user: null },
-    'L5': { area: 'back-terrace', status: 'available', user: null },
-    'L6': { area: 'back-terrace', status: 'available', user: null },
-
-    // 玻璃牆 Glass Wall
-    'Y1': { area: 'glass-wall', status: 'available', user: null },
-    'Y2': { area: 'glass-wall', status: 'available', user: null },
-    'Y3': { area: 'glass-wall', status: 'available', user: null },
-    'Y4': { area: 'corridor', status: 'available', user: null }, // 專案許可區
-    'Y5': { area: 'corridor', status: 'available', user: null }, // 專案許可區
-    'Y6': { area: 'corridor', status: 'available', user: null }, // 專案許可區
-    'Y7': { area: 'corridor', status: 'available', user: null }, // 專案許可區
-    'Y8': { area: 'glass-wall', status: 'available', user: null },
-    'Y9': { area: 'glass-wall', status: 'available', user: null },
-    'Y10': { area: 'glass-wall', status: 'available', user: null },
-    'Y11': { area: 'glass-wall', status: 'available', user: null },
-    'Y12': { area: 'glass-wall', status: 'available', user: null },
-    'Y13': { area: 'glass-wall', status: 'available', user: null },
-    'Y14': { area: 'glass-wall', status: 'available', user: null },
-    'Y15': { area: 'glass-wall', status: 'available', user: null },
-    'Y16': { area: 'glass-wall', status: 'available', user: null },
-    'Y17': { area: 'glass-wall', status: 'available', user: null },
-    'Y18': { area: 'glass-wall', status: 'available', user: null },
-    'Y19': { area: 'glass-wall', status: 'available', user: null },
-    'Y20': { area: 'glass-wall', status: 'available', user: null },
-    'Y21': { area: 'glass-wall', status: 'available', user: null },
-    'Y22': { area: 'glass-wall', status: 'available', user: null },
-    'Y23': { area: 'glass-wall', status: 'available', user: null },
-    'Y24': { area: 'glass-wall', status: 'available', user: null },
-    'Y25': { area: 'glass-wall', status: 'available', user: null },
-    'Y26': { area: 'glass-wall', status: 'available', user: null },
-
-    // 柱子 Pillar
-    'Z1': { area: 'pillar', status: 'available', user: null },
-    'Z2': { area: 'pillar', status: 'available', user: null },
-    'Z3': { area: 'pillar', status: 'available', user: null },
-    'Z4': { area: 'pillar', status: 'available', user: null },
-    'Z5': { area: 'pillar', status: 'available', user: null },
-    'Z6': { area: 'pillar', status: 'available', user: null },
-    'Z7': { area: 'pillar', status: 'available', user: null },
-    'Z8': { area: 'pillar', status: 'available', user: null },
-    'Z9': { area: 'pillar', status: 'available', user: null },
-};
 
 // 區域對應 (大區塊)
 const areaMapping: Record<string, { name: string; english: string; deposit: number; key: string; subCategoryId: string }> = {
@@ -212,6 +78,9 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
   rentedBlocks = [],
   cartBlocks = []
 }) => {
+  // 區塊定義（id → 區域）來自 Supabase space_blocks；佔用狀態由 rentedBlocks prop 傳入
+  const blocksData = useSpaceBlocks();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
@@ -298,13 +167,13 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
       });
       
       // c) Style and add listeners to individual blocks
-      Object.keys(mockAreaBlocksData).forEach(blockId => {
+      Object.keys(blocksData).forEach(blockId => {
         const blockElement = svgElement.querySelector(`#${blockId}`);
         if (blockElement) {
-          const blockData = mockAreaBlocksData[blockId];
+          const blockData = blocksData[blockId];
           const blockSubCategory = areaToSubCategory[blockData.area];
           const isInCurrentArea = blockSubCategory === selectedSubCategory;
-          const isRented = rentedBlocks.includes(blockId) || blockData.status === 'booked';
+          const isRented = rentedBlocks.includes(blockId);
           const isInCart = cartBlocks.includes(blockId);
           const isSelectedButNotInCart = selectedBlocks.includes(blockId) && !isInCart;
 
@@ -362,11 +231,11 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
       svgElement.style.transform = 'scale(1) translate(0%, 0%)';
 
       // 在外層顯示購物車中的區塊
-      Object.keys(mockAreaBlocksData).forEach(blockId => {
+      Object.keys(blocksData).forEach(blockId => {
         const blockElement = svgElement.querySelector(`#${blockId}`);
         if (blockElement) {
           const isInCart = cartBlocks.includes(blockId);
-          const isRented = rentedBlocks.includes(blockId) || mockAreaBlocksData[blockId].status === 'booked';
+          const isRented = rentedBlocks.includes(blockId);
 
           const elementsToStyle = blockElement.tagName.toLowerCase() === 'g'
             ? Array.from(blockElement.querySelectorAll('path, rect, polygon, circle'))
@@ -414,7 +283,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
         }
       });
     }
-  }, [svgElement, selectedSubCategory, onAreaClick, onBlockSelect, selectedBlocks, rentedBlocks, cartBlocks]);
+  }, [svgElement, selectedSubCategory, onAreaClick, onBlockSelect, selectedBlocks, rentedBlocks, cartBlocks, blocksData]);
 
 
   return (

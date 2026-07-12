@@ -7,13 +7,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import type { CartItem, BookingType } from '../../types/equipment'
-import { mockAreaBlocksData } from '../space/SpaceAreaMap'
 import { useCart } from '../../hooks/useCart'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import BookingDetailsDialog from '../common/BookingDetailsDialog'
 import DateEditDialog from './DateEditDialog'
 import { useDateGroups, type DateGroup } from './useDateGroups'
-import { formatDate, getAreaName, getBlockImage, sortBlockIds, readCart, writeCart } from './cartHelpers'
+import { formatDate, getAreaName, getBlockArea, getBlockImage, sortBlockIds, readCart, writeCart } from './cartHelpers'
 
 interface BookingDetailsData {
   reason: string
@@ -433,8 +432,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       if (item.category === 'classroom') {
                         classrooms.push(item)
                       } else if (item.category === 'space-block') {
-                        const blockData = mockAreaBlocksData[item.id]
-                        const area = blockData?.area || 'unknown'
+                        const area = getBlockArea(item.id)
                         if (!blocksByArea[area]) {
                           blocksByArea[area] = []
                         }

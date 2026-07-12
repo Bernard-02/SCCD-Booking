@@ -9,8 +9,7 @@ import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
-import { mockAreaBlocksData } from '../components/space/SpaceAreaMap'
-import { getAreaName, getBlockImage, sortBlockIds } from '../components/cart/cartHelpers'
+import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../components/cart/cartHelpers'
 import { calculateValidHoursPassed } from '../utils/timeUtils'
 
 interface OrderItem {
@@ -371,8 +370,7 @@ const OrderPage: React.FC = () => {
                                 if (item.category === 'classroom') {
                                   classrooms.push(item)
                                 } else if (item.category === 'space-block') {
-                                  const blockData = mockAreaBlocksData[item.id]
-                                  const area = blockData?.area || 'unknown'
+                                  const area = getBlockArea(item.id)
                                   if (!blocksByArea[area]) {
                                     blocksByArea[area] = []
                                   }

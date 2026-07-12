@@ -55,6 +55,28 @@ begin
           raise exception '「%」該時段庫存不足（剩餘 %）',
             v_item ->> 'name', greatest(v_stock - v_reserved, 0);
         end if;
+
+      elsif v_item ->> 'item_type' in ('space-block', 'classroom') then
+        -- 空間衝突檢查：鎖定該格（序列化同格併發），時段重疊即擋
+        perform 1 from public.space_blocks
+          where id = v_item ->> 'item_id'
+          for update;
+        if not found then
+          raise exception '空間不存在：%', v_item ->> 'name';
+        end if;
+
+        if exists (
+          select 1
+          from public.order_items oi
+          join public.orders o on o.id = oi.order_id
+          where oi.item_type in ('space-block', 'classroom')
+            and oi.item_id = v_item ->> 'item_id'
+            and o.status in ('pending', 'in-progress', 'overdue')
+            and o.start_date <= (v_order ->> 'end_date')::date
+            and o.end_date >= (v_order ->> 'start_date')::date
+        ) then
+          raise exception '「%」該時段已被預約', v_item ->> 'name';
+        end if;
       end if;
     end loop;
 
@@ -126,6 +148,22 @@ as $$
     and o.start_date <= p_end
     and o.end_date >= p_start
   group by oi.item_id;
+$$;
+
+-- 查詢指定時段被佔用的空間（區塊／教室）id（給地圖與教室列表顯示；不含個資）
+create or replace function public.space_occupied(p_start date, p_end date)
+returns table(item_id text)
+language sql
+security definer set search_path = public
+stable
+as $$
+  select distinct oi.item_id
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where oi.item_type in ('space-block', 'classroom')
+    and o.status in ('pending', 'in-progress', 'overdue')
+    and o.start_date <= p_end
+    and o.end_date >= p_start;
 $$;
 
 -- 延期自己的訂單：僅限租借中（in-progress）、未延期過、1-7 天

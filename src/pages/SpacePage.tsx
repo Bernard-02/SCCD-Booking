@@ -7,8 +7,10 @@ import { Link, useLocation } from 'react-router-dom'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import DatePickerBar from '../components/DatePickerBar'
-import SpaceAreaMap, { mockAreaBlocksData } from '../components/space/SpaceAreaMap'
+import SpaceAreaMap from '../components/space/SpaceAreaMap'
 import ClassroomList from '../components/space/ClassroomList'
+import { useSpaceBlocks, fetchOccupiedSpaces } from '../services/spaceService'
+import { toDateKey } from '../components/cart/cartHelpers'
 import { useCart } from '../hooks/useCart'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
@@ -36,6 +38,26 @@ const SpacePage: React.FC = () => {
 
   // 檢查是否已選擇日期
   const hasSelectedDates = spaceDates.startDate !== null && spaceDates.endDate !== null
+
+  // 空間區塊定義（id → 區域/押金，來自 Supabase space_blocks）
+  const spaceBlocks = useSpaceBlocks()
+
+  // 該時段被生效訂單佔用的空間 id（區塊＋教室）
+  const [occupiedIds, setOccupiedIds] = useState<string[]>([])
+  const occupiedStartKey = spaceDates.startDate ? toDateKey(spaceDates.startDate) : null
+  const occupiedEndKey = spaceDates.endDate ? toDateKey(spaceDates.endDate) : null
+
+  useEffect(() => {
+    if (!occupiedStartKey || !occupiedEndKey) {
+      setOccupiedIds([])
+      return
+    }
+    let mounted = true
+    fetchOccupiedSpaces(occupiedStartKey, occupiedEndKey)
+      .then(ids => { if (mounted) setOccupiedIds(ids) })
+      .catch(err => console.error('讀取空間佔用失敗:', err))
+    return () => { mounted = false }
+  }, [occupiedStartKey, occupiedEndKey])
 
   // 個人租借（小量／大量-個人）：受每時段押金上限 5,000 約束，全選必定超標
   const isPersonalBooking = spaceDates.bookingType !== 'mass-group'
@@ -207,13 +229,9 @@ const SpacePage: React.FC = () => {
     setHasProjectPermission(false)
   }
 
-  // 計算單個區塊的押金
+  // 計算單個區塊的押金（直接用資料庫的 deposit：後陽台 2000、其餘 1000）
   const getBlockDeposit = (blockId: string): number => {
-    const blockData = mockAreaBlocksData[blockId]
-    if (!blockData) return 1000 // 預設值
-
-    // 後陽台 (L1-L6) 的押金是 2000，其他都是 1000
-    return blockData.area === 'back-terrace' ? 2000 : 1000
+    return spaceBlocks[blockId]?.deposit ?? 1000
   }
 
   // 計算總押金（帶上限）
@@ -222,18 +240,16 @@ const SpacePage: React.FC = () => {
     return Math.min(total, 5000) // 上限 NT$5,000
   }
 
-  // 當前子分類尚可選取的區塊（未租出、不在購物車）
+  // 當前子分類尚可選取的區塊（該時段未被佔用、不在購物車）
   const availableBlockIds = useMemo(() => {
     const targetAreas = selectedSubCategory ? AREA_MAPPING[selectedSubCategory] : undefined
     if (!targetAreas) return []
-    return Object.entries(mockAreaBlocksData)
-      .filter(([id, data]) => {
-        const blockData = data as any
-        // 注意：mock 資料的狀態值是 'booked'（與 SpaceAreaMap 的判斷一致）
-        return targetAreas.includes(blockData.area) && blockData.status !== 'booked' && !cartBlockIds.includes(id)
-      })
+    return Object.entries(spaceBlocks)
+      .filter(([id, data]) =>
+        targetAreas.includes(data.area) && !occupiedIds.includes(id) && !cartBlockIds.includes(id)
+      )
       .map(([id]) => id)
-  }, [selectedSubCategory, cartBlockIds])
+  }, [selectedSubCategory, cartBlockIds, spaceBlocks, occupiedIds])
 
   // 可選區塊已全數選取（或根本無可選區塊）→ Select All 無事可做
   const allAvailableSelected = availableBlockIds.every(id => selectedBlocks.includes(id))
@@ -390,6 +406,12 @@ const SpacePage: React.FC = () => {
       return
     }
 
+    // 教室該時段已被其他訂單佔用
+    if (occupiedIds.includes(id)) {
+      showToast('該教室於此時段已被預約', 'error')
+      return
+    }
+
     const classroom = classroomData.find(c => c.id === id)
     if (classroom) {
       const result = addToCart({
@@ -422,10 +444,10 @@ const SpacePage: React.FC = () => {
   // 檢查是否有選中專案許可區的區塊
   const hasCasePermitBlocks = useMemo(() => {
     return selectedBlocks.some(blockId => {
-      const blockData = mockAreaBlocksData[blockId]
+      const blockData = spaceBlocks[blockId]
       return blockData && (blockData.area === 'corridor' || blockData.area === 'pillar')
     })
-  }, [selectedBlocks])
+  }, [selectedBlocks, spaceBlocks])
 
   // Add 按鈕的阻擋條件（僅控制外觀；仍可點擊，點擊時 toast 提示缺什麼）
   const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks
@@ -595,6 +617,7 @@ const SpacePage: React.FC = () => {
                     selectedBlocks={selectedBlocks}
                     onBlockSelect={handleBlockSelect}
                     cartBlocks={cartBlockIds}
+                    rentedBlocks={occupiedIds}
                   />
                 </div>
 
