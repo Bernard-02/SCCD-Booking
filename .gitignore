@@ -44,3 +44,6 @@ old-html-backup/
 
 # Claude Code user-local settings
 .claude/settings.local.json
+
+# 設備清單原始檔（含借用人個資，僅本機保留，資料以 supabase/seed-equipment.sql 為準）
+*.xlsx

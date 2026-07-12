@@ -51,13 +51,16 @@ $$;
 
 -- ---------- 2. 設備 ----------
 create table public.equipment (
-  id text primary key,                      -- 沿用 equipment-data.json 的 id
+  id text primary key,                      -- '{分頁slug}-{名稱hash}'，由 seed 產生
   name text not null,
-  category text not null,
-  original_quantity int not null default 0 check (original_quantity >= 0),
+  en_name text,                             -- 英文名稱（前台暫不渲染，之後在 Table Editor 補）
+  category text not null,                   -- 大類（Excel 分頁）：線材/工具/延長線/視聽類/燈具/畫板/展桌/展台/機具/搖頭燈
+  sub_category text,                        -- 子類別（如「視源線 - HDMI」「推車」）
+  location text,                            -- 存放地點（如「A503 - 設備區」）
+  original_quantity int not null default 0 check (original_quantity >= 0), -- 總量
+  stock_quantity int not null default 0,    -- 目前在庫（線下借出的差額由管理員手動維護）
   deposit int not null default 0,
   image_url text,                           -- 之後改 Supabase Storage URL
-  description text,
   is_active boolean not null default true,  -- 下架用，不實刪
   created_at timestamptz not null default now()
 );
