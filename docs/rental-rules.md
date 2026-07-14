@@ -42,8 +42,8 @@
   - 大量（空間）→ **今天**（不延後）
 - **最長租借天數**（`DatePickerBar.tsx` `maxDays` → `Calendar.tsx`）：
   - 設備 → **30 天**
-  - 空間（教室 + 編號區）→ **14 天**
-  - 🔜 規劃：大四／碩士生租空間 → **30 天**（尚未實作，見「待確認 / 待實作」第 4 點）
+  - 空間（教室 + 編號區）→ **14 天**；大四／碩士 → **30 天**（✅ 已實作，
+    `gradeUtils.isSeniorOrGraduate`，`DatePickerBar` 與 `DateEditDialog` 的 `maxDays`）
 - **選擇有效期 24 小時**：超過 24 小時未送單，日期選擇自動清除。（`EXPIRY_TIME`，每分鐘檢查一次）
 - **起租日過期自動調整**：
   - 小量：起租日若已過去 → 自動改成今天，保留原本天數。
@@ -108,7 +108,8 @@
 
 ## 6. 重複下單（對照已送出訂單）
 
-（`orderValidation.ts` `checkDuplicateOrder`）
+（前端 `orderValidation.ts` `checkDuplicateOrder`；✅ 2026-07 已搬 server 端——
+`submit_orders` 內同規則檢查，前端僅為 UX 提前提示）
 
 - **時間完全相同 + 兩者都是小量** → ❌ 不允許（一個時段只能一張小量訂單）。
 - 其他完全重疊組合（小量↔大量、大量↔大量）→ ✅ 允許。
@@ -172,19 +173,16 @@
 
 ---
 
-## 待實作（待後端）
+## 年級限制（✅ 2026-07 已實作）
 
-> 這些規則都要看**學生年級／學制**。目前 `Student` 沒有可靠欄位、且學生學齡逐年變動，需後端（Firebase）提供**即時**年級／學制，所以先記著、程式暫不寫死（不能用學號硬猜）。
+> **grade 慣例**（`students.grade` 自由文字，`utils/gradeUtils.ts` 與 `orders-rpc.sql` 同一套判斷）：
+> `'1'`–`'4'` 或「大一」–「大四」，碩士含「碩」字樣；**未填或格式不符一律從嚴視為一般生**
+> （14 天上限、A508 擋）——要享有放寬需系學會在 Studio 填妥 grade。
 
-- **大四／碩士生：空間最長 30 天**（尚未實作）
-  - 規則：若學生為**大四或碩士班**，租借空間（**教室 + 編號區**，整個空間頁）的最長天數由 14 天放寬為 **30 天**；其餘學生維持 14 天。
-  - **接後端後怎麼接**：在 `DatePickerBar.tsx` 的 `maxDays` 依當前使用者判斷即可，例如
-    `maxDays={type === 'space' ? (isSeniorOrGraduate(currentUser) ? 30 : 14) : 30}`，
-    判斷函式 `isSeniorOrGraduate` 讀後端提供的學制／年級欄位。
-
-- **A508 教室：限大二以上**（尚未實作）
-  - 規則：**A508 教室**只開放**大二以上**（含大二、大三、大四、碩士）借用；**大一**學生加入時擋下並提示。其他教室（A503、A507）不受限。
-  - **接後端後怎麼接**：在 `SpacePage.tsx` 的 `handleClassroomAdd` 內，加入前判斷 `id === 'A508' && isFreshman(currentUser)` 就擋下並 `showToast('A508 教室僅限大二以上借用', 'error')`；`isFreshman` 讀後端提供的年級欄位。
+- **大四／碩士生：空間最長 30 天**：`gradeUtils.isSeniorOrGraduate` →
+  `DatePickerBar.tsx` 與 `DateEditDialog.tsx` 的 `maxDays`（教室＋編號區整個空間頁）。
+- **A508 教室：限大二以上**（含碩士；大一擋）：前端 `SpacePage.handleClassroomAdd`
+  toast 提前提示，`submit_orders` server 端為真正防線（`v_sophomore_up`）。
 
 ## 待確認 / 可能要調整
 

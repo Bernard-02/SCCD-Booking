@@ -51,6 +51,7 @@ npm run dev        # Vite dev server，port 3000，自動開瀏覽器
 npm run build      # tsc 型別檢查 + vite build → dist/
 npm run preview    # 預覽 production build
 npx tsc --noEmit   # 僅型別檢查，不產生檔案
+npm test           # vitest 單元測試（timeUtils／useCart／useCartValidation）
 ```
 
 ## 遷移狀態（重要背景）
@@ -104,8 +105,9 @@ npx tsc --noEmit   # 僅型別檢查，不產生檔案
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
 - **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態；過渡期用 Supabase Studio 人工操作。
-- **階段 3 規則補完**：空間 14 天的四年級／碩士例外（年級欄位已有）、A508 限大二以上、重複下單檢查搬 server 端。
-- **階段 4 品質**：測試零覆蓋（優先蓋 `useCart`／`useCartValidation`）、tech debt、零散 TODO。
+- **階段 3 規則補完**：三項已完成（2026-07）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端（grade 慣例見 rental-rules.md「年級限制」）。剩：寒暑假封鎖（order-lifecycle.md 情境 11-a，規則已定待實作）。
+- **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
+- **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
 - **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」。
 - **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
 

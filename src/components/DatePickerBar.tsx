@@ -9,6 +9,8 @@ import Calendar from './Calendar'
 import DateEditDialog from './cart/DateEditDialog'
 import { readCart, writeCart, formatYmd } from './cart/cartHelpers'
 import { useDateSelection } from '../contexts/DateSelectionContext'
+import { useAuth } from '../contexts/AuthContext'
+import { isSeniorOrGraduate } from '../utils/gradeUtils'
 import type { BookingType } from '../types/equipment'
 
 interface DatePickerBarProps {
@@ -16,6 +18,9 @@ interface DatePickerBarProps {
 }
 
 const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
+  const { currentUser } = useAuth()
+  // 空間上限：一般生 14 天，大四／碩士放寬 30 天（rental-rules「年級限制」）
+  const spaceMaxDays = isSeniorOrGraduate(currentUser?.year) ? 30 : 14
   const [isExpanded, setIsExpanded] = useState(false)
   const [originalDates, setOriginalDates] = useState<{
     startDate: Date | null
@@ -372,7 +377,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                 onDateSelect={handleDateSelect}
                 minSelectableDate={minSelectableDate}
                 bookingType={isMass ? 'group' : 'personal'}
-                maxDays={type === 'space' ? 14 : 30}
+                maxDays={type === 'space' ? spaceMaxDays : 30}
               />
             </div>
           </div>

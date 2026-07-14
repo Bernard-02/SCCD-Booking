@@ -7,6 +7,8 @@ import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
 import { formatYmd, toDateKey } from './cartHelpers'
+import { useAuth } from '../../contexts/AuthContext'
+import { isSeniorOrGraduate } from '../../utils/gradeUtils'
 
 interface DateEditDialogProps {
   isOpen: boolean
@@ -27,6 +29,9 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
   onConfirm,
   onCancel
 }) => {
+  const { currentUser } = useAuth()
+  // 空間上限：一般生 14 天，大四／碩士放寬 30 天（與 DatePickerBar 同規則）
+  const spaceMaxDays = isSeniorOrGraduate(currentUser?.year) ? 30 : 14
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
 
@@ -136,7 +141,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             endDate={endDate}
             onDateSelect={handleDateSelect}
             bookingType={bookingType === 'mass-group' ? 'group' : 'personal'}
-            maxDays={category === 'space' ? 14 : 30}
+            maxDays={category === 'space' ? spaceMaxDays : 30}
             variant="dialog"
             originalStartDate={currentStartDate}
             originalEndDate={currentEndDate}

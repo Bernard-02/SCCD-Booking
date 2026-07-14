@@ -16,6 +16,7 @@ import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
 import { checkDuplicateOrder } from '../utils/orderValidation'
+import { isSophomoreOrAbove } from '../utils/gradeUtils'
 import { sortBlockIds } from '../components/cart/cartHelpers'
 
 // 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
@@ -396,6 +397,12 @@ const SpacePage: React.FC = () => {
     // 檢查是否已選擇日期
     if (!hasSelectedDates) {
       showToast('請先選擇租借日期', 'error')
+      return
+    }
+
+    // A508 限大二以上（submit_orders 亦擋，此處為 UX 提前提示）
+    if (id === 'A508' && !isSophomoreOrAbove(currentUser?.year)) {
+      showToast('A508 教室僅限大二以上（含碩士）借用', 'error')
       return
     }
 
