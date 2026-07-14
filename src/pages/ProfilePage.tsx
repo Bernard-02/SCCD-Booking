@@ -15,7 +15,8 @@ import { changePassword, updateMyPhone } from '../services/authService'
 import { fetchMyOrders, extendMyOrder, fetchClosedDates } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadEquipmentData } from '../services/equipmentService'
-import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty } from '../utils/timeUtils'
+import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
+import { useSuspension } from '../hooks/useSuspension'
 
 type ProfileSection = 'history' | 'profile'
 
@@ -501,6 +502,25 @@ const ProfileDataSection: React.FC = () => {
   const [phone, setPhone] = useState(currentUser?.phone || '')
   const [editMode, setEditMode] = useState<'password' | 'phone' | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  // 當前最嚴重逾期單的營業日天數（第 1-6 級標籤即時計算，不入庫）
+  const [worstOverdueDays, setWorstOverdueDays] = useState(0)
+
+  useEffect(() => {
+    Promise.all([fetchMyOrders(), fetchClosedDates()])
+      .then(([orders, closed]) => {
+        const days = orders
+          .filter(order => order.status === 'overdue')
+          .map(order => overdueBusinessDays(order.end_date, closed))
+        setWorstOverdueDays(days.length ? Math.max(...days) : 0)
+      })
+      .catch(() => {}) // 讀取失敗維持第 1 級顯示，停權仍由 accountLevel 判定
+  }, [])
+
+  // 停權：account_level = 5（useSuspension 即時查，不依賴登入快照）；
+  // 或即時算已滿 6 天（cron 每小時掃，補上空窗）
+  const suspendedByLevel = useSuspension()
+  const isSuspended = suspendedByLevel || worstOverdueDays >= SUSPENSION_OVERDUE_DAYS
+  const tier = Math.min(worstOverdueDays + 1, 6) // 第 1 級 = 無逾期
 
   // 對話框確認 → 寫入 Supabase（密碼：重新驗證後更新；手機：RPC 只改本人 phone）
   const handleEditConfirm = async (value: string, currentPassword?: string) => {
@@ -540,26 +560,66 @@ const ProfileDataSection: React.FC = () => {
 
   return (
     <div style={{ width: '80%' }}>
-      {/* 帳號狀態區塊（英上中下；狀態用功能性英文，highlight 維持綠色） */}
+      {/* 帳號狀態區塊（英上中下）：停權＞逾期警示（第 2-6 級）＞正常（第 1 級） */}
       <div className="account-status-section">
-        {/* 狀態 */}
-        <div className="mb-6">
-          <p className="font-['Inter',_sans-serif] text-white text-content">
-            You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
-          </p>
-          <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
-            您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
-          </p>
-        </div>
-        {/* 說明 */}
-        <div>
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
-            You return your rentals right on time, with no overdue records.
-          </p>
-          <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
-            您非常準時地歸還租借，沒有任何逾期記錄
-          </p>
-        </div>
+        {isSuspended ? (
+          <>
+            <div className="mb-6">
+              <p className="font-['Inter',_sans-serif] text-white text-content">
+                Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span>
+              </p>
+              <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+                您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span>
+              </p>
+            </div>
+            <div>
+              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+                An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.
+              </p>
+              <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+                有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜
+              </p>
+            </div>
+          </>
+        ) : worstOverdueDays > 0 ? (
+          <>
+            <div className="mb-6">
+              <p className="font-['Inter',_sans-serif] text-white text-content">
+                Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span>
+              </p>
+              <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+                帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span>
+              </p>
+            </div>
+            <div>
+              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+                You have an order overdue for {worstOverdueDays} business day{worstOverdueDays > 1 ? 's' : ''}. At 6 days your account will be suspended — please return it as soon as possible.
+              </p>
+              <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+                您有訂單已逾期 {worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mb-6">
+              <p className="font-['Inter',_sans-serif] text-white text-content">
+                You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
+              </p>
+              <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+                您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
+              </p>
+            </div>
+            <div>
+              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+                You return your rentals right on time, with no overdue records.
+              </p>
+              <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+                您非常準時地歸還租借，沒有任何逾期記錄
+              </p>
+            </div>
+          </>
+        )}
         {/* TODO: 狀態視覺化圓點 */}
       </div>
 

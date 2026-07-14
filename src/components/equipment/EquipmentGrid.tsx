@@ -25,6 +25,13 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   // 數量允許暫存空字串：使用者可先清空再輸入，失焦時若無有效值會回到 1
   const [quantities, setQuantities] = useState<Record<string, number | ''>>({})
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
+
+  // 統一 toast 入口：錯誤紅底、成功白底
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+  }
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
   // 使用認證 hook
@@ -38,7 +45,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     cart,
     addToCart,
     getCartQuantity,
-    checkLittleBookingLimit
+    checkLittleBookingLimit,
+    isSuspended
   } = useCart()
 
   // 使用日期選擇 hook
@@ -136,7 +144,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const toggleBookmark = (id: string, itemName: string) => {
     // 使用 AuthContext 檢查登入狀態
     if (!isAuthenticated) {
-      setToastMessage('請先登入以使用收藏功能')
+      showToast('請先登入以使用收藏功能', 'error')
       return
     }
 
@@ -146,9 +154,9 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
     // 顯示通知
     if (!wasBookmarked) {
-      setToastMessage(`${itemName} 已加入收藏`)
+      showToast(`${itemName} 已加入收藏`)
     } else {
-      setToastMessage(`${itemName} 已移除收藏`)
+      showToast(`${itemName} 已移除收藏`)
     }
   }
 
@@ -200,7 +208,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const handleAddToCart = (item: Equipment) => {
     // 檢查是否已選擇日期
     if (!hasSelectedDates) {
-      setToastMessage('請先選擇租借日期')
+      showToast('請先選擇租借日期', 'error')
       return
     }
 
@@ -209,7 +217,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
     // 檢查庫存
     if (quantity > availableQty) {
-      setToastMessage(`庫存不足！${item.name} 剩餘可借數量：${availableQty}`)
+      showToast(`庫存不足！${item.name} 剩餘可借數量：${availableQty}`, 'error')
       return
     }
 
@@ -227,13 +235,13 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     })
 
     if (!result.ok) {
-      // 加入失敗（押金上限／類型衝突／9 件上限），顯示原因而非假的成功訊息
-      setToastMessage(result.reason || '無法加入清單')
+      // 加入失敗（停權／押金上限／類型衝突／9 件上限），顯示原因而非假的成功訊息
+      showToast(result.reason || '無法加入清單', 'error')
       return
     }
 
     // 顯示成功訊息
-    setToastMessage(`已成功加入 ${item.name} x${quantity} 到清單！`)
+    showToast(`已成功加入 ${item.name} x${quantity} 到清單！`)
 
     // 重置該設備的數量為 1
     setQuantities(prev => ({
@@ -270,7 +278,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     <div className="w-full h-full flex flex-col pt-[60px]">
       {/* Toast 通知 */}
       {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+        <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
       )}
 
       {/* 全螢幕圖片檢視 */}
@@ -502,9 +510,9 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         e.stopPropagation()
                         handleAddToCart(item)
                       }}
-                      disabled={!isAvailable || !hasSelectedDates || wouldExceedLightLimit}
+                      aria-disabled={!isAvailable || !hasSelectedDates || wouldExceedLightLimit || isSuspended}
                       className={`font-['Inter',_sans-serif] text-small-title ${
-                        isAvailable && hasSelectedDates && !wouldExceedLightLimit
+                        isAvailable && hasSelectedDates && !wouldExceedLightLimit && !isSuspended
                           ? 'text-white hover:text-gray-scale1 cursor-pointer'
                           : 'text-[#545454] cursor-not-allowed'
                       }`}

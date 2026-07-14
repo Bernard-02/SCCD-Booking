@@ -87,18 +87,13 @@ export const effectiveReturnDeadline = (
   return d
 }
 
-// 罰款天數含假日（系學會暫定）；rental-rules §10 原文寫「週末節假日不計」，
-// 團隊定案後只需要改這個常數。
-const PENALTY_COUNTS_OFF_DAYS = true
-
 /**
- * 逾期累計罰款：第 1 日 100 元、每日翻倍累計（100+200+400…），上限為押金總額。
- * 天數從有效期限的隔日起算，每個日曆日 1 天。此為顯示用試算，
- * 最終金額由後台於歸還時確認寫入 orders.penalty_total。
+ * 逾期營業日天數（0 = 未逾期）：從有效期限的隔日起算，假日不計——
+ * 與官方規則一致（罰款翻倍與滿 6 日停權都用這個天數）。
+ * 資料庫端同邏輯在 account-suspension.sql 的 overdue_business_days。
  */
-export const overduePenalty = (
+export const overdueBusinessDays = (
   endDate: string,
-  depositTotal: number,
   closedDates: ReadonlySet<string>,
   now: Date = new Date()
 ): number => {
@@ -109,11 +104,27 @@ export const overduePenalty = (
   const day = new Date(deadline)
   day.setHours(0, 0, 0, 0)
   day.setDate(day.getDate() + 1)
-  while (day <= now && days < 20) { // 20 天後必達押金上限，不再往下數
-    if (PENALTY_COUNTS_OFF_DAYS || !isOffDay(day, closedDates)) days++
+  while (day <= now && days < 20) { // 滿 6 天已停權、罰款已達上限，不再往下數
+    if (!isOffDay(day, closedDates)) days++
     day.setDate(day.getDate() + 1)
   }
+  return days
+}
 
+/** 滿 6 個逾期營業日 = 未完成清潔歸還 → 停權 */
+export const SUSPENSION_OVERDUE_DAYS = 6
+
+/**
+ * 逾期累計罰款：第 1 日 100 元、每日翻倍累計（100+200+400…），上限為押金總額。
+ * 此為顯示用試算，最終金額由後台於歸還時確認寫入 orders.penalty_total。
+ */
+export const overduePenalty = (
+  endDate: string,
+  depositTotal: number,
+  closedDates: ReadonlySet<string>,
+  now: Date = new Date()
+): number => {
+  const days = overdueBusinessDays(endDate, closedDates, now)
   if (days <= 0) return 0
   return Math.min(100 * (2 ** days - 1), depositTotal)
 }

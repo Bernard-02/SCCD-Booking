@@ -28,7 +28,7 @@ const AREA_MAPPING: Record<string, string[]> = {
 }
 
 const SpacePage: React.FC = () => {
-  const { cart, addToCart, removeFromCart, checkLittleBookingLimit } = useCart()
+  const { cart, addToCart, removeFromCart, checkLittleBookingLimit, isSuspended } = useCart()
   const { getCurrentSpaceDates } = useDateSelection()
   const { currentUser } = useAuth()
   const location = useLocation()
@@ -322,6 +322,12 @@ const SpacePage: React.FC = () => {
       return
     }
 
+    // 停權早退：在清空選取前擋下，保留使用者已選的區塊
+    if (isSuspended) {
+      showToast('帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會', 'error')
+      return
+    }
+
     // 複製一份要加入的區塊 ID，避免狀態清除後拿不到
     const blocksToAdd = [...selectedBlocks]
 
@@ -450,7 +456,7 @@ const SpacePage: React.FC = () => {
   }, [selectedBlocks, spaceBlocks])
 
   // Add 按鈕的阻擋條件（僅控制外觀；仍可點擊，點擊時 toast 提示缺什麼）
-  const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks
+  const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks || isSuspended
 
   return (
     <div className="bg-black text-white h-screen flex flex-col overflow-hidden">

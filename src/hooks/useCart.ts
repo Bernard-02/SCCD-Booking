@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { CartItem, Equipment } from '../types/equipment'
 import { useEquipmentData } from '../services/equipmentService'
+import { useSuspension } from './useSuspension'
 
 const CART_STORAGE_KEY = 'sccd-rental-cart'
 
@@ -13,6 +14,8 @@ export const useCart = () => {
   const [cart, setCart] = useState<CartItem[]>([])
   // 設備資料來自 Supabase（模組層快取，全 app 只抓一次；載入完成前為空物件）
   const equipmentData = useEquipmentData()
+  // 停權帳號連加入購物車都擋（情境 7；送單端 RPC 仍是最終防線）
+  const isSuspended = useSuspension()
 
   // 從 localStorage 載入購物車
   const loadCart = useCallback(() => {
@@ -257,6 +260,11 @@ export const useCart = () => {
   // 回傳 { ok, reason }，由呼叫端以 toast 呈現，不再用原生 alert
   const addToCart = useCallback(
     (item: CartItem): { ok: boolean; reason?: string } => {
+      // 停權檢查
+      if (isSuspended) {
+        return { ok: false, reason: '帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會' }
+      }
+
       // 檢查租借類型衝突
       const typeCheck = checkBookingTypeConflict(item)
       if (!typeCheck.allowed) {
@@ -293,7 +301,7 @@ export const useCart = () => {
       }
       return { ok: true }
     },
-    [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit]
+    [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit, isSuspended]
   )
 
   // 更新設備數量
@@ -397,6 +405,7 @@ export const useCart = () => {
   return {
     cart,
     equipmentData,
+    isSuspended,
     getOriginalQuantity,
     getCartQuantity,
     getAvailableQuantity,

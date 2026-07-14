@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useCartValidation } from '../hooks/useCartValidation'
 import { useOrderSubmission } from '../hooks/useOrderSubmission'
+import { useSuspension } from '../hooks/useSuspension'
 import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
 
 interface BookingDetailsData {
@@ -283,6 +284,9 @@ const RentalListPage = () => {
 
   // 送單流程（建收據、寫通知、清空購物車、導向 /profile）
   const submitOrder = useOrderSubmission({ cart, currentUser, clearCart, bookingDetails })
+
+  // 停權帳號直接鎖住送單按鈕（即時查詢；真正的防線在 submit_orders RPC，此處為 UX）
+  const isSuspended = useSuspension()
 
   const handleCheckout = async () => {
     if (!agreedToTerms) {
@@ -669,13 +673,22 @@ const RentalListPage = () => {
                   </div>
                 )}
 
-                {/* 租借按鈕 */}
+                {/* 租借按鈕（停權帳號鎖定） */}
                 <div>
+                  {isSuspended && (
+                    <div className="flex items-start gap-2 mb-3 text-error2">
+                      <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px', marginTop: '1px' }}>warning</span>
+                      <div className="text-tiny">
+                        <p className="font-['Inter',_sans-serif]">Account suspended — bookings are disabled.</p>
+                        <p className="font-['Noto_Sans_TC',_sans-serif]">帳號已停權，無法送出預約，請聯絡系學會</p>
+                      </div>
+                    </div>
+                  )}
                   <button
                     onClick={handleCheckout}
-                    disabled={cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid}
+                    disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid}
                     className={`px-8 py-2 rounded-lg text-small-title font-medium whitespace-nowrap transition ${
-                      cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid
+                      isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid
                         ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                         : 'bg-white text-black hover:opacity-70 cursor-pointer'
                     }`}

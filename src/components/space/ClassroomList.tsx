@@ -22,7 +22,7 @@ interface ClassroomListProps {
 
 const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
   const { getCurrentSpaceDates } = useDateSelection()
-  const { cart, checkLittleBookingLimit } = useCart()
+  const { cart, checkLittleBookingLimit, isSuspended } = useCart()
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
   // 獲取當前模式的日期
@@ -220,7 +220,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                     }}
                     disabled={!isAvailable || !hasSelectedDates || wouldExceedLimit}
                     className={`font-['Inter',_sans-serif] text-small-title ${
-                      isAvailable && hasSelectedDates && !wouldExceedLimit
+                      isAvailable && hasSelectedDates && !wouldExceedLimit && !isSuspended
                         ? 'text-white hover:text-gray-scale1 cursor-pointer'
                         : 'text-[#545454] cursor-not-allowed'
                     }`}

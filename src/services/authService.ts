@@ -77,6 +77,23 @@ export async function supabaseLogout(): Promise<void> {
   await supabase.auth.signOut()
 }
 
+// 即時查自己的 account_level（停權即時反映，不依賴登入時的快照）
+// ponytail: 60 秒模組層快取，多個元件同掛載不重複打；未登入或失敗回 null 由呼叫端退回快照
+let levelCache: { value: number; at: number } | null = null
+export async function fetchMyAccountLevel(): Promise<number | null> {
+  if (levelCache && Date.now() - levelCache.at < 60_000) return levelCache.value
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth.user) return null
+  const { data, error } = await supabase
+    .from('students')
+    .select('account_level')
+    .eq('id', auth.user.id)
+    .single()
+  if (error || !data) return null
+  levelCache = { value: data.account_level, at: Date.now() }
+  return data.account_level
+}
+
 /** 忘記密碼：以學號寄送重設信，回傳遮罩後的 email 供 UI 顯示 */
 export async function requestPasswordReset(
   studentId: string

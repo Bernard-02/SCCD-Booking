@@ -25,6 +25,10 @@ begin
   if v_uid is null then
     raise exception '未登入';
   end if;
+  -- 停權檢查（情境 7）：未完成清潔歸還者不可再使用預約系統（擋送單，不擋登入）
+  if (select account_level from public.students where id = v_uid) >= 5 then
+    raise exception '帳號已停權（未完成清潔歸還），無法送出預約，請聯絡系學會';
+  end if;
   if p_orders is null or jsonb_array_length(p_orders) = 0 then
     raise exception '沒有可送出的訂單';
   end if;
