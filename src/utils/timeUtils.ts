@@ -70,3 +70,50 @@ export const displayOrderStatus = (
   if (status && status !== 'pending') return status
   return pendingMsRemaining(createdAt, now, closedDates) <= 0 ? 'canceled' : 'pending'
 }
+
+/**
+ * 有效歸還期限：歸還日 19:00（系學會最後營業時間）；
+ * 歸還日撞週末／臨時公休則順延到下一個營業日。超過即逾期（19:01 起算）。
+ * 資料庫端同邏輯在 auto-overdue.sql 的 next_business_day。
+ */
+export const effectiveReturnDeadline = (
+  endDate: string,
+  closedDates: ReadonlySet<string>
+): Date => {
+  const d = new Date(endDate)
+  d.setHours(0, 0, 0, 0)
+  while (isOffDay(d, closedDates)) d.setDate(d.getDate() + 1)
+  d.setHours(19, 0, 0, 0)
+  return d
+}
+
+// 罰款天數含假日（系學會暫定）；rental-rules §10 原文寫「週末節假日不計」，
+// 團隊定案後只需要改這個常數。
+const PENALTY_COUNTS_OFF_DAYS = true
+
+/**
+ * 逾期累計罰款：第 1 日 100 元、每日翻倍累計（100+200+400…），上限為押金總額。
+ * 天數從有效期限的隔日起算，每個日曆日 1 天。此為顯示用試算，
+ * 最終金額由後台於歸還時確認寫入 orders.penalty_total。
+ */
+export const overduePenalty = (
+  endDate: string,
+  depositTotal: number,
+  closedDates: ReadonlySet<string>,
+  now: Date = new Date()
+): number => {
+  const deadline = effectiveReturnDeadline(endDate, closedDates)
+  if (now <= deadline) return 0
+
+  let days = 0
+  const day = new Date(deadline)
+  day.setHours(0, 0, 0, 0)
+  day.setDate(day.getDate() + 1)
+  while (day <= now && days < 20) { // 20 天後必達押金上限，不再往下數
+    if (PENALTY_COUNTS_OFF_DAYS || !isOffDay(day, closedDates)) days++
+    day.setDate(day.getDate() + 1)
+  }
+
+  if (days <= 0) return 0
+  return Math.min(100 * (2 ** days - 1), depositTotal)
+}

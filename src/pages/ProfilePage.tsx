@@ -15,7 +15,7 @@ import { changePassword, updateMyPhone } from '../services/authService'
 import { fetchMyOrders, extendMyOrder, fetchClosedDates } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadEquipmentData } from '../services/equipmentService'
-import { businessMsBetween, pendingMsRemaining, displayOrderStatus, isOffDay } from '../utils/timeUtils'
+import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty } from '../utils/timeUtils'
 
 type ProfileSection = 'history' | 'profile'
 
@@ -328,15 +328,13 @@ const RentalHistorySection: React.FC = () => {
         </div>
       )
     } else if (status === 'in-progress') {
-      // In-Progress: 距離歸還日倒數
-      // 假設歸還日當天 23:59 到期
+      // In-Progress: 距離有效歸還期限倒數（歸還日 19:00，撞公休順延到下個營業日）
       const dates = [...receipt.rentalDates].sort()
       const endDateStr = dates[dates.length - 1]
-      const endDate = new Date(endDateStr)
-      endDate.setHours(23, 59, 59, 999)
+      const deadline = effectiveReturnDeadline(endDateStr, closedDates)
 
-      const msRemaining = businessMsBetween(now, endDate, closedDates)
-      
+      const msRemaining = deadline.getTime() - now.getTime()
+
       if (msRemaining <= 0) return null // 已逾期
 
       const days = Math.floor(msRemaining / (1000 * 60 * 60 * 24))
@@ -348,14 +346,25 @@ const RentalHistorySection: React.FC = () => {
       else if (hours >= 1) timeText = `${hours} h`
       else timeText = `${minutes} min`
 
-      // 如果遇到公休日暫停中
-      const isPaused = isOffDay(now, closedDates)
-
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-small-title text-blue">
             Due in <span className="font-['Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
-            {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
+          </span>
+        </div>
+      )
+    } else if (status === 'overdue') {
+      // Overdue: 顯示累計罰款試算（最終金額歸還時由系學會確認）
+      const dates = [...receipt.rentalDates].sort()
+      const endDateStr = dates[dates.length - 1]
+      const penalty = overduePenalty(endDateStr, receipt.totalDeposit, closedDates, now)
+
+      if (penalty <= 0) return null
+
+      return (
+        <div className="text-right mt-2">
+          <span className="font-['Inter',_sans-serif] text-small-title text-error2">
+            Penalty <span className="font-['Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
           </span>
         </div>
       )

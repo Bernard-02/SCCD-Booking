@@ -10,7 +10,7 @@ import jsPDF from 'jspdf'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../components/cart/cartHelpers'
-import { displayOrderStatus } from '../utils/timeUtils'
+import { displayOrderStatus, overduePenalty } from '../utils/timeUtils'
 import { fetchClosedDates } from '../services/ordersService'
 
 interface OrderItem {
@@ -117,6 +117,12 @@ const OrderPage: React.FC = () => {
   // 計算當前訂單狀態（與 ProfilePage 同一套判定，修正列表已取消／詳情仍 pending 的不同步）
   const currentStatus = displayOrderStatus(rentalData.status, rentalData.createdAt, closedDates)
   const statusInfo = getStatusInfo(currentStatus)
+
+  // 逾期累計罰款試算（僅 overdue 顯示）
+  const endDateStr = [...rentalData.rentalDates].sort()[rentalData.rentalDates.length - 1]
+  const penalty = currentStatus === 'overdue'
+    ? overduePenalty(endDateStr, rentalData.totalDeposit, closedDates)
+    : 0
 
   // 按日期分組
   const dateGroups = useMemo(() => {
@@ -244,17 +250,24 @@ const OrderPage: React.FC = () => {
             <h1 className="font-['Inter',_sans-serif] text-large-title text-white" style={{ fontWeight: 500 }}>
               {rentalData.rentalNumber}
             </h1>
-            {/* 狀態標籤 */}
-            <div
-              className="px-4 py-2 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: statusInfo.color }}
-            >
-              <span
-                className="font-['Inter',_sans-serif] text-small-title font-medium"
-                style={{ color: statusInfo.textColor }}
+            {/* 狀態標籤（逾期時加累計罰款試算，最終金額歸還時由系學會確認） */}
+            <div className="flex items-center gap-4">
+              {currentStatus === 'overdue' && penalty > 0 && (
+                <span className="font-['Inter',_sans-serif] text-small-title text-error2">
+                  Penalty <span className="font-['Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
+                </span>
+              )}
+              <div
+                className="px-4 py-2 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: statusInfo.color }}
               >
-                {statusInfo.en} <span className="font-['Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
-              </span>
+                <span
+                  className="font-['Inter',_sans-serif] text-small-title font-medium"
+                  style={{ color: statusInfo.textColor }}
+                >
+                  {statusInfo.en} <span className="font-['Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
+                </span>
+              </div>
             </div>
           </div>
 
