@@ -1,49 +1,72 @@
 /**
  * 時間計算工具
- * 處理系學會公休日（週六、週日）的特殊邏輯
+ * 公休日 = 週六日 ＋ closed_dates 資料表的臨時公休日（由 fetchClosedDates 取得）
+ * 「24 工作時未繳押金 → 已取消」的權威判定在資料庫端
+ * （supabase/auto-cancel.sql 的 business_hours_since ＋ pg_cron），
+ * 這裡是同邏輯的顯示用版本，讓排程掃描間隔內的 UI 也即時正確。
  */
 
-// 判斷是否為公休日（週六或週日）
-const isOffDay = (date: Date): boolean => {
-  const day = date.getDay()
-  return day === 0 || day === 6 // 0 is Sunday, 6 is Saturday
+import type { OrderStatus } from '../services/ordersService'
+
+/** 繳押金期限：24 工作時 */
+export const PENDING_LIMIT_MS = 24 * 60 * 60 * 1000
+
+// 本地日期 → 'YYYY-MM-DD'（與 closed_dates.day 對齊）
+const toDateKey = (d: Date): string => {
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${dd}`
 }
 
-// 計算經過的「有效時數」（排除公休日）
-// 用於訂單 24 小時繳費倒數
-export const calculateValidHoursPassed = (startDateStr: string): number => {
-  const start = new Date(startDateStr)
-  const now = new Date()
-  
-  if (now < start) return 0
-  
-  let totalTimeMs = now.getTime() - start.getTime()
-  
-  // 迭代每一天，扣除公休日的時間
-  const temp = new Date(start)
-  temp.setHours(0, 0, 0, 0)
-  
-  const endLoop = new Date(now)
-  endLoop.setHours(0, 0, 0, 0)
-  // 加一天以確保包含結束當天的檢查
-  endLoop.setDate(endLoop.getDate() + 1)
+/** 是否為公休日（週六日或臨時公休） */
+export const isOffDay = (date: Date, closedDates: ReadonlySet<string>): boolean => {
+  const day = date.getDay()
+  return day === 0 || day === 6 || closedDates.has(toDateKey(date))
+}
 
-  while (temp < endLoop) {
-    if (isOffDay(temp)) {
-      // 如果這一天是公休日，計算它與 [start, now] 的交集時間並扣除
-      const dayStart = new Date(temp)
-      const dayEnd = new Date(temp)
+/** 兩個時間點之間的有效毫秒數：總時長扣掉公休日與區間重疊的部分 */
+export const businessMsBetween = (
+  start: Date,
+  end: Date,
+  closedDates: ReadonlySet<string>
+): number => {
+  if (start >= end) return 0
+
+  let totalMs = end.getTime() - start.getTime()
+  const day = new Date(start)
+  day.setHours(0, 0, 0, 0)
+
+  while (day < end) {
+    if (isOffDay(day, closedDates)) {
+      const dayEnd = new Date(day)
       dayEnd.setDate(dayEnd.getDate() + 1)
-      
-      const intersectionStart = dayStart < start ? start : dayStart
-      const intersectionEnd = dayEnd > now ? now : dayEnd
-      
-      if (intersectionEnd > intersectionStart) {
-        totalTimeMs -= (intersectionEnd.getTime() - intersectionStart.getTime())
-      }
+      const from = Math.max(day.getTime(), start.getTime())
+      const to = Math.min(dayEnd.getTime(), end.getTime())
+      if (to > from) totalMs -= to - from
     }
-    temp.setDate(temp.getDate() + 1)
+    day.setDate(day.getDate() + 1)
   }
-  
-  return totalTimeMs / (1000 * 60 * 60)
+
+  return totalMs
+}
+
+/** 繳押金剩餘毫秒數（負值 = 已逾時） */
+export const pendingMsRemaining = (
+  createdAt: string,
+  now: Date,
+  closedDates: ReadonlySet<string>
+): number => PENDING_LIMIT_MS - businessMsBetween(new Date(createdAt), now, closedDates)
+
+/**
+ * 訂單顯示狀態：資料庫 status 為準；
+ * 僅 pending 額外做逾時判定（cron 尚未掃到前先顯示已取消）。
+ */
+export const displayOrderStatus = (
+  status: OrderStatus | undefined,
+  createdAt: string,
+  closedDates: ReadonlySet<string>,
+  now: Date = new Date()
+): OrderStatus => {
+  if (status && status !== 'pending') return status
+  return pendingMsRemaining(createdAt, now, closedDates) <= 0 ? 'canceled' : 'pending'
 }

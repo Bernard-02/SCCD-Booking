@@ -10,7 +10,8 @@ import jsPDF from 'jspdf'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../components/cart/cartHelpers'
-import { calculateValidHoursPassed } from '../utils/timeUtils'
+import { displayOrderStatus } from '../utils/timeUtils'
+import { fetchClosedDates } from '../services/ordersService'
 
 interface OrderItem {
   id: string
@@ -45,21 +46,7 @@ interface DateGroup {
   spaceItems: OrderItem[]
 }
 
-// 計算訂單狀態
-const calculateOrderStatus = (orderData: OrderData): OrderStatus => {
-  if (orderData.status) {
-    return orderData.status
-  }
-
-  // 使用新的邏輯計算有效經過時數（排除六日）
-  const hoursSinceCreated = calculateValidHoursPassed(orderData.createdAt)
-
-  if (hoursSinceCreated > 24) {
-    return 'canceled'
-  }
-
-  return 'pending'
-}
+// 訂單狀態判定統一在 utils/timeUtils.ts（與 ProfilePage 共用，列表／詳情不再各算各的）
 
 // 獲取狀態顯示資訊
 const getStatusInfo = (status: OrderStatus) => {
@@ -110,6 +97,12 @@ const OrderPage: React.FC = () => {
   // 從 location.state 獲取租借資料
   const rentalData = location.state as OrderData | null
 
+  // 臨時公休日（24 工作時判定用）
+  const [closedDates, setClosedDates] = React.useState<ReadonlySet<string>>(new Set())
+  React.useEffect(() => {
+    fetchClosedDates().then(setClosedDates)
+  }, [])
+
   // 如果沒有租借資料，導航回首頁
   React.useEffect(() => {
     if (!rentalData) {
@@ -121,8 +114,8 @@ const OrderPage: React.FC = () => {
     return null
   }
 
-  // 計算當前訂單狀態
-  const currentStatus = calculateOrderStatus(rentalData)
+  // 計算當前訂單狀態（與 ProfilePage 同一套判定，修正列表已取消／詳情仍 pending 的不同步）
+  const currentStatus = displayOrderStatus(rentalData.status, rentalData.createdAt, closedDates)
   const statusInfo = getStatusInfo(currentStatus)
 
   // 按日期分組

@@ -12,9 +12,10 @@ import ExtendDialog from '../components/profile/ExtendDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
 import Toast from '../components/common/Toast'
 import { changePassword, updateMyPhone } from '../services/authService'
-import { fetchMyOrders, extendMyOrder } from '../services/ordersService'
+import { fetchMyOrders, extendMyOrder, fetchClosedDates } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadEquipmentData } from '../services/equipmentService'
+import { businessMsBetween, pendingMsRemaining, displayOrderStatus, isOffDay } from '../utils/timeUtils'
 
 type ProfileSection = 'history' | 'profile'
 
@@ -128,63 +129,7 @@ const ProfilePage: React.FC = () => {
   )
 }
 
-// 判斷是否為週末 (Off-day)
-const isWeekend = (date: Date): boolean => {
-  const day = date.getDay()
-  return day === 0 || day === 6 // 0 is Sunday, 6 is Saturday
-}
-
-// 計算兩個日期之間的工作時間（毫秒），排除週末
-const getBusinessTimeDiff = (start: Date, end: Date): number => {
-  if (start >= end) return 0
-
-  let totalMs = 0
-  let current = new Date(start)
-  const target = new Date(end)
-
-  // 為了效能，若差距過大可以優化，但此處針對短期租借直接迭代
-  // 使用小時為單位進行迭代計算會比較準確且簡單
-  while (current < target) {
-    const day = current.getDay()
-    const isOffDay = day === 0 || day === 6
-
-    // 計算到下一個整點或目標時間的差距
-    const nextStep = new Date(current)
-    nextStep.setHours(current.getHours() + 1, 0, 0, 0)
-    if (nextStep > target) nextStep.setTime(target.getTime())
-
-    if (!isOffDay) {
-      totalMs += (nextStep.getTime() - current.getTime())
-    }
-
-    current = nextStep
-  }
-
-  return totalMs
-}
-
-// 計算訂單狀態
-const calculateOrderStatus = (receipt: Receipt): OrderStatus => {
-  // 如果已經有明確的 status，則使用它（後台標記的狀態）
-  // 修改：如果是 pending，則繼續檢查是否過期
-  if (receipt.status && receipt.status !== 'pending') {
-    return receipt.status
-  }
-
-  // 針對 Pending 狀態，檢查是否超過 24 小時工作時間
-  // 使用 getBusinessTimeDiff 計算從建立到現在經過的工作時間
-  const now = new Date()
-  const created = new Date(receipt.createdAt)
-  const msPassed = getBusinessTimeDiff(created, now)
-  const hoursSinceCreated = msPassed / (1000 * 60 * 60)
-
-  if (hoursSinceCreated > 24) {
-    return 'canceled'
-  }
-
-  // 默認為 pending（等待繳交押金）
-  return 'pending'
-}
+// 工作時計算與訂單狀態判定統一在 utils/timeUtils.ts（與 OrderPage 共用）
 
 // 租借歷史區塊
 const RentalHistorySection: React.FC = () => {
@@ -192,6 +137,7 @@ const RentalHistorySection: React.FC = () => {
   const navigate = useNavigate()
   const [allReceipts, setAllReceipts] = useState<Receipt[]>([])
   const [now, setNow] = useState(new Date()) // 用於倒數計時更新
+  const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set()) // 臨時公休日
   const [isExtendDialogOpen, setIsExtendDialogOpen] = useState(false)
   const [extendingReceipt, setExtendingReceipt] = useState<Receipt | null>(null)
 
@@ -237,6 +183,7 @@ const RentalHistorySection: React.FC = () => {
 
   useEffect(() => {
     loadOrders()
+    fetchClosedDates().then(setClosedDates)
   }, [loadOrders])
 
   // 每分鐘更新一次時間，觸發倒數計時重繪
@@ -362,17 +309,15 @@ const RentalHistorySection: React.FC = () => {
   // 渲染倒數計時
   const renderCountdown = (receipt: Receipt, status: OrderStatus) => {
     if (status === 'pending') {
-      // Pending: 24小時倒數
-      const created = new Date(receipt.createdAt)
-      const msPassed = getBusinessTimeDiff(created, now)
-      const msRemaining = (24 * 60 * 60 * 1000) - msPassed
+      // Pending: 24 工作時倒數（排除週末與臨時公休日）
+      const msRemaining = pendingMsRemaining(receipt.createdAt, now, closedDates)
 
       if (msRemaining <= 0) return null // 已過期，狀態會變為 canceled
 
       const hoursRemaining = Math.ceil(msRemaining / (1000 * 60 * 60))
-      
-      // 如果遇到 Off day 暫停中 (現在是週末)
-      const isPaused = isWeekend(now)
+
+      // 如果遇到公休日暫停中
+      const isPaused = isOffDay(now, closedDates)
       
       return (
         <div className="text-right mt-2">
@@ -390,7 +335,7 @@ const RentalHistorySection: React.FC = () => {
       const endDate = new Date(endDateStr)
       endDate.setHours(23, 59, 59, 999)
 
-      const msRemaining = getBusinessTimeDiff(now, endDate)
+      const msRemaining = businessMsBetween(now, endDate, closedDates)
       
       if (msRemaining <= 0) return null // 已逾期
 
@@ -403,8 +348,8 @@ const RentalHistorySection: React.FC = () => {
       else if (hours >= 1) timeText = `${hours} h`
       else timeText = `${minutes} min`
 
-      // 如果遇到 Off day 暫停中
-      const isPaused = isWeekend(now)
+      // 如果遇到公休日暫停中
+      const isPaused = isOffDay(now, closedDates)
 
       return (
         <div className="text-right mt-2">
@@ -420,8 +365,8 @@ const RentalHistorySection: React.FC = () => {
 
   // 渲染收據項目
   const renderReceiptItem = (receipt: Receipt, index: number) => {
-    // 顯示狀態：後台已標記則沿用，否則（pending/未設）依工作時間判定
-    const status = calculateOrderStatus(receipt)
+    // 顯示狀態：資料庫為準；pending 額外做逾時判定（cron 掃描前的即時顯示）
+    const status = displayOrderStatus(receipt.status, receipt.createdAt, closedDates, now)
     
     const statusInfo = getStatusInfo(status)
     const bookingType = receipt.items.length > 0 ? receipt.items[0].bookingType : 'little'

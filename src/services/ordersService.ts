@@ -40,6 +40,22 @@ export async function fetchMyOrders(): Promise<OrderRow[]> {
   return (data ?? []) as OrderRow[]
 }
 
+/**
+ * 系學會臨時公休日（週六日以外），繳押金 24 工作時倒數會跳過這些日期。
+ * 讀取失敗時退回空集合（只排除週末），不擋頁面。
+ */
+let closedDatesCache: Set<string> | null = null
+export async function fetchClosedDates(): Promise<Set<string>> {
+  if (closedDatesCache) return closedDatesCache
+  const { data, error } = await supabase.from('closed_dates').select('day')
+  if (error) {
+    console.error('讀取公休日失敗:', error.message)
+    return new Set()
+  }
+  closedDatesCache = new Set((data ?? []).map(row => row.day as string))
+  return closedDatesCache
+}
+
 /** 延期自己的訂單（RPC：僅限租借中、未延期過、1-7 天） */
 export async function extendMyOrder(
   rentalNumber: string,
