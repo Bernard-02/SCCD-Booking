@@ -1,11 +1,11 @@
 /**
  * Supabase 認證服務
  * 登入流程：學號 → email（RPC email_for_student）→ Supabase Auth 驗證 → 撈 students profile。
- * 取代 utils/testAuthData 的 mockApiLogin。
+ * 取代已移除的 mock 登入（原 utils/testAuthData）。
  */
 
 import { supabase } from './supabase'
-import type { Student, LoginResult } from '../utils/testAuthData'
+import type { Student, LoginResult } from '../utils/authTypes'
 
 // 沿用原本 app 的 7 天登入效期（app 自己的 storage 週期，與 Supabase session 無關）
 const EXPIRES_IN = 7 * 24 * 60 * 60 * 1000

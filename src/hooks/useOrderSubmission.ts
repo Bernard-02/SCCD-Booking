@@ -11,7 +11,7 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import type { CartItem, Receipt } from '../types/equipment'
-import type { Student } from '../utils/testAuthData'
+import type { Student } from '../utils/authTypes'
 import { receiptsKey } from '../utils/storageKeys'
 
 const DEPOSIT_CAP_PER_CATEGORY = 5000

@@ -15,7 +15,7 @@ import { changePassword, updateMyPhone } from '../services/authService'
 import { fetchMyOrders, extendMyOrder, fetchClosedDates } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadEquipmentData } from '../services/equipmentService'
-import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
+import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
 import { useSuspension } from '../hooks/useSuspension'
 
 type ProfileSection = 'history' | 'profile'
@@ -222,7 +222,9 @@ const RentalHistorySection: React.FC = () => {
   const handleExtendClick = (receipt: Receipt, status: OrderStatus) => {
     // 只有租借中且未延期過的訂單才能延期；
     // 過期／取消的訂單已失效，延期沒有意義（overdue、returned、pending 同樣不可）
-    if (status !== 'in-progress' || receipt.hasExtended) {
+    // 並須在原歸還日前三天（含）內提出
+    const endDate = receipt.rentalDates[receipt.rentalDates.length - 1]
+    if (status !== 'in-progress' || receipt.hasExtended || !isWithinExtendWindow(endDate)) {
       return
     }
 
@@ -379,6 +381,9 @@ const RentalHistorySection: React.FC = () => {
     const status = displayOrderStatus(receipt.status, receipt.createdAt, closedDates, now)
     
     const statusInfo = getStatusInfo(status)
+    // 可延期＝租借中、未延期過、且未逾「前三天」期限
+    const endDate = receipt.rentalDates[receipt.rentalDates.length - 1]
+    const canExtend = status === 'in-progress' && !receipt.hasExtended && isWithinExtendWindow(endDate)
     const bookingType = receipt.items.length > 0 ? receipt.items[0].bookingType : 'little'
     const bookingTypeLabel = getBookingTypeLabel(bookingType)
 
@@ -427,9 +432,9 @@ const RentalHistorySection: React.FC = () => {
                   e.stopPropagation() // 防止觸發訂單點擊事件
                   handleExtendClick(receipt, status)
                 }}
-                disabled={status !== 'in-progress' || receipt.hasExtended}
+                disabled={!canExtend}
                 className={`px-3 py-1 flex items-center justify-center border rounded-lg group-hover:!opacity-100 transition-colors ${
-                  status === 'in-progress' && !receipt.hasExtended
+                  canExtend
                     ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
                     : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
                 }`}

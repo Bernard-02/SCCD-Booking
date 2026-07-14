@@ -41,6 +41,15 @@ begin
                  or coalesce(v_grade, '') ~ '(大二|大三|大四|碩)';
 
   for v_order in select * from jsonb_array_elements(p_orders) loop
+    -- 寒暑假封鎖（情境 11-a）：學生的租借區間與任一封鎖區間重疊即擋；admin／staff 不受限。
+    if public.user_role() = 'student' and exists (
+      select 1 from public.rental_blackouts b
+      where b.start_date <= (v_order ->> 'end_date')::date
+        and b.end_date >= (v_order ->> 'start_date')::date
+    ) then
+      raise exception '所選租借期間為寒暑假封鎖期，暫不開放租借';
+    end if;
+
     -- 重複下單檢查（rental-rules §6，原僅前端）：同一時段僅能有一張小量訂單
     if v_order ->> 'booking_type' = 'little' and exists (
       select 1 from public.orders o
@@ -158,6 +167,70 @@ begin
 end;
 $$;
 
+-- 後台：確認收押金（pending → in-progress）。僅 admin（情境 4）。
+-- 繳押金當下直接取件，無中間態；發通知告知學生租借已開始。
+create or replace function public.admin_mark_paid(p_rental_number text)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_student uuid;
+begin
+  if public.user_role() <> 'admin' then
+    raise exception '僅限管理員';
+  end if;
+
+  update public.orders
+    set status = 'in-progress'
+    where rental_number = p_rental_number and status = 'pending'
+    returning student_id into v_student;
+
+  if not found then
+    raise exception '訂單不存在或非待繳押金狀態';
+  end if;
+
+  insert into public.notifications (student_id, type, title, message, link)
+  values (v_student, 'success', '押金已確認',
+          '訂單 ' || p_rental_number || ' 押金已收，租借開始。', '/profile');
+end;
+$$;
+
+-- 後台：整單歸還（in-progress / overdue → returned）。僅 admin（情境 6）。
+-- p_penalty = 系學會確認的最終罰款（逾期單填試算金額、可調；準時歸還填 0），寫入 penalty_total。
+-- 部分歸還走拆單（另一支 RPC，之後做）；此支只處理整單歸還。歸還後佔用自動釋放（returned 不佔用）。
+create or replace function public.admin_mark_returned(p_rental_number text, p_penalty int default 0)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_student uuid;
+begin
+  if public.user_role() <> 'admin' then
+    raise exception '僅限管理員';
+  end if;
+  if p_penalty < 0 then
+    raise exception '罰款金額不可為負';
+  end if;
+
+  update public.orders
+    set status = 'returned',
+        penalty_total = p_penalty
+    where rental_number = p_rental_number and status in ('in-progress', 'overdue')
+    returning student_id into v_student;
+
+  if not found then
+    raise exception '訂單不存在或非可歸還狀態（僅租借中／逾期可歸還）';
+  end if;
+
+  insert into public.notifications (student_id, type, title, message, link)
+  values (v_student, 'success', '已歸還',
+          '訂單 ' || p_rental_number || ' 已完成歸還'
+          || case when p_penalty > 0 then '，罰款 NT$ ' || p_penalty else '' end || '。', '/profile');
+end;
+$$;
+
 -- 查詢設備在指定時段的佔用量（給型錄顯示可借數量；只回傳統計，不含個資）
 -- reserved = pending + in-progress + overdue 的重疊訂單數量；on_hold = 其中 pending 的部分
 create or replace function public.equipment_reserved(p_start date, p_end date)
@@ -231,6 +304,11 @@ begin
   end if;
   if v_order.has_extended then
     raise exception '此訂單已延期過（僅可延期乙次）';
+  end if;
+  -- 需在原歸還日前三天（含）提出（rental-rules §11，官方原文，2026-07-14 改為程式強制）：
+  -- 申請當日須 ≤ 歸還日 − 3 天，過期即不可延、訂單照常結束（仍想借請重新下單走先來後到）。
+  if (now() at time zone 'Asia/Taipei')::date > v_order.end_date - 3 then
+    raise exception '延期須在原歸還日前三天提出，已逾期限無法延期';
   end if;
 
   -- 延長區間 = [原歸還日+1, 新歸還日]，逐品項檢查與其他生效訂單的衝突

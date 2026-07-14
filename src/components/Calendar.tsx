@@ -3,8 +3,10 @@
  * 從 calendar-generator.js 遷移
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { toDateKey } from './cart/cartHelpers'
+import { fetchBlackouts } from '../services/ordersService'
+import { useAuth } from '../contexts/AuthContext'
 
 interface CalendarProps {
   startDate: Date | null
@@ -58,6 +60,30 @@ const Calendar: React.FC<CalendarProps> = ({
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  // 寒暑假封鎖（情境 11-a）：學生不可選封鎖區間內的日期；admin／staff 不受限，不載入。
+  const { currentUser } = useAuth()
+  const [blackouts, setBlackouts] = useState<{ start: Date; end: Date }[]>([])
+  const isPrivileged = currentUser?.role === 'admin' || currentUser?.role === 'staff'
+  useEffect(() => {
+    if (isPrivileged) return
+    let alive = true
+    fetchBlackouts().then(ranges => {
+      if (!alive) return
+      setBlackouts(ranges.map(r => {
+        const s = new Date(r.start); s.setHours(0, 0, 0, 0)
+        const e = new Date(r.end); e.setHours(0, 0, 0, 0)
+        return { start: s, end: e }
+      }))
+    })
+    return () => { alive = false }
+  }, [isPrivileged])
+
+  const isBlackout = (dateOnly: Date): boolean =>
+    blackouts.some(r => dateOnly >= r.start && dateOnly <= r.end)
+  // 租借區間與任一封鎖區間重疊（擋跨越封鎖的起訖選擇）
+  const rangeHitsBlackout = (start: Date, end: Date): boolean =>
+    blackouts.some(r => start <= r.end && end >= r.start)
+
   // 計算有效的最小可選日期
   const getMinAllowedDate = () => {
     const base = minSelectableDate ? new Date(minSelectableDate) : new Date(today)
@@ -90,11 +116,11 @@ const Calendar: React.FC<CalendarProps> = ({
       // 檢查日期範圍是否超過最大天數限制
       const daysDifference = Math.ceil((clickedDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
-      if (daysDifference <= maxDays) {
-        // 有起租日且範圍在最大天數內，設置歸還日
+      if (daysDifference <= maxDays && !rangeHitsBlackout(startDate, clickedDate)) {
+        // 有起租日且範圍在最大天數內、且未跨越封鎖區間，設置歸還日
         onDateSelect(startDate, clickedDate)
       }
-      // 超過最大天數，不執行任何動作
+      // 超過最大天數或跨越封鎖區間，不執行任何動作
     } else {
       // 如果選擇的日期早於起租日，重新設置起租日
       onDateSelect(clickedDate, null)
@@ -177,6 +203,9 @@ const Calendar: React.FC<CalendarProps> = ({
           // 使用 minAllowedDate 判斷是否為過去/不可選日期
           const isPastDate = currentDateOnly < minAllowedDate
 
+          // 寒暑假封鎖日期：與過去日期同等處理（灰色、不可點選）
+          const isBlocked = isBlackout(currentDateOnly)
+
           // 檢查是否超過最大天數範圍
           let isOutOfRange = false
           if (startDate && !endDate) {
@@ -203,7 +232,7 @@ const Calendar: React.FC<CalendarProps> = ({
           if (isExpiredRange) {
             // 過期範圍：黃色，不可選擇
             dateClasses += ' expired-date'
-          } else if (isPastDate || isOutOfRange) {
+          } else if (isPastDate || isOutOfRange || isBlocked) {
             dateClasses += ' text-gray-500'
           } else {
             dateClasses += ' cursor-pointer'
@@ -230,8 +259,8 @@ const Calendar: React.FC<CalendarProps> = ({
               key={`date-${i}`}
               className={dateClasses}
               data-date={toDateKey(currentDateOnly)}
-              onClick={() => !isPastDate && !isOutOfRange && !isExpiredRange && handleDateClick(currentDateOnly)}
-              onMouseEnter={() => !isPastDate && !isOutOfRange && !isExpiredRange && setHoveredDate(currentDateOnly)}
+              onClick={() => !isPastDate && !isOutOfRange && !isExpiredRange && !isBlocked && handleDateClick(currentDateOnly)}
+              onMouseEnter={() => !isPastDate && !isOutOfRange && !isExpiredRange && !isBlocked && setHoveredDate(currentDateOnly)}
               onMouseLeave={() => setHoveredDate(null)}
             >
               <div className="date-number-wrapper">

@@ -3,7 +3,7 @@
  * 供 AuthContext 與 bookmarkStore 共用，避免各自重複 local→session fallback + JSON.parse 樣板。
  */
 
-import type { Student } from './testAuthData'
+import type { Student } from './authTypes'
 
 /** 登入資料 storage key（記住我存 local，否則存 session） */
 export const LOGIN_STORAGE_KEY = 'sccd_login_data'

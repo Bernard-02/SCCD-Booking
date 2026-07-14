@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { Student, LoginResult } from '../utils/testAuthData'
+import type { Student, LoginResult } from '../utils/authTypes'
 import { supabaseLogin, supabaseLogout } from '../services/authService'
 import { readLoginData } from '../utils/authStorage'
 import type { LoginData } from '../utils/authStorage'

@@ -29,7 +29,7 @@ src/
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
   stores/bookmarkStore.ts       # Zustand 收藏 store
   services/                     # 空資料夾（保留給未來真實後端，目前無檔案）
-  utils/                        # testAuthData（mock 登入）、authStorage、storageKeys、timeUtils、orderValidation
+  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils、orderValidation
   data/equipment-data.json      # 設備主資料（包含庫存、分類）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
@@ -70,8 +70,8 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 - **登入狀態**：`localStorage.sccd_login_data`（記住我）或 `sessionStorage.sccd_login_data`（僅此次）
 - **過期**：`loginTime + expiresIn < now` 即視為過期，自動清除
-- **mock 登入**：`src/utils/testAuthData.ts` 提供 `mockApiLogin`，由 `AuthContext` 使用
-- **替換接口**：`AuthProvider` 接受可選的 `authService` prop（`AuthService` 介面），未來可注入 Firebase
+- **登入實作**：`AuthContext` 走 `services/authService.ts` 的 `supabaseLogin`（學號→email→Supabase Auth）；
+  舊的 mock 登入（`testAuthData.ts`／`mockApiLogin`）已移除，認證共用型別留在 `utils/authTypes.ts`
 - **保護路由**：目前僅 `/profile` 包在 `ProtectedRoute` 中，其他路由都是公開的
 
 ## Storage Key 對照

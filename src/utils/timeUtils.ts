@@ -111,6 +111,19 @@ export const overdueBusinessDays = (
   return days
 }
 
+/**
+ * 延期須在原歸還日前三天（含）提出（rental-rules §11）：今天 ≤ 歸還日 − 3 天。
+ * 過期限即不可延；伺服器端 extend_my_order 亦有同一道防線，前端此判斷是 UX。
+ */
+export const isWithinExtendWindow = (endDate: string, now: Date = new Date()): boolean => {
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  const deadline = new Date(endDate)
+  deadline.setHours(0, 0, 0, 0)
+  deadline.setDate(deadline.getDate() - 3)
+  return today <= deadline
+}
+
 /** 滿 6 個逾期營業日 = 未完成清潔歸還 → 停權 */
 export const SUSPENSION_OVERDUE_DAYS = 6
 

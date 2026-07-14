@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { DateSelectionProvider } from './contexts/DateSelectionContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 
 // 首頁同步載入，避免初次進站出現載入畫面
 import HomePage from './pages/HomePage'
@@ -21,6 +22,12 @@ const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
+const AdminHomePage = lazy(() => import('./pages/AdminHomePage'))
+const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
+const AdminClosedDatesPage = lazy(() => import('./pages/AdminClosedDatesPage'))
+const AdminBlackoutsPage = lazy(() => import('./pages/AdminBlackoutsPage'))
+const AdminPlaceholderPage = lazy(() => import('./pages/AdminPlaceholderPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -65,6 +72,22 @@ function App() {
 
                 {/* 訂單詳情 */}
                 <Route path="/order" element={<OrderPage />} />
+
+                {/* 後台（僅 admin）：側欄外框 + 各分區 */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminLayout />
+                    </AdminRoute>
+                  }
+                >
+                  <Route index element={<AdminHomePage />} />
+                  <Route path="orders" element={<AdminOrdersPage />} />
+                  <Route path="announcements" element={<AdminPlaceholderPage title="公告" />} />
+                  <Route path="closed-dates" element={<AdminClosedDatesPage />} />
+                  <Route path="blackouts" element={<AdminBlackoutsPage />} />
+                </Route>
 
                 {/* 關於 */}
                 <Route path="/about" element={<AboutPage />} />

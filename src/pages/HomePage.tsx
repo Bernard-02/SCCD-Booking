@@ -12,7 +12,10 @@ import Footer from '../components/layouts/Footer'
 
 const HomePage = () => {
   const navigate = useNavigate()
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, currentUser } = useAuth()
+
+  // 登入後導向：admin 進後台，其餘進型錄
+  const landingPath = (role?: string) => (role === 'admin' ? '/admin' : '/catalog')
   const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -28,9 +31,9 @@ const HomePage = () => {
   // 如果已登入，自動導向到 BookingResourcesPage
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/catalog', { replace: true })
+      navigate(landingPath(currentUser?.role), { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, currentUser, navigate])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +43,7 @@ const HomePage = () => {
     const result = await login(studentId.trim(), password, rememberMe)
 
     if (result.success) {
-      navigate('/catalog', { replace: true })
+      navigate(landingPath(result.student?.role), { replace: true })
     } else {
       // 根據錯誤類型顯示不同訊息
       if (result.error === 'user_not_found') {

@@ -11,6 +11,7 @@ import {
   effectiveReturnDeadline,
   overdueBusinessDays,
   overduePenalty,
+  isWithinExtendWindow,
   PENDING_LIMIT_MS
 } from './timeUtils'
 
@@ -113,5 +114,19 @@ describe('overdueBusinessDays / overduePenalty', () => {
   it('長期逾期不溢位、鎖在押金上限', () => {
     const now = new Date(2027, 6, 17, 10, 0) // 一年後
     expect(overduePenalty('2026-07-17', 5000, NONE, now)).toBe(5000)
+  })
+})
+
+describe('isWithinExtendWindow（延期前三天邊界）', () => {
+  const now = new Date(2026, 6, 14, 10, 0) // 週二 7/14
+
+  it('歸還日 7/17：今天 7/14 = 前三天邊界（含），可延', () => {
+    expect(isWithinExtendWindow('2026-07-17', now)).toBe(true)
+  })
+  it('歸還日 7/16：今天 7/14 已逾前三天，不可延', () => {
+    expect(isWithinExtendWindow('2026-07-16', now)).toBe(false)
+  })
+  it('歸還日 7/20：離歸還日還很遠，可延', () => {
+    expect(isWithinExtendWindow('2026-07-20', now)).toBe(true)
   })
 })
