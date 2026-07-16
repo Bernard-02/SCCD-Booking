@@ -6,6 +6,10 @@
 import React, { useEffect, useState } from 'react'
 import { listBlackouts, addBlackout, deleteBlackout } from '../services/adminService'
 import type { Blackout } from '../services/adminService'
+import { PageTitle, actionBtn, inputCls } from '../components/admin/adminUi'
+
+const th = 'px-3 py-2 font-normal whitespace-nowrap'
+const td = 'px-3 py-3'
 
 const AdminBlackoutsPage: React.FC = () => {
   const [rows, setRows] = useState<Blackout[]>([])
@@ -35,65 +39,61 @@ const AdminBlackoutsPage: React.FC = () => {
     await load()
   }
 
-  const input = 'bg-transparent border border-gray-scale4 rounded px-3 py-1.5 text-tiny text-white focus:border-white outline-none'
-  const cell = 'border border-gray-scale4 px-3 py-1.5'
-
   return (
     <div>
-      <h1 className="text-medium-title font-['Inter',_sans-serif] mb-2">
-        Blackouts <span className="font-['Noto_Sans_TC',_sans-serif] text-content text-gray-scale2">寒暑假封鎖</span>
-      </h1>
-      <p className="text-tiny text-gray-scale2 font-['Noto_Sans_TC',_sans-serif] mb-6">
-        區間內學生不可租借（admin／staff 不受限）；日曆會把封鎖日期灰化。
-      </p>
+      <PageTitle
+        en="Blackouts"
+        zh="寒暑假封鎖"
+        desc="區間內學生不可租借（admin／staff 不受限）；日曆會把封鎖日期灰化。"
+      />
 
       {/* 新增列 */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <input type="date" value={start} onChange={e => setStart(e.target.value)} className={`${input} cursor-pointer`} />
+      <div className="flex flex-wrap items-center gap-3 mb-8">
+        <input type="date" value={start} onChange={e => setStart(e.target.value)} className={`${inputCls} cursor-pointer`} />
         <span className="text-gray-scale2 text-tiny">～</span>
-        <input type="date" value={end} onChange={e => setEnd(e.target.value)} className={`${input} cursor-pointer`} />
+        <input type="date" value={end} onChange={e => setEnd(e.target.value)} className={`${inputCls} cursor-pointer`} />
         <input
           type="text" value={reason} onChange={e => setReason(e.target.value)}
-          placeholder="原因（如：暑假）" className={`${input} min-w-[10rem]`}
+          placeholder="原因（如：暑假）" className={`${inputCls} font-chinese min-w-[10rem]`}
         />
-        <button
-          onClick={handleAdd} disabled={busy}
-          className="px-3 py-1.5 rounded border border-white text-white text-tiny cursor-pointer hover:bg-white hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-['Noto_Sans_TC',_sans-serif]"
-        >
-          {busy ? '新增中…' : '新增'}
+        <button onClick={handleAdd} disabled={busy} className={actionBtn(!busy)}>
+          {busy
+            ? <span className="font-chinese">新增中…</span>
+            : <span className="font-english">Add <span className="font-chinese">新增</span></span>}
         </button>
       </div>
 
       {loading ? (
-        <div className="text-gray-scale2 text-tiny font-['Noto_Sans_TC',_sans-serif]">載入中…</div>
+        <div className="text-gray-scale2 text-tiny font-chinese">載入中…</div>
       ) : (
-        <table className="text-tiny border-collapse border border-gray-scale4">
+        <table className="text-tiny border-collapse min-w-[32rem]">
           <thead>
-            <tr className="text-left text-gray-scale2 bg-white/5">
-              <th className={`${cell} font-normal`}>開始</th>
-              <th className={`${cell} font-normal`}>結束</th>
-              <th className={`${cell} font-normal`}>原因</th>
-              <th className={`${cell} font-normal`}>操作</th>
+            <tr className="text-left text-gray-scale2 border-b border-gray-scale4">
+              <th className={th}><span className="font-english">From</span> <span className="font-chinese">開始</span></th>
+              <th className={th}><span className="font-english">To</span> <span className="font-chinese">結束</span></th>
+              <th className={th}><span className="font-english">Reason</span> <span className="font-chinese">原因</span></th>
+              <th className={th}><span className="font-english">Action</span> <span className="font-chinese">操作</span></th>
             </tr>
           </thead>
           <tbody>
             {rows.map(b => (
-              <tr key={b.id} className="hover:bg-white/5">
-                <td className={`${cell} font-['Inter',_sans-serif] whitespace-nowrap`}>{b.start_date}</td>
-                <td className={`${cell} font-['Inter',_sans-serif] whitespace-nowrap`}>{b.end_date}</td>
-                <td className={`${cell} font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 min-w-[10rem]`}>{b.reason || '—'}</td>
-                <td className={`${cell} whitespace-nowrap`}>
+              <tr key={b.id} className="border-b border-gray-scale4 hover:bg-white/5">
+                <td className={`${td} font-english whitespace-nowrap`}>{b.start_date}</td>
+                <td className={`${td} font-english whitespace-nowrap`}>{b.end_date}</td>
+                <td className={`${td} font-chinese text-gray-scale2 min-w-[10rem]`}>{b.reason || '—'}</td>
+                <td className={`${td} whitespace-nowrap`}>
                   <button
                     onClick={() => handleDelete(b)}
-                    className="text-red-400 hover:text-red-300 cursor-pointer font-['Noto_Sans_TC',_sans-serif]"
+                    className="text-tiny cursor-pointer hover:opacity-70 transition-opacity"
+                    style={{ color: 'var(--color-error2)' }}
                   >
-                    刪除
+                    <span className="font-english">Delete</span> <span className="font-chinese">刪除</span>
                   </button>
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={4} className={`${cell} text-center text-gray-scale3 py-6 font-['Noto_Sans_TC',_sans-serif]`}>尚無封鎖區間</td></tr>
+              <tr><td colSpan={4} className={`${td} text-center text-gray-scale3 py-8 font-chinese`}>尚無封鎖區間</td></tr>
             )}
           </tbody>
         </table>

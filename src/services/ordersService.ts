@@ -40,9 +40,11 @@ export async function fetchMyOrders(): Promise<OrderRow[]> {
   return (data ?? []) as OrderRow[]
 }
 
-/** 後台用：含借用者姓名／學號的訂單列 */
+/** 後台用：含借用者姓名／學號與經手人的訂單列 */
 export interface AdminOrderRow extends OrderRow {
   student_id: string
+  paid_by: string | null      // 收押金經手幹部（姓名快照）
+  returned_by: string | null  // 歸還經手幹部（姓名快照）
   students: { student_id: string; name: string } | null
 }
 
@@ -97,23 +99,29 @@ export async function fetchBlackouts(): Promise<{ start: string; end: string }[]
   return blackoutsCache
 }
 
-/** 後台：確認收押金（pending → in-progress，僅 admin） */
+/** 後台：確認收押金（pending → in-progress，僅 admin；handler = 值班經手幹部） */
 export async function adminMarkPaid(
-  rentalNumber: string
+  rentalNumber: string,
+  handler: string
 ): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.rpc('admin_mark_paid', { p_rental_number: rentalNumber })
+  const { error } = await supabase.rpc('admin_mark_paid', {
+    p_rental_number: rentalNumber,
+    p_handler: handler
+  })
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
 
-/** 後台：整單歸還（in-progress/overdue → returned，寫入確認罰款，僅 admin） */
+/** 後台：整單歸還（in-progress/overdue → returned，寫入確認罰款與經手人，僅 admin） */
 export async function adminMarkReturned(
   rentalNumber: string,
-  penalty: number
+  penalty: number,
+  handler: string
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_mark_returned', {
     p_rental_number: rentalNumber,
-    p_penalty: penalty
+    p_penalty: penalty,
+    p_handler: handler
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }

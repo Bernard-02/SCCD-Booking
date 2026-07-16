@@ -12,6 +12,7 @@ import {
   overdueBusinessDays,
   overduePenalty,
   isWithinExtendWindow,
+  isOnDuty,
   PENDING_LIMIT_MS
 } from './timeUtils'
 
@@ -128,5 +129,30 @@ describe('isWithinExtendWindow（延期前三天邊界）', () => {
   })
   it('歸還日 7/20：離歸還日還很遠，可延', () => {
     expect(isWithinExtendWindow('2026-07-20', now)).toBe(true)
+  })
+})
+
+describe('isOnDuty', () => {
+  // 週二 12:30（2026-07-14）；時段格式同 Postgres time：'HH:MM:SS'
+  const tue1230 = new Date(2026, 6, 14, 12, 30)
+  const tueNoon = [{ weekday: 2, start_time: '12:00:00', end_time: '13:00:00' }]
+
+  it('now 落在值班時段內 → 值班中', () => {
+    expect(isOnDuty(tueNoon, tue1230)).toBe(true)
+  })
+  it('同時段但不同天 → 不在班', () => {
+    expect(isOnDuty([{ weekday: 3, start_time: '12:00:00', end_time: '13:00:00' }], tue1230)).toBe(false)
+  })
+  it('邊界：開始時間含、結束時間不含', () => {
+    expect(isOnDuty(tueNoon, new Date(2026, 6, 14, 12, 0))).toBe(true)
+    expect(isOnDuty(tueNoon, new Date(2026, 6, 14, 13, 0))).toBe(false)
+  })
+  it('多時段任一命中即值班；無時段 → 不在班', () => {
+    const multi = [
+      { weekday: 2, start_time: '17:00:00', end_time: '19:00:00' },
+      ...tueNoon
+    ]
+    expect(isOnDuty(multi, tue1230)).toBe(true)
+    expect(isOnDuty([], tue1230)).toBe(false)
   })
 })

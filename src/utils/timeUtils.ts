@@ -12,7 +12,7 @@ import type { OrderStatus } from '../services/ordersService'
 export const PENDING_LIMIT_MS = 24 * 60 * 60 * 1000
 
 // 本地日期 → 'YYYY-MM-DD'（與 closed_dates.day 對齊）
-const toDateKey = (d: Date): string => {
+export const toDateKey = (d: Date): string => {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${m}-${dd}`
@@ -122,6 +122,18 @@ export const isWithinExtendWindow = (endDate: string, now: Date = new Date()): b
   deadline.setHours(0, 0, 0, 0)
   deadline.setDate(deadline.getDate() - 3)
   return today <= deadline
+}
+
+/**
+ * 幹部值班判定：now 落在任一時段內（weekday 同 JS getDay，時間為 'HH:MM[:SS]' 字串）。
+ * 經手人選單用：值班中的幹部排最前，其餘照列（代班仍可選）。
+ */
+export interface DutySlot { weekday: number; start_time: string; end_time: string }
+export const isOnDuty = (duties: readonly DutySlot[], now: Date = new Date()): boolean => {
+  const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  return duties.some(
+    d => d.weekday === now.getDay() && hhmm >= d.start_time.slice(0, 5) && hhmm < d.end_time.slice(0, 5)
+  )
 }
 
 /** 滿 6 個逾期營業日 = 未完成清潔歸還 → 停權 */

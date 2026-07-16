@@ -39,13 +39,16 @@
 ## 階段 2：管理後台（進行中）
 
 後台是**自己寫的 `/admin` 頁面**（同 repo、同部署、同視覺），不是資料庫平台的 GUI；
-側欄分區架構（`AdminLayout`）：總覽／訂單／公告／公休日／寒暑假封鎖。admin 登入自動導向 `/admin`。
+側欄分區架構（`AdminLayout`）：總覽／訂單／幹部名單／公休日／寒暑假封鎖。admin 登入自動導向 `/admin`。
+視覺沿用前台 Profile 的設計語彙（`components/admin/adminUi.tsx`：狀態標籤、按鈕、輸入框、頁標題共用）。
 權限真正防線在 Supabase RLS，前端的 `AdminRoute` 只是 UX。
 **編輯政策**（見 order-lifecycle 情境 9）：軟性欄位（原因／班級／老師）可就地改，硬性資料（日期／品項／狀態／押金）一律走專用動作按鈕。
 
-- [x] 訂單全覽：姓名／學號／種類／起訖／品項／原因／押金／狀態＋狀態篩選＋欄位排序（`AdminOrdersPage`）
+- [x] 訂單全覽：姓名／學號／種類／起訖／品項／原因／押金／狀態＋搜尋＋狀態／種類篩選＋全欄排序（`AdminOrdersPage`）
 - [x] 確認收押金（`admin_mark_paid`：pending → in-progress）
 - [x] 整單歸還＋逾期罰款確認（`admin_mark_returned`：in-progress/overdue → returned，寫 `penalty_total`，前端預填試算）
+- [x] 總覽 dashboard：訂單概況統計、教室／空間使用中、待繳押金倒數、違規帳號（停權＋逾期）
+- [x] 值班經手人追溯：收押金／歸還必選經手幹部（`orders.paid_by`／`returned_by` 姓名快照）；幹部名單每年換屆維護（`AdminStaffPage`＋`staff_members` 表，見 supabase/staff-members.sql）
 - [x] 公休日／寒暑假封鎖維護（`AdminClosedDatesPage`／`AdminBlackoutsPage`，直接 CRUD，RLS 把關）
 - [ ] **代客延期**（admin 幫學生延期，不受前台「僅乙次」與前三天限制）
 - [ ] 部分歸還／部分延期拆單（小單先做，見情境 5；`parent_order_id`＋`refunded` 欄位待加）
@@ -54,13 +57,13 @@
 - [ ] 帳號狀態調整（改 `account_level`；解除停權、老師通融）
 - [ ] 手動建單（電話／現場預約，admin 代下）
 - [ ] 庫存管理（新增／下架／調整數量）
-- [ ] 公告
+- ~~公告~~（2026-07 定案不做：公告一律發 Facebook；系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
 - [ ] **助教直借（`staff` 角色）**：用一般前台流程選借，但免押金、免審核、送出即 in-progress、不受學生數量規則限制（情境 10）
 
 ## 階段 3：規則補完（依賴階段 1 的資料模型）
 
-- [ ] 空間 14 天例外：四年級、碩士班放寬到 30 天（`DatePickerBar` 的 `maxDays` 依 `currentUser` 判斷）
-- [ ] A508 教室限大二以上（`SpacePage.handleClassroomAdd` 擋大一）
+- [x] 空間 14 天例外：四年級、碩士班放寬到 30 天（`gradeUtils.ts`＋`DatePickerBar`／`DateEditDialog`）
+- [x] A508 教室限大二以上（`SpacePage` UX 提示＋`submit_orders` server 端擋）
 - [x] 停權帳號：擋送單（不擋登入）——情境 7 已實作
 - [x] 延期「歸還日前三天提出」：**程式強制**已實作（`extend_my_order` RPC 依日期擋＋`isWithinExtendWindow` UX）
 - [x] 重複下單、庫存衝突改由 server 端把關
@@ -69,7 +72,7 @@
 
 ## 階段 4：品質（可並行）
 
-- [ ] 測試：`npm test` 是 stub、零測試。優先蓋 `useCart`／`useCartValidation`（規則最密集、最容易回歸）
+- [x] 測試基礎：vitest 已建置（`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
 - [ ] Tech debt：拆 700 行大檔（`CartList`、`OrderPage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
 - [ ] 零散 TODO：延長線佔位圖（`EquipmentGrid.tsx:184`）、`ProfilePage` 狀態圓點
 

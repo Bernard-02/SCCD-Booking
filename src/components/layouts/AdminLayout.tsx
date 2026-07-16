@@ -1,6 +1,6 @@
 /**
  * 後台外框：左側分類側欄 + 右側內容（<Outlet/>）。
- * 訂單只是其中一區；公告／公休日／寒暑假等各自成區，逐步實作。
+ * 側欄樣式沿用前台 Profile 左選單：純文字、英上中下、active 白粗體。
  */
 
 import React from 'react'
@@ -11,7 +11,7 @@ import { useAuth } from '../../contexts/AuthContext'
 export const ADMIN_SECTIONS: { to: string; label: string; en: string; done?: boolean }[] = [
   { to: '/admin', label: '總覽', en: 'Overview', done: true },
   { to: '/admin/orders', label: '訂單', en: 'Orders', done: true },
-  { to: '/admin/announcements', label: '公告', en: 'Announcements' },
+  { to: '/admin/staff', label: '幹部名單', en: 'Staff', done: true },
   { to: '/admin/closed-dates', label: '公休日', en: 'Closed Dates', done: true },
   { to: '/admin/blackouts', label: '寒暑假封鎖', en: 'Blackouts', done: true }
 ]
@@ -28,43 +28,43 @@ const AdminLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* 側欄 */}
-      <aside className="w-52 shrink-0 border-r border-gray-scale4 flex flex-col">
-        <div className="px-5 py-6 border-b border-gray-scale4">
-          <div className="font-['Inter',_sans-serif] text-content">SCCD Admin</div>
-          <div className="text-tiny text-gray-scale2 font-['Noto_Sans_TC',_sans-serif] mt-1">
-            {currentUser?.name}
-          </div>
+      <aside className="w-64 shrink-0 flex flex-col px-8 py-10">
+        <div>
+          <p className="font-english text-small-title text-white">SCCD Admin</p>
+          <p className="font-chinese text-tiny text-gray-scale2 mt-1">{currentUser?.name}</p>
         </div>
 
-        <nav className="flex-1 py-3">
+        <nav className="flex flex-col gap-6 mt-14 flex-1">
           {ADMIN_SECTIONS.map(s => (
             <NavLink
               key={s.to}
               to={s.to}
               end={s.to === '/admin'}
               className={({ isActive }) =>
-                `flex items-baseline gap-2 px-5 py-2 text-tiny transition-colors ${
-                  isActive ? 'bg-white/10 text-white border-l-2 border-white' : 'text-gray-scale2 hover:text-white border-l-2 border-transparent'
+                `text-small-title text-left transition-colors ${
+                  isActive ? 'text-white font-bold' : 'text-gray-scale2 hover:text-white'
                 }`
               }
             >
-              <span className="font-['Noto_Sans_TC',_sans-serif]">{s.label}</span>
-              <span className="font-['Inter',_sans-serif] text-[10px] opacity-40">{s.en}</span>
-              {!s.done && <span className="ml-auto text-[10px] text-gray-scale3">待做</span>}
+              <span className="font-english block">{s.en}</span>
+              <span className="font-chinese block">
+                {s.label}
+                {!s.done && <span className="text-tiny text-gray-scale3 ml-2">待做</span>}
+              </span>
             </NavLink>
           ))}
         </nav>
 
         <button
           onClick={handleLogout}
-          className="px-5 py-4 text-left text-tiny text-gray-scale2 hover:text-white cursor-pointer border-t border-gray-scale4 font-['Noto_Sans_TC',_sans-serif]"
+          className="text-left text-tiny text-gray-scale2 hover:text-white transition-colors cursor-pointer mt-10"
         >
-          登出
+          <span className="font-english">Logout</span> <span className="font-chinese">登出</span>
         </button>
       </aside>
 
       {/* 內容區 */}
-      <main className="flex-1 min-w-0 px-6 py-8 md:px-10">
+      <main className="flex-1 min-w-0 px-6 py-10 md:px-12">
         <Outlet />
       </main>
     </div>

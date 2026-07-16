@@ -25,6 +25,7 @@ src/
     common/                     # Toast、ConfirmDialog、BookingDetailsDialog
     space/                      # ClassroomList、SpaceAreaMap
     profile/                    # ExtendDialog
+    admin/                      # 後台共用 UI 語彙（adminUi）、OrderActionDialog
   contexts/                     # AuthContext、DateSelectionContext
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
   stores/bookmarkStore.ts       # Zustand 收藏 store
@@ -87,6 +88,8 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 | `booking_receipts_{studentId\|guest}` | 訂單收據（`storageKeys.ts` 的 `receiptsKey`） |
 | `sccd_notifications_{studentId\|guest}` | 通知（`notificationsKey`） |
 | `sccd_read_notifications_{studentId\|guest}` | 已讀通知（`readNotificationsKey`） |
+| `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
+| `sccd_admin_order_cols` | 後台訂單表格欄位順序（`ADMIN_ORDER_COLS_KEY`） |
 
 ## 日期選擇邏輯
 

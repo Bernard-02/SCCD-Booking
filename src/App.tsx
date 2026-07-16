@@ -25,9 +25,9 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
 const AdminHomePage = lazy(() => import('./pages/AdminHomePage'))
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
+const AdminStaffPage = lazy(() => import('./pages/AdminStaffPage'))
 const AdminClosedDatesPage = lazy(() => import('./pages/AdminClosedDatesPage'))
 const AdminBlackoutsPage = lazy(() => import('./pages/AdminBlackoutsPage'))
-const AdminPlaceholderPage = lazy(() => import('./pages/AdminPlaceholderPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -84,7 +84,7 @@ function App() {
                 >
                   <Route index element={<AdminHomePage />} />
                   <Route path="orders" element={<AdminOrdersPage />} />
-                  <Route path="announcements" element={<AdminPlaceholderPage title="公告" />} />
+                  <Route path="staff" element={<AdminStaffPage />} />
                   <Route path="closed-dates" element={<AdminClosedDatesPage />} />
                   <Route path="blackouts" element={<AdminBlackoutsPage />} />
                 </Route>

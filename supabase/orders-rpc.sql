@@ -169,7 +169,9 @@ $$;
 
 -- 後台：確認收押金（pending → in-progress）。僅 admin（情境 4）。
 -- 繳押金當下直接取件，無中間態；發通知告知學生租借已開始。
-create or replace function public.admin_mark_paid(p_rental_number text)
+-- p_handler = 值班經手幹部姓名（快照寫入 orders.paid_by，供追溯；名單見 staff-members.sql）。
+drop function if exists public.admin_mark_paid(text); -- 舊簽名（未帶經手人）
+create or replace function public.admin_mark_paid(p_rental_number text, p_handler text default null)
 returns void
 language plpgsql
 security definer set search_path = public
@@ -182,7 +184,8 @@ begin
   end if;
 
   update public.orders
-    set status = 'in-progress'
+    set status = 'in-progress',
+        paid_by = p_handler
     where rental_number = p_rental_number and status = 'pending'
     returning student_id into v_student;
 
@@ -199,7 +202,9 @@ $$;
 -- 後台：整單歸還（in-progress / overdue → returned）。僅 admin（情境 6）。
 -- p_penalty = 系學會確認的最終罰款（逾期單填試算金額、可調；準時歸還填 0），寫入 penalty_total。
 -- 部分歸還走拆單（另一支 RPC，之後做）；此支只處理整單歸還。歸還後佔用自動釋放（returned 不佔用）。
-create or replace function public.admin_mark_returned(p_rental_number text, p_penalty int default 0)
+-- p_handler = 值班經手幹部姓名（快照寫入 orders.returned_by，供追溯）。
+drop function if exists public.admin_mark_returned(text, integer); -- 舊簽名（未帶經手人）
+create or replace function public.admin_mark_returned(p_rental_number text, p_penalty int default 0, p_handler text default null)
 returns void
 language plpgsql
 security definer set search_path = public
@@ -216,7 +221,8 @@ begin
 
   update public.orders
     set status = 'returned',
-        penalty_total = p_penalty
+        penalty_total = p_penalty,
+        returned_by = p_handler
     where rental_number = p_rental_number and status in ('in-progress', 'overdue')
     returning student_id into v_student;
 
