@@ -16,6 +16,7 @@ import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
 import { checkDuplicateOrder } from '../utils/orderValidation'
+import { fetchMyOrders, type OrderRow } from '../services/ordersService'
 import { isSophomoreOrAbove } from '../utils/gradeUtils'
 import { sortBlockIds } from '../components/cart/cartHelpers'
 
@@ -59,6 +60,17 @@ const SpacePage: React.FC = () => {
       .catch(err => console.error('讀取空間佔用失敗:', err))
     return () => { mounted = false }
   }, [occupiedStartKey, occupiedEndKey])
+
+  // 自己的訂單（重複下單提前提示用；未登入則無，送單時 RPC 仍會把關）
+  const [myOrders, setMyOrders] = useState<OrderRow[]>([])
+  useEffect(() => {
+    if (!currentUser) { setMyOrders([]); return }
+    let mounted = true
+    fetchMyOrders()
+      .then(orders => { if (mounted) setMyOrders(orders) })
+      .catch(err => console.error('讀取訂單失敗:', err))
+    return () => { mounted = false }
+  }, [currentUser])
 
   // 個人租借（小量／大量-個人）：受每時段押金上限 5,000 約束，全選必定超標
   const isPersonalBooking = spaceDates.bookingType !== 'mass-group'
@@ -302,7 +314,7 @@ const SpacePage: React.FC = () => {
 
     // 檢查是否重複下單
     const validation = checkDuplicateOrder(
-      currentUser?.studentId,
+      myOrders,
       spaceDates.startDate,
       spaceDates.endDate,
       spaceDates.bookingType
@@ -408,7 +420,7 @@ const SpacePage: React.FC = () => {
 
     // 檢查是否重複下單
     const validation = checkDuplicateOrder(
-      currentUser?.studentId,
+      myOrders,
       spaceDates.startDate,
       spaceDates.endDate,
       spaceDates.bookingType

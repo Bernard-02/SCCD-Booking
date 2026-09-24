@@ -4,9 +4,6 @@
 
 const orGuest = (studentId?: string | null) => studentId || 'guest'
 
-/** 訂單收據：booking_receipts_<學號|guest> */
-export const receiptsKey = (studentId?: string | null) => `booking_receipts_${orGuest(studentId)}`
-
 /** 通知：sccd_notifications_<學號|guest> */
 export const notificationsKey = (studentId?: string | null) => `sccd_notifications_${orGuest(studentId)}`
 

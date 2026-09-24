@@ -11,7 +11,7 @@
 | 資料庫（設備／訂單／空間／學生狀態） | **Supabase PostgreSQL** + RLS | 待接線 |
 | 圖片（設備照等） | **Supabase Storage**（資料表只存 URL） | 待接線 |
 | 過渡期後台 | **Supabase Studio**（試算表式介面，人工審核頂替） | 現成 |
-| 正式後台 | 自寫 `/admin` 頁面（roadmap 階段 2，等痛了再做） | 未動工 |
+| 正式後台 | 自寫 `/admin` 頁面（roadmap「🛠 後台功能」） | 進行中（訂單全覽／收押金／歸還／公休日／封鎖已上線） |
 | 網站 Hosting | **維持 Vercel**（`vercel.json` 已設好，不搬家） | 現行 |
 
 選 Supabase 而非 Firebase 的關鍵：關聯式資料形態（訂單↔品項↔學生↔庫存）、

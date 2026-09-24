@@ -11,7 +11,6 @@ import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import CartList from '../components/cart/CartList'
 import { useCart } from '../hooks/useCart'
-import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useCartValidation } from '../hooks/useCartValidation'
 import { useOrderSubmission } from '../hooks/useOrderSubmission'
@@ -36,7 +35,6 @@ const parseGroupKey = (key: string): { category: string; startDate: string; endD
 
 const RentalListPage = () => {
   const location = useLocation()
-  const { currentUser } = useAuth()
   const {
     cart,
     updateEquipmentQuantity,
@@ -282,8 +280,8 @@ const RentalListPage = () => {
     }, 400)
   }
 
-  // 送單流程（建收據、寫通知、清空購物車、導向 /profile）
-  const submitOrder = useOrderSubmission({ cart, currentUser, clearCart, bookingDetails })
+  // 送單流程（submit_orders RPC、清空購物車、導向 /profile）
+  const submitOrder = useOrderSubmission({ cart, clearCart, bookingDetails })
 
   // 停權帳號直接鎖住送單按鈕（即時查詢；真正的防線在 submit_orders RPC，此處為 UX）
   const isSuspended = useSuspension()

@@ -31,7 +31,7 @@ src/
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation、useSuspension
   stores/bookmarkStore.ts       # Zustand 收藏 store
   services/                     # Supabase 存取層：supabase client、auth、equipment、space、orders、notifications、admin
-  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils、orderValidation、gradeUtils
+  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils、orderValidation（重複下單前端提示）、gradeUtils
   data/equipment-data.json      # 設備主資料（包含庫存、分類）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
@@ -41,7 +41,7 @@ public/Area/                    # SVG 區域圖
 legacy/                         # 遷移前備份（已 gitignore）
 old-html-backup/                # 舊 HTML 備份（已 gitignore）
 docs/rental-rules.md            # 租借規則單一事實來源（改租借邏輯前必讀）
-docs/roadmap.md                 # 完成路線圖（階段 1-6 與任務清單）
+docs/roadmap.md                 # 完成路線圖（依性質分類的待辦＋已完成紀錄）
 docs/order-lifecycle.md         # 訂單生命週期情境（逐項定案紀錄）
 supabase/                       # 資料庫 SQL（schema、seed、RPC、pg_cron 排程、RLS）
 docs/supabase-backend-plan.md   # 後端定案與接線規劃（Supabase）
@@ -55,7 +55,7 @@ npm run dev        # Vite dev server，port 3000，自動開瀏覽器
 npm run build      # tsc 型別檢查 + vite build → dist/
 npm run preview    # 預覽 production build
 npx tsc --noEmit   # 僅型別檢查，不產生檔案
-npm test           # vitest 單元測試（timeUtils／useCart／useCartValidation）
+npm test           # vitest 單元測試（timeUtils／useCart／useCartValidation／orderValidation）
 ```
 
 ## 遷移狀態（重要背景）
@@ -89,7 +89,6 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 | `sccd_space_dates` | 空間日期選擇（24h 過期） |
 | `sccd_bookmarks` 或 `sccd_bookmarks_{studentId}` | 收藏（依是否登入） |
 | `sccd_favorites_equipment` / `sccd_favorites_classroom` | 舊的收藏 key（legacy-bridge 使用） |
-| `booking_receipts_{studentId\|guest}` | 訂單收據（`storageKeys.ts` 的 `receiptsKey`） |
 | `sccd_notifications_{studentId\|guest}` | 通知（`notificationsKey`） |
 | `sccd_read_notifications_{studentId\|guest}` | 已讀通知（`readNotificationsKey`） |
 | `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
@@ -107,18 +106,20 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 ## 後端（Supabase，已接線）與尚未完成 → 見 docs/roadmap.md
 
-整體現況（2026-09 更新，最後一次功能 commit 為 2026-07-16）：**階段 1 後端接線已完成**——登入（學號→email→Auth）、訂單（`submit_orders` RPC transaction）、庫存扣減、空間佔用、通知、延期全部走 **Supabase**（Auth + PostgreSQL + RLS）。資料庫端 SQL 在 `supabase/`（schema、seed、auth-setup、orders-rpc、auto-cancel／auto-overdue／account-suspension 排程、rental-blackouts、staff-members），前端統一走 `src/services/`。環境變數 `.env`（範本 `.env.example`）。
+整體現況（2026-09 更新）：**後端接線已完成**——登入（學號→email→Auth）、訂單（`submit_orders` RPC transaction）、庫存扣減、空間佔用、通知、延期全部走 **Supabase**（Auth + PostgreSQL + RLS）。資料庫端 SQL 在 `supabase/`（schema、seed、auth-setup、orders-rpc、auto-cancel／auto-overdue／account-suspension 排程、rental-blackouts、staff-members），前端統一走 `src/services/`。環境變數 `.env`（範本 `.env.example`）。
 
-**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號、重複下單、寒暑假封鎖、停權）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。完整任務清單在 **`docs/roadmap.md`**。摘要：
+**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號、重複下單、寒暑假封鎖、停權）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；RPC 以 `raise exception` 回傳中文原因，前端直接顯示給使用者，所以訊息要寫成學生看得懂的話。動資料表結構（含改名）前先全域搜尋引用。
 
-- **階段 1 收尾**：`orderValidation` 仍讀 localStorage receipts 做前端重複下單提示、`useOrderSubmission` 仍雙寫 receipts——server 端已把關，可移除。購物車／日期是否跨裝置同步未定案（不擋上線）。
-- **階段 1.5 桌面版整體驗收**：尚未開始。三個測試帳號互搶的衝突場景（搶最後一件／同一格、延期影響佔用、多分頁、大量單全流程、忘記密碼信實測）。
-- **階段 2 管理後台（進行中）**：`/admin` 已有總覽、訂單全覽、收押金、整單歸還＋罰款、值班經手人、幹部名單、公休日、寒暑假封鎖。**剩**：代客延期、部分歸還拆單（情境 5）、代取消、軟性欄位就地編輯、帳號狀態調整、手動建單、庫存管理、助教直借（staff，情境 10）。公告定案不做（一律發 FB）。
-- **階段 3 規則補完**：✅ 全部完成（30 天例外、A508 限大二以上、停權擋送單、延期前三天強制、重複下單 server 端、寒暑假封鎖 server＋日曆）。
-- **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）以 pg_cron 實作；**仍待 Bernard 定案**：情境 3 大量單事後加設備、情境 5 大單拆分規則與前台部分延期介面、損壞賠償分級——見 `docs/order-lifecycle.md`。
-- **階段 4 品質**：vitest 已有基礎；剩拆大檔、`DateSelectionContext` 拆分、CSS 雙軌、零散 TODO（見 Tech Debt）。
-- **階段 5 手機版**：Equipment／Space／RentalList／Order／Profile／Footer 及大型對話框仍只有桌機版，標準見下方「手機版（RWD）標準」。
-- **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料（真實學號名單）填入、照 rental-rules 逐條驗收。
+**剩餘工作依性質分類，完整清單在 `docs/roadmap.md`**（2026-09 重整）：
+
+- **🗣 流程討論**（需與團隊定案）：大量單事後加設備、大單拆分規則、前台部分延期介面、損壞賠償分級、購物車跨裝置同步。
+- **🛠 後台功能**（規則已定、可直接做）：代取消、代客延期、軟性欄位就地編輯、帳號狀態調整、手動建單、庫存管理、助教直借（staff）、小單拆單。
+- **🐞 驗收與 Bug**：桌面版整體驗收（三個測試帳號互搶等場景）尚未跑；已知：設備頁無「部分可借」狀態。
+- **📱 UI／手機版**：Equipment／Space／RentalList／Order／Profile／Footer 及大型對話框仍只有桌機版。
+- **🧹 程式品質**：拆大檔、`DateSelectionContext` 拆分、CSS 雙軌（見下方 Tech Debt）。
+- **🚀 部署**：Vercel＋環境變數、正式資料填入、照 rental-rules 逐條驗收。
+
+已完成：後端接線、訂單生命週期排程（情境 1／6／7）、規則補完（30 天例外、A508、停權、延期前三天、重複下單、寒暑假封鎖）、後台的訂單全覽／收押金／歸還罰款／經手人／公休日／封鎖。
 
 ## 手機版（RWD）標準
 
