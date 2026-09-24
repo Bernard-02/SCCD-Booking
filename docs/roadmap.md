@@ -1,7 +1,7 @@
 ﻿# 完成路線圖（Roadmap）
 
-> 距離可上線，剩下的階段與任務。整體現況（2026-07 更新）：**階段 1 後端接線已完成**——
-> 登入／訂單／庫存／空間／通知全部走 Supabase，mock 僅剩測試帳號定義檔。
+> 距離可上線，剩下的階段與任務。整體現況（2026-07 更新）：**階段 1 後端接線已完成**、**階段 3 規則補完已完成**、**階段 2 後台進行中**——
+> 登入／訂單／庫存／空間／通知全部走 Supabase。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端用 **Supabase**（Auth + PostgreSQL + RLS）。
 > 階段 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
 
@@ -18,8 +18,8 @@
 - [x] 送單 RPC＋庫存扣減（`equipment_reserved`）＋空間佔用（`space_occupied`）＋延期（`extend_my_order`）
 - [x] Profile 讀真實訂單、Header 讀真實通知（已讀入庫）
 - [ ] 決定購物車與日期選擇是否跟帳號走（跨裝置同步）——未定案，不擋上線
-- [ ] 收尾：`orderValidation` 重複下單檢查仍讀 localStorage receipts（階段 3 搬 server 端後，
-      `useOrderSubmission` 的 receipts 雙寫一併移除）；`testAuthData.ts` 僅剩型別與測試帳號說明可再瘦身
+- [ ] 收尾：重複下單已由 server 端把關，`orderValidation` 讀 localStorage receipts 的前端檢查與
+      `useOrderSubmission` 的 receipts 雙寫可一併移除（`testAuthData.ts` 已刪除）
 
 ## 階段 1.5：桌面版整體驗收（先於階段 2 與手機版，已與 Bernard 議定）
 
@@ -29,8 +29,8 @@
 
 - [ ] 兩人同時搶同一格空間／最後一件設備（一成一敗、敗方訊息清楚、購物車保留可重送）
 - [ ] 訂單送出後改日期重送（Exist Cart 過期時段就地修復 → 新時段的佔用計算正確）
-- [ ] pending 逾 24 小時（工作時）自動視為取消後，佔用是否釋放（目前 status 仍是 pending——
-      前端顯示取消但資料庫佔用未釋放，**已知落差，驗收時討論**：需排程或查詢時排除逾時 pending）
+- [ ] pending 逾 24 小時（工作時）自動取消後佔用確實釋放（情境 1 已用 pg_cron `cancel_expired_pending` 改 canceled，
+      驗收時確認掃描空窗內的顯示與佔用一致）
 - [ ] 延期後的新歸還日是否正確影響後續時段的佔用
 - [ ] 同帳號多分頁／多裝置操作購物車與送單
 - [ ] 大量訂單（滿 10 件、班級老師必填）與團體空間（免押金上限）全流程

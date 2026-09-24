@@ -17,20 +17,21 @@
 src/
   App.tsx                       # 路由配置
   main.tsx                      # 入口，全量載入舊 css/*.css
-  pages/                        # 各個頁面（BookingPage、EquipmentPage、SpacePage 等）
+  pages/                        # 各個頁面（BookingPage、EquipmentPage、SpacePage 等；後台為 Admin*Page）
   components/
-    layouts/                    # Header、Footer、MainLayout
-    equipment/                  # 實際使用的 EquipmentCard / EquipmentGrid
+    ProtectedRoute.tsx、AdminRoute.tsx  # 登入／admin 路由守衛（僅 UX，真防線是 RLS）
+    layouts/                    # Header、Footer、AdminLayout（後台側欄）
+    equipment/                  # EquipmentGrid
     cart/                       # CartList、DateEditDialog
     common/                     # Toast、ConfirmDialog、BookingDetailsDialog
     space/                      # ClassroomList、SpaceAreaMap
     profile/                    # ExtendDialog
     admin/                      # 後台共用 UI 語彙（adminUi）、OrderActionDialog
   contexts/                     # AuthContext、DateSelectionContext
-  hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
+  hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation、useSuspension
   stores/bookmarkStore.ts       # Zustand 收藏 store
-  services/                     # 空資料夾（保留給未來真實後端，目前無檔案）
-  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils、orderValidation
+  services/                     # Supabase 存取層：supabase client、auth、equipment、space、orders、notifications、admin
+  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils、orderValidation、gradeUtils
   data/equipment-data.json      # 設備主資料（包含庫存、分類）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
@@ -41,6 +42,8 @@ legacy/                         # 遷移前備份（已 gitignore）
 old-html-backup/                # 舊 HTML 備份（已 gitignore）
 docs/rental-rules.md            # 租借規則單一事實來源（改租借邏輯前必讀）
 docs/roadmap.md                 # 完成路線圖（階段 1-6 與任務清單）
+docs/order-lifecycle.md         # 訂單生命週期情境（逐項定案紀錄）
+supabase/                       # 資料庫 SQL（schema、seed、RPC、pg_cron 排程、RLS）
 docs/supabase-backend-plan.md   # 後端定案與接線規劃（Supabase）
 docs/bookmark-system.md         # 收藏系統設計文檔
 ```
@@ -59,11 +62,11 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 此專案正在從純 HTML/JS 靜態站點遷移到 React SPA。歷史上根目錄曾有 `booking.html`、`login.html`、`equipment.html` 等多頁，對應 `js/*.js`。目前：
 
-- **已遷移**：Home、Booking、BookingResources、Equipment、Space、RentalList、Profile、Order
+- **已遷移**：Home、Booking、BookingResources、Equipment、Space、RentalList、Profile、Order、About、ResetPassword
 - **已刪除**：所有根目錄的 `*.html`、多數 `js/*.js`（git status 中列為 D）
 - **新入口**：`index.html` → `src/main.tsx` → `App.tsx`
 - **SPA fallback**：`vite.config.ts` 的 `appType: 'spa'` 確保 `/space`、`/equipment` 等路徑 fallback 到 `index.html`
-- **下一步**：前端流程已完整（mock 資料跑得通），尚未完成的是接真實後端 API 與管理後台——詳見「尚未完成」一節。
+- **下一步**：前台已接 Supabase、後台已起步；剩餘工作見下方「後端與尚未完成」一節與 `docs/roadmap.md`。
 
 `legacy/` 與 `old-html-backup/` 皆為遷移前備份，兩者都已 gitignore。
 
@@ -73,7 +76,8 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 - **過期**：`loginTime + expiresIn < now` 即視為過期，自動清除
 - **登入實作**：`AuthContext` 走 `services/authService.ts` 的 `supabaseLogin`（學號→email→Supabase Auth）；
   舊的 mock 登入（`testAuthData.ts`／`mockApiLogin`）已移除，認證共用型別留在 `utils/authTypes.ts`
-- **保護路由**：目前僅 `/profile` 包在 `ProtectedRoute` 中，其他路由都是公開的
+- **保護路由**：`/profile` 包在 `ProtectedRoute`；`/admin/*` 包在 `AdminRoute`（admin 登入自動導向 `/admin`）；其他路由公開
+- **角色**：`students.role` 為 `student`／`admin`／`staff`（staff＝助教直借，尚未實作）
 
 ## Storage Key 對照
 
@@ -103,16 +107,18 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 ## 後端（Supabase，已接線）與尚未完成 → 見 docs/roadmap.md
 
-整體現況（2026-07）：**階段 1 後端接線已完成**——登入（學號→email→Auth）、訂單（`submit_orders` RPC transaction）、庫存扣減、空間佔用、通知、延期全部走 **Supabase**（Auth + PostgreSQL + RLS）。資料庫端 SQL 在 `supabase/`（schema、seed、auth-setup、orders-rpc），前端統一走 `src/services/`（supabase client、equipment、space、orders、notifications、auth）。環境變數 `.env`（範本 `.env.example`）。
+整體現況（2026-09 更新，最後一次功能 commit 為 2026-07-16）：**階段 1 後端接線已完成**——登入（學號→email→Auth）、訂單（`submit_orders` RPC transaction）、庫存扣減、空間佔用、通知、延期全部走 **Supabase**（Auth + PostgreSQL + RLS）。資料庫端 SQL 在 `supabase/`（schema、seed、auth-setup、orders-rpc、auto-cancel／auto-overdue／account-suspension 排程、rental-blackouts、staff-members），前端統一走 `src/services/`。環境變數 `.env`（範本 `.env.example`）。
 
-**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
+**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號、重複下單、寒暑假封鎖、停權）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。完整任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：完全沒有。審核、押金確認、歸還標記、逾期罰款計算、帳號 6 級狀態；過渡期用 Supabase Studio 人工操作。
-- **階段 3 規則補完**：三項已完成（2026-07）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端（grade 慣例見 rental-rules.md「年級限制」）。剩：寒暑假封鎖（order-lifecycle.md 情境 11-a，規則已定待實作）。
-- **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
-- **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
-- **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」。
-- **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
+- **階段 1 收尾**：`orderValidation` 仍讀 localStorage receipts 做前端重複下單提示、`useOrderSubmission` 仍雙寫 receipts——server 端已把關，可移除。購物車／日期是否跨裝置同步未定案（不擋上線）。
+- **階段 1.5 桌面版整體驗收**：尚未開始。三個測試帳號互搶的衝突場景（搶最後一件／同一格、延期影響佔用、多分頁、大量單全流程、忘記密碼信實測）。
+- **階段 2 管理後台（進行中）**：`/admin` 已有總覽、訂單全覽、收押金、整單歸還＋罰款、值班經手人、幹部名單、公休日、寒暑假封鎖。**剩**：代客延期、部分歸還拆單（情境 5）、代取消、軟性欄位就地編輯、帳號狀態調整、手動建單、庫存管理、助教直借（staff，情境 10）。公告定案不做（一律發 FB）。
+- **階段 3 規則補完**：✅ 全部完成（30 天例外、A508 限大二以上、停權擋送單、延期前三天強制、重複下單 server 端、寒暑假封鎖 server＋日曆）。
+- **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）以 pg_cron 實作；**仍待 Bernard 定案**：情境 3 大量單事後加設備、情境 5 大單拆分規則與前台部分延期介面、損壞賠償分級——見 `docs/order-lifecycle.md`。
+- **階段 4 品質**：vitest 已有基礎；剩拆大檔、`DateSelectionContext` 拆分、CSS 雙軌、零散 TODO（見 Tech Debt）。
+- **階段 5 手機版**：Equipment／Space／RentalList／Order／Profile／Footer 及大型對話框仍只有桌機版，標準見下方「手機版（RWD）標準」。
+- **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料（真實學號名單）填入、照 rental-rules 逐條驗收。
 
 ## 手機版（RWD）標準
 
@@ -124,9 +130,10 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 ## 已知 Tech Debt
 
-- **過大頁面／元件**：`CartList.tsx`（744 行）、`OrderPage.tsx`（737 行）、`SpacePage.tsx`（736 行）、`RentalListPage.tsx`（712 行）仍可續拆 hook。
+- **過大頁面／元件**：`SpacePage.tsx`（826 行）、`CartList.tsx`（746 行）、`OrderPage.tsx`（743 行）、`RentalListPage.tsx`（736 行）、`ProfilePage.tsx`（713 行）仍可續拆 hook。
 - **`DateSelectionContext` 複雜度**：一個 context 同時管設備／空間日期，可拆成兩個 context 降低耦合與 re-render。
-- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（3868 行）共存，長期可漸進遷移。
+- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（約 1600 行）共存，長期可漸進遷移。
+- **零散 TODO**：延長線佔位圖、設備部分可借（黃色 partial）狀態（`EquipmentGrid.tsx`）、`ProfilePage` 狀態圓點。
 - ~~**Bundle 過大**~~：已用 `React.lazy` 做路由層 code-splitting（`App.tsx`），`jspdf`+`html2canvas` 隨 `OrderPage` 分離出 initial bundle。
 - ~~**Storage key 命名混用**~~：已抽 `utils/storageKeys.ts`（receipts／notifications）與 `utils/authStorage.ts`（登入）集中管理。
 
