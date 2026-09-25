@@ -1,7 +1,7 @@
 ﻿# 完成路線圖（Roadmap）
 
-> 距離可上線，剩下的階段與任務。整體現況（2026-07 更新）：**階段 1 後端接線已完成**——
-> 登入／訂單／庫存／空間／通知全部走 Supabase，mock 僅剩測試帳號定義檔。
+> 距離可上線，剩下的階段與任務。整體現況（2026-09 更新）：**階段 1 後端接線已完成**——
+> 登入／訂單／庫存／空間／通知全部走 Supabase，mock 已全數移除。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端用 **Supabase**（Auth + PostgreSQL + RLS）。
 > 階段 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
 
@@ -18,8 +18,8 @@
 - [x] 送單 RPC＋庫存扣減（`equipment_reserved`）＋空間佔用（`space_occupied`）＋延期（`extend_my_order`）
 - [x] Profile 讀真實訂單、Header 讀真實通知（已讀入庫）
 - [ ] 決定購物車與日期選擇是否跟帳號走（跨裝置同步）——未定案，不擋上線
-- [ ] 收尾：`orderValidation` 重複下單檢查仍讀 localStorage receipts（階段 3 搬 server 端後，
-      `useOrderSubmission` 的 receipts 雙寫一併移除）；`testAuthData.ts` 僅剩型別與測試帳號說明可再瘦身
+- [ ] 收尾：`orderValidation` 重複下單檢查仍讀 localStorage receipts（server 端已把關，
+      本地檢查與 `useOrderSubmission` 的 receipts 雙寫可一併移除）
 
 ## 階段 1.5：桌面版整體驗收（先於階段 2 與手機版，已與 Bernard 議定）
 
@@ -74,7 +74,7 @@
 
 - [x] 測試基礎：vitest 已建置（`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
 - [ ] Tech debt：拆 700 行大檔（`CartList`、`OrderPage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
-- [ ] 零散 TODO：延長線佔位圖（`EquipmentGrid.tsx:184`）、`ProfilePage` 狀態圓點
+- [ ] 零散 TODO：延長線佔位圖（`EquipmentGrid.tsx:230`）、`ProfilePage` 狀態圓點（`ProfilePage.tsx:628`）
 
 ## 階段 5：手機版（純前端，可與階段 1-3 並行）
 
