@@ -17,7 +17,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   if (isLoading) {
     return (
       <div className="bg-black text-white min-h-screen flex items-center justify-center">
-        <div className="text-sm text-gray-400 font-['Noto_Sans_TC',_sans-serif]">正在驗證權限…</div>
+        <div className="text-sm text-gray-400 font-['Inter','Noto_Sans_TC',_sans-serif]">正在驗證權限…</div>
       </div>
     )
   }

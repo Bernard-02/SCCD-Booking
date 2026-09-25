@@ -178,7 +178,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                   <span className="font-['Inter',_sans-serif] text-small-title">
                     {classroom.enName}
                   </span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif] text-small-title">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title">
                     {classroom.name}
                   </span>
                 </div>
@@ -235,7 +235,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <p className="font-['Inter',_sans-serif] text-gray-scale2 text-small-title">No Classroom Found</p>
-          <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-small-title">找不到符合條件的教室</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-small-title">找不到符合條件的教室</p>
         </div>
       )}
     </div>

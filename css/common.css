@@ -72,7 +72,7 @@
 
 .toast p, #notification p {
   font-size: 0.875rem; /* text-tiny 大小 */
-  font-family: 'Noto Sans TC', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
   line-height: 1.4; /* 與 text-tiny 保持一致 */
   text-align: center;
   margin: 0;

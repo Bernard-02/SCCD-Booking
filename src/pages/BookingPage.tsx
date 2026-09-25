@@ -95,7 +95,7 @@ const BookingPage = () => {
                 </div>
 
                 <div className="float-up-container">
-                  <h1 className="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-6 float-up float-up-delay-2">
+                  <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-6 float-up float-up-delay-2">
                     租借日期
                   </h1>
                 </div>
@@ -112,7 +112,7 @@ const BookingPage = () => {
                 <div className="float-up-container">
                   <div className="mb-8 float-up float-up-delay-5">
                     <h2 className="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title">
-                      START DATE <span className="font-['Noto_Sans_TC',_sans-serif]">起租日</span>
+                      START DATE <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">起租日</span>
                     </h2>
                     <p className="font-['Inter',_sans-serif] text-white text-[2.5rem] tracking-tight">
                       {formatDateDisplay(startDate)}
@@ -123,7 +123,7 @@ const BookingPage = () => {
                 <div className="float-up-container">
                   <div className="mb-8 float-up float-up-delay-6">
                     <h2 className="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title">
-                      END DATE <span className="font-['Noto_Sans_TC',_sans-serif]">歸還日</span>
+                      END DATE <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">歸還日</span>
                     </h2>
                     <p className="font-['Inter',_sans-serif] text-white text-[2.5rem] tracking-tight">
                       {formatDateDisplay(endDate)}
@@ -193,7 +193,7 @@ const BookingPage = () => {
               </div>
 
               <div className="float-up-container">
-                <h1 className="font-['Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4 float-up float-up-delay-2">
+                <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-hero-title mb-4 float-up float-up-delay-2">
                   租借日期
                 </h1>
               </div>
@@ -216,7 +216,7 @@ const BookingPage = () => {
               <div className="float-up-container">
                 <div className="mb-4 float-up float-up-delay-5">
                   <h2 className="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title">
-                    START DATE <span className="font-['Noto_Sans_TC',_sans-serif]">起租日</span>
+                    START DATE <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">起租日</span>
                   </h2>
                   <p className="font-['Inter',_sans-serif] text-white text-[2rem] tracking-tight">
                     {formatDateDisplay(startDate)}
@@ -227,7 +227,7 @@ const BookingPage = () => {
               <div className="float-up-container">
                 <div className="mb-4 float-up float-up-delay-6">
                   <h2 className="font-['Inter',_sans-serif] text-zinc-300 uppercase tracking-wider mb-2 text-small-title">
-                    END DATE <span className="font-['Noto_Sans_TC',_sans-serif]">歸還日</span>
+                    END DATE <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">歸還日</span>
                   </h2>
                   <p className="font-['Inter',_sans-serif] text-white text-[2rem] tracking-tight">
                     {formatDateDisplay(endDate)}

@@ -15,7 +15,7 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
           {c.labelZh && (
             <>
               {' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">{c.labelZh}</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{c.labelZh}</span>
             </>
           )}
         </div>
@@ -25,7 +25,7 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
             {...(c.link.startsWith('http')
               ? { target: '_blank', rel: 'noopener noreferrer' }
               : {})}
-            className={`${c.linkText ? "font-['Inter',_sans-serif]" : "font-['Noto_Sans_TC',_sans-serif]"} text-tiny text-white font-bold hover:opacity-70 transition-opacity break-all`}
+            className={`${c.linkText ? "font-['Inter',_sans-serif]" : "font-['Inter','Noto_Sans_TC',_sans-serif]"} text-tiny text-white font-bold hover:opacity-70 transition-opacity break-all`}
           >
             {c.linkText || c.zh}
           </a>

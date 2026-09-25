@@ -313,22 +313,22 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-left">
           <div className="font-['Inter',_sans-serif]">Favorites</div>
-          <div className="font-['Noto_Sans_TC',_sans-serif]">收藏</div>
+          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">收藏</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2"></div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2"></div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Total Qty</div>
-          <div className="font-['Noto_Sans_TC',_sans-serif]">總數量</div>
+          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">總數量</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Available</div>
-          <div className="font-['Noto_Sans_TC',_sans-serif]">可借數量</div>
+          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借數量</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
             <div className="font-['Inter',_sans-serif]">On Hold</div>
-            <div className="font-['Noto_Sans_TC',_sans-serif]">待繳押金</div>
+            <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">待繳押金</div>
           </div>
           <div className="relative group">
             <span className="material-symbols-outlined text-gray-scale2 cursor-help" style={{ fontSize: '20px' }}>
@@ -344,11 +344,11 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         </div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Deposit</div>
-          <div className="font-['Noto_Sans_TC',_sans-serif]">押金/個</div>
+          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">押金/個</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Quantity</div>
-          <div className="font-['Noto_Sans_TC',_sans-serif]">數量</div>
+          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">數量</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center"></div>
       </div>
@@ -420,7 +420,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   </div>
 
                   {/* 設備名稱 */}
-                  <div className={`font-['Noto_Sans_TC',_sans-serif] text-small-title ${
+                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.name}
@@ -527,7 +527,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
           <p className="font-['Inter',_sans-serif] text-gray-scale2 text-small-title">No Equipment Found</p>
-          <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-small-title">找不到符合條件的設備</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-small-title">找不到符合條件的設備</p>
         </div>
       )}
     </div>

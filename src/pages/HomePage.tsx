@@ -76,10 +76,10 @@ const HomePage = () => {
                         {/* ponytail: -mt-3 是純視覺對齊值，字級或 Studio 高度改了就微調這個數字 */}
                         <div className="-mt-3 mb-8 flex gap-6">
                           <h2 className="font-['Inter',_sans-serif] text-medium-title text-white leading-tight whitespace-nowrap">
-                            Space <span className="font-['Noto_Sans_TC',_sans-serif] text-white">空間</span>
+                            Space <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">空間</span>
                           </h2>
                           <h2 className="font-['Inter',_sans-serif] text-medium-title text-white leading-tight whitespace-nowrap">
-                            Equipment <span className="font-['Noto_Sans_TC',_sans-serif] text-white">設備</span>
+                            Equipment <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">設備</span>
                           </h2>
                         </div>
 
@@ -99,11 +99,11 @@ const HomePage = () => {
                                 style={{ width: '100%', borderColor: studentIdError ? 'var(--color-error2)' : '' }}
                               />
                               <label htmlFor="desktop-student-id" className="input-label text-small-title pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
-                                Student ID <span className="font-['Noto_Sans_TC',_sans-serif]">學號</span>
+                                Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
                               </label>
                               {studentIdError && (
                                 <div className="text-error2 text-tiny absolute top-full left-0 mt-1 whitespace-nowrap">
-                                  <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Noto_Sans_TC',_sans-serif]">學號錯誤</span>
+                                  <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號錯誤</span>
                                 </div>
                               )}
                             </div>
@@ -121,7 +121,7 @@ const HomePage = () => {
                                 style={{ width: '100%', borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
                               />
                               <label htmlFor="desktop-password" className="input-label text-small-title pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
-                                Password <span className="font-['Noto_Sans_TC',_sans-serif]">密碼</span>
+                                Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
                               </label>
                               <button
                                 type="button"
@@ -135,7 +135,7 @@ const HomePage = () => {
                               </button>
                               {passwordError && (
                                 <div className="text-error2 text-tiny absolute top-full left-0 mt-1 whitespace-nowrap">
-                                  <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
+                                  <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
                                 </div>
                               )}
                             </div>
@@ -171,7 +171,7 @@ const HomePage = () => {
                                   </svg>
                                 </div>
                                 <span className="text-tiny text-white group-hover:text-gray-scale2 transition-colors leading-tight">
-                                  <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Noto_Sans_TC',_sans-serif]">記住我</span>
+                                  <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">記住我</span>
                                 </span>
                               </label>
 
@@ -181,7 +181,7 @@ const HomePage = () => {
                                 onClick={() => setShowForgotPasswordModal(true)}
                                 className="font-['Inter',_sans-serif] text-white text-tiny hover:text-gray-scale2 transition-colors cursor-pointer text-left p-0 whitespace-nowrap"
                               >
-                                Forgot Password? <span className="font-['Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
+                                Forgot Password? <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
                               </button>
 
                               {/* Login 按鈕 */}
@@ -190,7 +190,7 @@ const HomePage = () => {
                                 disabled={!studentId || !password}
                                 className="text-small-title font-medium whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
                               >
-                                <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Noto_Sans_TC',_sans-serif]">登入</span>
+                                <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                               </button>
                             </div>
                           </div>
@@ -208,7 +208,7 @@ const HomePage = () => {
                         >
                           <div className="flex flex-col z-10">
                             <span className="font-['Inter',_sans-serif] text-medium-title text-white">Studio</span>
-                            <span className="font-['Noto_Sans_TC',_sans-serif] text-medium-title text-white">工作室</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white">工作室</span>
                           </div>
                           {/* 斜45度箭頭 */}
                           <div className="z-10">
@@ -227,7 +227,7 @@ const HomePage = () => {
                         >
                           <div className="flex flex-col z-10">
                             <span className="font-['Inter',_sans-serif] text-medium-title text-white">Film Studio</span>
-                            <span className="font-['Noto_Sans_TC',_sans-serif] text-medium-title text-white">專業攝影棚</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white">專業攝影棚</span>
                           </div>
                           {/* 斜45度箭頭 */}
                           <div className="z-10">
@@ -267,11 +267,11 @@ const HomePage = () => {
                       style={{ borderColor: studentIdError ? 'var(--color-error2)' : '' }}
                     />
                     <label htmlFor="mobile-student-id" className="input-label text-small-title pointer-events-none">
-                      Student ID <span className="font-['Noto_Sans_TC',_sans-serif]">學號</span>
+                      Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
                     </label>
                     {studentIdError && (
                       <div className="text-error2 text-tiny mt-1">
-                        <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Noto_Sans_TC',_sans-serif]">學號錯誤</span>
+                        <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號錯誤</span>
                       </div>
                     )}
                   </div>
@@ -301,7 +301,7 @@ const HomePage = () => {
                       </svg>
                     </div>
                     <span className="text-tiny text-white group-hover:text-gray-scale2 transition-colors leading-tight">
-                      <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Noto_Sans_TC',_sans-serif]">記住我</span>
+                      <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">記住我</span>
                     </span>
                   </label>
                 </div>
@@ -320,7 +320,7 @@ const HomePage = () => {
                       style={{ borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
                     />
                     <label htmlFor="mobile-password" className="input-label text-small-title pointer-events-none">
-                      Password <span className="font-['Noto_Sans_TC',_sans-serif]">密碼</span>
+                      Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
                     </label>
                     <button
                       type="button"
@@ -334,7 +334,7 @@ const HomePage = () => {
                     </button>
                     {passwordError && (
                       <div className="text-error2 text-tiny mt-1">
-                        <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
+                        <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
                       </div>
                     )}
                   </div>
@@ -343,7 +343,7 @@ const HomePage = () => {
                     onClick={() => setShowForgotPasswordModal(true)}
                     className="font-['Inter',_sans-serif] text-white text-tiny text-left hover:text-gray-scale2 transition-colors"
                   >
-                    Forgot Password? <span className="font-['Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
+                    Forgot Password? <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
                   </button>
                 </div>
 
@@ -353,7 +353,7 @@ const HomePage = () => {
                   disabled={!studentId || !password}
                   className="text-small-title font-medium whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
                 >
-                  <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Noto_Sans_TC',_sans-serif]">登入</span>
+                  <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                 </button>
               </form>
             </div>
@@ -379,11 +379,11 @@ const HomePage = () => {
               <span className="material-symbols-outlined">close</span>
             </button>
             
-            <h3 className="text-medium-title font-['Noto_Sans_TC',_sans-serif] text-white mb-4">
+            <h3 className="text-medium-title font-['Inter','Noto_Sans_TC',_sans-serif] text-white mb-4">
               忘記密碼？
             </h3>
 
-            <div className="space-y-4 text-content text-gray-scale1 font-['Noto_Sans_TC',_sans-serif]">
+            <div className="space-y-4 text-content text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               {resetSent ? (
                 <p>
                   重設密碼信已寄至 <span className="font-['Inter',_sans-serif] text-white">{resetSent}</span>
@@ -427,7 +427,7 @@ const HomePage = () => {
                         }`}
                       >
                         <span className="font-['Inter',_sans-serif]">Send</span>{' '}
-                        <span className="font-['Noto_Sans_TC',_sans-serif]">寄送重設信</span>
+                        <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">寄送重設信</span>
                       </button>
                     </div>
                   </form>

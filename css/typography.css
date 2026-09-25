@@ -1,7 +1,7 @@
 /* ===== 標準化文字系統 ===== */
 /* 字體族定義 */
 .font-chinese {
-  font-family: 'Noto Sans TC', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif; /* Inter 先接英數，中文 fallback Noto */
 }
 
 .font-english {

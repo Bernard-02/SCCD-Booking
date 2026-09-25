@@ -99,17 +99,17 @@ const EquipmentPage: React.FC = () => {
               <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-breadcrumb cursor-pointer">
                 {fromCart ? (
                   <>
-                    <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Noto_Sans_TC',_sans-serif]">購物車</span>
+                    <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">購物車</span>
                   </>
                 ) : (
                   <>
-                    <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Noto_Sans_TC',_sans-serif]">類別</span>
+                    <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
                   </>
                 )}
               </a>
               <span className="breadcrumb-separator text-breadcrumb">/</span>
               <span className="breadcrumb-item text-breadcrumb">
-                <span className="font-['Inter',_sans-serif]">Equipment</span> <span className="font-['Noto_Sans_TC',_sans-serif]">設備</span>
+                <span className="font-['Inter',_sans-serif]">Equipment</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">設備</span>
               </span>
             </nav>
           </div>
@@ -123,7 +123,7 @@ const EquipmentPage: React.FC = () => {
               <h1 className="font-['Inter',_sans-serif] text-white text-medium-title pt-12">
                 Equipment
               </h1>
-              <h1 className="font-['Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">
+              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">
                 設備
               </h1>
             </div>
@@ -148,7 +148,7 @@ const EquipmentPage: React.FC = () => {
                         </svg>
                       )}
                       <span>
-                        <span className="font-['Inter',_sans-serif]">{category.en}</span> <span className="font-['Noto_Sans_TC',_sans-serif]">{category.zh}</span>
+                        <span className="font-['Inter',_sans-serif]">{category.en}</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{category.zh}</span>
                       </span>
                     </button>
                   </div>
@@ -169,7 +169,7 @@ const EquipmentPage: React.FC = () => {
                     <span className={`text-tiny transition-colors ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Noto_Sans_TC',_sans-serif]">全時段借用</span>
+                      <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
                     </span>
                   </button>
 
@@ -181,7 +181,7 @@ const EquipmentPage: React.FC = () => {
                     <span className={`text-tiny transition-colors ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Noto_Sans_TC',_sans-serif]">不可借用</span>
+                      <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
                     </span>
                   </button>
 
@@ -193,7 +193,7 @@ const EquipmentPage: React.FC = () => {
                     <span className={`text-tiny transition-colors ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Noto_Sans_TC',_sans-serif]">部分時段借用</span>
+                      <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
                     </span>
                   </button>
                 </div>

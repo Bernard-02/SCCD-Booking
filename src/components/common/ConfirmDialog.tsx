@@ -80,7 +80,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="px-6 pt-6">
           <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
             {titleEn && <>{titleEn} </>}
-            <span className="font-['Noto_Sans_TC',_sans-serif]">{title}</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{title}</span>
           </h2>
         </div>
 
@@ -91,7 +91,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               {messageEn}
             </p>
           )}
-          <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed whitespace-pre-line">
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed whitespace-pre-line">
             {message}
           </p>
         </div>
@@ -110,7 +110,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
               {cancelText}{' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">{cancelTextZh}</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{cancelTextZh}</span>
             </span>
           </button>
 
@@ -121,7 +121,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
               {confirmText}{' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">{confirmTextZh}</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{confirmTextZh}</span>
             </span>
           </button>
         </div>

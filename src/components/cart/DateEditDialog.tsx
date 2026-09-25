@@ -66,7 +66,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
           <div className="flex items-start justify-between mb-4">
             <h2 className="text-small-title text-white">
               <span className="font-['Inter',_sans-serif]">Edit Date</span>{' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">編輯日期</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">編輯日期</span>
             </h2>
             {/* 關閉按鈕 */}
             <button
@@ -87,7 +87,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
                 <div className="px-3 py-1 bg-gray-scale4 rounded-lg flex items-center justify-center">
                   <span className="font-['Inter',_sans-serif] text-tiny text-white whitespace-nowrap">
                     {category === 'equipment' ? 'Equipment' : 'Space'}{' '}
-                    <span className="font-['Noto_Sans_TC',_sans-serif]">
+                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">
                       {category === 'equipment' ? '設備' : '空間'}
                     </span>
                   </span>
@@ -99,19 +99,19 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
                   {bookingType === 'little' && (
                     <>
                       Little{' '}
-                      <span className="font-['Noto_Sans_TC',_sans-serif]">小量</span>
+                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">小量</span>
                     </>
                   )}
                   {bookingType === 'mass-personal' && (
                     <>
                       Mass (Personal){' '}
-                      <span className="font-['Noto_Sans_TC',_sans-serif]">大量（個人）</span>
+                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">大量（個人）</span>
                     </>
                   )}
                   {bookingType === 'mass-group' && (
                     <>
                       Mass (Group){' '}
-                      <span className="font-['Noto_Sans_TC',_sans-serif]">大量（團體）</span>
+                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">大量（團體）</span>
                     </>
                   )}
                 </span>
@@ -122,7 +122,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-tiny text-[#cccccc]">
                 <span className="font-['Inter',_sans-serif]">Original Date</span>{' '}
-                <span className="font-['Noto_Sans_TC',_sans-serif]">原始時段</span>
+                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">原始時段</span>
               </span>
               <span className="text-tiny text-white font-['Inter',_sans-serif]">
                 {(() => {
@@ -155,7 +155,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               <p className="text-tiny text-[#cccccc] font-['Inter',_sans-serif]">
                 New Date
               </p>
-              <p className="text-tiny text-[#cccccc] font-['Noto_Sans_TC',_sans-serif]">
+              <p className="text-tiny text-[#cccccc] font-['Inter','Noto_Sans_TC',_sans-serif]">
                 新的時段
               </p>
             </div>
@@ -163,7 +163,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               <p className="text-tiny text-[#ffff00] font-['Inter',_sans-serif]">
                 After updating the date, items may become out of stock. We'll mark them for you.
               </p>
-              <p className="text-tiny text-[#ffff00] font-['Noto_Sans_TC',_sans-serif]">
+              <p className="text-tiny text-[#ffff00] font-['Inter','Noto_Sans_TC',_sans-serif]">
                 更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。
               </p>
             </div>
@@ -189,7 +189,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
             <span className="font-['Inter',_sans-serif] text-tiny">Cancel</span>{' '}
-            <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">取消</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny">取消</span>
           </button>
           <button
             onClick={handleConfirm}
@@ -201,7 +201,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             }`}
           >
             <span className="font-['Inter',_sans-serif] text-tiny">Confirm</span>{' '}
-            <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">確認</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny">確認</span>
           </button>
         </div>
       </div>

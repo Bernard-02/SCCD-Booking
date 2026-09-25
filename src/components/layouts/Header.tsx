@@ -259,7 +259,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                           className="text-white hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
                         >
                           <span className="font-['Inter',_sans-serif] text-tiny">Log out</span>{' '}
-                          <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">登出</span>
+                          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny">登出</span>
                         </button>
                       </div>
                     </div>
@@ -292,7 +292,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                       <div className="flex justify-between items-center px-6 py-4 border-b border-[#545454]">
                         <h2 className="text-small-title text-white">
                           <span className="font-['Inter',_sans-serif]">Notification</span>{' '}
-                          <span className="font-['Noto_Sans_TC',_sans-serif]">通知</span>
+                          <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">通知</span>
                         </h2>
                         <button
                           onClick={closeNotificationMenu}
@@ -307,7 +307,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                       <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                         {notifications.length === 0 ? (
                           <div className="px-6 py-8 text-center">
-                            <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-gray-scale2">
+                            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-gray-scale2">
                               目前沒有新通知
                             </p>
                           </div>
@@ -321,7 +321,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                                 )}
 
                                 {/* 內容 */}
-                                <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-tiny mb-2 pr-4 leading-relaxed">
+                                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-tiny mb-2 pr-4 leading-relaxed">
                                   {n.content}
                                 </p>
 

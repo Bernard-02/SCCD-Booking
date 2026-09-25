@@ -135,7 +135,7 @@ const DEPOSITS: { en: string; zh: string }[] = [
 const SectionTitle: React.FC<{ en: string; zh: string }> = ({ en, zh }) => (
   <div>
     <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">{en}</div>
-    <div className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">{zh}</div>
+    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">{zh}</div>
   </div>
 )
 
@@ -147,7 +147,7 @@ const BulletList: React.FC<{ items: { en: string; zh: string }[] }> = ({ items }
         <span className="flex-shrink-0 text-[#cccccc] text-tiny">・</span>
         <div>
           <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">{r.en}</p>
-          <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">{r.zh}</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">{r.zh}</p>
         </div>
       </li>
     ))}
@@ -199,7 +199,7 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
         <div className="px-8 pt-6 pb-5 pr-14 flex-shrink-0">
           <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
             User Guide{' '}
-            <span className="font-['Noto_Sans_TC',_sans-serif]">使用教學</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">使用教學</span>
           </h2>
         </div>
 
@@ -212,7 +212,7 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
               <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
                 {PURPOSE.en}
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
                 {PURPOSE.zh}
               </p>
             </div>
@@ -254,12 +254,12 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
                   <div>
                     <p className="text-white text-tiny">
                       <span className="font-['Inter',_sans-serif]">{s.en}</span>{' '}
-                      <span className="font-['Noto_Sans_TC',_sans-serif]">{s.zh}</span>
+                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{s.zh}</span>
                     </p>
                     <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed mt-1">
                       {s.descEn}
                     </p>
-                    <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
                       {s.descZh}
                     </p>
                   </div>
@@ -278,7 +278,7 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
               className="text-tiny text-white underline underline-offset-4 hover:opacity-70 transition-opacity self-start"
             >
               <span className="font-['Inter',_sans-serif]">Booking System Usage Guide</span>{' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">Booking 預約系統使用說明（Google 文件）</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">Booking 預約系統使用說明（Google 文件）</span>
             </a>
           </section>
 

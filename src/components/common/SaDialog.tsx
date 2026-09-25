@@ -36,7 +36,7 @@ const SA_CONTACTS = [...CONTACTS, WEBSITE_CONTACT]
 const SectionTitle: React.FC<{ en: string; zh: string }> = ({ en, zh }) => (
   <div>
     <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">{en}</div>
-    <div className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">{zh}</div>
+    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">{zh}</div>
   </div>
 )
 
@@ -85,7 +85,7 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
         <div className="px-8 pt-6 pb-5 pr-14 flex-shrink-0">
           <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
             Student Association{' '}
-            <span className="font-['Noto_Sans_TC',_sans-serif]">系學會</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">系學會</span>
           </h2>
         </div>
 
@@ -98,7 +98,7 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
               <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
                 {ABOUT.en}
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed mt-2">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed mt-2">
                 {ABOUT.zh}
               </p>
             </div>
@@ -114,12 +114,12 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
                   <div>
                     <p className="text-white text-tiny">
                       <span className="font-['Inter',_sans-serif]">{s.en}</span>{' '}
-                      <span className="font-['Noto_Sans_TC',_sans-serif]">{s.zh}</span>
+                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{s.zh}</span>
                     </p>
                     <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed mt-1">
                       {s.descEn}
                     </p>
-                    <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
                       {s.descZh}
                     </p>
                   </div>

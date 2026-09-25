@@ -18,7 +18,7 @@ const BookingResourcesPage = () => {
           {/* 左側標題 */}
           <div className="flex-shrink-0 overflow-hidden">
             <h1 className="font-['Inter',_sans-serif] text-white text-medium-title">Category</h1>
-            <h1 className="font-['Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">類別</h1>
+            <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">類別</h1>
           </div>
 
           {/* 右側：兩個卡片橫向排列，高度自適應 */}
@@ -50,7 +50,7 @@ const BookingResourcesPage = () => {
                 <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
                   Space
                 </h1>
-                <h1 className="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium">空間</h1>
+                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">空間</h1>
               </div>
             </Link>
 
@@ -81,7 +81,7 @@ const BookingResourcesPage = () => {
                 <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
                   Equipment
                 </h1>
-                <h1 className="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium">設備</h1>
+                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">設備</h1>
               </div>
             </Link>
           </div>
@@ -109,7 +109,7 @@ const BookingResourcesPage = () => {
                 <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
                   Space
                 </h1>
-                <h1 className="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium">空間</h1>
+                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">空間</h1>
               </div>
             </Link>
 
@@ -136,7 +136,7 @@ const BookingResourcesPage = () => {
                 <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
                   Equipment
                 </h1>
-                <h1 className="text-large-title font-['Noto_Sans_TC',_sans-serif] font-medium">設備</h1>
+                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">設備</h1>
               </div>
             </Link>
         </div>

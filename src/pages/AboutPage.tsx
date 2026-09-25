@@ -46,7 +46,7 @@ const AboutPage = () => {
               <h1 className="font-['Inter',_sans-serif] text-white text-medium-title">
                 Who Made This
               </h1>
-              <h1 className="font-['Noto_Sans_TC',_sans-serif] text-white text-medium-title">
+              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title">
                 誰做的系統
               </h1>
             </div>
@@ -68,7 +68,7 @@ const AboutPage = () => {
               <div className="float-up-container">
                 <div className="float-up space-y-4" style={{ animationDelay: '0.15s' }}>
                   {PARAGRAPHS.map((p, i) => (
-                    <p key={`zh-${i}`} className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p key={`zh-${i}`} className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
                       {p.zh}
                     </p>
                   ))}
@@ -87,7 +87,7 @@ const AboutPage = () => {
                     <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
                       {QUOTE.en}
                     </p>
-                    <p className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
                       {QUOTE.zh}
                     </p>
                   </div>

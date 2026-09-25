@@ -114,7 +114,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
         <div className="px-6 pt-6">
           <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
             Booking Details{' '}
-            <span className="font-['Noto_Sans_TC',_sans-serif]">借用資訊</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">借用資訊</span>
           </h2>
         </div>
 
@@ -126,7 +126,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               <span className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">
                 Reason{' '}
               </span>
-              <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
                 使用原因
               </span>
               <span className="text-[#ff8698] ml-1">*</span>
@@ -150,7 +150,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   <span className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">
                     Class{' '}
                   </span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
                     使用班級
                   </span>
                   <span className="text-[#ff8698] ml-1">*</span>
@@ -171,7 +171,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   <span className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">
                     Teacher{' '}
                   </span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
                     負責老師（若個人用就填個人）
                   </span>
                   <span className="text-[#ff8698] ml-1">*</span>
@@ -203,7 +203,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
               Cancel{' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">取消</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
             </span>
           </button>
 
@@ -219,7 +219,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
               Confirm{' '}
-              <span className="font-['Noto_Sans_TC',_sans-serif]">確認</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認</span>
             </span>
           </button>
         </div>

@@ -479,11 +479,11 @@ const SpacePage: React.FC = () => {
               </Link>
               <span> </span>
               <Link to="/catalog" className="breadcrumb-item text-breadcrumb">
-                <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Noto_Sans_TC',_sans-serif]">類別</span>
+                <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
               </Link>
               <span className="breadcrumb-separator text-breadcrumb">/</span>
               <span className="breadcrumb-item text-breadcrumb">
-                <span className="font-['Inter',_sans-serif]">Space</span> <span className="font-['Noto_Sans_TC',_sans-serif]">空間</span>
+                <span className="font-['Inter',_sans-serif]">Space</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">空間</span>
               </span>
             </nav>
           </div>
@@ -497,7 +497,7 @@ const SpacePage: React.FC = () => {
               <h1 className="font-['Inter',_sans-serif] text-white text-medium-title pt-12">
                 Space
               </h1>
-              <h1 className="font-['Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">
+              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">
                 空間
               </h1>
             </div>
@@ -519,7 +519,7 @@ const SpacePage: React.FC = () => {
                   }`}
                 >
                   <span className="font-['Inter',_sans-serif] block">A5F Numbered Area</span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif] block">A5F編號區</span>
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">A5F編號區</span>
                 </button>
 
                 {/* 編號區子分類 - 只在編號區被選中時顯示 */}
@@ -545,7 +545,7 @@ const SpacePage: React.FC = () => {
                             }`}
                           >
                             <span className="font-['Inter',_sans-serif] block">{category.en}</span>
-                            <span className="font-['Noto_Sans_TC',_sans-serif] block">{category.zh}</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">{category.zh}</span>
                           </button>
                         </div>
                       )
@@ -568,7 +568,7 @@ const SpacePage: React.FC = () => {
                   }`}
                 >
                   <span className="font-['Inter',_sans-serif] block">Classroom</span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif] block">教室</span>
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">教室</span>
                 </button>
               </div>
             </div>
@@ -585,7 +585,7 @@ const SpacePage: React.FC = () => {
                     <span className={`text-tiny transition-colors ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Noto_Sans_TC',_sans-serif]">全時段借用</span>
+                      <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
                     </span>
                   </button>
 
@@ -597,7 +597,7 @@ const SpacePage: React.FC = () => {
                     <span className={`text-tiny transition-colors ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Noto_Sans_TC',_sans-serif]">不可借用</span>
+                      <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
                     </span>
                   </button>
 
@@ -609,7 +609,7 @@ const SpacePage: React.FC = () => {
                     <span className={`text-tiny transition-colors ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Noto_Sans_TC',_sans-serif]">部分時段借用</span>
+                      <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
                     </span>
                   </button>
                 </div>
@@ -648,7 +648,7 @@ const SpacePage: React.FC = () => {
                       <span className={`text-tiny transition-colors ${
                         statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                       }`}>
-                        <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Noto_Sans_TC',_sans-serif]">可借用</span>
+                        <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借用</span>
                       </span>
                     </button>
 
@@ -661,7 +661,7 @@ const SpacePage: React.FC = () => {
                       <span className={`text-tiny transition-colors ${
                         statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                       }`}>
-                        <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Noto_Sans_TC',_sans-serif]">不可借用</span>
+                        <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
                       </span>
                     </button>
 
@@ -674,7 +674,7 @@ const SpacePage: React.FC = () => {
                       <span className={`text-tiny transition-colors ${
                         statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                       }`}>
-                        <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Noto_Sans_TC',_sans-serif]">部分時段可借用</span>
+                        <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段可借用</span>
                       </span>
                     </button>
 
@@ -682,7 +682,7 @@ const SpacePage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-[#00ff80]"></div>
                       <span className="text-tiny text-white">
-                        <span className="font-['Inter',_sans-serif]">Selected</span> <span className="font-['Noto_Sans_TC',_sans-serif]">已選擇</span>
+                        <span className="font-['Inter',_sans-serif]">Selected</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">已選擇</span>
                       </span>
                     </div>
                   </div>
@@ -693,7 +693,7 @@ const SpacePage: React.FC = () => {
                     <div className="mb-4">
                       <div className="flex flex-col gap-1 mb-2">
                         <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">Selected Area</span>
-                        <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-gray-scale2">選擇區塊</span>
+                        <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">選擇區塊</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4">
                         <span className="text-content font-['Inter',_sans-serif] font-normal break-words">
@@ -732,7 +732,7 @@ const SpacePage: React.FC = () => {
                     <div className="mb-6">
                       <div className="flex flex-col gap-1 mb-2">
                         <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">Deposit</span>
-                        <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-gray-scale2">押金</span>
+                        <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">押金</span>
                       </div>
                       <span className="text-large-title font-['Inter',_sans-serif] font-normal">
                         NT$ {calculateTotalDeposit(selectedBlocks).toLocaleString()}
@@ -767,7 +767,7 @@ const SpacePage: React.FC = () => {
                               />
                             </svg>
                           </div>
-                          <span className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 transition-colors leading-tight">
+                          <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 transition-colors leading-tight">
                             已與老師討論，確認老師知情並允許於此專案借用
                           </span>
                         </label>

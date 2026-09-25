@@ -15,7 +15,8 @@
   }
 
   body {
-    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    /* Inter 在前：拉丁字母與數字用 Inter，中文自動 fallback 到 Noto Sans TC */
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
   }
 
   #root {

@@ -63,15 +63,15 @@ const ResetPasswordPage = () => {
         <div className="w-full max-w-md">
           <h1 className="text-medium-title text-white mb-6">
             <span className="font-['Inter',_sans-serif]">Reset Password</span>{' '}
-            <span className="font-['Noto_Sans_TC',_sans-serif]">重設密碼</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">重設密碼</span>
           </h1>
 
           {done ? (
-            <p className="text-content text-gray-scale1 font-['Noto_Sans_TC',_sans-serif]">
+            <p className="text-content text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               密碼已更新，即將回到登入頁…
             </p>
           ) : !ready ? (
-            <p className="text-content text-gray-scale1 font-['Noto_Sans_TC',_sans-serif]">
+            <p className="text-content text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               請從「忘記密碼」重設信中的連結進入此頁。
             </p>
           ) : (
@@ -103,7 +103,7 @@ const ResetPasswordPage = () => {
                 }`}
               >
                 <span className="font-['Inter',_sans-serif]">Confirm</span>{' '}
-                <span className="font-['Noto_Sans_TC',_sans-serif]">確認</span>
+                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認</span>
               </button>
             </form>
           )}

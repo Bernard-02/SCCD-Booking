@@ -319,7 +319,7 @@ const RentalListPage = () => {
               </Link>
               <span> </span>
               <Link to="/catalog" className="breadcrumb-item text-breadcrumb">
-                <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Noto_Sans_TC',_sans-serif]">類別</span>
+                <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
               </Link>
               {previousPage && (
                 <>
@@ -330,11 +330,11 @@ const RentalListPage = () => {
                   >
                     {previousPage === 'equipment' ? (
                       <>
-                        <span className="font-['Inter',_sans-serif]">Equipment</span> <span className="font-['Noto_Sans_TC',_sans-serif]">設備</span>
+                        <span className="font-['Inter',_sans-serif]">Equipment</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">設備</span>
                       </>
                     ) : (
                       <>
-                        <span className="font-['Inter',_sans-serif]">Space</span> <span className="font-['Noto_Sans_TC',_sans-serif]">空間</span>
+                        <span className="font-['Inter',_sans-serif]">Space</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">空間</span>
                       </>
                     )}
                   </Link>
@@ -342,7 +342,7 @@ const RentalListPage = () => {
               )}
               <span className="breadcrumb-separator text-breadcrumb">/</span>
               <span className="breadcrumb-item text-breadcrumb">
-                <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Noto_Sans_TC',_sans-serif]">清單</span>
+                <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">清單</span>
               </span>
             </nav>
           </div>
@@ -367,7 +367,7 @@ const RentalListPage = () => {
                       : 'text-white hover:opacity-70 transition-opacity cursor-pointer'
                   }`}
                 >
-                  <span className="font-['Inter',_sans-serif]">Clear</span> <span className="font-['Noto_Sans_TC',_sans-serif]">清除</span>
+                  <span className="font-['Inter',_sans-serif]">Clear</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">清除</span>
                 </button>
               </div>
 
@@ -394,7 +394,7 @@ const RentalListPage = () => {
                 <div className="mb-2">
                   <div className="text-tiny text-gray-scale2">
                     <span className="font-['Inter',_sans-serif]">Total Deposit</span>{' '}
-                    <span className="font-['Noto_Sans_TC',_sans-serif]">總押金</span>
+                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">總押金</span>
                   </div>
                 </div>
 
@@ -423,7 +423,7 @@ const RentalListPage = () => {
                       // 如果沒有選中任何組，不顯示明細
                       if (selectedGroups.size === 0) {
                         return (
-                          <div className="text-tiny text-gray-scale2 font-['Noto_Sans_TC',_sans-serif]">
+                          <div className="text-tiny text-gray-scale2 font-['Inter','Noto_Sans_TC',_sans-serif]">
                             請先選擇訂單組
                           </div>
                         )
@@ -526,7 +526,7 @@ const RentalListPage = () => {
                     <p className="text-tiny font-['Inter',_sans-serif] text-white text-shrink-content mb-2">
                       Please visit the SA to pay the deposit and complete your reservation within 24 hrs of checkout.
                     </p>
-                    <p className="text-tiny font-['Noto_Sans_TC',_sans-serif] text-white text-shrink-content">
+                    <p className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-shrink-content">
                       結帳後會保留24小時的繳押金時間，請在時間內至系學會完成預約程序
                     </p>
                   </div>
@@ -562,7 +562,7 @@ const RentalListPage = () => {
                     </div>
                     <span className="text-tiny text-white leading-tight">
                       <span className="font-['Inter',_sans-serif]">I have read and agree to the department&apos;s equipment &amp; space rental </span>
-                      <span className="font-['Noto_Sans_TC',_sans-serif]">我已閱讀並同意系上租借設備與空間的</span>
+                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">我已閱讀並同意系上租借設備與空間的</span>
                       <a
                         href="https://docs.google.com/document/d/1gSzAqyPO922dO6Y61sYF070jZmntP8Kyjz24YQbp4uA/edit?usp=sharing"
                         target="_blank"
@@ -570,7 +570,7 @@ const RentalListPage = () => {
                         className="underline cursor-pointer hover:text-zinc-300 transition-colors"
                       >
                         <span className="font-['Inter',_sans-serif]">Terms &amp; Conditions </span>
-                        <span className="font-['Noto_Sans_TC',_sans-serif]">使用規則與條款</span>
+                        <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">使用規則與條款</span>
                       </a>
                     </span>
                   </div>
@@ -592,7 +592,7 @@ const RentalListPage = () => {
                           <span className={`text-tiny text-[#ffff00]`}>
                             <span className="font-['Inter',_sans-serif]">{expiredOrdersValidation.detail}</span>
                             {' '}
-                            <span className="font-['Noto_Sans_TC',_sans-serif]">{expiredOrdersValidation.message}</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{expiredOrdersValidation.message}</span>
                           </span>
                         </div>
                       </div>
@@ -611,7 +611,7 @@ const RentalListPage = () => {
                           <span className={`text-tiny text-[#ffff00]`}>
                             <span className="font-['Inter',_sans-serif]">{stockAvailabilityValidation.detail}</span>
                             {' '}
-                            <span className="font-['Noto_Sans_TC',_sans-serif]">{stockAvailabilityValidation.message}</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{stockAvailabilityValidation.message}</span>
                           </span>
                         </div>
                       </div>
@@ -628,7 +628,7 @@ const RentalListPage = () => {
                         bookingDetailsValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Fill in booking details</span>{' '}
-                        <span className="font-['Noto_Sans_TC',_sans-serif]">填寫借用資訊</span>
+                        <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">填寫借用資訊</span>
                       </span>
                     </div>
 
@@ -650,7 +650,7 @@ const RentalListPage = () => {
                             cartValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
                           }`}>
                             <span className="font-['Inter',_sans-serif]">Min. 10 items</span>{' '}
-                            <span className="font-['Noto_Sans_TC',_sans-serif]">大量租借需滿 10 件</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">大量租借需滿 10 件</span>
                           </span>
                         </div>
                       )
@@ -667,7 +667,7 @@ const RentalListPage = () => {
                         agreedToTerms ? 'text-[#00ff80]' : 'text-gray-scale2'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Agree to terms</span>{' '}
-                        <span className="font-['Noto_Sans_TC',_sans-serif]">同意借用條款</span>
+                        <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">同意借用條款</span>
                       </span>
                     </div>
                   </div>
@@ -680,7 +680,7 @@ const RentalListPage = () => {
                       <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px', marginTop: '1px' }}>warning</span>
                       <div className="text-tiny">
                         <p className="font-['Inter',_sans-serif]">Account suspended — bookings are disabled.</p>
-                        <p className="font-['Noto_Sans_TC',_sans-serif]">帳號已停權，無法送出預約，請聯絡系學會</p>
+                        <p className="font-['Inter','Noto_Sans_TC',_sans-serif]">帳號已停權，無法送出預約，請聯絡系學會</p>
                       </div>
                     </div>
                   )}
@@ -693,7 +693,7 @@ const RentalListPage = () => {
                         : 'bg-white text-black hover:opacity-70 cursor-pointer'
                     }`}
                   >
-                    <span className="font-['Inter',_sans-serif]">Book</span> <span className="font-['Noto_Sans_TC',_sans-serif]">送出</span>
+                    <span className="font-['Inter',_sans-serif]">Book</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">送出</span>
                   </button>
                 </div>
               </div>
@@ -714,7 +714,7 @@ const RentalListPage = () => {
             gap: '1rem'
           }}
         >
-          <span className="font-['Noto_Sans_TC',_sans-serif] text-tiny">
+          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny">
             {toastMessage}
           </span>
           <button

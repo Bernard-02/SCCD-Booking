@@ -122,7 +122,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         <div className="px-6 pt-6">
           <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
             {isPassword ? 'Change Password ' : 'Change Phone '}
-            <span className="font-['Noto_Sans_TC',_sans-serif]">
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">
               {isPassword ? '修改密碼' : '修改手機號碼'}
             </span>
           </h2>
@@ -135,7 +135,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               <div>
                 <label className={labelClass}>
                   <span className="font-['Inter',_sans-serif]">Current Password </span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif]">目前密碼</span>
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">目前密碼</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -149,7 +149,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               <div>
                 <label className={labelClass}>
                   <span className="font-['Inter',_sans-serif]">New Password </span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif]">新密碼</span>
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">新密碼</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -163,7 +163,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               <div>
                 <label className={labelClass}>
                   <span className="font-['Inter',_sans-serif]">Confirm New Password </span>
-                  <span className="font-['Noto_Sans_TC',_sans-serif]">確認新密碼</span>
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認新密碼</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -179,7 +179,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             <div>
               <label className={labelClass}>
                 <span className="font-['Inter',_sans-serif]">Phone Number </span>
-                <span className="font-['Noto_Sans_TC',_sans-serif]">手機號碼</span>
+                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">手機號碼</span>
                 <span className="text-[#ff8698] ml-1">*</span>
               </label>
               <input
@@ -213,7 +213,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
-              Cancel <span className="font-['Noto_Sans_TC',_sans-serif]">取消</span>
+              Cancel <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
             </span>
           </button>
           <button
@@ -222,7 +222,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             className={`transition-opacity ${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
           >
             <span className="font-['Inter',_sans-serif] text-tiny">
-              Save <span className="font-['Noto_Sans_TC',_sans-serif]">儲存</span>
+              Save <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">儲存</span>
             </span>
           </button>
         </div>

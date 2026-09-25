@@ -83,11 +83,11 @@ const ProfilePage: React.FC = () => {
           {/* 上半部：問候區塊（問候語小、放名字上方；名字靠左） */}
           <div className="mb-12 flex-shrink-0">
             <p className="font-['Inter',_sans-serif] text-white text-small-title mb-2">
-              {greeting} <span className="font-['Noto_Sans_TC',_sans-serif]">{greetingZh}</span>
+              {greeting} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{greetingZh}</span>
             </p>
             <p className="font-['Inter',_sans-serif] text-white text-medium-title">
               {currentUser?.studentId || 'A1234567'}
-              <span className="font-['Noto_Sans_TC',_sans-serif] ml-4">{currentUser?.name || '阿志'}</span>
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] ml-4">{currentUser?.name || '阿志'}</span>
             </p>
           </div>
 
@@ -107,7 +107,7 @@ const ProfilePage: React.FC = () => {
                     }`}
                   >
                     <span className="font-['Inter',_sans-serif] block">{item.en}</span>
-                    <span className="font-['Noto_Sans_TC',_sans-serif] block">{item.zh}</span>
+                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">{item.zh}</span>
                   </button>
                 ))}
               </nav>
@@ -325,7 +325,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-small-title text-yellow">
-            Expires in <span className="font-['Noto_Sans_TC',_sans-serif]">距離繳交押金</span> {hoursRemaining} hrs
+            Expires in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離繳交押金</span> {hoursRemaining} hrs
             {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
           </span>
         </div>
@@ -352,7 +352,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-small-title text-blue">
-            Due in <span className="font-['Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
+            Due in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
           </span>
         </div>
       )
@@ -367,7 +367,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-small-title text-error2">
-            Penalty <span className="font-['Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
+            Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
           </span>
         </div>
       )
@@ -406,7 +406,7 @@ const RentalHistorySection: React.FC = () => {
                 className="px-3 py-1 flex items-center justify-center bg-gray-scale4 rounded-lg border border-transparent"
               >
                 <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap text-white">
-                  {bookingTypeLabel.en} <span className="font-['Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
+                  {bookingTypeLabel.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
                 </span>
               </div>
             </div>
@@ -440,7 +440,7 @@ const RentalHistorySection: React.FC = () => {
                 }`}
               >
                 <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap">
-                  Extend <span className="font-['Noto_Sans_TC',_sans-serif]">延期</span>
+                  Extend <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期</span>
                 </span>
               </button>
 
@@ -453,7 +453,7 @@ const RentalHistorySection: React.FC = () => {
                   className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap"
                   style={{ color: statusInfo.textColor }}
                 >
-                  {statusInfo.en} <span className="font-['Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
+                  {statusInfo.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
                 </span>
               </div>
             </div>
@@ -470,7 +470,7 @@ const RentalHistorySection: React.FC = () => {
     <div>
       {/* 所有訂單 */}
       {allReceipts.length === 0 ? (
-        <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale4 text-content">尚無訂單記錄</p>
+        <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale4 text-content">尚無訂單記錄</p>
       ) : (
         <div>
           {allReceipts.map((receipt, index) => renderReceiptItem(receipt, index))}
@@ -573,7 +573,7 @@ const ProfileDataSection: React.FC = () => {
               <p className="font-['Inter',_sans-serif] text-white text-content">
                 Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span>
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-content">
                 您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span>
               </p>
             </div>
@@ -581,7 +581,7 @@ const ProfileDataSection: React.FC = () => {
               <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
                 An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
                 有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜
               </p>
             </div>
@@ -592,7 +592,7 @@ const ProfileDataSection: React.FC = () => {
               <p className="font-['Inter',_sans-serif] text-white text-content">
                 Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span>
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-content">
                 帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span>
               </p>
             </div>
@@ -600,7 +600,7 @@ const ProfileDataSection: React.FC = () => {
               <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
                 You have an order overdue for {worstOverdueDays} business day{worstOverdueDays > 1 ? 's' : ''}. At 6 days your account will be suspended — please return it as soon as possible.
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
                 您有訂單已逾期 {worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還
               </p>
             </div>
@@ -611,7 +611,7 @@ const ProfileDataSection: React.FC = () => {
               <p className="font-['Inter',_sans-serif] text-white text-content">
                 You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-white text-content">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-content">
                 您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
               </p>
             </div>
@@ -619,7 +619,7 @@ const ProfileDataSection: React.FC = () => {
               <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
                 You return your rentals right on time, with no overdue records.
               </p>
-              <p className="font-['Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
                 您非常準時地歸還租借，沒有任何逾期記錄
               </p>
             </div>
