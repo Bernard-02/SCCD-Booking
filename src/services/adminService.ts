@@ -103,6 +103,13 @@ export async function listSuspendedStudents(): Promise<SuspendedStudent[]> {
   return (data ?? []) as SuspendedStudent[]
 }
 
+/** 解除停權（account_level 5 → 0；繳清／老師通融，supabase/admin-actions.sql） */
+export async function unsuspendStudent(studentId: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_unsuspend_student', { p_student_id: studentId })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
 // ---- 公休日 ----
 export async function listClosedDates(): Promise<ClosedDate[]> {
   const { data, error } = await supabase.from('closed_dates').select('day, reason').order('day')

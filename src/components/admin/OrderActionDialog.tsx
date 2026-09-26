@@ -7,13 +7,16 @@ import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { AdminOrderRow } from '../../services/ordersService'
 
+export type AdminActionMode = 'paid' | 'return' | 'penalty' | 'cancel' | 'extend'
+// penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期
+
 interface Props {
   order: AdminOrderRow
-  mode: 'paid' | 'return' | 'penalty' // penalty = 收罰款（歸還時未當場繳清的欠款）
+  mode: AdminActionMode
   staff: { name: string; onDuty: boolean }[] // 幹部（值班中排前面，選單來源）
   defaultHandler: string // 上次選擇的經手人（同班次免重選）
   estPenalty: number // 逾期試算罰款（overdue 時預填，可修改）
-  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean) => void
+  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number) => void
   onCancel: () => void
 }
 
@@ -34,6 +37,8 @@ const OrderActionDialog: React.FC<Props> = ({
   const chargePenalty = mode === 'return' && isOverdue && returnKind === 'late'
   // 罰款是否當場繳清（情境 13）：未繳清 → 欠繳記錄，學生不能再下單直到後台收罰款
   const [paidNow, setPaidNow] = useState(true)
+  // 代客延期天數（1-7；更長分次延）
+  const [days, setDays] = useState('1')
 
   // 部分歸還（情境 5-①）：勾「已歸還」品項，預設全勾；部分勾＝未還品項拆子單續租
   const [returnIds, setReturnIds] = useState<Set<number>>(
@@ -58,12 +63,25 @@ const OrderActionDialog: React.FC<Props> = ({
 
   const penaltyNum = parseInt(penalty, 10)
   const penaltyValid = !chargePenalty || (!Number.isNaN(penaltyNum) && penaltyNum >= 0)
-  const canConfirm = handler !== '' && penaltyValid && (mode !== 'return' || returnIds.size > 0)
+  const daysNum = parseInt(days, 10)
+  const daysValid = mode !== 'extend' || (!Number.isNaN(daysNum) && daysNum >= 1 && daysNum <= 7)
+  const canConfirm =
+    handler !== '' && penaltyValid && daysValid && (mode !== 'return' || returnIds.size > 0)
 
   const title =
     mode === 'paid' ? { en: 'Deposit', zh: '確認收押金' }
     : mode === 'penalty' ? { en: 'Penalty', zh: '收罰款' }
+    : mode === 'cancel' ? { en: 'Cancel Order', zh: '代取消訂單' }
+    : mode === 'extend' ? { en: 'Extend', zh: '代客延期' }
     : { en: 'Return', zh: '確認歸還' }
+
+  // 代客延期的新歸還日預覽
+  const newEndDate = (() => {
+    if (mode !== 'extend' || !daysValid) return null
+    const d = new Date(order.end_date)
+    d.setDate(d.getDate() + daysNum)
+    return `${d.getMonth() + 1} 月 ${d.getDate()} 日`
+  })()
   const field =
     'bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none w-full'
 
@@ -91,6 +109,37 @@ const OrderActionDialog: React.FC<Props> = ({
 
         {/* 內容區 */}
         <div className="px-6 py-5 flex flex-col gap-5">
+          {/* 代取消：說明退押金與否 */}
+          {mode === 'cancel' && (
+            <p className="text-tiny text-white font-chinese">
+              {order.status === 'pending'
+                ? '此單尚未繳押金，取消後直接作廢、佔用釋放。'
+                : <>已繳押金 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>，請當場退還現金後再按確認。</>}
+            </p>
+          )}
+
+          {/* 代客延期：天數輸入＋新歸還日預覽（不受僅乙次／前三天限制；撞期照擋） */}
+          {mode === 'extend' && (
+            <div>
+              <label className="text-gray-scale2 text-tiny block mb-2">
+                <span className="font-english">Days</span> <span className="font-chinese">延期天數（1-7，更長分次延）</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="7"
+                value={days}
+                onChange={e => setDays(e.target.value)}
+                className={`${field} font-english`}
+              />
+              <p className="text-tiny text-gray-scale2 font-chinese mt-2">
+                原歸還日 <span className="font-english">{order.end_date}</span>
+                {newEndDate && <>，延期後為 <span className="font-english">{newEndDate}</span></>}
+                {order.status === 'overdue' && '；逾期單延期後將回到「租借中」。'}
+              </p>
+            </div>
+          )}
+
           {/* 收罰款：顯示欠繳金額 */}
           {mode === 'penalty' && (
             <p className="text-xs text-white font-chinese">
@@ -232,7 +281,8 @@ const OrderActionDialog: React.FC<Props> = ({
                 handler,
                 chargePenalty ? penaltyNum : 0,
                 [...returnIds],
-                chargePenalty && penaltyNum > 0 ? paidNow : true
+                chargePenalty && penaltyNum > 0 ? paidNow : true,
+                mode === 'extend' ? daysNum : 0
               )
             }
             disabled={!canConfirm}

@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchAllOrders, fetchClosedDates } from '../services/ordersService'
 import type { AdminOrderRow, OrderStatus } from '../services/ordersService'
-import { listSuspendedStudents } from '../services/adminService'
+import { listSuspendedStudents, unsuspendStudent } from '../services/adminService'
 import type { SuspendedStudent } from '../services/adminService'
 import { STATUS_META, STATUS_ORDER, PageTitle } from '../components/admin/adminUi'
 import {
@@ -222,12 +222,26 @@ const AdminHomePage: React.FC = () => {
                     {s.name}
                     <span className="font-english text-xs text-gray-scale2 ml-2">{s.student_id}</span>
                   </div>
-                  <span
-                    className="px-3 py-1 rounded-lg text-xs font-english whitespace-nowrap"
-                    style={{ backgroundColor: 'var(--color-error2)', color: 'white' }}
-                  >
-                    Suspended <span className="font-chinese">已停權</span>
-                  </span>
+                  <div className="flex items-center gap-4">
+                    <span
+                      className="px-3 py-1 rounded-lg text-xs font-english whitespace-nowrap"
+                      style={{ backgroundColor: 'var(--color-error2)', color: 'white' }}
+                    >
+                      Suspended <span className="font-chinese">已停權</span>
+                    </span>
+                    {/* 解除停權（情境 7 sticky 停權的人工解鎖：罰款繳清／老師通融） */}
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(`解除 ${s.name}（${s.student_id}）的停權？請確認罰款已繳清或老師已通融。`)) return
+                        const res = await unsuspendStudent(s.student_id)
+                        if (!res.ok) { alert(res.message ?? '解除失敗'); return }
+                        setSuspended(prev => prev.filter(x => x.student_id !== s.student_id))
+                      }}
+                      className="text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      <span className="font-english">Unsuspend</span> <span className="font-chinese">解除停權</span>
+                    </button>
+                  </div>
                 </div>
               ))}
               {overdueOrders.map(o => {

@@ -165,6 +165,34 @@ export async function adminMarkReturnedPartial(
   return { ok: true }
 }
 
+/** 後台：代取消（pending／in-progress → canceled；in-progress 退押金為現場人工動作） */
+export async function adminCancelOrder(
+  rentalNumber: string,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_cancel_order', {
+    p_rental_number: rentalNumber,
+    p_handler: handler
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 後台：代客延期（不受僅乙次／前三天限制；撞期照擋；overdue 延期後回 in-progress） */
+export async function adminExtendOrder(
+  rentalNumber: string,
+  days: number,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_extend_order', {
+    p_rental_number: rentalNumber,
+    p_days: days,
+    p_handler: handler
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
 /** 後台：收罰款（欠繳 → 繳清，解除擋單；情境 13） */
 export async function adminCollectPenalty(
   rentalNumber: string,
