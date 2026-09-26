@@ -65,8 +65,10 @@ $$;
 -- 續走逾期／罰款／延期／停權流程）。押金：小單→子單＝未還品項小計、原單 refunded＝退還現金；
 -- 大量單→押金不拆（子單 0、全數歸還後一次退，refunded 留空由人工結）。
 -- ponytail: 大量單子單 deposit_total = 0，前端罰款 cap 顯示會以 0 計——大單部分歸還後逾期屬罕見案例，人工把關。
+drop function if exists public.admin_mark_returned_partial(text, bigint[], integer, text); -- 舊簽名（未帶繳清旗標）
 create or replace function public.admin_mark_returned_partial(
-  p_rental_number text, p_item_ids bigint[], p_penalty int default 0, p_handler text default null)
+  p_rental_number text, p_item_ids bigint[], p_penalty int default 0, p_handler text default null,
+  p_penalty_paid boolean default true)
 returns text
 language plpgsql
 security definer set search_path = public
@@ -112,7 +114,8 @@ begin
   -- 全勾 → 整單歸還（同 admin_mark_returned）
   if v_selected = v_total_items then
     update public.orders
-      set status = 'returned', penalty_total = p_penalty, returned_by = p_handler
+      set status = 'returned', penalty_total = p_penalty, returned_by = p_handler,
+          penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end
       where id = v_order.id;
     insert into public.notifications (student_id, type, title, message, link)
     values (v_order.student_id, 'success', '已歸還',
@@ -152,6 +155,7 @@ begin
     set status = 'returned',
         penalty_total = p_penalty,
         returned_by = p_handler,
+        penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end,
         refunded = case when v_order.booking_type = 'little'
                         then v_order.deposit_total - v_child_dep else null end
     where id = v_order.id;

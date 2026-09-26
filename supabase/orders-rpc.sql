@@ -31,6 +31,13 @@ begin
   if (select account_level from public.students where id = v_uid) >= 5 then
     raise exception '帳號已停權（未完成清潔歸還），無法送出預約，請聯絡系學會';
   end if;
+  -- 罰款欠繳擋單（情境 13，2026-09-26）：有未繳清的逾期罰款者不可再下單（僅擋 student）
+  if public.user_role() = 'student' and exists (
+    select 1 from public.orders
+    where student_id = v_uid and coalesce(penalty_total, 0) > 0 and penalty_paid = false
+  ) then
+    raise exception '有未繳清的逾期罰款，請先至系學會繳清後再預約';
+  end if;
   if p_orders is null or jsonb_array_length(p_orders) = 0 then
     raise exception '沒有可送出的訂單';
   end if;
@@ -129,6 +136,12 @@ begin
     v_equip_dep := least(v_equip_dep, 5000);
     v_space_dep := least(v_space_dep, 5000);
 
+    -- 助教直借（情境 10，2026-09-26 實作）：staff 免押金、送出即 in-progress（免審核）；仍守先來後到
+    if public.user_role() = 'staff' then
+      v_equip_dep := 0;
+      v_space_dep := 0;
+    end if;
+
     -- 流水號：當年度訂單數 + 1（每年重置）。同秒併發撞號時
     -- rental_number 的 unique constraint 會讓整筆交易失敗，前端重送即可（系上規模足夠）
     select count(*) + 1 into v_seq
@@ -142,7 +155,8 @@ begin
     values
       (v_rental, v_uid,
        (v_order ->> 'start_date')::date, (v_order ->> 'end_date')::date,
-       v_order ->> 'booking_type', 'pending',
+       v_order ->> 'booking_type',
+       case when public.user_role() = 'staff' then 'in-progress' else 'pending' end,
        v_equip_dep + v_space_dep,
        v_order ->> 'reason', v_order ->> 'class_name', v_order ->> 'teacher')
     returning id into v_order_id;
@@ -158,7 +172,9 @@ begin
 
     insert into public.notifications (student_id, type, title, message, link)
     values (v_uid, 'success', '預約成功',
-            '訂單 ' || v_rental || ' 已送出，請於 24 小時內繳交押金。', '/profile');
+            case when public.user_role() = 'staff'
+              then '訂單 ' || v_rental || ' 已成立（助教直借，免押金）。'
+              else '訂單 ' || v_rental || ' 已送出，請於 24 小時內繳交押金。' end, '/profile');
 
     v_numbers := v_numbers || v_rental;
   end loop;

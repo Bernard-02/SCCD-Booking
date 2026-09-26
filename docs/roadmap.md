@@ -62,10 +62,14 @@
 - [ ] 手動建單（電話／現場預約，admin 代下）
 - [ ] 庫存管理（新增／下架／調整數量）
 - [x] 歸還視窗「準時／逾期歸還」下拉（情境 6：準時免罰、逾期才展開罰款欄，`OrderActionDialog`）
-- [ ] 學年升級（每年全體 grade +1）＋新增轉學生（情境 12）
-- [ ] 收罰款／欠繳擋新單（情境 13：`penalty_paid`＋`submit_orders` 檢查）
+- [x] 學年升級（情境 12）：pg_cron 每年 9/1 自動全體 +1（`promote_grades_core`，大四／碩二不動，
+      API 端已撤執行權）；個別調整（延畢／休學）與轉學生＝Studio 手動，之後併入帳號管理
+- [x] 收罰款／欠繳擋新單（情境 13）：歸還時「已當場繳清」勾選、欠繳單顯示「收罰款」鈕
+      （`penalty_paid`／`penalty_collected_by`＋`admin_collect_penalty`＋`submit_orders` 擋單，
+      SQL 在 **supabase/penalty-and-grades.sql，需在 Studio 執行**）
 - ~~公告~~（2026-07 定案不做：公告一律發 Facebook；系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
-- [ ] **助教直借（`staff` 角色）**：用一般前台流程選借，但免押金、免審核、送出即 in-progress、不受學生數量規則限制（情境 10）
+- [x] **助教直借（`staff` 角色）** server 端（情境 10）：`submit_orders` 對 staff 免押金、送出即 in-progress；
+      封鎖期不擋 staff（原有）。前端數量上限對 staff 未豁免（遇到需求再放寬）；staff 帳號在 Studio 建（同 admin 流程）
 
 ## 階段 3：規則補完（依賴階段 1 的資料模型）
 
@@ -103,3 +107,7 @@ RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：
 - [ ] Hosting：**維持 Vercel**（`vercel.json` 已設好）＋環境變數管理（Supabase URL／anon key）
 - [ ] 正式資料填入：真實學號名單、設備清單與庫存、空間資料
 - [ ] 上線前驗收：照 [rental-rules.md](./rental-rules.md) 逐條走一遍真實流程
+
+## 遠期構想（未排程）
+
+- [ ] **做成 App**（2026-09-26 記）：Bernard 有意把平台做成手機 App。方向未定案——最低成本是 PWA（現有 React SPA 加 manifest + service worker 即可安裝到主畫面），進一步是 Capacitor 包殼上架，原生重寫成本最高。等手機版（階段 5）完成後再評估，屆時 RWD 成果可直接沿用。

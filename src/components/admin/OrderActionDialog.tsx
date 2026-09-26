@@ -9,11 +9,11 @@ import type { AdminOrderRow } from '../../services/ordersService'
 
 interface Props {
   order: AdminOrderRow
-  mode: 'paid' | 'return'
+  mode: 'paid' | 'return' | 'penalty' // penalty = 收罰款（歸還時未當場繳清的欠款）
   staff: { name: string; onDuty: boolean }[] // 幹部（值班中排前面，選單來源）
   defaultHandler: string // 上次選擇的經手人（同班次免重選）
   estPenalty: number // 逾期試算罰款（overdue 時預填，可修改）
-  onConfirm: (handler: string, penalty: number, itemIds: number[]) => void // 歸還模式：勾選的「已歸還」品項
+  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean) => void
   onCancel: () => void
 }
 
@@ -31,7 +31,9 @@ const OrderActionDialog: React.FC<Props> = ({
   const [penalty, setPenalty] = useState(String(isOverdue ? estPenalty : 0))
   // 已標 overdue 的單可能是「19:00 前已交還、按鈕晚按」——下拉區分準時（免罰）／逾期（計罰款）
   const [returnKind, setReturnKind] = useState<'late' | 'ontime'>('late')
-  const chargePenalty = isOverdue && returnKind === 'late'
+  const chargePenalty = mode === 'return' && isOverdue && returnKind === 'late'
+  // 罰款是否當場繳清（情境 13）：未繳清 → 欠繳記錄，學生不能再下單直到後台收罰款
+  const [paidNow, setPaidNow] = useState(true)
 
   // 部分歸還（情境 5-①）：勾「已歸還」品項，預設全勾；部分勾＝未還品項拆子單續租
   const [returnIds, setReturnIds] = useState<Set<number>>(
@@ -58,9 +60,12 @@ const OrderActionDialog: React.FC<Props> = ({
   const penaltyValid = !chargePenalty || (!Number.isNaN(penaltyNum) && penaltyNum >= 0)
   const canConfirm = handler !== '' && penaltyValid && (mode !== 'return' || returnIds.size > 0)
 
-  const title = mode === 'paid' ? { en: 'Deposit', zh: '確認收押金' } : { en: 'Return', zh: '確認歸還' }
+  const title =
+    mode === 'paid' ? { en: 'Deposit', zh: '確認收押金' }
+    : mode === 'penalty' ? { en: 'Penalty', zh: '收罰款' }
+    : { en: 'Return', zh: '確認歸還' }
   const field =
-    'bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-tiny text-white focus:border-white outline-none w-full'
+    'bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none w-full'
 
   return createPortal(
     <div
@@ -75,10 +80,10 @@ const OrderActionDialog: React.FC<Props> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-english text-small-title text-white font-normal">
+          <h2 className="font-english text-s text-white font-normal">
             {title.en} <span className="font-chinese">{title.zh}</span>
           </h2>
-          <p className="font-english text-tiny text-gray-scale2 mt-1">
+          <p className="font-english text-xs text-gray-scale2 mt-1">
             {order.rental_number} · <span className="font-chinese">{order.students?.name ?? '—'}</span>
             {' '}· NT$ {order.deposit_total.toLocaleString()}
           </p>
@@ -86,13 +91,21 @@ const OrderActionDialog: React.FC<Props> = ({
 
         {/* 內容區 */}
         <div className="px-6 py-5 flex flex-col gap-5">
+          {/* 收罰款：顯示欠繳金額 */}
+          {mode === 'penalty' && (
+            <p className="text-xs text-white font-chinese">
+              未繳罰款 <span className="font-english">NT$ {(order.penalty_total ?? 0).toLocaleString()}</span>
+              ，收款後學生即可恢復預約。
+            </p>
+          )}
+
           {/* 值班經手人 */}
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2">
+            <label className="text-gray-scale2 text-xs block mb-2">
               <span className="font-english">Handled by</span> <span className="font-chinese">值班經手人</span>
             </label>
             {staff.length === 0 ? (
-              <p className="text-tiny font-chinese" style={{ color: 'var(--color-error2)' }}>
+              <p className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>
                 尚無幹部，請先到「幹部名單 Staff」新增成員
               </p>
             ) : (
@@ -122,13 +135,13 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 歸還品項勾選（情境 5-①）：預設全勾＝整單歸還；部分勾＝未還品項拆子單續租 */}
           {mode === 'return' && (
             <div>
-              <label className="text-gray-scale2 text-tiny block mb-2">
+              <label className="text-gray-scale2 text-xs block mb-2">
                 <span className="font-english">Returned items</span>{' '}
                 <span className="font-chinese">已歸還品項（未勾選者拆為子單繼續租借）</span>
               </label>
               <div className="flex flex-col gap-2">
                 {order.order_items.map(item => (
-                  <label key={item.id} className="flex items-center gap-3 text-tiny text-white cursor-pointer">
+                  <label key={item.id} className="flex items-center gap-3 text-xs text-white cursor-pointer">
                     <input
                       type="checkbox"
                       className="custom-checkbox flex-shrink-0"
@@ -141,7 +154,7 @@ const OrderActionDialog: React.FC<Props> = ({
                 ))}
               </div>
               {isPartialReturn && (
-                <p className="text-tiny text-gray-scale2 font-chinese mt-2">
+                <p className="text-xs text-gray-scale2 font-chinese mt-2">
                   部分歸還：未勾選品項將拆為子單（歸還日不變），續走逾期／延期／罰款流程。
                 </p>
               )}
@@ -151,7 +164,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 已標逾期的單：下拉區分準時歸還（免罰）／逾期歸還（計罰款）——情境 6 定案 2026-09-26 */}
           {isOverdue && (
             <div>
-              <label className="text-gray-scale2 text-tiny block mb-2">
+              <label className="text-gray-scale2 text-xs block mb-2">
                 <span className="font-english">Return type</span> <span className="font-chinese">歸還認定</span>
               </label>
               <select
@@ -168,7 +181,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 罰款金額（僅認定為逾期歸還時） */}
           {chargePenalty && (
             <div>
-              <label className="text-gray-scale2 text-tiny block mb-2">
+              <label className="text-gray-scale2 text-xs block mb-2">
                 <span className="font-english">Penalty</span> <span className="font-chinese">罰款金額</span>
                 <span className="font-chinese ml-2">
                   （系統試算 NT$ {estPenalty.toLocaleString()}，可修改）
@@ -181,10 +194,22 @@ const OrderActionDialog: React.FC<Props> = ({
                 onChange={e => setPenalty(e.target.value)}
                 className={`${field} font-english`}
               />
+              {/* 未當場繳清 → 記欠繳，學生不能再下單直到收罰款（情境 13） */}
+              {penaltyNum > 0 && (
+                <label className="flex items-center gap-3 text-xs text-white cursor-pointer mt-3">
+                  <input
+                    type="checkbox"
+                    className="custom-checkbox flex-shrink-0"
+                    checked={paidNow}
+                    onChange={e => setPaidNow(e.target.checked)}
+                  />
+                  <span className="font-chinese">罰款已當場繳清（未勾＝記欠繳，繳清前不可再預約）</span>
+                </label>
+              )}
             </div>
           )}
           {mode === 'return' && !isOverdue && (
-            <p className="text-tiny text-gray-scale2 font-chinese">準時歸還，無罰款。</p>
+            <p className="text-xs text-gray-scale2 font-chinese">準時歸還，無罰款。</p>
           )}
         </div>
 
@@ -196,18 +221,26 @@ const OrderActionDialog: React.FC<Props> = ({
         {/* 按鈕區 */}
         <div className="px-6 py-4 flex justify-end gap-6">
           <button onClick={onCancel} className="text-gray-scale2 hover:text-white transition-colors cursor-pointer">
-            <span className="font-english text-tiny">
+            <span className="font-english text-xs">
               Cancel <span className="font-chinese">取消</span>
             </span>
           </button>
           <button
-            onClick={() => canConfirm && onConfirm(handler, chargePenalty ? penaltyNum : 0, [...returnIds])}
+            onClick={() =>
+              canConfirm &&
+              onConfirm(
+                handler,
+                chargePenalty ? penaltyNum : 0,
+                [...returnIds],
+                chargePenalty && penaltyNum > 0 ? paidNow : true
+              )
+            }
             disabled={!canConfirm}
             className={`transition-opacity ${
               canConfirm ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
             }`}
           >
-            <span className="font-english text-tiny">
+            <span className="font-english text-xs">
               Confirm <span className="font-chinese">確認</span>
             </span>
           </button>

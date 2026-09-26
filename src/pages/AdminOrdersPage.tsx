@@ -7,7 +7,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, fetchClosedDates } from '../services/ordersService'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminCollectPenalty, fetchClosedDates } from '../services/ordersService'
 import type { AdminOrderRow, OrderStatus } from '../services/ordersService'
 import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
@@ -117,7 +117,7 @@ const AdminOrdersPage: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null) // 正在操作的單號
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set())
   const [staff, setStaff] = useState<StaffMember[]>([]) // 幹部（經手人選單，值班中優先）
-  const [action, setAction] = useState<{ order: AdminOrderRow; mode: 'paid' | 'return' } | null>(null)
+  const [action, setAction] = useState<{ order: AdminOrderRow; mode: 'paid' | 'return' | 'penalty' } | null>(null)
 
   const load = () =>
     fetchAllOrders()
@@ -130,8 +130,8 @@ const AdminOrdersPage: React.FC = () => {
     listStaff().then(setStaff).catch(() => setStaff([]))
   }, [])
 
-  // 對話框確認：收押金／歸還（經手人記住供下次預選；歸還支援部分歸還——全勾整單、部分勾拆子單）
-  const handleAction = async (handler: string, penalty: number, itemIds: number[]) => {
+  // 對話框確認：收押金／歸還／收罰款（經手人記住供下次預選；歸還支援部分歸還——全勾整單、部分勾拆子單）
+  const handleAction = async (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean) => {
     if (!action) return
     const { order, mode } = action
     setAction(null)
@@ -140,7 +140,9 @@ const AdminOrdersPage: React.FC = () => {
     const res =
       mode === 'paid'
         ? await adminMarkPaid(order.rental_number, handler)
-        : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler)
+        : mode === 'penalty'
+          ? await adminCollectPenalty(order.rental_number, handler)
+          : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler, penaltyPaid)
     setBusy(null)
     if (!res.ok) { alert(res.message ?? '操作失敗'); return }
     await load()
@@ -261,7 +263,7 @@ const AdminOrdersPage: React.FC = () => {
 
       {/* 工具列（Notion 式 compact）：左筆數、右搜尋／篩選 icon */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-tiny text-gray-scale2 font-chinese mr-auto">{visible.length} 筆</span>
+        <span className="text-xs text-gray-scale2 font-chinese mr-auto">{visible.length} 筆</span>
         {showSearch ? (
           <input
             type="search"
@@ -320,7 +322,7 @@ const AdminOrdersPage: React.FC = () => {
               <select
                 value={s.field}
                 onChange={e => updateSort(i, { field: e.target.value as SortField })}
-                className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-tiny text-white focus:border-white outline-none font-chinese cursor-pointer"
+                className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
               >
                 {COLUMNS.filter(c => c.field === s.field || !sorts.some(x => x.field === c.field)).map(c => (
                   <option key={c.field} value={c.field}>{c.en} {c.zh}</option>
@@ -329,7 +331,7 @@ const AdminOrdersPage: React.FC = () => {
               <select
                 value={s.dir}
                 onChange={e => updateSort(i, { dir: e.target.value as 'asc' | 'desc' })}
-                className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-tiny text-white focus:border-white outline-none font-chinese cursor-pointer"
+                className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
               >
                 <option value="asc">Ascending 升冪</option>
                 <option value="desc">Descending 降冪</option>
@@ -346,7 +348,7 @@ const AdminOrdersPage: React.FC = () => {
           {sorts.length < COLUMNS.length && (
             <button
               onClick={addSort}
-              className="text-tiny text-gray-scale2 hover:text-white transition-colors cursor-pointer"
+              className="text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer"
             >
               ＋ <span className="font-english">Add sort</span> <span className="font-chinese">新增排序</span>
             </button>
@@ -361,7 +363,7 @@ const AdminOrdersPage: React.FC = () => {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`text-tiny whitespace-nowrap transition-colors cursor-pointer ${
+              className={`text-xs whitespace-nowrap transition-colors cursor-pointer ${
                 filter === f.key ? 'text-white font-bold' : 'text-gray-scale2 hover:text-white'
               }`}
             >
@@ -372,7 +374,7 @@ const AdminOrdersPage: React.FC = () => {
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-tiny text-white focus:border-white outline-none font-chinese cursor-pointer"
+            className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
           >
             <option value="all">全部種類</option>
             {Object.entries(BOOKING_TYPE_META).map(([key, meta]) => (
@@ -382,14 +384,14 @@ const AdminOrdersPage: React.FC = () => {
         </div>
       )}
 
-      {loading && <div className="text-gray-scale2 text-tiny font-chinese">載入中…</div>}
+      {loading && <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>}
       {error && (
-        <div className="text-tiny font-chinese" style={{ color: 'var(--color-error2)' }}>讀取失敗：{error}</div>
+        <div className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>讀取失敗：{error}</div>
       )}
 
       {!loading && !error && (
         <div className="overflow-x-auto">
-          <table className="min-w-full text-tiny border-collapse">
+          <table className="min-w-full text-xs border-collapse">
             <thead>
               <tr className="text-left text-gray-scale2 border-b border-gray-scale4">
                 {colOrder.map(f => COLUMNS.find(c => c.field === f)!).map(col => (
@@ -442,6 +444,17 @@ const AdminOrdersPage: React.FC = () => {
                           ? <span className="font-chinese">處理中…</span>
                           : <span className="font-english">Return <span className="font-chinese">歸還</span></span>}
                       </button>
+                    ) : o.status === 'returned' && (o.penalty_total ?? 0) > 0 && o.penalty_paid === false ? (
+                      // 欠繳罰款（情境 13）：收罰款後學生才可再預約
+                      <button
+                        onClick={() => setAction({ order: o, mode: 'penalty' })}
+                        disabled={busy === o.rental_number}
+                        className={actionBtn(busy !== o.rental_number)}
+                      >
+                        {busy === o.rental_number
+                          ? <span className="font-chinese">處理中…</span>
+                          : <span className="font-english">Penalty <span className="font-chinese">收罰款</span></span>}
+                      </button>
                     ) : (
                       <span className="text-gray-scale3">—</span>
                     )}
@@ -452,7 +465,7 @@ const AdminOrdersPage: React.FC = () => {
           </table>
 
           {visible.length === 0 && (
-            <div className="text-gray-scale3 text-tiny py-8 text-center font-chinese">沒有符合的訂單</div>
+            <div className="text-gray-scale3 text-xs py-8 text-center font-chinese">沒有符合的訂單</div>
           )}
         </div>
       )}

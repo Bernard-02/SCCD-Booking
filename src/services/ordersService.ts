@@ -28,6 +28,8 @@ export interface OrderRow {
   has_extended: boolean
   reason: string | null
   created_at: string
+  penalty_total: number | null   // 歸還時凍結的最終罰款（null = 尚未結算）
+  penalty_paid: boolean          // 罰款是否已繳清（false = 欠繳，submit_orders 擋新單）
   order_items: OrderItemRow[]
 }
 
@@ -149,17 +151,35 @@ export async function adminMarkReturnedPartial(
   rentalNumber: string,
   itemIds: number[],
   penalty: number,
-  handler: string
+  handler: string,
+  penaltyPaid: boolean
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_mark_returned_partial', {
     p_rental_number: rentalNumber,
     p_item_ids: itemIds,
     p_penalty: penalty,
+    p_handler: handler,
+    p_penalty_paid: penaltyPaid
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 後台：收罰款（欠繳 → 繳清，解除擋單；情境 13） */
+export async function adminCollectPenalty(
+  rentalNumber: string,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_collect_penalty', {
+    p_rental_number: rentalNumber,
     p_handler: handler
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
+
+// 學年升級（情境 12）改為 pg_cron 每年 9/1 自動（promote_grades_core）；
+// 需手動補跑時在 Studio 執行 select public.admin_promote_grades();
 
 /** 逐品項檢查延期撞期（前台部分延期勾選介面用；supabase/partial-extend.sql） */
 export interface ExtendCheckItem {

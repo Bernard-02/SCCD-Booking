@@ -29,14 +29,14 @@ const SectionTitle: React.FC<{ en: string; zh: string; count: number; onMore?: (
   onMore
 }) => (
   <div className="flex items-baseline justify-between border-b border-gray-scale4 pb-3">
-    <h2 className="text-small-title text-white">
+    <h2 className="text-s text-white">
       <span className="font-english">{en}</span> <span className="font-chinese">{zh}</span>
       <span className="font-english text-gray-scale2 ml-2">{count}</span>
     </h2>
     {onMore && (
       <button
         onClick={onMore}
-        className="text-tiny text-gray-scale2 hover:text-white transition-colors cursor-pointer"
+        className="text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer"
       >
         <span className="font-english">View</span> <span className="font-chinese">查看</span> →
       </button>
@@ -45,7 +45,7 @@ const SectionTitle: React.FC<{ en: string; zh: string; count: number; onMore?: (
 )
 
 const Empty: React.FC<{ zh: string }> = ({ zh }) => (
-  <p className="py-6 text-tiny text-gray-scale3 font-chinese">{zh}</p>
+  <p className="py-6 text-xs text-gray-scale3 font-chinese">{zh}</p>
 )
 
 const AdminHomePage: React.FC = () => {
@@ -101,9 +101,9 @@ const AdminHomePage: React.FC = () => {
     <div className="max-w-5xl">
       <PageTitle en="Overview" zh="總覽" />
 
-      {loading && <div className="text-gray-scale2 text-tiny font-chinese">載入中…</div>}
+      {loading && <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>}
       {error && (
-        <div className="text-tiny font-chinese" style={{ color: 'var(--color-error2)' }}>
+        <div className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>
           讀取失敗：{error}
         </div>
       )}
@@ -114,12 +114,12 @@ const AdminHomePage: React.FC = () => {
           <div className="flex flex-wrap gap-x-12 gap-y-6 mb-14">
             {STATUS_ORDER.map(s => (
               <button key={s} onClick={() => goOrders(s)} className="text-left cursor-pointer group">
-                <div className="text-tiny text-gray-scale2 mb-1 whitespace-nowrap">
+                <div className="text-xs text-gray-scale2 mb-1 whitespace-nowrap">
                   <span className="font-english">{STATUS_META[s].en}</span>{' '}
                   <span className="font-chinese">{STATUS_META[s].zh}</span>
                 </div>
                 <div
-                  className="text-medium-title font-english transition-opacity group-hover:opacity-70"
+                  className="text-xl font-english transition-opacity group-hover:opacity-70"
                   style={{ color: STATUS_META[s].color }}
                 >
                   {counts[s]}
@@ -143,15 +143,15 @@ const AdminHomePage: React.FC = () => {
                   className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                 >
                   <div>
-                    <div className="text-content font-chinese text-white">
+                    <div className="text-m font-chinese text-white">
                       {i.name}
                       {i.quantity > 1 ? ` ×${i.quantity}` : ''}
                     </div>
-                    <div className="text-tiny text-gray-scale2 font-english">{o.rental_number}</div>
+                    <div className="text-xs text-gray-scale2 font-english">{o.rental_number}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-content font-chinese text-white">{o.students?.name ?? '—'}</div>
-                    <div className="text-tiny text-gray-scale2 font-english">
+                    <div className="text-m font-chinese text-white">{o.students?.name ?? '—'}</div>
+                    <div className="text-xs text-gray-scale2 font-english">
                       {o.students?.student_id} · <span className="font-chinese">至</span> {fmtMD(o.end_date)}
                     </div>
                   </div>
@@ -177,25 +177,25 @@ const AdminHomePage: React.FC = () => {
                     className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                   >
                     <div>
-                      <div className="text-content font-chinese text-white">
+                      <div className="text-m font-chinese text-white">
                         {o.students?.name ?? '—'}
-                        <span className="font-english text-tiny text-gray-scale2 ml-2">
+                        <span className="font-english text-xs text-gray-scale2 ml-2">
                           {o.students?.student_id}
                         </span>
                       </div>
-                      <div className="text-tiny text-gray-scale2 font-english">
+                      <div className="text-xs text-gray-scale2 font-english">
                         {o.rental_number} · NT$ {o.deposit_total.toLocaleString()}
                       </div>
                     </div>
                     {ms > 0 ? (
                       <span
-                        className="text-tiny font-english whitespace-nowrap"
+                        className="text-xs font-english whitespace-nowrap"
                         style={{ color: 'var(--color-yellow)' }}
                       >
                         <span className="font-chinese">剩</span> {hrs} hrs
                       </span>
                     ) : (
-                      <span className="text-tiny text-gray-scale3 font-chinese whitespace-nowrap">
+                      <span className="text-xs text-gray-scale3 font-chinese whitespace-nowrap">
                         已逾時，將自動取消
                       </span>
                     )}
@@ -218,12 +218,12 @@ const AdminHomePage: React.FC = () => {
                   key={s.student_id}
                   className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                 >
-                  <div className="text-content font-chinese text-white">
+                  <div className="text-m font-chinese text-white">
                     {s.name}
-                    <span className="font-english text-tiny text-gray-scale2 ml-2">{s.student_id}</span>
+                    <span className="font-english text-xs text-gray-scale2 ml-2">{s.student_id}</span>
                   </div>
                   <span
-                    className="px-3 py-1 rounded-lg text-tiny font-english whitespace-nowrap"
+                    className="px-3 py-1 rounded-lg text-xs font-english whitespace-nowrap"
                     style={{ backgroundColor: 'var(--color-error2)', color: 'white' }}
                   >
                     Suspended <span className="font-chinese">已停權</span>
@@ -239,16 +239,16 @@ const AdminHomePage: React.FC = () => {
                     className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                   >
                     <div>
-                      <div className="text-content font-chinese text-white">
+                      <div className="text-m font-chinese text-white">
                         {o.students?.name ?? '—'}
-                        <span className="font-english text-tiny text-gray-scale2 ml-2">
+                        <span className="font-english text-xs text-gray-scale2 ml-2">
                           {o.students?.student_id}
                         </span>
                       </div>
-                      <div className="text-tiny text-gray-scale2 font-english">{o.rental_number}</div>
+                      <div className="text-xs text-gray-scale2 font-english">{o.rental_number}</div>
                     </div>
                     <div
-                      className="text-tiny font-english text-right whitespace-nowrap"
+                      className="text-xs font-english text-right whitespace-nowrap"
                       style={{ color: 'var(--color-error2)' }}
                     >
                       <span className="font-chinese">逾期</span> {days}{' '}
@@ -264,6 +264,14 @@ const AdminHomePage: React.FC = () => {
                 <Empty zh="沒有違規帳號，大家都是好寶寶" />
               )}
             </section>
+          </div>
+
+          {/* 學年升級（情境 12）：pg_cron 每年 9/1 自動全體 +1（大四／碩二不動），無需手動 */}
+          <div className="mt-16 pt-6 border-t border-gray-scale4">
+            <span className="text-xs text-gray-scale3 font-chinese">
+              學年升級：每年 9/1 自動執行（全體學生年級 +1，大四／碩二不動）；
+              個別調整（延畢／休學）與轉學生請於 Supabase Studio 處理。
+            </span>
           </div>
         </>
       )}
