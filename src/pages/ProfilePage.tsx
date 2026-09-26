@@ -12,7 +12,7 @@ import ExtendDialog from '../components/profile/ExtendDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
 import Toast from '../components/common/Toast'
 import { changePassword, updateMyPhone } from '../services/authService'
-import { fetchMyOrders, extendMyOrder, fetchClosedDates } from '../services/ordersService'
+import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadEquipmentData } from '../services/equipmentService'
 import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
@@ -232,11 +232,12 @@ const RentalHistorySection: React.FC = () => {
     setIsExtendDialogOpen(true)
   }
 
-  // 確認延期（RPC：資料庫端驗證僅限租借中、未延期過、1-7 天）
-  const handleConfirmExtend = async (extendDays: number) => {
+  // 確認延期（RPC：資料庫端驗證僅限租借中、未延期過、1-7 天；
+  // 全勾品項＝整單延期，部分勾選＝拆子單部分延期）
+  const handleConfirmExtend = async (extendDays: number, itemIds: number[]) => {
     if (!extendingReceipt) return
 
-    const result = await extendMyOrder(extendingReceipt.rentalNumber, extendDays)
+    const result = await extendMyOrderPartial(extendingReceipt.rentalNumber, extendDays, itemIds)
     if (!result.ok) {
       console.error('延期失敗:', result.message)
       alert(result.message || '延期失敗，請再試一次')

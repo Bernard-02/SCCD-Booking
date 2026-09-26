@@ -9,6 +9,7 @@ import type { BookingType } from '../types/equipment'
 export type OrderStatus = 'pending' | 'in-progress' | 'overdue' | 'returned' | 'canceled'
 
 export interface OrderItemRow {
+  id: number
   item_type: 'equipment' | 'space-block' | 'classroom'
   item_id: string
   name: string
@@ -138,4 +139,64 @@ export async function extendMyOrder(
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }
+}
+
+/**
+ * 後台：歸還（支援部分歸還）。勾「已歸還」品項——全勾＝整單歸還；
+ * 部分＝已還留原單結案、未還拆子單續租（supabase/partial-extend.sql）。
+ */
+export async function adminMarkReturnedPartial(
+  rentalNumber: string,
+  itemIds: number[],
+  penalty: number,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_mark_returned_partial', {
+    p_rental_number: rentalNumber,
+    p_item_ids: itemIds,
+    p_penalty: penalty,
+    p_handler: handler
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 逐品項檢查延期撞期（前台部分延期勾選介面用；supabase/partial-extend.sql） */
+export interface ExtendCheckItem {
+  id: number
+  name: string
+  extendable: boolean
+}
+export async function checkExtendItems(
+  rentalNumber: string,
+  days: number
+): Promise<ExtendCheckItem[] | null> {
+  const { data, error } = await supabase.rpc('extend_check', {
+    p_rental_number: rentalNumber,
+    p_days: days
+  })
+  if (error) {
+    console.error('延期撞期檢查失敗:', error.message)
+    return null
+  }
+  return ((data ?? []) as { oi_id: number; oi_name: string; extendable: boolean }[]).map(r => ({
+    id: r.oi_id,
+    name: r.oi_name,
+    extendable: r.extendable
+  }))
+}
+
+/** 延期（支援部分延期）：全選品項＝整單延期不拆單；部分＝拆子單（單號根單號續流水） */
+export async function extendMyOrderPartial(
+  rentalNumber: string,
+  days: number,
+  itemIds: number[]
+): Promise<{ ok: boolean; message?: string; resultNumber?: string }> {
+  const { data, error } = await supabase.rpc('extend_my_order_partial', {
+    p_rental_number: rentalNumber,
+    p_days: days,
+    p_item_ids: itemIds
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true, resultNumber: data as string }
 }

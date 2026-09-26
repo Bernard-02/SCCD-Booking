@@ -74,12 +74,9 @@ const HomePage = () => {
                       <div className="h-[300px] border border-white rounded-2xl bg-black/80 backdrop-blur-sm p-8 flex flex-col relative" style={{ width: 'fit-content' }}>
                         {/* 標題：往上對齊右上 Studio 第一行（Studio 雙行置中會頂出 padding，單行標題用負 margin 追上去） */}
                         {/* ponytail: -mt-3 是純視覺對齊值，字級或 Studio 高度改了就微調這個數字 */}
-                        <div className="-mt-3 mb-8 flex gap-6">
+                        <div className="-mt-3 mb-8">
                           <h2 className="font-['Inter',_sans-serif] text-medium-title text-white leading-tight whitespace-nowrap">
-                            Space <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">空間</span>
-                          </h2>
-                          <h2 className="font-['Inter',_sans-serif] text-medium-title text-white leading-tight whitespace-nowrap">
-                            Equipment <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">設備</span>
+                            Space &amp; Equipment <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">空間與設備</span>
                           </h2>
                         </div>
 
@@ -188,7 +185,7 @@ const HomePage = () => {
                               <button
                                 type="submit"
                                 disabled={!studentId || !password}
-                                className="text-small-title font-medium whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
+                                className="text-small-title font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
                               >
                                 <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                               </button>
@@ -204,15 +201,15 @@ const HomePage = () => {
                           href="https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white/10 transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
+                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
                         >
                           <div className="flex flex-col z-10">
-                            <span className="font-['Inter',_sans-serif] text-medium-title text-white">Studio</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white">工作室</span>
+                            <span className="font-['Inter',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">Studio</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">工作室</span>
                           </div>
                           {/* 斜45度箭頭 */}
                           <div className="z-10">
-                             <svg className="w-12 h-12 text-white transform rotate-[-45deg] group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <svg className="w-12 h-12 text-white group-hover:text-black transition-colors transform rotate-[-45deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
                              </svg>
                           </div>
@@ -223,15 +220,15 @@ const HomePage = () => {
                           href="https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white/10 transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
+                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
                         >
                           <div className="flex flex-col z-10">
-                            <span className="font-['Inter',_sans-serif] text-medium-title text-white">Film Studio</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white">專業攝影棚</span>
+                            <span className="font-['Inter',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">Film Studio</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">專業攝影棚</span>
                           </div>
                           {/* 斜45度箭頭 */}
                           <div className="z-10">
-                             <svg className="w-12 h-12 text-white transform rotate-[-45deg] group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <svg className="w-12 h-12 text-white group-hover:text-black transition-colors transform rotate-[-45deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
                              </svg>
                           </div>
@@ -351,7 +348,7 @@ const HomePage = () => {
                 <button
                   type="submit"
                   disabled={!studentId || !password}
-                  className="text-small-title font-medium whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
+                  className="text-small-title font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
                 >
                   <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                 </button>
@@ -420,7 +417,7 @@ const HomePage = () => {
                       <button
                         type="submit"
                         disabled={!resetStudentId.trim()}
-                        className={`px-6 py-2 rounded-lg text-content font-medium transition ${
+                        className={`px-6 py-2 rounded-lg text-content font-normal transition ${
                           resetStudentId.trim()
                             ? 'bg-white text-black hover:opacity-70 cursor-pointer'
                             : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'

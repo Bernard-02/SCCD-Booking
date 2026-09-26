@@ -275,7 +275,8 @@ $$;
 
 -- 延期自己的訂單：僅限租借中（in-progress）、未延期過、1-7 天。
 -- 撞期檢查（情境 8 定案 2026-07-14）：逐品項檢查延長區間有無被其他訂單佔用，
--- 全部品項都能延才放行，並列出撞期品項；部分延期＝拆子單（階段 2 後台 admin 功能）。
+-- 全部品項都能延才放行，並列出撞期品項；部分延期＝拆子單（2026-09-26 定案前台開放，待實作）。
+-- 封鎖檢查（情境 11-a 補完 2026-09-26）：student 延長區間不得跨入寒暑假封鎖；admin／staff 不受限。
 create or replace function public.extend_my_order(p_rental_number text, p_days int)
 returns void
 language plpgsql
@@ -319,6 +320,15 @@ begin
 
   -- 延長區間 = [原歸還日+1, 新歸還日]，逐品項檢查與其他生效訂單的衝突
   v_new_end := v_order.end_date + p_days;
+
+  -- 寒暑假封鎖：延長區間不得跨入封鎖期（最後歸還日＝放假前一日）；admin／staff 不受限
+  if public.user_role() = 'student' and exists (
+    select 1 from public.rental_blackouts b
+    where b.start_date <= v_new_end
+      and b.end_date >= v_order.end_date + 1
+  ) then
+    raise exception '無法延期：延長期間適逢寒暑假封鎖，最後歸還日為放假前一日';
+  end if;
   for v_item in
     select item_type, item_id, name, quantity
     from public.order_items where order_id = v_order.id

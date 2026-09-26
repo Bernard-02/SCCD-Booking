@@ -284,13 +284,13 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       {/* 全螢幕圖片檢視 */}
       {fullscreenImage && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center py-20"
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center py-20"
           onClick={closeFullscreenImage}
         >
           {/* 關閉按鈕 */}
           <button
             onClick={closeFullscreenImage}
-            className="absolute top-20 right-8 text-white text-4xl font-light hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-4xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
             aria-label="關閉"
           >
             ×

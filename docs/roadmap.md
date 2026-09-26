@@ -51,14 +51,17 @@
 - [x] 值班經手人追溯：收押金／歸還必選經手幹部（`orders.paid_by`／`returned_by` 姓名快照）；幹部名單每年換屆維護（`AdminStaffPage`＋`staff_members` 表，見 supabase/staff-members.sql）
 - [x] 公休日／寒暑假封鎖維護（`AdminClosedDatesPage`／`AdminBlackoutsPage`，直接 CRUD，RLS 把關）
 - [ ] **代客延期**（admin 幫學生延期，不受前台「僅乙次」與前三天限制）
-- [ ] 拆單機制（情境 5 全定案）：`parent_order_id`＋`refunded` 欄位、單號根號續流水、大單押金全還才退；
-      後台「部分歸還拆單」（含大單）＋前台「部分延期」（ExtendDialog 品項勾選＋逐項撞期＋自動拆單）
+- [x] 前台「部分延期」（情境 5＋8）：ExtendDialog 選天數→逐品項顯示可否延（`extend_check`）→勾選送出，
+      全勾整單延、部分勾自動拆子單（`extend_my_order_partial`；含 `parent_order_id`／`refunded` 欄位，
+      SQL 在 **supabase/partial-extend.sql，需在 Studio 執行**）
+- [x] 後台「部分歸還拆單」（含大單）：歸還視窗勾「已歸還」品項，全勾整單歸還、部分勾未還品項拆子單續租
+      （`admin_mark_returned_partial`；小單退差額寫 `refunded`、大單押金不拆全還才退。SQL 同在 partial-extend.sql）
 - [ ] 代取消（in-progress 學生取消需 admin 處理，退押金）
 - [ ] 軟性欄位就地編輯（原因／班級／老師）
 - [ ] 帳號狀態調整（改 `account_level`；解除停權、老師通融）
 - [ ] 手動建單（電話／現場預約，admin 代下）
 - [ ] 庫存管理（新增／下架／調整數量）
-- [ ] 歸還視窗「準時歸還（免罰）」快捷鈕（情境 6：準時還但 admin 晚按）
+- [x] 歸還視窗「準時／逾期歸還」下拉（情境 6：準時免罰、逾期才展開罰款欄，`OrderActionDialog`）
 - [ ] 學年升級（每年全體 grade +1）＋新增轉學生（情境 12）
 - [ ] 收罰款／欠繳擋新單（情境 13：`penalty_paid`＋`submit_orders` 檢查）
 - ~~公告~~（2026-07 定案不做：公告一律發 Facebook；系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
@@ -73,7 +76,8 @@
 - [x] 重複下單、庫存衝突改由 server 端把關
 - [x] 寒暑假封鎖 server 端（`rental_blackouts` 表＋`submit_orders` 擋 student）——情境 11-a 已實作
 - [x] 寒暑假封鎖前端日曆：封鎖日期灰化不可選＋擋跨封鎖選取（`Calendar` 讀 `fetchBlackouts`）
-- [ ] 延期不得延入寒暑假封鎖：`extend_my_order` 補 blackout 檢查（2026-09-26 情境補完新增）
+- [x] 延期不得延入寒暑假封鎖：`extend_my_order` 補 blackout 檢查＋`ExtendDialog` 封鎖日灰化
+      （SQL 改在 orders-rpc.sql，**需在 Studio 重新執行 extend_my_order 那段才生效**）
 - [ ] 大量單取件前調整品項：學生前台自助加／減（減不低於 10 件）＋server 逐項庫存檢查，押金 cap 不動免補繳（情境 3）
 
 ## 階段 4：品質（可並行）

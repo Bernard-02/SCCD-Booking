@@ -7,7 +7,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturned, fetchClosedDates } from '../services/ordersService'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, fetchClosedDates } from '../services/ordersService'
 import type { AdminOrderRow, OrderStatus } from '../services/ordersService'
 import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
@@ -130,8 +130,8 @@ const AdminOrdersPage: React.FC = () => {
     listStaff().then(setStaff).catch(() => setStaff([]))
   }, [])
 
-  // 對話框確認：收押金／歸還（經手人記住供下次預選）
-  const handleAction = async (handler: string, penalty: number) => {
+  // 對話框確認：收押金／歸還（經手人記住供下次預選；歸還支援部分歸還——全勾整單、部分勾拆子單）
+  const handleAction = async (handler: string, penalty: number, itemIds: number[]) => {
     if (!action) return
     const { order, mode } = action
     setAction(null)
@@ -140,7 +140,7 @@ const AdminOrdersPage: React.FC = () => {
     const res =
       mode === 'paid'
         ? await adminMarkPaid(order.rental_number, handler)
-        : await adminMarkReturned(order.rental_number, penalty, handler)
+        : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler)
     setBusy(null)
     if (!res.ok) { alert(res.message ?? '操作失敗'); return }
     await load()

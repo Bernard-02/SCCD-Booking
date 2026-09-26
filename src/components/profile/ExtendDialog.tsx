@@ -5,12 +5,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { fetchBlackouts, checkExtendItems, type ExtendCheckItem } from '../../services/ordersService'
+import { useAuth } from '../../contexts/AuthContext'
 
 interface ExtendDialogProps {
   isOpen: boolean
   orderNumber: string
   currentEndDate: string // 原歸還日
-  onConfirm: (extendDays: number) => void
+  onConfirm: (extendDays: number, itemIds: number[]) => void // 全勾＝整單延期；部分勾＝拆子單
   onCancel: () => void
 }
 
@@ -25,14 +27,50 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
   const [selectedDays, setSelectedDays] = useState(0)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
+  // 寒暑假封鎖（情境 11-a）：學生的延長區間不得跨入封鎖期；admin／staff 不受限，不載入（同 Calendar）
+  const { currentUser } = useAuth()
+  const isPrivileged = currentUser?.role === 'admin' || currentUser?.role === 'staff'
+  const [blackouts, setBlackouts] = useState<{ start: Date; end: Date }[]>([])
+
+  // 部分延期（情境 5＋8）：選定天數後逐品項查撞期，可勾選要延期的品項
+  const [extendItems, setExtendItems] = useState<ExtendCheckItem[] | null>(null)
+  const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set())
+
   useEffect(() => {
     if (isOpen) {
       // 重置選擇狀態
       setSelectedIndex(null)
       setSelectedDays(0)
       setHoveredIndex(null)
+      setExtendItems(null)
+      setCheckedIds(new Set())
+      if (!isPrivileged) {
+        fetchBlackouts().then(ranges => {
+          setBlackouts(ranges.map(r => {
+            const s = new Date(r.start); s.setHours(0, 0, 0, 0)
+            const e = new Date(r.end); e.setHours(0, 0, 0, 0)
+            return { start: s, end: e }
+          }))
+        })
+      }
     }
-  }, [isOpen])
+  }, [isOpen, isPrivileged])
+
+  // 天數變更 → 逐品項查該天數下有無撞期（可延的預設勾選、撞期的鎖定不可勾）
+  useEffect(() => {
+    if (!isOpen || selectedDays === 0) {
+      setExtendItems(null)
+      setCheckedIds(new Set())
+      return
+    }
+    let alive = true
+    checkExtendItems(orderNumber, selectedDays).then(items => {
+      if (!alive) return
+      setExtendItems(items)
+      setCheckedIds(new Set((items ?? []).filter(i => i.extendable).map(i => i.id)))
+    })
+    return () => { alive = false }
+  }, [isOpen, selectedDays, orderNumber])
 
   if (!isOpen) return null
 
@@ -61,15 +99,17 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
       extendDays: 0
     })
 
-    // 第3-9個：原歸還日後7天
+    // 第3-9個：原歸還日後7天；延長區間 [原歸還日+1, 新歸還日] 跨入封鎖期則灰化不可選
     for (let i = 1; i <= 7; i++) {
       const extendDate = new Date(dueDate)
       extendDate.setDate(dueDate.getDate() + i)
+      extendDate.setHours(0, 0, 0, 0)
+      const inBlackout = blackouts.some(r => extendDate >= r.start && dueDate < r.end)
       dates.push({
         date: extendDate,
         day: extendDate.getDate(),
         type: 'extend',
-        disabled: false,
+        disabled: inBlackout,
         extendDays: i
       })
     }
@@ -101,16 +141,30 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
     }
   }
 
+  // 勾選切換（撞期品項鎖定不可勾）
+  const toggleItem = (id: number) => {
+    setCheckedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const isPartial =
+    extendItems !== null && checkedIds.size > 0 && checkedIds.size < extendItems.length
+  const canSend = selectedDays > 0 && checkedIds.size > 0
+
   // 處理確認
   const handleConfirm = () => {
-    if (selectedDays > 0) {
-      onConfirm(selectedDays)
+    if (canSend) {
+      onConfirm(selectedDays, [...checkedIds])
     }
   }
 
   // 獲取日期單元格的樣式類
   const getDateCellClasses = (index: number, isDisabled: boolean) => {
-    let classes = 'text-left font-semibold font-[\'Inter\',_sans-serif] tracking-tighter leading-none py-1 text-[3rem] relative'
+    let classes = 'text-left font-bold font-[\'Inter\',_sans-serif] tracking-tighter leading-none py-1 text-[3rem] relative'
 
     if (!isDisabled) {
       classes += ' cursor-pointer'
@@ -162,11 +216,13 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
   }
 
   // 獲取日期顏色
-  const getDateColor = (index: number) => {
+  const getDateColor = (index: number, isDisabled: boolean) => {
     if (index === 0) {
       return 'text-[#ffff00]' // 第一個數字（今天）- 黃色
     } else if (index === 1) {
       return 'text-[#00FF80]' // 第二個數字（原歸還日）- 綠色
+    } else if (isDisabled) {
+      return 'text-gray-scale3' // 封鎖期內的延期選項 - 灰色不可選
     } else {
       return 'text-white' // 其他數字（延期選項）- 白色
     }
@@ -238,7 +294,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                 {dates.map((date, index) => (
                   <div
                     key={index}
-                    className={`${getDateCellClasses(index, date.disabled)} ${getDateCellPadding(index)} ${getDateColor(index)}`}
+                    className={`${getDateCellClasses(index, date.disabled)} ${getDateCellPadding(index)} ${getDateColor(index, date.disabled)}`}
                     style={date.disabled ? { pointerEvents: 'none' } : {}}
                     onClick={() => handleDateClick(index, date.extendDays)}
                     onMouseEnter={() => !date.disabled && setHoveredIndex(index)}
@@ -262,6 +318,52 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             </div>
           </div>
 
+          {/* 品項勾選（部分延期，情境 5＋8）：選定天數後顯示各品項可否延期 */}
+          {selectedDays > 0 && extendItems && (
+            <div className="mb-6">
+              <p className="text-tiny text-gray-scale2 mb-2">
+                <span className="font-['Inter',_sans-serif]">Items to extend</span>{' '}
+                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">勾選要延期的品項</span>
+              </p>
+              <div className="flex flex-col gap-2">
+                {extendItems.map(item => (
+                  <label
+                    key={item.id}
+                    className={`flex items-center gap-3 text-tiny ${
+                      item.extendable ? 'text-white cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="custom-checkbox flex-shrink-0"
+                      checked={checkedIds.has(item.id)}
+                      disabled={!item.extendable}
+                      onChange={() => toggleItem(item.id)}
+                    />
+                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{item.name}</span>
+                    {!item.extendable && (
+                      <span
+                        className="font-['Inter','Noto_Sans_TC',_sans-serif]"
+                        style={{ color: 'var(--color-error2)' }}
+                      >
+                        延長期間已被預約
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+              {isPartial && (
+                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-gray-scale2 mt-3">
+                  部分延期：勾選品項將拆為子單延期，未勾選品項照原歸還日（
+                  <span className="font-['Inter',_sans-serif]">
+                    {dueDate.getMonth() + 1} 月 {dueDate.getDate()} 日
+                  </span>
+                  ）歸還。
+                </p>
+              )}
+            </div>
+          )}
+
           {/* 橫線 */}
           <div className="border-t border-[#545454] my-4"></div>
 
@@ -281,9 +383,9 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             {/* 送出按鈕 */}
             <button
               onClick={handleConfirm}
-              disabled={selectedDays === 0}
+              disabled={!canSend}
               className={`transition-opacity ${
-                selectedDays > 0
+                canSend
                   ? 'text-white hover:opacity-70 cursor-pointer'
                   : 'text-gray-scale3 cursor-not-allowed'
               }`}

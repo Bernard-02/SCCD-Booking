@@ -212,9 +212,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
   return (
     <div className="w-full">
       {cart.length === 0 && (
-        <div className="empty-message-container">
+        <div className="empty-message-container flex-col">
+          <p className="text-header text-white tracking-wide font-['Inter',_sans-serif]">
+            This list is empty.
+          </p>
           <p className="text-header text-white tracking-wide font-['Inter','Noto_Sans_TC',_sans-serif]">
-            此清單是空的，快去租借吧！
+            此清單是空的。
           </p>
         </div>
       )}
@@ -411,7 +414,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 </span>
                 <button
                   onClick={() => handleEditDate(group.startDate, group.endDate, dateKey, group.category, bookingType)}
-                  className="text-small-title font-medium text-black hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
+                  className="text-small-title font-normal text-black hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
                 >
                   <span className="font-['Inter',_sans-serif]">Edit</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">編輯日期</span>
                 </button>
@@ -680,13 +683,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
       {/* 圖片預覽 Modal - 與 EquipmentGrid 相同樣式 */}
       {previewImage && createPortal(
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center py-20"
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center py-20"
           onClick={() => setPreviewImage(null)}
         >
           {/* 關閉按鈕 */}
           <button
             onClick={() => setPreviewImage(null)}
-            className="absolute top-20 right-8 text-white text-4xl font-light hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-4xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
             aria-label="關閉"
           >
             ×
