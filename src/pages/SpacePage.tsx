@@ -81,20 +81,15 @@ const SpacePage: React.FC = () => {
     new Set(['available', 'unavailable', 'partial'])
   )
 
-  // Toggle status filter - 至少保持一個選中
+  // 狀態篩選多選：全亮時點第一下只留那個，之後點其他的累加、點已選中的取消；全取消則恢復顯示全部
   const toggleStatusFilter = (status: 'available' | 'unavailable' | 'partial') => {
     setStatusFilters(prev => {
-      const newFilters = new Set(prev)
-      // 如果要取消選擇，檢查是否至少還有一個其他選項被選中
-      if (newFilters.has(status)) {
-        // 只有在還有其他選項被選中時才允許取消
-        if (newFilters.size > 1) {
-          newFilters.delete(status)
-        }
-      } else {
-        newFilters.add(status)
-      }
-      return newFilters
+      const all: ('available' | 'unavailable' | 'partial')[] = ['available', 'unavailable', 'partial']
+      if (prev.size === all.length) return new Set([status])
+      const next = new Set(prev)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next.size === 0 ? new Set(all) : next
     })
   }
 
@@ -474,15 +469,15 @@ const SpacePage: React.FC = () => {
         <div className="container hidden md:block fixed top-20 left-0 right-0 z-10">
           <div className="text-left" style={{ paddingBottom: '1.08rem' }}>
             <nav className="breadcrumb-inline whitespace-nowrap">
-              <Link to="/catalog" className="breadcrumb-item text-breadcrumb">
+              <Link to="/catalog" className="breadcrumb-item text-xs">
                 &lt;
               </Link>
               <span> </span>
-              <Link to="/catalog" className="breadcrumb-item text-breadcrumb">
+              <Link to="/catalog" className="breadcrumb-item text-xs">
                 <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
               </Link>
-              <span className="breadcrumb-separator text-breadcrumb">/</span>
-              <span className="breadcrumb-item text-breadcrumb">
+              <span className="breadcrumb-separator text-xs">/</span>
+              <span className="breadcrumb-item text-xs">
                 <span className="font-['Inter',_sans-serif]">Space</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">空間</span>
               </span>
             </nav>
@@ -494,10 +489,10 @@ const SpacePage: React.FC = () => {
           <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden relative">
             {/* 標題 - 加上 padding-top 避免被麵包屑遮擋 */}
             <div className="flex-shrink-0">
-              <h1 className="font-['Inter',_sans-serif] text-white text-medium-title pt-12">
+              <h1 className="font-['Inter',_sans-serif] text-white text-xl pt-12">
                 Space
               </h1>
-              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">
+              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xl mb-6">
                 空間
               </h1>
             </div>
@@ -512,9 +507,9 @@ const SpacePage: React.FC = () => {
                     // 點擊 A5F 編號區時，回到外層並清空未送出的選擇
                     handleBackToNumberedArea()
                   }}
-                  className={`text-small-title transition-colors cursor-pointer text-left ${
+                  className={`text-s font-bold transition-colors cursor-pointer text-left ${
                     isNumberedAreaSelected
-                      ? 'text-white font-bold'
+                      ? 'text-white'
                       : 'text-gray-scale2 hover:!text-white'
                   }`}
                 >
@@ -538,9 +533,9 @@ const SpacePage: React.FC = () => {
                             onClick={() => handleSubCategoryChange(
                               selectedSubCategory === category.id ? null : category.id
                             )}
-                            className={`text-small-title transition-colors cursor-pointer text-left ${
+                            className={`text-s font-bold transition-colors cursor-pointer text-left ${
                               isSelected
-                                ? `${activeColor} font-bold`
+                                ? activeColor
                                 : `text-gray-scale2 ${hoverColor}`
                             }`}
                           >
@@ -561,9 +556,9 @@ const SpacePage: React.FC = () => {
                     setSelectedMainCategory('Classroom')
                     setSelectedBlocks([])
                   }}
-                  className={`text-small-title transition-colors cursor-pointer text-left ${
+                  className={`text-s font-bold transition-colors cursor-pointer text-left ${
                     selectedMainCategory === 'Classroom'
-                      ? 'text-white font-bold'
+                      ? 'text-white'
                       : 'text-gray-scale2 hover:!text-white'
                   }`}
                 >
@@ -582,7 +577,7 @@ const SpacePage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#00ff80]"></div>
-                    <span className={`text-tiny transition-colors ${
+                    <span className={`text-xs transition-colors ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
@@ -594,7 +589,7 @@ const SpacePage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ff448a]"></div>
-                    <span className={`text-tiny transition-colors ${
+                    <span className={`text-xs transition-colors ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
@@ -606,7 +601,7 @@ const SpacePage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ffa500]"></div>
-                    <span className={`text-tiny transition-colors ${
+                    <span className={`text-xs transition-colors ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
@@ -645,7 +640,7 @@ const SpacePage: React.FC = () => {
                     >
                       {/* Available: 不透明淺綠色 rgb(0, 128, 64) */}
                       <div className="w-3 h-3 bg-[rgb(0,128,64)]"></div>
-                      <span className={`text-tiny transition-colors ${
+                      <span className={`text-xs transition-colors ${
                         statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借用</span>
@@ -658,7 +653,7 @@ const SpacePage: React.FC = () => {
                     >
                       {/* Unavailable: #ff448a - 與 SVG is-rented 一致 */}
                       <div className="w-3 h-3 bg-[#ff448a]"></div>
-                      <span className={`text-tiny transition-colors ${
+                      <span className={`text-xs transition-colors ${
                         statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
@@ -671,7 +666,7 @@ const SpacePage: React.FC = () => {
                     >
                       {/* Partial: #ffa500 橘色警告色 */}
                       <div className="w-3 h-3 bg-[#ffa500]"></div>
-                      <span className={`text-tiny transition-colors ${
+                      <span className={`text-xs transition-colors ${
                         statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段可借用</span>
@@ -681,7 +676,7 @@ const SpacePage: React.FC = () => {
                     {/* Selected: #00ff80 - 與 SVG is-selected 一致 */}
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-[#00ff80]"></div>
-                      <span className="text-tiny text-white">
+                      <span className="text-xs text-white">
                         <span className="font-['Inter',_sans-serif]">Selected</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">已選擇</span>
                       </span>
                     </div>
@@ -692,11 +687,11 @@ const SpacePage: React.FC = () => {
                     {/* 選擇區塊 */}
                     <div className="mb-4">
                       <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">Selected Area</span>
-                        <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">選擇區塊</span>
+                        <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2">Selected Area</span>
+                        <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">選擇區塊</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4">
-                        <span className="text-content font-['Inter',_sans-serif] font-normal break-words">
+                        <span className="text-m font-['Inter',_sans-serif] font-normal break-words">
                           {sortedSelectedBlocks.length > 0 ? sortedSelectedBlocks.join(', ') : '--'}
                         </span>
                       </div>
@@ -707,7 +702,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={handleSelectAll}
                           disabled={!selectedSubCategory || allAvailableSelected}
-                          className={`text-small-title font-['Inter',_sans-serif] font-medium transition-colors ${
+                          className={`text-s font-['Inter',_sans-serif] font-normal transition-colors ${
                             !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
@@ -716,7 +711,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={() => setSelectedBlocks([])}
                           disabled={!selectedSubCategory || selectedBlocks.length === 0}
-                          className={`text-small-title font-['Inter',_sans-serif] font-medium transition-colors ${
+                          className={`text-s font-['Inter',_sans-serif] font-normal transition-colors ${
                             !selectedSubCategory || selectedBlocks.length === 0 ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
@@ -731,10 +726,10 @@ const SpacePage: React.FC = () => {
                     {/* 押金金額 */}
                     <div className="mb-6">
                       <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2">Deposit</span>
-                        <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">押金</span>
+                        <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2">Deposit</span>
+                        <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">押金</span>
                       </div>
-                      <span className="text-large-title font-['Inter',_sans-serif] font-normal">
+                      <span className="text-2xl font-['Inter',_sans-serif] font-normal">
                         NT$ {calculateTotalDeposit(selectedBlocks).toLocaleString()}
                       </span>
                     </div>
@@ -767,7 +762,7 @@ const SpacePage: React.FC = () => {
                               />
                             </svg>
                           </div>
-                          <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 transition-colors leading-tight">
+                          <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 transition-colors leading-tight">
                             已與老師討論，確認老師知情並允許於此專案借用
                           </span>
                         </label>
@@ -779,7 +774,7 @@ const SpacePage: React.FC = () => {
                       <button
                         onClick={handleAddBlocks}
                         aria-disabled={isAddBlocked}
-                        className={`px-6 py-3 rounded-lg text-small-title font-['Inter',_sans-serif] font-medium transition ${
+                        className={`px-6 py-3 rounded-lg text-s font-['Inter',_sans-serif] font-normal transition ${
                           isAddBlocked
                             ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                             : 'bg-white text-black hover:opacity-70 cursor-pointer'

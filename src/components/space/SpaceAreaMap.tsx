@@ -307,21 +307,21 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           className="fixed pointer-events-none z-50 bg-black/80 px-4 py-3 min-w-[200px]"
           style={{ left: tooltip.x + 16, top: tooltip.y + 16 }}
         >
-          <p className="text-white text-small-title font-medium mb-2">
+          <p className="text-white text-s font-normal mb-2">
             <span className="font-['Inter',_sans-serif]">{tooltip.english}</span>{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{tooltip.name}</span>
           </p>
           <div className="flex justify-between items-center mb-1">
-            <span className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">Deposit/Pcs</span>
-            <span className="font-['Inter',_sans-serif] text-white text-tiny">NT$ {tooltip.deposit.toLocaleString()}</span>
+            <span className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">Deposit/Pcs</span>
+            <span className="font-['Inter',_sans-serif] text-white text-xs">NT$ {tooltip.deposit.toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">押金/塊</span>
+            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">押金/塊</span>
           </div>
           <div className="border-t border-gray-scale3 my-3"></div>
           <div>
-            <p className="font-['Inter',_sans-serif] text-white text-tiny">Click to Book</p>
-            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-tiny">點擊區塊以開始租借</p>
+            <p className="font-['Inter',_sans-serif] text-white text-xs">Click to Book</p>
+            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs">點擊區塊以開始租借</p>
           </div>
         </div>
       )}

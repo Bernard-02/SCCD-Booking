@@ -60,9 +60,9 @@ const AdminClosedDatesPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-gray-scale2 text-tiny font-chinese">載入中…</div>
+        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
       ) : (
-        <table className="text-tiny border-collapse min-w-[28rem]">
+        <table className="text-xs border-collapse min-w-[28rem]">
           <thead>
             <tr className="text-left text-gray-scale2 border-b border-gray-scale4">
               <th className={th}><span className="font-english">Date</span> <span className="font-chinese">日期</span></th>
@@ -78,7 +78,7 @@ const AdminClosedDatesPage: React.FC = () => {
                 <td className={`${td} whitespace-nowrap`}>
                   <button
                     onClick={() => handleDelete(r.day)}
-                    className="text-tiny cursor-pointer hover:opacity-70 transition-opacity"
+                    className="text-xs cursor-pointer hover:opacity-70 transition-opacity"
                     style={{ color: 'var(--color-error2)' }}
                   >
                     <span className="font-english">Delete</span> <span className="font-chinese">刪除</span>

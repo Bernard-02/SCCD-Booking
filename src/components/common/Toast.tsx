@@ -28,35 +28,10 @@ const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 3000, type =
     return () => clearTimeout(timer)
   }, [onClose, duration])
 
+  // 樣式全部交給 css/common.css 的 .toast 系列（含 show/error 狀態與手機版），這裡只切 class
   return (
-    <div
-      className={`toast ${show ? 'show' : ''} ${type === 'error' ? 'error' : ''}`}
-      style={{
-        position: 'fixed',
-        top: '4rem',
-        right: show ? '2rem' : '-400px',
-        backgroundColor: type === 'error' ? 'var(--color-bg-toast-error)' : 'var(--color-bg-toast)',
-        color: type === 'error' ? 'var(--color-error)' : 'var(--color-primary)',
-        padding: '0.75rem 1rem',
-        borderRadius: '0.5rem',
-        zIndex: 50,
-        opacity: show ? 1 : 0,
-        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        width: 'fit-content',
-        minWidth: '150px',
-        maxWidth: '600px',
-        whiteSpace: 'nowrap'
-      }}
-    >
-      <p style={{
-        fontSize: '0.875rem',
-        fontFamily: "'Noto Sans TC', sans-serif",
-        lineHeight: 1.4,
-        textAlign: 'center',
-        margin: 0
-      }}>
-        {message}
-      </p>
+    <div className={`toast ${show ? 'show' : ''} ${type === 'error' ? 'error' : ''}`}>
+      <p>{message}</p>
     </div>
   )
 }

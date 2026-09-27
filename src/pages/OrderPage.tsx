@@ -234,7 +234,7 @@ const OrderPage: React.FC = () => {
         <div className="container hidden md:block flex-shrink-0">
           <div className="text-left pb-4">
             <nav className="breadcrumb-inline whitespace-nowrap">
-              <Link to="/profile" className="breadcrumb-item text-breadcrumb">
+              <Link to="/profile" className="breadcrumb-item text-xs">
                 <span className="mr-2">←</span>
                 <span>Back</span>
                 <span className="font-['Inter','Noto_Sans_TC',_sans-serif]"> 返回</span>
@@ -247,13 +247,13 @@ const OrderPage: React.FC = () => {
         <div className="container flex-1 overflow-hidden flex flex-col">
           {/* 標題和狀態 */}
           <div className="flex-shrink-0 mb-6 flex items-center justify-between">
-            <h1 className="font-['Inter',_sans-serif] text-large-title text-white" style={{ fontWeight: 500 }}>
+            <h1 className="font-['Inter',_sans-serif] text-2xl text-white" style={{ fontWeight: 500 }}>
               {rentalData.rentalNumber}
             </h1>
             {/* 狀態標籤（逾期時加累計罰款試算，最終金額歸還時由系學會確認） */}
             <div className="flex items-center gap-4">
               {currentStatus === 'overdue' && penalty > 0 && (
-                <span className="font-['Inter',_sans-serif] text-small-title text-error2">
+                <span className="font-['Inter',_sans-serif] text-s text-error2">
                   Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
                 </span>
               )}
@@ -262,7 +262,7 @@ const OrderPage: React.FC = () => {
                 style={{ backgroundColor: statusInfo.color }}
               >
                 <span
-                  className="font-['Inter',_sans-serif] text-small-title font-medium"
+                  className="font-['Inter',_sans-serif] text-s font-normal"
                   style={{ color: statusInfo.textColor }}
                 >
                   {statusInfo.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
@@ -288,15 +288,15 @@ const OrderPage: React.FC = () => {
                           {/* Equipment 標題 */}
                           <div className="w-full grid grid-cols-[1fr_140px_120px] gap-6 items-center py-3 pr-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-['Inter',_sans-serif] text-content text-white" style={{ fontWeight: 500 }}>Equipment</span>
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-content text-white" style={{ fontWeight: 500 }}>設備</span>
+                              <span className="font-['Inter',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>Equipment</span>
+                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>設備</span>
                             </div>
                             {/* 總數量 */}
-                            <div className="font-['Inter',_sans-serif] text-small-title text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
                               {group.equipmentItems.reduce((sum, item) => sum + (item.quantity || 1), 0)}
                             </div>
                             {/* 總押金 */}
-                            <div className="font-['Inter',_sans-serif] text-small-title text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
                               NT$ {Math.min(group.equipmentItems.reduce((sum, item) => sum + (item.deposit * (item.quantity || 1)), 0), 5000).toLocaleString()}
                             </div>
                           </div>
@@ -318,17 +318,17 @@ const OrderPage: React.FC = () => {
                                 </div>
 
                                 {/* 名稱 */}
-                                <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title text-white">
+                                <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
                                   {item.name}
                                 </div>
 
                                 {/* 數量 */}
-                                <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                                <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                                   {item.quantity || 1}
                                 </div>
 
                                 {/* 押金 */}
-                                <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                                <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                                   NT$ {(item.deposit * (item.quantity || 1)).toLocaleString()}
                                 </div>
                               </div>
@@ -343,11 +343,11 @@ const OrderPage: React.FC = () => {
                           {/* Space 標題 */}
                           <div className="w-full grid grid-cols-[1fr_140px_120px] gap-6 items-center py-3 pr-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-['Inter',_sans-serif] text-content text-white" style={{ fontWeight: 500 }}>Space</span>
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-content text-white" style={{ fontWeight: 500 }}>空間</span>
+                              <span className="font-['Inter',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>Space</span>
+                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>空間</span>
                             </div>
                             {/* 總數量 */}
-                            <div className="font-['Inter',_sans-serif] text-small-title text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
                               {(() => {
                                 // 計算總數量：區塊總數（按編號計算）+ 教室數
                                 const blocks = group.spaceItems.filter(item => item.category === 'space-block')
@@ -360,7 +360,7 @@ const OrderPage: React.FC = () => {
                               })()}
                             </div>
                             {/* 總押金 */}
-                            <div className="font-['Inter',_sans-serif] text-small-title text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
                               NT$ {Math.min(group.spaceItems.reduce((sum, item) => sum + item.deposit, 0), 5000).toLocaleString()}
                             </div>
                           </div>
@@ -412,17 +412,17 @@ const OrderPage: React.FC = () => {
                                     </div>
 
                                     {/* 名稱（區域 + 所有編號） */}
-                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title text-white">
+                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
                                       {areaName}（{blockIds.join('、')}）
                                     </div>
 
                                     {/* 數量（區塊數） */}
-                                    <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                                       {blocks.length}
                                     </div>
 
                                     {/* 押金（總和） */}
-                                    <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                                       NT$ {totalDeposit.toLocaleString()}
                                     </div>
                                   </div>
@@ -446,17 +446,17 @@ const OrderPage: React.FC = () => {
                                     </div>
 
                                     {/* 名稱 */}
-                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title text-white">
+                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
                                       {item.name}
                                     </div>
 
                                     {/* 數量 */}
-                                    <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                                       1
                                     </div>
 
                                     {/* 押金 */}
-                                    <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                                       NT$ 5,000
                                     </div>
                                   </div>
@@ -481,10 +481,10 @@ const OrderPage: React.FC = () => {
                 {/* Order Time */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">Order Time</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">送單時間</div>
+                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Order Time</div>
+                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">送單時間</div>
                   </div>
-                  <div className="font-['Inter',_sans-serif] text-medium-title text-white text-right">
+                  <div className="font-['Inter',_sans-serif] text-xl text-white text-right">
                     {formatOrderTime()}
                   </div>
                 </div>
@@ -492,10 +492,10 @@ const OrderPage: React.FC = () => {
                 {/* Booking Date */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">Booking Date</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">借用日期</div>
+                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Booking Date</div>
+                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">借用日期</div>
                   </div>
-                  <div className="font-['Inter',_sans-serif] text-medium-title text-white text-right">
+                  <div className="font-['Inter',_sans-serif] text-xl text-white text-right">
                     {formatBookingDateRange()}
                   </div>
                 </div>
@@ -503,10 +503,10 @@ const OrderPage: React.FC = () => {
                 {/* User */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">User</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">借用者</div>
+                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">User</div>
+                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">借用者</div>
                   </div>
-                  <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white text-right">
+                  <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xl text-white text-right">
                     {rentalData.borrowerName}
                   </div>
                 </div>
@@ -514,10 +514,10 @@ const OrderPage: React.FC = () => {
                 {/* Deposit */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">Deposit</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">押金</div>
+                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Deposit</div>
+                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">押金</div>
                   </div>
-                  <div className="font-['Inter',_sans-serif] text-medium-title text-white text-right">
+                  <div className="font-['Inter',_sans-serif] text-xl text-white text-right">
                     NT$ {rentalData.totalDeposit.toLocaleString()}
                   </div>
                 </div>
@@ -526,29 +526,29 @@ const OrderPage: React.FC = () => {
               {/* User Guide */}
               <div className="grid grid-cols-[140px_1fr] gap-2 mb-4 flex-shrink-0">
                 <div>
-                  <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">User Guide</div>
-                  <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">使用說明</div>
+                  <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">User Guide</div>
+                  <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">使用說明</div>
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
                       1. Please bring this receipt to the SA during business hours to pay the deposit and complete your reservation.
                     </p>
-                    <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
                       2. Cash payments only.
                     </p>
-                    <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
                       3. On the return date, please present this receipt at the SA to retrieve your deposit.
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">
                       1. 請在系學會營業時間內携帶此收據繳交押金以完成預約程序。
                     </p>
-                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">
                       2. 僅接受現金交易。
                     </p>
-                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">
                       3. 歸還日到期時，憑藉此收據至系學會索取押金。
                     </p>
                   </div>
@@ -583,12 +583,12 @@ const OrderPage: React.FC = () => {
           {/* A. 第一部分：Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h1 className="text-2xl font-bold mb-1">SCCDSA Booking</h1>
-              <p className="text-2xl font-bold">實踐媒傳系學會借用系統</p>
+              <h1 className="text-l font-bold mb-1">SCCDSA Booking</h1>
+              <p className="text-l font-bold">實踐媒傳系學會借用系統</p>
             </div>
             <div className="text-right">
-              <h2 className="text-3xl font-bold mb-1">Receipt 收據</h2>
-              <p className="text-2xl font-bold">{rentalData.rentalNumber}</p>
+              <h2 className="text-xl font-bold mb-1">Receipt 收據</h2>
+              <p className="text-l font-bold">{rentalData.rentalNumber}</p>
             </div>
           </div>
 
@@ -596,17 +596,17 @@ const OrderPage: React.FC = () => {
           {/* 第一列：送出時間、使用日期、使用者 */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div>
-              <p className="text-xs text-black mb-1 font-semibold">Order Time 送出時間</p>
-              <p className="text-base font-semibold">{formatOrderTime()}</p>
+              <p className="text-xs text-black mb-1 font-bold">Order Time 送出時間</p>
+              <p className="text-s font-bold">{formatOrderTime()}</p>
             </div>
             <div>
-              <p className="text-xs text-black mb-1 font-semibold">Booking Date 使用日期</p>
-              <p className="text-base font-semibold">{formatBookingDateRange()}</p>
+              <p className="text-xs text-black mb-1 font-bold">Booking Date 使用日期</p>
+              <p className="text-s font-bold">{formatBookingDateRange()}</p>
             </div>
             <div className="flex flex-col items-center">
               <div className="text-left w-fit">
-                <p className="text-xs text-black mb-1 font-semibold">User 使用者</p>
-                <p className="text-base font-bold">{rentalData.borrowerName}</p>
+                <p className="text-xs text-black mb-1 font-bold">User 使用者</p>
+                <p className="text-s font-bold">{rentalData.borrowerName}</p>
               </div>
             </div>
           </div>
@@ -614,12 +614,12 @@ const OrderPage: React.FC = () => {
           {/* 第二列：訂單種類、使用原因 */}
           <div className="grid grid-cols-2 gap-4 mb-8">
             <div>
-              <p className="text-xs text-black mb-1 font-semibold">Order Type 訂單種類</p>
-              <p className="text-base font-semibold">{getBookingTypeLabel(rentalData.items[0]?.bookingType)}</p>
+              <p className="text-xs text-black mb-1 font-bold">Order Type 訂單種類</p>
+              <p className="text-s font-bold">{getBookingTypeLabel(rentalData.items[0]?.bookingType)}</p>
             </div>
             <div>
-              <p className="text-xs text-black mb-1 font-semibold">Reason 使用原因</p>
-              <p className="text-base font-semibold text-black">{rentalData.reason || '—'}</p>
+              <p className="text-xs text-black mb-1 font-bold">Reason 使用原因</p>
+              <p className="text-s font-bold text-black">{rentalData.reason || '—'}</p>
             </div>
           </div>
 
@@ -629,13 +629,13 @@ const OrderPage: React.FC = () => {
               <thead>
                 <tr>
                   <th className="w-[60%] border-b border-[#7c7c7c]">
-                    <div className="text-left pt-2 pb-4 font-semibold">Item 項目</div>
+                    <div className="text-left pt-2 pb-4 font-bold">Item 項目</div>
                   </th>
                   <th className="w-[20%] border-b border-[#7c7c7c]">
-                    <div className="text-left pt-2 pb-4 font-semibold">Qty 數量</div>
+                    <div className="text-left pt-2 pb-4 font-bold">Qty 數量</div>
                   </th>
                   <th className="w-[20%] border-b border-[#7c7c7c]">
-                    <div className="text-left pt-2 pb-4 font-semibold">Deposit 押金</div>
+                    <div className="text-left pt-2 pb-4 font-bold">Deposit 押金</div>
                   </th>
                 </tr>
               </thead>
@@ -652,7 +652,7 @@ const OrderPage: React.FC = () => {
                   if (spaceItems.length > 0) {
                     rows.push(
                       <tr key="header-space">
-                        <td colSpan={3} className="py-2 font-bold pt-4 text-lg">Space 空間</td>
+                        <td colSpan={3} className="py-2 font-bold pt-4 text-s">Space 空間</td>
                       </tr>
                     )
                     spaceItems.forEach((item, idx) => {
@@ -676,7 +676,7 @@ const OrderPage: React.FC = () => {
                   if (equipmentItems.length > 0) {
                     rows.push(
                       <tr key="header-equip">
-                        <td colSpan={3} className="py-2 font-bold pt-4 text-lg">Equipment 設備</td>
+                        <td colSpan={3} className="py-2 font-bold pt-4 text-s">Equipment 設備</td>
                       </tr>
                     )
                     equipmentItems.forEach((item, idx) => {
@@ -702,7 +702,7 @@ const OrderPage: React.FC = () => {
               <tfoot>
                 <tr>
                   <td className="pt-6"></td>
-                  <td className="pt-6 text-left font-semibold">Total 總押金</td>
+                  <td className="pt-6 text-left font-bold">Total 總押金</td>
                   <td className="pt-6 text-left font-normal">NT$ {rentalData.totalDeposit.toLocaleString()}</td>
                 </tr>
               </tfoot>
@@ -713,7 +713,7 @@ const OrderPage: React.FC = () => {
           <div className="mt-auto pt-4">
             <div className="flex justify-between items-end">
               <div className="w-[75%]">
-                <h3 className="font-bold mb-2 text-sm">User Guide 使用說明</h3>
+                <h3 className="font-bold mb-2 text-xs">User Guide 使用說明</h3>
                 <div className="text-xs space-y-1 text-black">
                   <div className="flex gap-2">
                     <span className="flex-shrink-0">1.</span>
@@ -730,7 +730,7 @@ const OrderPage: React.FC = () => {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm font-medium">page 1/1</p>
+                <p className="text-xs font-normal">page 1/1</p>
               </div>
             </div>
           </div>

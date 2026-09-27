@@ -114,7 +114,7 @@ const AdminStaffPage: React.FC = () => {
   }
 
   const smallField =
-    'bg-black border border-gray-scale4 rounded px-2 py-1 text-tiny text-white focus:border-white outline-none'
+    'bg-black border border-gray-scale4 rounded px-2 py-1 text-xs text-white focus:border-white outline-none'
 
   return (
     <div>
@@ -138,13 +138,13 @@ const AdminStaffPage: React.FC = () => {
             ? <span className="font-chinese">匯入中…</span>
             : <span className="font-english">Import <span className="font-chinese">加入名單</span></span>}
         </button>
-        {report && <p className="text-tiny font-chinese text-gray-scale2 w-full">{report}</p>}
+        {report && <p className="text-xs font-chinese text-gray-scale2 w-full">{report}</p>}
       </div>
 
       {loading ? (
-        <div className="text-gray-scale2 text-tiny font-chinese">載入中…</div>
+        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
       ) : (
-        <table className="text-tiny border-collapse min-w-[44rem]">
+        <table className="text-xs border-collapse min-w-[44rem]">
           <thead>
             <tr className="text-left text-gray-scale2 border-b border-gray-scale4">
               <th className={th}><span className="font-english">ID</span> <span className="font-chinese">學號</span></th>
@@ -225,7 +225,7 @@ const AdminStaffPage: React.FC = () => {
                 <td className={`${td} whitespace-nowrap`}>
                   <button
                     onClick={() => handleDelete(m)}
-                    className="text-tiny cursor-pointer hover:opacity-70 transition-opacity"
+                    className="text-xs cursor-pointer hover:opacity-70 transition-opacity"
                     style={{ color: 'var(--color-error2)' }}
                   >
                     <span className="font-english">Delete</span> <span className="font-chinese">刪除</span>

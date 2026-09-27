@@ -65,7 +65,8 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col pt-[60px]">
+    // 表格 RWD：同 EquipmentGrid——外層 overflow-x-auto ＋ min-w，視窗不夠寬時橫向捲動
+    <div className="w-full h-full flex flex-col pt-[60px] overflow-x-auto">
       {/* 全螢幕圖片檢視 */}
       {fullscreenImage && (
         <div
@@ -75,7 +76,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
           {/* 關閉按鈕 */}
           <button
             onClick={closeFullscreenImage}
-            className="absolute top-20 right-8 text-white text-4xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
             aria-label="關閉"
           >
             ×
@@ -92,28 +93,28 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
       )}
 
       {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
+      <div className="min-w-[900px] grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
         {/* 狀態指示器列 */}
         <div></div>
 
         {/* 圖片列 */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2"></div>
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
 
         {/* 教室名稱列 - 空白（不顯示標簽） */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2"></div>
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
 
         {/* 總數量列 */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           Total Qty<br />總數量
         </div>
 
         {/* 可借數量列 */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           Available Qty<br />可借數量
         </div>
 
         {/* 保留中數量列 */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center flex items-center justify-center gap-1">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
             On Hold<br />待繳押金
           </div>
@@ -122,7 +123,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
               info
             </span>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-tiny whitespace-nowrap rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
               已送出但未繳押金的設備
               {/* 小三角形 */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-scale4"></div>
@@ -131,17 +132,17 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         </div>
 
         {/* 押金列 */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           Deposit<br />押金
         </div>
 
         {/* 操作列 - 空白（不顯示標簽） */}
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center"></div>
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center"></div>
       </div>
 
       {classrooms.length > 0 ? (
         // 教室列表 - 可滾動
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-w-[900px]">
           {classrooms.map(classroom => {
             const inCart = isInCart(classroom.id)
             const isAvailable = !inCart
@@ -175,37 +176,37 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
 
                 {/* 教室名稱 - 英文在上，中文在下 */}
                 <div className={`flex flex-col ${!isAvailable ? 'text-[#545454]' : 'text-white'}`}>
-                  <span className="font-['Inter',_sans-serif] text-small-title">
+                  <span className="font-['Inter',_sans-serif] text-s">
                     {classroom.enName}
                   </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s">
                     {classroom.name}
                   </span>
                 </div>
 
                 {/* 總數量 - 教室固定為 1 */}
-                <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                <div className={`font-['Inter',_sans-serif] text-s text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   1
                 </div>
 
                 {/* 可借數量 - 在購物車中為 0，否則為 1 */}
-                <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                <div className={`font-['Inter',_sans-serif] text-s text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   {isAvailable ? 1 : 0}
                 </div>
 
                 {/* 保留中數量 - 暫時顯示假數據 */}
-                <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                <div className={`font-['Inter',_sans-serif] text-s text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   0
                 </div>
 
                 {/* 押金 */}
-                <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                <div className={`font-['Inter',_sans-serif] text-s text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   NT$ {classroom.price.toLocaleString()}
@@ -219,7 +220,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                       onAdd(classroom.id)
                     }}
                     disabled={!isAvailable || !hasSelectedDates || wouldExceedLimit}
-                    className={`font-['Inter',_sans-serif] text-small-title ${
+                    className={`font-['Inter',_sans-serif] text-s ${
                       isAvailable && hasSelectedDates && !wouldExceedLimit && !isSuspended
                         ? 'text-white hover:text-gray-scale1 cursor-pointer'
                         : 'text-[#545454] cursor-not-allowed'
@@ -234,8 +235,8 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-small-title">No Classroom Found</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-small-title">找不到符合條件的教室</p>
+          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-s">No Classroom Found</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-s">找不到符合條件的教室</p>
         </div>
       )}
     </div>

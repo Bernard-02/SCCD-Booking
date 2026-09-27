@@ -53,34 +53,29 @@ const EquipmentPage: React.FC = () => {
     new Set(['available', 'unavailable', 'partial'])
   )
 
-  // Toggle status filter - 至少保持一個選中
+  // 狀態篩選多選：全亮時點第一下只留那個，之後點其他的累加、點已選中的取消；全取消則恢復顯示全部
   const toggleStatusFilter = (status: 'available' | 'unavailable' | 'partial') => {
     setStatusFilters(prev => {
-      const newFilters = new Set(prev)
-      // 如果要取消選擇，檢查是否至少還有一個其他選項被選中
-      if (newFilters.has(status)) {
-        // 只有在還有其他選項被選中時才允許取消
-        if (newFilters.size > 1) {
-          newFilters.delete(status)
-        }
-      } else {
-        newFilters.add(status)
-      }
-      return newFilters
+      const all: ('available' | 'unavailable' | 'partial')[] = ['available', 'unavailable', 'partial']
+      if (prev.size === all.length) return new Set([status])
+      const next = new Set(prev)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next.size === 0 ? new Set(all) : next
     })
   }
 
   // 分類列表（對應 Supabase equipment.category 的大類；搖頭燈已併入燈具、延長線改稱電源線）
   const categories = [
-    { en: 'All', zh: '全部' },
-    { en: 'Cables', zh: '線材' },
-    { en: 'Power Cords', zh: '電源線' },
-    { en: 'Audio/Video', zh: '視聽' },
-    { en: 'Lighting', zh: '燈具' },
-    { en: 'Displays/Tables', zh: '展版/展桌/展台' },
-    { en: 'Tools', zh: '工具' },
-    { en: 'Machinery', zh: '機具' },
-    { en: 'Favorites', zh: '收藏' }
+    { en: 'All', zh: '全部', icon: 'apps' },
+    { en: 'Cables', zh: '線材', icon: 'cable' },
+    { en: 'Power Cords', zh: '電源線', icon: 'electrical_services' },
+    { en: 'Audio/Video', zh: '視聽', icon: 'videocam' },
+    { en: 'Lighting', zh: '燈具', icon: 'lightbulb' },
+    { en: 'Displays/Tables', zh: '展版/展桌/展台', icon: 'table_restaurant' },
+    { en: 'Tools', zh: '工具', icon: 'handyman' },
+    { en: 'Machinery', zh: '機具', icon: 'precision_manufacturing' },
+    { en: 'Favorites', zh: '收藏', icon: 'bookmark' }
   ]
 
   return (
@@ -92,11 +87,11 @@ const EquipmentPage: React.FC = () => {
         <div className="container hidden md:block fixed top-20 left-0 right-0 z-10">
           <div className="text-left" style={{ paddingBottom: '1.08rem' }}>
             <nav className="breadcrumb-inline whitespace-nowrap">
-              <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-breadcrumb cursor-pointer">
+              <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-xs cursor-pointer">
                 &lt;
               </a>
               <span> </span>
-              <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-breadcrumb cursor-pointer">
+              <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-xs cursor-pointer">
                 {fromCart ? (
                   <>
                     <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">購物車</span>
@@ -107,8 +102,8 @@ const EquipmentPage: React.FC = () => {
                   </>
                 )}
               </a>
-              <span className="breadcrumb-separator text-breadcrumb">/</span>
-              <span className="breadcrumb-item text-breadcrumb">
+              <span className="breadcrumb-separator text-xs">/</span>
+              <span className="breadcrumb-item text-xs">
                 <span className="font-['Inter',_sans-serif]">Equipment</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">設備</span>
               </span>
             </nav>
@@ -120,10 +115,10 @@ const EquipmentPage: React.FC = () => {
           <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden">
             {/* 標題 - 加上 padding-top 避免被麵包屑遮擋 */}
             <div className="flex-shrink-0">
-              <h1 className="font-['Inter',_sans-serif] text-white text-medium-title pt-12">
+              <h1 className="font-['Inter',_sans-serif] text-white text-xl pt-12">
                 Equipment
               </h1>
-              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">
+              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xl mb-6">
                 設備
               </h1>
             </div>
@@ -136,17 +131,15 @@ const EquipmentPage: React.FC = () => {
                   <div key={category.en} className="text-left">
                     <button
                       onClick={() => setSelectedCategory(category.zh)}
-                      className={`text-small-title transition-colors cursor-pointer inline-flex items-center gap-2 ${
+                      className={`text-s font-bold transition-colors cursor-pointer inline-flex items-center gap-2 ${
                         selectedCategory === category.zh
-                          ? 'text-white font-bold'
+                          ? 'text-white'
                           : 'text-gray-scale2 hover:!text-white'
                       }`}
                     >
-                      {category.zh === '收藏' && (
-                        <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 14.6 17.3" fill="currentColor">
-                          <polygon points="14.6 17.29 14.6 0 0 0 0 17.3 7.15 11.81 7.31 11.81 14.6 17.29"/>
-                        </svg>
-                      )}
+                      <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px' }}>
+                        {category.icon}
+                      </span>
                       <span>
                         <span className="font-['Inter',_sans-serif]">{category.en}</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{category.zh}</span>
                       </span>
@@ -166,7 +159,7 @@ const EquipmentPage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#00ff80]"></div>
-                    <span className={`text-tiny transition-colors ${
+                    <span className={`text-xs transition-colors ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
@@ -178,7 +171,7 @@ const EquipmentPage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ff448a]"></div>
-                    <span className={`text-tiny transition-colors ${
+                    <span className={`text-xs transition-colors ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
@@ -190,7 +183,7 @@ const EquipmentPage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ffa500]"></div>
-                    <span className={`text-tiny transition-colors ${
+                    <span className={`text-xs transition-colors ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>

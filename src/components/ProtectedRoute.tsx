@@ -20,8 +20,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return (
       <div className="bg-black text-white min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-2xl font-['Inter',_sans-serif] mb-4">(LOADING...)</div>
-          <div className="text-sm text-gray-400">正在驗證登入狀態</div>
+          <div className="text-l font-['Inter',_sans-serif] mb-4">(LOADING...)</div>
+          <div className="text-xs text-gray-400">正在驗證登入狀態</div>
         </div>
       </div>
     )

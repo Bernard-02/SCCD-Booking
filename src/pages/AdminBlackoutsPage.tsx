@@ -50,7 +50,7 @@ const AdminBlackoutsPage: React.FC = () => {
       {/* 新增列 */}
       <div className="flex flex-wrap items-center gap-3 mb-8">
         <input type="date" value={start} onChange={e => setStart(e.target.value)} className={`${inputCls} cursor-pointer`} />
-        <span className="text-gray-scale2 text-tiny">～</span>
+        <span className="text-gray-scale2 text-xs">～</span>
         <input type="date" value={end} onChange={e => setEnd(e.target.value)} className={`${inputCls} cursor-pointer`} />
         <input
           type="text" value={reason} onChange={e => setReason(e.target.value)}
@@ -64,9 +64,9 @@ const AdminBlackoutsPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-gray-scale2 text-tiny font-chinese">載入中…</div>
+        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
       ) : (
-        <table className="text-tiny border-collapse min-w-[32rem]">
+        <table className="text-xs border-collapse min-w-[32rem]">
           <thead>
             <tr className="text-left text-gray-scale2 border-b border-gray-scale4">
               <th className={th}><span className="font-english">From</span> <span className="font-chinese">開始</span></th>
@@ -84,7 +84,7 @@ const AdminBlackoutsPage: React.FC = () => {
                 <td className={`${td} whitespace-nowrap`}>
                   <button
                     onClick={() => handleDelete(b)}
-                    className="text-tiny cursor-pointer hover:opacity-70 transition-opacity"
+                    className="text-xs cursor-pointer hover:opacity-70 transition-opacity"
                     style={{ color: 'var(--color-error2)' }}
                   >
                     <span className="font-english">Delete</span> <span className="font-chinese">刪除</span>

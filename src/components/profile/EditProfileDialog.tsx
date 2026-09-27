@@ -104,8 +104,8 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   }
 
   const inputClass =
-    'w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white rounded-lg'
-  const labelClass = 'block mb-2 text-tiny text-[#cccccc]'
+    'w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg'
+  const labelClass = 'block mb-2 text-xs text-[#cccccc]'
 
   return createPortal(
     <div
@@ -120,7 +120,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       >
         {/* 標題 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
+          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
             {isPassword ? 'Change Password ' : 'Change Phone '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">
               {isPassword ? '修改密碼' : '修改手機號碼'}
@@ -193,7 +193,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           )}
 
           {error && (
-            <p className="text-tiny text-[#ff8698]">
+            <p className="text-xs text-[#ff8698]">
               <span className="font-english">{error.en}</span>{' '}
               <span className="font-chinese">{error.zh}</span>
             </p>
@@ -212,7 +212,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             onClick={onCancel}
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
-            <span className="font-['Inter',_sans-serif] text-tiny">
+            <span className="font-['Inter',_sans-serif] text-xs">
               Cancel <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
             </span>
           </button>
@@ -221,7 +221,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             disabled={submitting}
             className={`transition-opacity ${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
           >
-            <span className="font-['Inter',_sans-serif] text-tiny">
+            <span className="font-['Inter',_sans-serif] text-xs">
               Save <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">儲存</span>
             </span>
           </button>

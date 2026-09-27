@@ -314,19 +314,19 @@ const RentalListPage = () => {
         <div className="container hidden md:block">
           <div className="text-left pb-4">
             <nav className="breadcrumb-inline whitespace-nowrap">
-              <Link to="/catalog" className="breadcrumb-item text-breadcrumb">
+              <Link to="/catalog" className="breadcrumb-item text-xs">
                 &lt;
               </Link>
               <span> </span>
-              <Link to="/catalog" className="breadcrumb-item text-breadcrumb">
+              <Link to="/catalog" className="breadcrumb-item text-xs">
                 <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
               </Link>
               {previousPage && (
                 <>
-                  <span className="breadcrumb-separator text-breadcrumb">/</span>
+                  <span className="breadcrumb-separator text-xs">/</span>
                   <Link
                     to={previousPage === 'equipment' ? '/equipment' : '/space'}
-                    className="breadcrumb-item text-breadcrumb"
+                    className="breadcrumb-item text-xs"
                   >
                     {previousPage === 'equipment' ? (
                       <>
@@ -340,8 +340,8 @@ const RentalListPage = () => {
                   </Link>
                 </>
               )}
-              <span className="breadcrumb-separator text-breadcrumb">/</span>
-              <span className="breadcrumb-item text-breadcrumb">
+              <span className="breadcrumb-separator text-xs">/</span>
+              <span className="breadcrumb-item text-xs">
                 <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">清單</span>
               </span>
             </nav>
@@ -355,13 +355,13 @@ const RentalListPage = () => {
             <div className="w-3/4 flex flex-col overflow-hidden">
               {/* 頁面標題 */}
               <div className="mb-6 flex justify-between items-center flex-shrink-0">
-                <h1 className="font-['Inter',_sans-serif] text-white text-medium-title">
+                <h1 className="font-['Inter',_sans-serif] text-white text-xl">
                   Cart 清單 ({totalUniqueItems})
                 </h1>
                 <button
                   onClick={handleClearAll}
                   disabled={selectedGroups.size === 0}
-                  className={`text-small-title font-medium whitespace-nowrap ${
+                  className={`text-s font-normal whitespace-nowrap ${
                     selectedGroups.size === 0
                       ? 'text-gray-scale4 cursor-not-allowed'
                       : 'text-white hover:opacity-70 transition-opacity cursor-pointer'
@@ -392,7 +392,7 @@ const RentalListPage = () => {
               <div>
                 {/* 押金標籤 */}
                 <div className="mb-2">
-                  <div className="text-tiny text-gray-scale2">
+                  <div className="text-xs text-gray-scale2">
                     <span className="font-['Inter',_sans-serif]">Total Deposit</span>{' '}
                     <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">總押金</span>
                   </div>
@@ -401,34 +401,28 @@ const RentalListPage = () => {
                 {/* 總押金展開按鈕 */}
                 <button
                   onClick={() => setDepositBreakdownExpanded(!depositBreakdownExpanded)}
-                  className="w-full flex items-center justify-between mb-4 cursor-pointer"
+                  disabled={selectedGroups.size === 0}
+                  className={`w-full flex items-center justify-between mb-4 ${selectedGroups.size === 0 ? 'cursor-default' : 'cursor-pointer'}`}
                 >
-                  <div className="text-large-title font-['Inter',_sans-serif] font-normal text-white tracking-wide">
+                  <div className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
                     NT$ {totalDeposit.toLocaleString()}
                   </div>
-                  <svg
-                    className={`w-4 h-4 text-white transition-transform ${depositBreakdownExpanded ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  {selectedGroups.size > 0 && (
+                    <svg
+                      className={`w-4 h-4 text-white transition-transform ${depositBreakdownExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
                 </button>
 
                 {/* 時段押金明細 - 展開時顯示 */}
-                {depositBreakdownExpanded && (
+                {depositBreakdownExpanded && selectedGroups.size > 0 && (
                   <div className="mb-6">
                     {(() => {
-                      // 如果沒有選中任何組，不顯示明細
-                      if (selectedGroups.size === 0) {
-                        return (
-                          <div className="text-tiny text-gray-scale2 font-['Inter','Noto_Sans_TC',_sans-serif]">
-                            請先選擇訂單組
-                          </div>
-                        )
-                      }
-
                       // 按日期分組計算每個時段的押金（設備和空間分開計算）
                       const dateGroups: Record<string, { startDate: string; endDate: string; equipment: number; space: number; equipmentSelected: boolean; spaceSelected: boolean }> = {}
 
@@ -501,7 +495,7 @@ const RentalListPage = () => {
                       return selectedGroupsList.map((group, index) => {
                         // 格式化日期為 2026/01/20 格式
                         return (
-                          <div key={index} className="flex items-center gap-3 text-tiny text-white mb-3">
+                          <div key={index} className="flex items-center gap-3 text-xs text-white mb-3">
                             {/* 數字符號：自製圓圈＋數字（像 Guide，無數量上限；固定寬度讓後面日期對齊） */}
                             <span className="flex-shrink-0 w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[10px] font-['Inter',_sans-serif] leading-none">
                               {index + 1}
@@ -523,10 +517,10 @@ const RentalListPage = () => {
 
                 <div className="mb-6">
                   <div className="text-shrink-container pr-4">
-                    <p className="text-tiny font-['Inter',_sans-serif] text-white text-shrink-content mb-2">
+                    <p className="text-xs font-['Inter',_sans-serif] text-white text-shrink-content mb-2">
                       Please visit the SA to pay the deposit and complete your reservation within 24 hrs of checkout.
                     </p>
-                    <p className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-shrink-content">
+                    <p className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-shrink-content">
                       結帳後會保留24小時的繳押金時間，請在時間內至系學會完成預約程序
                     </p>
                   </div>
@@ -560,7 +554,7 @@ const RentalListPage = () => {
                         />
                       </svg>
                     </div>
-                    <span className="text-tiny text-white leading-tight">
+                    <span className="text-xs text-white leading-tight">
                       <span className="font-['Inter',_sans-serif]">I have read and agree to the department&apos;s equipment &amp; space rental </span>
                       <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">我已閱讀並同意系上租借設備與空間的</span>
                       <a
@@ -582,14 +576,14 @@ const RentalListPage = () => {
                     {/* 條件 0: 檢查過期訂單 - 僅有過期訂單時顯示 */}
                     {!expiredOrdersValidation.valid && (
                       <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-tiny" style={{
+                        <span className="material-symbols-outlined text-xs" style={{
                           color: '#ffff00',
                           marginTop: '2px'
                         }}>
                           info
                         </span>
                         <div className="flex-1">
-                          <span className={`text-tiny text-[#ffff00]`}>
+                          <span className={`text-xs text-[#ffff00]`}>
                             <span className="font-['Inter',_sans-serif]">{expiredOrdersValidation.detail}</span>
                             {' '}
                             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{expiredOrdersValidation.message}</span>
@@ -601,14 +595,14 @@ const RentalListPage = () => {
                     {/* 條件 0.5: 檢查缺貨設備 - 僅有缺貨時顯示 */}
                     {!stockAvailabilityValidation.valid && (
                       <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-tiny" style={{
+                        <span className="material-symbols-outlined text-xs" style={{
                           color: '#ffff00',
                           marginTop: '2px'
                         }}>
                           info
                         </span>
                         <div className="flex-1">
-                          <span className={`text-tiny text-[#ffff00]`}>
+                          <span className={`text-xs text-[#ffff00]`}>
                             <span className="font-['Inter',_sans-serif]">{stockAvailabilityValidation.detail}</span>
                             {' '}
                             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{stockAvailabilityValidation.message}</span>
@@ -619,12 +613,12 @@ const RentalListPage = () => {
 
                     {/* 條件 1: 填寫借用資訊 - 常駐 */}
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-tiny" style={{
+                      <span className="material-symbols-outlined text-xs" style={{
                         color: bookingDetailsValidation.valid ? '#00ff80' : '#cccccc'
                       }}>
                         {bookingDetailsValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
-                      <span className={`text-tiny ${
+                      <span className={`text-xs ${
                         bookingDetailsValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Fill in booking details</span>{' '}
@@ -641,12 +635,12 @@ const RentalListPage = () => {
 
                       return (
                         <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-tiny" style={{
+                          <span className="material-symbols-outlined text-xs" style={{
                             color: cartValidation.valid ? '#00ff80' : '#cccccc'
                           }}>
                             {cartValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
                           </span>
-                          <span className={`text-tiny ${
+                          <span className={`text-xs ${
                             cartValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
                           }`}>
                             <span className="font-['Inter',_sans-serif]">Min. 10 items</span>{' '}
@@ -658,12 +652,12 @@ const RentalListPage = () => {
 
                     {/* 條件 3: 同意條款 - 常駐 */}
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-tiny" style={{
+                      <span className="material-symbols-outlined text-xs" style={{
                         color: agreedToTerms ? '#00ff80' : '#cccccc'
                       }}>
                         {agreedToTerms ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
-                      <span className={`text-tiny ${
+                      <span className={`text-xs ${
                         agreedToTerms ? 'text-[#00ff80]' : 'text-gray-scale2'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Agree to terms</span>{' '}
@@ -678,7 +672,7 @@ const RentalListPage = () => {
                   {isSuspended && (
                     <div className="flex items-start gap-2 mb-3 text-error2">
                       <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px', marginTop: '1px' }}>warning</span>
-                      <div className="text-tiny">
+                      <div className="text-xs">
                         <p className="font-['Inter',_sans-serif]">Account suspended — bookings are disabled.</p>
                         <p className="font-['Inter','Noto_Sans_TC',_sans-serif]">帳號已停權，無法送出預約，請聯絡系學會</p>
                       </div>
@@ -687,7 +681,7 @@ const RentalListPage = () => {
                   <button
                     onClick={handleCheckout}
                     disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid}
-                    className={`px-8 py-2 rounded-lg text-small-title font-medium whitespace-nowrap transition ${
+                    className={`px-8 py-2 rounded-lg text-s font-normal whitespace-nowrap transition ${
                       isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid
                         ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                         : 'bg-white text-black hover:opacity-70 cursor-pointer'
@@ -714,12 +708,12 @@ const RentalListPage = () => {
             gap: '1rem'
           }}
         >
-          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny">
+          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs">
             {toastMessage}
           </span>
           <button
             onClick={handleUndo}
-            className="font-['Inter',_sans-serif] text-tiny text-black hover:opacity-50 transition-opacity cursor-pointer underline-offset-2"
+            className="font-['Inter',_sans-serif] text-xs text-black hover:opacity-50 transition-opacity cursor-pointer underline-offset-2"
           >
             Undo
           </button>

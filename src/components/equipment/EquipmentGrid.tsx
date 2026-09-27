@@ -275,7 +275,10 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   }
 
   return (
-    <div className="w-full h-full flex flex-col pt-[60px]">
+    // 表格 RWD：外層 overflow-x-auto ＋ 表頭／列 min-w-[1000px]。
+    // 1000 < 1400px 視窗時右欄實際寬度（約 1038：container 扣 padding、捲軸、左欄 20%、gap），
+    // 視窗 ≥1400 不出現橫向捲軸，約 1350 以下才開始捲，名稱欄不會被壓縮到逐字直排
+    <div className="w-full h-full flex flex-col pt-[60px] overflow-x-auto">
       {/* Toast 通知 */}
       {toastMessage && (
         <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
@@ -290,7 +293,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
           {/* 關閉按鈕 */}
           <button
             onClick={closeFullscreenImage}
-            className="absolute top-20 right-8 text-white text-4xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
             aria-label="關閉"
           >
             ×
@@ -307,25 +310,25 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       )}
 
       {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="grid grid-cols-[6px_40px_80px_1fr_100px_100px_100px_120px_140px_80px] gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
+      <div className="min-w-[1000px] grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
         {/* 狀態指示器列 - 空白表頭 */}
         <div></div>
 
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-left">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-left">
           <div className="font-['Inter',_sans-serif]">Favorites</div>
           <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">收藏</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2"></div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2"></div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Total Qty</div>
           <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">總數量</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Available</div>
           <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借數量</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center flex items-center justify-center gap-1">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
             <div className="font-['Inter',_sans-serif]">On Hold</div>
             <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">待繳押金</div>
@@ -335,27 +338,27 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
               info
             </span>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-tiny whitespace-nowrap rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
               已送出但未繳押金的設備
               {/* 小三角形 */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-scale4"></div>
             </div>
           </div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Deposit</div>
           <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">押金/個</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center">
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
           <div className="font-['Inter',_sans-serif]">Quantity</div>
           <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">數量</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-tiny text-gray-scale2 text-center"></div>
+        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center"></div>
       </div>
 
       {filteredEquipment.length > 0 ? (
         // 設備列表 - 可滾動
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-w-[1000px]">
             {filteredEquipment.map(item => {
               const isBookmarked = bookmarkedIds.has(item.id)
               const quantity = quantities[item.id] || 1
@@ -380,7 +383,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
               return (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[6px_40px_80px_1fr_100px_100px_100px_120px_140px_80px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-colors"
+                  className="grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-colors"
                 >
                   {/* 狀態指示器 - 獨立的 grid 列 */}
                   <div
@@ -390,7 +393,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     }}
                   />
 
-                  {/* Bookmark */}
+                  {/* Bookmark（font-variation-settings 是整組覆寫：只寫 FILL 會把全域的 wght/opsz 洗掉、線條變粗，所以所有軸都要帶） */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -401,7 +404,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   >
                     <span
                       className="material-symbols-outlined text-white"
-                      style={{ fontSize: '24px', fontVariationSettings: isBookmarked ? "'FILL' 1" : "'FILL' 0" }}
+                      style={{ fontSize: '24px', fontVariationSettings: `'FILL' ${isBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}
                     >
                       bookmark
                     </span>
@@ -420,35 +423,35 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   </div>
 
                   {/* 設備名稱 */}
-                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title ${
+                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-s ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.name}
                   </div>
 
                   {/* 總數量 */}
-                  <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.originalQuantity}
                   </div>
 
                   {/* 可借數量 */}
-                  <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {availableQty}
                   </div>
 
                   {/* 待繳押金數量（該時段 pending 訂單佔用） */}
-                  <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {reservedMap[item.id]?.onHold ?? 0}
                   </div>
 
                   {/* 押金/個 */}
-                  <div className={`font-['Inter',_sans-serif] text-small-title text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     NT$ {item.deposit}
@@ -462,7 +465,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         decrementQuantity(item.id)
                       }}
                       disabled={!isAvailable || quantity <= 1}
-                      className={`font-['Inter',_sans-serif] text-small-title ${
+                      className={`font-['Inter',_sans-serif] text-s ${
                         !isAvailable || quantity <= 1
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -479,7 +482,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       onBlur={() => handleQuantityBlur(item.id)}
                       onClick={(e) => e.stopPropagation()}
                       disabled={!isAvailable}
-                      className={`font-['Inter',_sans-serif] text-small-title w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      className={`font-['Inter',_sans-serif] text-s w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         !isAvailable ? 'text-[#545454] cursor-not-allowed' : 'text-white'
                       }`}
                       style={{
@@ -493,7 +496,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         incrementQuantity(item.id)
                       }}
                       disabled={!isAvailable || quantity >= availableQty}
-                      className={`font-['Inter',_sans-serif] text-small-title ${
+                      className={`font-['Inter',_sans-serif] text-s ${
                         !isAvailable || quantity >= availableQty
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -511,7 +514,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         handleAddToCart(item)
                       }}
                       aria-disabled={!isAvailable || !hasSelectedDates || wouldExceedLightLimit || isSuspended}
-                      className={`font-['Inter',_sans-serif] text-small-title ${
+                      className={`font-['Inter',_sans-serif] text-s ${
                         isAvailable && hasSelectedDates && !wouldExceedLightLimit && !isSuspended
                           ? 'text-white hover:text-gray-scale1 cursor-pointer'
                           : 'text-[#545454] cursor-not-allowed'
@@ -526,8 +529,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-small-title">No Equipment Found</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-small-title">找不到符合條件的設備</p>
+          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-s">No Equipment Found</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-s">找不到符合條件的設備</p>
         </div>
       )}
     </div>

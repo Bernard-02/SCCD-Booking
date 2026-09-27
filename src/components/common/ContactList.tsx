@@ -10,7 +10,7 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
   <div className="space-y-4">
     {contacts.map((c, i) => (
       <div key={i}>
-        <div className="text-tiny text-[#cccccc] mb-0.5">
+        <div className="text-xs text-[#cccccc] mb-0.5">
           <span className="font-['Inter',_sans-serif]">{c.labelEn}</span>
           {c.labelZh && (
             <>
@@ -25,14 +25,14 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
             {...(c.link.startsWith('http')
               ? { target: '_blank', rel: 'noopener noreferrer' }
               : {})}
-            className={`${c.linkText ? "font-['Inter',_sans-serif]" : "font-['Inter','Noto_Sans_TC',_sans-serif]"} text-tiny text-white font-bold hover:opacity-70 transition-opacity break-all`}
+            className={`${c.linkText ? "font-['Inter',_sans-serif]" : "font-['Inter','Noto_Sans_TC',_sans-serif]"} text-xs text-white font-bold hover:opacity-70 transition-opacity break-all`}
           >
             {c.linkText || c.zh}
           </a>
         ) : (
           c.zh && (
             <p
-              className="text-tiny text-white leading-relaxed"
+              className="text-xs text-white leading-relaxed"
               style={{ fontFamily: "Inter, 'Noto Sans TC', sans-serif" }}
             >
               {c.zh}
@@ -40,18 +40,18 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => (
           )
         )}
         {c.en && (
-          <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+          <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
             {c.en}
           </p>
         )}
         {c.noteEn && (
-          <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed mt-0.5">
+          <p className="font-['Inter',_sans-serif] text-xs text-[#cccccc] leading-relaxed mt-0.5">
             {c.noteEn}
           </p>
         )}
         {c.note && (
           <p
-            className="text-tiny text-[#cccccc] leading-relaxed"
+            className="text-xs text-[#cccccc] leading-relaxed"
             style={{ fontFamily: "Inter, 'Noto Sans TC', sans-serif" }}
           >
             {c.note}

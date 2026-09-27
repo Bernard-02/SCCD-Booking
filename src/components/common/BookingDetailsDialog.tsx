@@ -112,7 +112,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
+          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
             Booking Details{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">借用資訊</span>
           </h2>
@@ -123,10 +123,10 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {/* 使用原因 */}
           <div>
             <label className="block mb-2">
-              <span className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">
+              <span className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">
                 Reason{' '}
               </span>
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
+              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">
                 使用原因
               </span>
               <span className="text-[#ff8698] ml-1">*</span>
@@ -134,7 +134,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white resize-none rounded-lg"
+              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white resize-none rounded-lg"
               style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               rows={3}
               placeholder="Please fill in the reason for use 請填寫使用原因"
@@ -147,10 +147,10 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               {/* 使用班級 */}
               <div>
                 <label className="block mb-2">
-                  <span className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">
+                  <span className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">
                     Class{' '}
                   </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">
                     使用班級
                   </span>
                   <span className="text-[#ff8698] ml-1">*</span>
@@ -159,7 +159,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   type="text"
                   value={className}
                   onChange={(e) => setClassName(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white rounded-lg"
+                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
                   style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
                   placeholder="Please fill in the class 請填寫使用班級"
                 />
@@ -168,10 +168,10 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               {/* 負責老師 */}
               <div>
                 <label className="block mb-2">
-                  <span className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">
+                  <span className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">
                     Teacher{' '}
                   </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">
                     負責老師（若個人用就填個人）
                   </span>
                   <span className="text-[#ff8698] ml-1">*</span>
@@ -180,7 +180,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   type="text"
                   value={teacher}
                   onChange={(e) => setTeacher(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-tiny focus:outline-none focus:border-white rounded-lg"
+                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
                   style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
                   placeholder="Please fill in the teacher in charge 請填寫負責老師"
                 />
@@ -201,7 +201,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             onClick={onCancel}
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
-            <span className="font-['Inter',_sans-serif] text-tiny">
+            <span className="font-['Inter',_sans-serif] text-xs">
               Cancel{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
             </span>
@@ -217,7 +217,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                 : 'text-gray-scale3 cursor-not-allowed'
             }`}
           >
-            <span className="font-['Inter',_sans-serif] text-tiny">
+            <span className="font-['Inter',_sans-serif] text-xs">
               Confirm{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認</span>
             </span>

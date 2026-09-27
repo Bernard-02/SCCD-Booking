@@ -30,8 +30,8 @@ const AdminLayout: React.FC = () => {
       {/* 側欄 */}
       <aside className="w-64 shrink-0 flex flex-col px-8 py-10">
         <div>
-          <p className="font-english text-small-title text-white">SCCD Admin</p>
-          <p className="font-chinese text-tiny text-gray-scale2 mt-1">{currentUser?.name}</p>
+          <p className="font-english text-s text-white">SCCD Admin</p>
+          <p className="font-chinese text-xs text-gray-scale2 mt-1">{currentUser?.name}</p>
         </div>
 
         <nav className="flex flex-col gap-6 mt-14 flex-1">
@@ -41,7 +41,7 @@ const AdminLayout: React.FC = () => {
               to={s.to}
               end={s.to === '/admin'}
               className={({ isActive }) =>
-                `text-small-title text-left transition-colors ${
+                `text-s text-left transition-colors ${
                   isActive ? 'text-white font-bold' : 'text-gray-scale2 hover:text-white'
                 }`
               }
@@ -49,7 +49,7 @@ const AdminLayout: React.FC = () => {
               <span className="font-english block">{s.en}</span>
               <span className="font-chinese block">
                 {s.label}
-                {!s.done && <span className="text-tiny text-gray-scale3 ml-2">待做</span>}
+                {!s.done && <span className="text-xs text-gray-scale3 ml-2">待做</span>}
               </span>
             </NavLink>
           ))}
@@ -57,7 +57,7 @@ const AdminLayout: React.FC = () => {
 
         <button
           onClick={handleLogout}
-          className="text-left text-tiny text-gray-scale2 hover:text-white transition-colors cursor-pointer mt-10"
+          className="text-left text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer mt-10"
         >
           <span className="font-english">Logout</span> <span className="font-chinese">登出</span>
         </button>

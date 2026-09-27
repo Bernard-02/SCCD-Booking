@@ -355,7 +355,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           <div className="absolute top-0 left-0 right-0 container flex justify-end pt-28">
             <button
               onClick={handleCancel}
-              className="text-4xl font-light text-white hover:opacity-70 transition-opacity cursor-pointer leading-none"
+              className="text-xl font-normal text-white hover:opacity-70 transition-opacity cursor-pointer leading-none"
               aria-label="關閉"
             >
               ×
@@ -390,9 +390,12 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         <div className="w-[20%] flex-shrink-0"></div>
 
         {/* 右側內容區域：80% */}
-        <div className="w-[80%] flex items-center justify-between overflow-visible">
+        {/* RWD：@container ＋ 右側按鈕在欄寬不足時改上下排列，而非被裁切
+            （不能用 overflow-x 捲動——會把 Exist Cart 彈出視窗一起裁掉）；
+            flex-wrap 為更窄時的最後防線 */}
+        <div className="w-[80%] @container flex flex-wrap items-center justify-between gap-y-2 overflow-visible">
           {/* 左邊群組：租借類型選擇、起租日、歸還日 */}
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6 gap-y-2">
             {/* 第一組：租借類型選擇 */}
             <div className="flex items-center gap-12 flex-shrink-0">
               {/* 租借類型選擇 - 橫向排列 */}
@@ -407,10 +410,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     )}
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className={`text-tiny font-['Inter',_sans-serif] transition-colors leading-tight ${littleStyles.text}`}>
+                    <span className={`text-xs font-['Inter',_sans-serif] transition-colors leading-tight ${littleStyles.text}`}>
                       {type === 'space' ? 'Personal' : 'Light'}
                     </span>
-                    <span className={`text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] transition-colors leading-tight ${littleStyles.text}`}>
+                    <span className={`text-xs font-['Inter','Noto_Sans_TC',_sans-serif] transition-colors leading-tight ${littleStyles.text}`}>
                       {type === 'space' ? '個人' : '小量'}
                     </span>
                   </div>
@@ -426,10 +429,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     )}
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className={`text-tiny font-['Inter',_sans-serif] transition-colors leading-tight ${massStyles.text}`}>
+                    <span className={`text-xs font-['Inter',_sans-serif] transition-colors leading-tight ${massStyles.text}`}>
                       {type === 'space' ? 'Group' : 'Mass'}
                     </span>
-                    <span className={`text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] transition-colors leading-tight ${massStyles.text}`}>
+                    <span className={`text-xs font-['Inter','Noto_Sans_TC',_sans-serif] transition-colors leading-tight ${massStyles.text}`}>
                       {type === 'space' ? '團體' : '大量'}
                     </span>
                   </div>
@@ -438,21 +441,21 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             </div>
 
             {/* 第二組：起租日 + 歸還日 */}
-            <div className="flex items-center gap-16 flex-shrink-0 ml-12">
+            <div className="flex items-center gap-10 flex-shrink-0 ml-6">
               {/* 起租日 - 可點擊開啟日曆 */}
               <div
                 className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
                 onClick={handleStartDateClick}
               >
               <div className="flex flex-col">
-                <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
+                <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
                   Start Date
                 </span>
-                <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
+                <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
                   起租日
                 </span>
               </div>
-              <span className="text-large-title font-['Inter',_sans-serif] font-normal text-white">
+              <span className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
                 {formatDate(startDate)}
               </span>
             </div>
@@ -460,14 +463,14 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             {/* 歸還日 */}
             <div className="flex items-center gap-8 flex-shrink-0">
               <div className="flex flex-col">
-                <span className="text-tiny font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
+                <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
                   End Date
                 </span>
-                <span className="text-tiny font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
+                <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
                   歸還日
                 </span>
               </div>
-              <span className="text-large-title font-['Inter',_sans-serif] font-normal text-white">
+              <span className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
                 {formatDate(endDate)}
               </span>
               </div>
@@ -475,11 +478,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           </div>
 
           {/* 右邊群組：操作按鈕 - Reset + Exist Cart */}
-          <div className="flex items-center gap-8 flex-shrink-0 relative">
+          <div className="flex items-center gap-8 flex-shrink-0 relative ml-auto @max-[1040px]:flex-col @max-[1040px]:items-end @max-[1040px]:gap-1">
             <button
               disabled={!isResetEnabled}
               onClick={handleReset}
-              className={`text-small-title font-['Inter',_sans-serif] font-medium whitespace-nowrap ${
+              className={`text-s font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
                 isResetEnabled
                   ? 'text-white hover:opacity-70 transition-opacity cursor-pointer'
                   : 'text-gray-scale4 cursor-not-allowed'
@@ -492,7 +495,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <button
               onClick={() => setShowExistingDates(!showExistingDates)}
               disabled={existingCartDates.length === 0}
-              className={`existing-dates-btn text-small-title font-['Inter',_sans-serif] font-medium whitespace-nowrap ${
+              className={`existing-dates-btn text-s font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
                 existingCartDates.length > 0
                   ? 'text-white hover:opacity-70 transition-opacity cursor-pointer'
                   : 'text-gray-scale4 cursor-not-allowed'
@@ -506,10 +509,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-lg min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
                 <div className="px-4 py-3 border-b border-gray-scale4">
-                  <span className="text-small-title font-['Inter',_sans-serif] text-white">
+                  <span className="text-s font-['Inter',_sans-serif] text-white">
                     Existing Cart Dates{' '}
                   </span>
-                  <span className="text-small-title font-['Inter','Noto_Sans_TC',_sans-serif] text-white">
+                  <span className="text-s font-['Inter','Noto_Sans_TC',_sans-serif] text-white">
                     購物車已選日期
                   </span>
                 </div>
@@ -572,20 +575,20 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                         }}
                       >
                         {/* 日期範圍 + 數量 */}
-                        <div className={`text-tiny font-['Inter',_sans-serif] mb-1 ${dateGroup.isDisabled ? 'text-gray-scale3' : 'text-white'}`}>
+                        <div className={`text-xs font-['Inter',_sans-serif] mb-1 ${dateGroup.isDisabled ? 'text-gray-scale3' : 'text-white'}`}>
                           {formatDateFull(dateGroup.startDate)} - {formatDateFull(dateGroup.endDate)} ({dateGroup.itemCount})
                         </div>
 
                         {/* 類型文字 - 灰色 */}
-                        <div className="text-tiny font-['Inter',_sans-serif] text-gray-scale2 flex items-center gap-2">
+                        <div className="text-xs font-['Inter',_sans-serif] text-gray-scale2 flex items-center gap-2">
                           {typeText}
                           {dateGroup.isDisabled && (
-                            <span className="text-tiny text-gray-scale3">
+                            <span className="text-xs text-gray-scale3">
                               (已達上限)
                             </span>
                           )}
                           {dateGroup.isExpired && (
-                            <span className="text-tiny text-[#ffff00]">
+                            <span className="text-xs text-[#ffff00]">
                               <span className="font-['Inter',_sans-serif]">Expired</span>{' '}
                               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">已過期，點擊重選日期</span>
                             </span>

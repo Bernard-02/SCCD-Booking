@@ -241,7 +241,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
         {/* 標題和關閉按鈕 */}
         <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
           <div className="flex items-start justify-between mb-4">
-            <h2 className="text-small-title text-white">
+            <h2 className="text-s text-white">
               <span className="font-['Inter',_sans-serif]">Extend</span>{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期規則</span>
             </h2>
@@ -250,12 +250,12 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1"
               aria-label="Close"
             >
-              <span className="material-icons text-[24px]">close</span>
+              <span className="material-icons text-l">close</span>
             </button>
           </div>
 
           {/* 訂單號碼 */}
-          <div className="text-tiny text-gray-scale2">
+          <div className="text-xs text-gray-scale2">
             <span className="font-['Inter',_sans-serif]">Order</span>{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">訂單號碼</span>:{' '}
             <span className="font-['Inter',_sans-serif] text-white">{orderNumber}</span>
@@ -266,7 +266,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
         <div className="px-6 py-6">
           {/* 規則說明 */}
           <div className="mb-6">
-            <div className="text-white text-tiny space-y-1">
+            <div className="text-white text-xs space-y-1">
               <p>
                 <span className="font-['Inter',_sans-serif]">1. Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.</span>{' '}
                 <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。</span>
@@ -311,7 +311,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
             {/* 狀態提示 */}
             <div style={{ minHeight: '18px' }}>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs">
                 您已延期 <span className="font-['Inter',_sans-serif]">{selectedDays}</span> 天，新的歸還日是{' '}
                 <span className="font-['Inter',_sans-serif]">{formatNewReturnDate(selectedDays)}</span>。
               </p>
@@ -321,7 +321,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
           {/* 品項勾選（部分延期，情境 5＋8）：選定天數後顯示各品項可否延期 */}
           {selectedDays > 0 && extendItems && (
             <div className="mb-6">
-              <p className="text-tiny text-gray-scale2 mb-2">
+              <p className="text-xs text-gray-scale2 mb-2">
                 <span className="font-['Inter',_sans-serif]">Items to extend</span>{' '}
                 <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">勾選要延期的品項</span>
               </p>
@@ -329,7 +329,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                 {extendItems.map(item => (
                   <label
                     key={item.id}
-                    className={`flex items-center gap-3 text-tiny ${
+                    className={`flex items-center gap-3 text-xs ${
                       item.extendable ? 'text-white cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
                     }`}
                   >
@@ -353,7 +353,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                 ))}
               </div>
               {isPartial && (
-                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-gray-scale2 mt-3">
+                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2 mt-3">
                   部分延期：勾選品項將拆為子單延期，未勾選品項照原歸還日（
                   <span className="font-['Inter',_sans-serif]">
                     {dueDate.getMonth() + 1} 月 {dueDate.getDate()} 日
@@ -374,7 +374,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               onClick={onCancel}
               className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
             >
-              <span className="font-['Inter',_sans-serif] text-tiny">
+              <span className="font-['Inter',_sans-serif] text-xs">
                 Cancel{' '}
                 <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
               </span>
@@ -390,7 +390,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                   : 'text-gray-scale3 cursor-not-allowed'
               }`}
             >
-              <span className="font-['Inter',_sans-serif] text-tiny">
+              <span className="font-['Inter',_sans-serif] text-xs">
                 Send{' '}
                 <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">送出</span>
               </span>

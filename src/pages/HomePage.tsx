@@ -75,7 +75,7 @@ const HomePage = () => {
                         {/* 標題：往上對齊右上 Studio 第一行（Studio 雙行置中會頂出 padding，單行標題用負 margin 追上去） */}
                         {/* ponytail: -mt-3 是純視覺對齊值，字級或 Studio 高度改了就微調這個數字 */}
                         <div className="-mt-3 mb-8">
-                          <h2 className="font-['Inter',_sans-serif] text-medium-title text-white leading-tight whitespace-nowrap">
+                          <h2 className="font-['Inter',_sans-serif] text-xl text-white leading-tight whitespace-nowrap">
                             Space &amp; Equipment <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">空間與設備</span>
                           </h2>
                         </div>
@@ -95,11 +95,11 @@ const HomePage = () => {
                                 autoComplete="username"
                                 style={{ width: '100%', borderColor: studentIdError ? 'var(--color-error2)' : '' }}
                               />
-                              <label htmlFor="desktop-student-id" className="input-label text-small-title pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
+                              <label htmlFor="desktop-student-id" className="input-label text-s pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
                                 Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
                               </label>
                               {studentIdError && (
-                                <div className="text-error2 text-tiny absolute top-full left-0 mt-1 whitespace-nowrap">
+                                <div className="text-error2 text-xs absolute top-full left-0 mt-1 whitespace-nowrap">
                                   <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號錯誤</span>
                                 </div>
                               )}
@@ -117,7 +117,7 @@ const HomePage = () => {
                                 autoComplete="current-password"
                                 style={{ width: '100%', borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
                               />
-                              <label htmlFor="desktop-password" className="input-label text-small-title pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
+                              <label htmlFor="desktop-password" className="input-label text-s pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
                                 Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
                               </label>
                               <button
@@ -131,7 +131,7 @@ const HomePage = () => {
                                 </span>
                               </button>
                               {passwordError && (
-                                <div className="text-error2 text-tiny absolute top-full left-0 mt-1 whitespace-nowrap">
+                                <div className="text-error2 text-xs absolute top-full left-0 mt-1 whitespace-nowrap">
                                   <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
                                 </div>
                               )}
@@ -167,7 +167,7 @@ const HomePage = () => {
                                     />
                                   </svg>
                                 </div>
-                                <span className="text-tiny text-white group-hover:text-gray-scale2 transition-colors leading-tight">
+                                <span className="text-xs text-white group-hover:text-gray-scale2 transition-colors leading-tight">
                                   <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">記住我</span>
                                 </span>
                               </label>
@@ -176,7 +176,7 @@ const HomePage = () => {
                               <button
                                 type="button"
                                 onClick={() => setShowForgotPasswordModal(true)}
-                                className="font-['Inter',_sans-serif] text-white text-tiny hover:text-gray-scale2 transition-colors cursor-pointer text-left p-0 whitespace-nowrap"
+                                className="font-['Inter',_sans-serif] text-white text-xs hover:text-gray-scale2 transition-colors cursor-pointer text-left p-0 whitespace-nowrap"
                               >
                                 Forgot Password? <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
                               </button>
@@ -185,7 +185,7 @@ const HomePage = () => {
                               <button
                                 type="submit"
                                 disabled={!studentId || !password}
-                                className="text-small-title font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
+                                className="text-s font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
                               >
                                 <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                               </button>
@@ -204,8 +204,8 @@ const HomePage = () => {
                           className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
                         >
                           <div className="flex flex-col z-10">
-                            <span className="font-['Inter',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">Studio</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">工作室</span>
+                            <span className="font-['Inter',_sans-serif] text-xl text-white group-hover:text-black transition-colors">Studio</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xl text-white group-hover:text-black transition-colors">工作室</span>
                           </div>
                           {/* 斜45度箭頭 */}
                           <div className="z-10">
@@ -223,8 +223,8 @@ const HomePage = () => {
                           className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
                         >
                           <div className="flex flex-col z-10">
-                            <span className="font-['Inter',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">Film Studio</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-medium-title text-white group-hover:text-black transition-colors">專業攝影棚</span>
+                            <span className="font-['Inter',_sans-serif] text-xl text-white group-hover:text-black transition-colors">Film Studio</span>
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xl text-white group-hover:text-black transition-colors">專業攝影棚</span>
                           </div>
                           {/* 斜45度箭頭 */}
                           <div className="z-10">
@@ -243,7 +243,7 @@ const HomePage = () => {
             <div className="md:hidden flex flex-col items-start w-full gap-6">
               {/* 標題 */}
               <div className="float-up-container">
-                <h1 className="font-['Inter',_sans-serif] text-white text-hero-title float-up float-up-slow">
+                <h1 className="font-['Inter',_sans-serif] text-white text-3xl font-bold float-up float-up-slow">
                   Booking
                 </h1>
               </div>
@@ -263,11 +263,11 @@ const HomePage = () => {
                       autoComplete="username"
                       style={{ borderColor: studentIdError ? 'var(--color-error2)' : '' }}
                     />
-                    <label htmlFor="mobile-student-id" className="input-label text-small-title pointer-events-none">
+                    <label htmlFor="mobile-student-id" className="input-label text-s pointer-events-none">
                       Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
                     </label>
                     {studentIdError && (
-                      <div className="text-error2 text-tiny mt-1">
+                      <div className="text-error2 text-xs mt-1">
                         <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號錯誤</span>
                       </div>
                     )}
@@ -297,7 +297,7 @@ const HomePage = () => {
                         />
                       </svg>
                     </div>
-                    <span className="text-tiny text-white group-hover:text-gray-scale2 transition-colors leading-tight">
+                    <span className="text-xs text-white group-hover:text-gray-scale2 transition-colors leading-tight">
                       <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">記住我</span>
                     </span>
                   </label>
@@ -316,7 +316,7 @@ const HomePage = () => {
                       autoComplete="current-password"
                       style={{ borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
                     />
-                    <label htmlFor="mobile-password" className="input-label text-small-title pointer-events-none">
+                    <label htmlFor="mobile-password" className="input-label text-s pointer-events-none">
                       Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
                     </label>
                     <button
@@ -330,7 +330,7 @@ const HomePage = () => {
                       </span>
                     </button>
                     {passwordError && (
-                      <div className="text-error2 text-tiny mt-1">
+                      <div className="text-error2 text-xs mt-1">
                         <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
                       </div>
                     )}
@@ -338,7 +338,7 @@ const HomePage = () => {
                   <button
                     type="button"
                     onClick={() => setShowForgotPasswordModal(true)}
-                    className="font-['Inter',_sans-serif] text-white text-tiny text-left hover:text-gray-scale2 transition-colors"
+                    className="font-['Inter',_sans-serif] text-white text-xs text-left hover:text-gray-scale2 transition-colors"
                   >
                     Forgot Password? <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
                   </button>
@@ -348,7 +348,7 @@ const HomePage = () => {
                 <button
                   type="submit"
                   disabled={!studentId || !password}
-                  className="text-small-title font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
+                  className="text-s font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
                 >
                   <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                 </button>
@@ -376,11 +376,11 @@ const HomePage = () => {
               <span className="material-symbols-outlined">close</span>
             </button>
             
-            <h3 className="text-medium-title font-['Inter','Noto_Sans_TC',_sans-serif] text-white mb-4">
+            <h3 className="text-xl font-['Inter','Noto_Sans_TC',_sans-serif] text-white mb-4">
               忘記密碼？
             </h3>
 
-            <div className="space-y-4 text-content text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
+            <div className="space-y-4 text-m text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               {resetSent ? (
                 <p>
                   重設密碼信已寄至 <span className="font-['Inter',_sans-serif] text-white">{resetSent}</span>
@@ -407,17 +407,17 @@ const HomePage = () => {
                       value={resetStudentId}
                       onChange={(e) => setResetStudentId(e.target.value)}
                       placeholder="Student ID 學號"
-                      className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-content focus:outline-none focus:border-white"
+                      className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-m focus:outline-none focus:border-white"
                       style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
                     />
                     {resetError && (
-                      <p className="text-tiny text-[#ff8698]">{resetError}</p>
+                      <p className="text-xs text-[#ff8698]">{resetError}</p>
                     )}
                     <div className="flex justify-end">
                       <button
                         type="submit"
                         disabled={!resetStudentId.trim()}
-                        className={`px-6 py-2 rounded-lg text-content font-normal transition ${
+                        className={`px-6 py-2 rounded-lg text-m font-normal transition ${
                           resetStudentId.trim()
                             ? 'bg-white text-black hover:opacity-70 cursor-pointer'
                             : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'

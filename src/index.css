@@ -6,6 +6,28 @@
 /* Tailwind CSS v4 - 使用 @import 指令 */
 @import "tailwindcss";
 
+/* 全站粗體統一 600（semibold 視覺）：font-bold 不改名，直接重定義 token；字體只載 400/600 */
+@theme {
+  --font-weight-bold: 600;
+
+  /* 字級系統：7 級，text-s（1rem）為基準。xs/xl/2xl/3xl 覆寫 Tailwind 預設值。
+     舊的 text-sm/base/lg/4xl 與 css/typography.css 的 text-* class 屬遷移期過渡，逐頁換成這 7 級 */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.4;
+  --text-s: 1rem;
+  --text-s--line-height: 1.4;
+  --text-m: 1.25rem;
+  --text-m--line-height: 1.4;
+  --text-l: 1.5rem;
+  --text-l--line-height: 1.4;
+  --text-xl: 2rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 2.5rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 4rem;
+  --text-3xl--line-height: 1.2;
+}
+
 /* 基礎樣式 - 必須在這裡定義，因為 @import 必須在最前面 */
 @layer base {
   * {
@@ -17,6 +39,9 @@
   body {
     /* Inter 在前：拉丁字母與數字用 Inter，中文自動 fallback 到 Noto Sans TC */
     font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    /* macOS 預設平滑會把字渲染得偏粗（黑底白字尤其明顯），antialiased 與主流網站一致 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   #root {

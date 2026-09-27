@@ -78,7 +78,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
+          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
             {titleEn && <>{titleEn} </>}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{title}</span>
           </h2>
@@ -87,11 +87,11 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         {/* 內容區 */}
         <div className="px-6 py-4">
           {messageEn && (
-            <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed whitespace-pre-line mb-2">
+            <p className="font-['Inter',_sans-serif] text-xs text-[#cccccc] leading-relaxed whitespace-pre-line mb-2">
               {messageEn}
             </p>
           )}
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed whitespace-pre-line">
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc] leading-relaxed whitespace-pre-line">
             {message}
           </p>
         </div>
@@ -108,7 +108,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             onClick={onCancel}
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
-            <span className="font-['Inter',_sans-serif] text-tiny">
+            <span className="font-['Inter',_sans-serif] text-xs">
               {cancelText}{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{cancelTextZh}</span>
             </span>
@@ -119,7 +119,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             onClick={onConfirm}
             className={`${getConfirmButtonTextColor()} hover:opacity-70 transition-opacity cursor-pointer`}
           >
-            <span className="font-['Inter',_sans-serif] text-tiny">
+            <span className="font-['Inter',_sans-serif] text-xs">
               {confirmText}{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{confirmTextZh}</span>
             </span>

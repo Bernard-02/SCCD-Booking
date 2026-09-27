@@ -82,10 +82,10 @@ const ProfilePage: React.FC = () => {
         <div className="container h-full flex flex-col">
           {/* 上半部：問候區塊（問候語小、放名字上方；名字靠左） */}
           <div className="mb-12 flex-shrink-0">
-            <p className="font-['Inter',_sans-serif] text-white text-small-title mb-2">
+            <p className="font-['Inter',_sans-serif] text-white text-s mb-2">
               {greeting} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{greetingZh}</span>
             </p>
-            <p className="font-['Inter',_sans-serif] text-white text-medium-title">
+            <p className="font-['Inter',_sans-serif] text-white text-xl">
               {currentUser?.studentId || 'A1234567'}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif] ml-4">{currentUser?.name || '阿志'}</span>
             </p>
@@ -100,9 +100,9 @@ const ProfilePage: React.FC = () => {
                   <button
                     key={item.id}
                     onClick={() => setCurrentSection(item.id)}
-                    className={`text-small-title transition-colors cursor-pointer text-left self-start ${
+                    className={`text-s font-semibold transition-colors cursor-pointer text-left self-start ${
                       currentSection === item.id
-                        ? 'text-white font-bold'
+                        ? 'text-white'
                         : 'text-gray-scale2 hover:!text-white'
                     }`}
                   >
@@ -325,7 +325,7 @@ const RentalHistorySection: React.FC = () => {
       
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-small-title text-yellow">
+          <span className="font-['Inter',_sans-serif] text-s text-yellow">
             Expires in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離繳交押金</span> {hoursRemaining} hrs
             {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
           </span>
@@ -352,7 +352,7 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-small-title text-blue">
+          <span className="font-['Inter',_sans-serif] text-s text-blue">
             Due in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
           </span>
         </div>
@@ -367,7 +367,7 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-small-title text-error2">
+          <span className="font-['Inter',_sans-serif] text-s text-error2">
             Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
           </span>
         </div>
@@ -399,24 +399,24 @@ const RentalHistorySection: React.FC = () => {
           <div className="flex-1">
             {/* 單號和訂單種類標籤 */}
             <div className="flex items-center gap-3 mb-2">
-              <span className="font-['Inter',_sans-serif] text-medium-title text-white">
+              <span className="font-['Inter',_sans-serif] text-xl text-white">
                 {receipt.rentalNumber}
               </span>
               {/* 訂單種類標籤 */}
               <div
                 className="px-3 py-1 flex items-center justify-center bg-gray-scale4 rounded-lg border border-transparent"
               >
-                <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap text-white">
+                <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap text-white">
                   {bookingTypeLabel.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
                 </span>
               </div>
             </div>
             {/* 日期和押金在同一行，有間距 */}
             <div className="flex items-center gap-8">
-              <span className="font-['Inter',_sans-serif] text-content text-white">
+              <span className="font-['Inter',_sans-serif] text-m text-white">
                 {formatDateRange(receipt.rentalDates)}
               </span>
-              <span className="font-['Inter',_sans-serif] text-content text-white">
+              <span className="font-['Inter',_sans-serif] text-m text-white">
                 NT$ {receipt.totalDeposit.toLocaleString()}
               </span>
             </div>
@@ -440,7 +440,7 @@ const RentalHistorySection: React.FC = () => {
                     : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
                 }`}
               >
-                <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap">
+                <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">
                   Extend <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期</span>
                 </span>
               </button>
@@ -451,7 +451,7 @@ const RentalHistorySection: React.FC = () => {
                 style={{ backgroundColor: statusInfo.color }}
               >
                 <span
-                  className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap"
+                  className="font-['Inter',_sans-serif] text-xs whitespace-nowrap"
                   style={{ color: statusInfo.textColor }}
                 >
                   {statusInfo.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
@@ -471,7 +471,7 @@ const RentalHistorySection: React.FC = () => {
     <div>
       {/* 所有訂單 */}
       {allReceipts.length === 0 ? (
-        <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale4 text-content">尚無訂單記錄</p>
+        <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale4 text-m">尚無訂單記錄</p>
       ) : (
         <div>
           {allReceipts.map((receipt, index) => renderReceiptItem(receipt, index))}
@@ -571,18 +571,18 @@ const ProfileDataSection: React.FC = () => {
         {isSuspended ? (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-content">
+              <p className="font-['Inter',_sans-serif] text-white text-m">
                 Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span>
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-content">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-m">
                 您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span>
               </p>
             </div>
             <div>
-              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
                 An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">
                 有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜
               </p>
             </div>
@@ -590,18 +590,18 @@ const ProfileDataSection: React.FC = () => {
         ) : worstOverdueDays > 0 ? (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-content">
+              <p className="font-['Inter',_sans-serif] text-white text-m">
                 Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span>
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-content">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-m">
                 帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span>
               </p>
             </div>
             <div>
-              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
                 You have an order overdue for {worstOverdueDays} business day{worstOverdueDays > 1 ? 's' : ''}. At 6 days your account will be suspended — please return it as soon as possible.
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">
                 您有訂單已逾期 {worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還
               </p>
             </div>
@@ -609,18 +609,18 @@ const ProfileDataSection: React.FC = () => {
         ) : (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-content">
+              <p className="font-['Inter',_sans-serif] text-white text-m">
                 You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-content">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-m">
                 您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
               </p>
             </div>
             <div>
-              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
                 You return your rentals right on time, with no overdue records.
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-tiny">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">
                 您非常準時地歸還租借，沒有任何逾期記錄
               </p>
             </div>
@@ -637,12 +637,12 @@ const ProfileDataSection: React.FC = () => {
         {/* 第一行：姓名和班級 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Name</span> <span className="font-chinese">姓名</span></label>
-            <p className="font-chinese text-white text-small-title">{currentUser?.name || '阿志'}</p>
+            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Name</span> <span className="font-chinese">姓名</span></label>
+            <p className="font-chinese text-white text-s">{currentUser?.name || '阿志'}</p>
           </div>
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Class</span> <span className="font-chinese">班級</span></label>
-            <p className="font-chinese text-white text-small-title">
+            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Class</span> <span className="font-chinese">班級</span></label>
+            <p className="font-chinese text-white text-s">
               {formatClassName(currentUser?.studentId)}
             </p>
           </div>
@@ -651,14 +651,14 @@ const ProfileDataSection: React.FC = () => {
         {/* 第二行：帳號和密碼 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Student ID</span> <span className="font-chinese">學號</span></label>
-            <p className="font-english text-white text-small-title">{currentUser?.studentId || 'A111144001'}</p>
+            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Student ID</span> <span className="font-chinese">學號</span></label>
+            <p className="font-english text-white text-s">{currentUser?.studentId || 'A111144001'}</p>
           </div>
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Password</span> <span className="font-chinese">密碼</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Password</span> <span className="font-chinese">密碼</span></label>
             <div className="flex items-center gap-3">
               {/* 密碼僅存雜湊，無法顯示明文；此處固定遮罩，變更走右側編輯 */}
-              <span className="font-english text-white text-small-title flex-1">••••••••</span>
+              <span className="font-english text-white text-s flex-1">••••••••</span>
               <button
                 onClick={() => setEditMode('password')}
                 className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
@@ -674,9 +674,9 @@ const ProfileDataSection: React.FC = () => {
         {/* 第三行：手機號碼和Email */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Phone</span> <span className="font-chinese">手機號碼</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Phone</span> <span className="font-chinese">手機號碼</span></label>
             <div className="flex items-center gap-3">
-              <p className="font-english text-white text-small-title flex-1">
+              <p className="font-english text-white text-s flex-1">
                 {phone ? maskPhone(phone) : '未設定'}
               </p>
               <button
@@ -690,8 +690,8 @@ const ProfileDataSection: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="text-gray-scale2 text-tiny block mb-2"><span className="font-english">Email</span> <span className="font-chinese">電子郵件</span></label>
-            <p className="font-english text-white text-small-title">
+            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Email</span> <span className="font-chinese">電子郵件</span></label>
+            <p className="font-english text-white text-s">
               {maskEmail((currentUser?.email || `${currentUser?.studentId}@gm2.usc.edu.tw`).toLowerCase())}
             </p>
           </div>

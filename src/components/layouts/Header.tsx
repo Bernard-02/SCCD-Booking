@@ -11,6 +11,7 @@ import { fetchMyNotifications, markAllNotificationsRead } from '../../services/n
 import type { AppNotification as Notification } from '../../services/notificationsService'
 import GuideDialog from '../common/GuideDialog'
 import SaDialog from '../common/SaDialog'
+import { angleFor, spinOnHover } from '../../utils/rotationAngle'
 
 interface HeaderProps {
   hideNavigation?: boolean // 是否隱藏右側導航按鈕
@@ -53,20 +54,6 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
   // 計算未讀數量
   const unreadCount = notifications.filter(n => !n.read).length
-
-  // 固定旋轉角度
-  const rotationAngles: Record<string, number> = {
-    '/guide': 1,
-    '/sa': -3,
-    '/catalog': -1,
-    '/cart': 3,
-    '/profile': -5
-  }
-
-  // 獲取固定角度
-  const getAngle = (path: string): number => {
-    return rotationAngles[path] || 0
-  }
 
   // 處理登出
   const handleLogout = async () => {
@@ -188,7 +175,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
             <div className="flex items-center" style={{ gap: '1.5rem' }}>
               <Link
                 to={isAuthenticated ? "/catalog" : "/"}
-                className="font-['Inter',_sans-serif] font-medium text-white text-header"
+                className="font-['Inter',_sans-serif] font-bold text-white text-m"
               >
                 SCCDSA Booking
               </Link>
@@ -198,8 +185,9 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   type="button"
                   onClick={() => setGuideOpen(true)}
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link cursor-pointer ${guideOpen ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${getAngle('/guide')}deg` } as React.CSSProperties}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link cursor-pointer ${guideOpen ? 'active' : ''}`}
+                  style={{ '--rotation-angle': `${angleFor('guide')}deg` } as React.CSSProperties}
+                  onMouseEnter={spinOnHover('guide')}
                 >
                   <span>Guide</span>
                   <span className="chinese-label">&nbsp;教學</span>
@@ -213,16 +201,18 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   type="button"
                   onClick={() => setSaOpen(true)}
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link cursor-pointer ${saOpen ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${getAngle('/sa')}deg` } as React.CSSProperties}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link cursor-pointer ${saOpen ? 'active' : ''}`}
+                  style={{ '--rotation-angle': `${angleFor('sa')}deg` } as React.CSSProperties}
+                  onMouseEnter={spinOnHover('sa')}
                 >
                   <span>SA</span>
                   <span className="chinese-label">&nbsp;系學會</span>
                 </button>
                 <Link
                   to="/catalog"
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/catalog') ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${getAngle('/catalog')}deg` } as React.CSSProperties}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link ${isActive('/catalog') ? 'active' : ''}`}
+                  style={{ '--rotation-angle': `${angleFor('catalog')}deg` } as React.CSSProperties}
+                  onMouseEnter={spinOnHover('catalog')}
                 >
                   <span>Catalog</span>
                   <span className="chinese-label">&nbsp;型錄</span>
@@ -230,8 +220,9 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <Link
                   to="/cart"
                   state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
-                  className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/cart') ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${getAngle('/cart')}deg` } as React.CSSProperties}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link ${isActive('/cart') ? 'active' : ''}`}
+                  style={{ '--rotation-angle': `${angleFor('cart')}deg` } as React.CSSProperties}
+                  onMouseEnter={spinOnHover('cart')}
                 >
                   <span>Cart<span className="chinese-label">&nbsp;清單</span> (<span id="cart-count">{cartCount}</span>)</span>
                 </Link>
@@ -239,8 +230,9 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   <Link
                     to="/profile"
                     onClick={handleProfileClick}
-                    className={`font-['Inter',_sans-serif] font-medium transition-colors text-white flex items-center text-header header-nav-link ${isActive('/profile') ? 'active' : ''}`}
-                    style={{ '--rotation-angle': `${getAngle('/profile')}deg` } as React.CSSProperties}
+                    className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link ${isActive('/profile') ? 'active' : ''}`}
+                    style={{ '--rotation-angle': `${angleFor('profile')}deg` } as React.CSSProperties}
+                    onMouseEnter={spinOnHover('profile')}
                   >
                     <span>Profile</span>
                     <span className="chinese-label">&nbsp;我的</span>
@@ -258,8 +250,8 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                           onClick={handleLogout}
                           className="text-white hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
                         >
-                          <span className="font-['Inter',_sans-serif] text-tiny">Log out</span>{' '}
-                          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny">登出</span>
+                          <span className="font-['Inter',_sans-serif] text-xs">Log out</span>{' '}
+                          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs">登出</span>
                         </button>
                       </div>
                     </div>
@@ -271,9 +263,8 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                     to="#"
                     onClick={handleNotificationClick}
                     className="relative flex items-center text-white hover:opacity-70 transition-opacity cursor-pointer"
-                    style={{ '--rotation-angle': `${getAngle('/notifications')}deg` } as React.CSSProperties}
                   >
-                    <span className="material-symbols-outlined text-header">
+                    <span className="material-symbols-outlined text-m">
                       notifications
                     </span>
                     {/* 全域紅點：只有在選單關閉且有未讀訊息時顯示 */}
@@ -290,7 +281,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                     >
                       {/* Header */}
                       <div className="flex justify-between items-center px-6 py-4 border-b border-[#545454]">
-                        <h2 className="text-small-title text-white">
+                        <h2 className="text-s text-white">
                           <span className="font-['Inter',_sans-serif]">Notification</span>{' '}
                           <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">通知</span>
                         </h2>
@@ -299,7 +290,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                           className="text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center"
                           aria-label="Close"
                         >
-                          <span className="material-icons text-[24px]">close</span>
+                          <span className="material-icons text-l">close</span>
                         </button>
                       </div>
 
@@ -307,7 +298,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                       <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                         {notifications.length === 0 ? (
                           <div className="px-6 py-8 text-center">
-                            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-gray-scale2">
+                            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2">
                               目前沒有新通知
                             </p>
                           </div>
@@ -321,16 +312,16 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                                 )}
 
                                 {/* 內容 */}
-                                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-tiny mb-2 pr-4 leading-relaxed">
+                                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs mb-2 pr-4 leading-relaxed">
                                   {n.content}
                                 </p>
 
                                 {/* 底部資訊 */}
                                 <div className="flex justify-between items-end">
-                                  <span className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+                                  <span className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
                                     {formatNotificationDate(n.timestamp)}
                                   </span>
-                                  <span className="font-['Inter',_sans-serif] text-gray-scale2 text-tiny">
+                                  <span className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
                                     {formatTimeAgo(n.timestamp)}
                                   </span>
                                 </div>
@@ -355,7 +346,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <Link
                   to="/cart"
                   state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
-                  className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white flex items-center"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">
@@ -369,7 +360,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   id="mobile-menu-btn"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white flex items-center"
+                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white flex items-center"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(MENU)</span>
@@ -389,8 +380,8 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
             <div className="menu-animate-enter">
               <div className="menu-animate-enter-content menu-delay-1">
                 <Link
-                  to="/booking"
-                  className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-h3"
+                  to="/catalog"
+                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -404,7 +395,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-2">
                 <Link
                   to="/login"
-                  className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -420,7 +411,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   href="https://sccd.usc.edu.tw/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(TO SCCD)</span>
@@ -433,7 +424,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-4">
                 <Link
                   to="/about"
-                  className="font-['Inter',_sans-serif] font-medium uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -448,7 +439,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
           {/* Copyright 在底部 */}
           <div className="menu-animate-enter mobile-menu-content-bottom">
             <div className="menu-animate-enter-content menu-delay-5">
-              <div className="copyright font-['Inter',_sans-serif] font-medium text-white text-left text-button">
+              <div className="copyright font-['Inter',_sans-serif] font-bold text-white text-left text-xl">
                 <p>
                   <span className="copyright-original">
                     <span className="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>

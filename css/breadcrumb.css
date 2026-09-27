@@ -3,7 +3,6 @@
   font-family: 'Inter', sans-serif;
   color: white;
   text-align: left;
-  letter-spacing: 0.05em; /* tracking-wider */
 }
 
 .breadcrumb-inline .breadcrumb-item {

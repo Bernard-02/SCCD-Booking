@@ -42,7 +42,7 @@
   transform: translate(-50%, -50%);
   color: black; /* 黑色勾勾 */
   font-size: 0.75rem;
-  font-weight: bold;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -60,7 +60,6 @@
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   width: fit-content; /* 寬度根據內容調整 */
-  min-width: 150px; /* 設定最小寬度 */
   max-width: 600px; /* 設定最大寬度 */
   white-space: nowrap; /* 防止文字換行 */
 }
@@ -207,7 +206,6 @@
     left: auto !important;
     bottom: auto !important;
     width: fit-content !important; /* 手機版也使用 fit-content */
-    min-width: 160px !important; /* 手機版較小的最小寬度 */
     max-width: 280px !important; /* 手機版最大寬度 */
     transform: none !important;
     padding: 0.75rem 1rem !important; /* 手機版：上下 0.75 / 左右 1 */
@@ -318,12 +316,12 @@
 }
 
 .header-nav-link:hover {
-  font-weight: 700; /* bold */
+  font-weight: 600; /* bold */
   transform: rotate(var(--rotation-angle, 0deg));
 }
 
 .header-nav-link.active {
-  font-weight: 700; /* bold */
+  font-weight: 600; /* bold */
   transform: rotate(var(--rotation-angle, 0deg));
 }
 
@@ -372,10 +370,9 @@
 .page-button {
   font-family: 'Inter', sans-serif;
   font-size: 1.1rem;        /* 17.6px - 與 header 相同 */
-  font-weight: 500;          /* medium */
+  font-weight: 400;          /* medium */
   line-height: 1.4;
   text-transform: uppercase;
-  letter-spacing: 0.05em;    /* tracking-wide */
   color: #ffffff;           /* 白色 */
   background: transparent;
   border: none;

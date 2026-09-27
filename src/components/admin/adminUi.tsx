@@ -41,7 +41,7 @@ export const StatusChip: React.FC<{ status: OrderStatus }> = ({ status }) => {
 
 /** 動作按鈕樣式（Profile 的 Extend 延期按鈕） */
 export const actionBtn = (enabled = true) =>
-  `px-3 py-1 inline-flex items-center justify-center border rounded-lg text-tiny whitespace-nowrap transition-colors ${
+  `px-3 py-1 inline-flex items-center justify-center border rounded-lg text-xs whitespace-nowrap transition-colors ${
     enabled
       ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
       : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
@@ -49,14 +49,14 @@ export const actionBtn = (enabled = true) =>
 
 /** 表單輸入框樣式（深色透明底＋聚焦白框） */
 export const inputCls =
-  'bg-transparent border border-gray-scale4 rounded-lg px-3 py-1.5 text-tiny text-white focus:border-white outline-none'
+  'bg-transparent border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none'
 
 /** 頁標題：中英同大小、同為白色（＋選填說明列） */
 export const PageTitle: React.FC<{ en: string; zh: string; desc?: string }> = ({ en, zh, desc }) => (
   <div className="mb-8">
-    <h1 className="text-medium-title text-white">
+    <h1 className="text-xl text-white">
       <span className="font-english">{en}</span> <span className="font-chinese">{zh}</span>
     </h1>
-    {desc && <p className="mt-1 text-tiny text-gray-scale2 font-chinese">{desc}</p>}
+    {desc && <p className="mt-1 text-xs text-gray-scale2 font-chinese">{desc}</p>}
   </div>
 )

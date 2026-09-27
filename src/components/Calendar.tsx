@@ -32,7 +32,7 @@ const padToRows = (cells: JSX.Element[], rows: number, cellSize: string): JSX.El
       <div
         key={`pad-${i}`}
         aria-hidden
-        className={`text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+        className={`text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
       >
         <div className="date-number-wrapper">
           <span className="date-number-text invisible">0</span>
@@ -161,7 +161,7 @@ const Calendar: React.FC<CalendarProps> = ({
       weekdayCells.push(
         <div
           key={`weekday-${index}`}
-          className={`text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+          className={`text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
         >
           {day}
         </div>
@@ -227,7 +227,7 @@ const Calendar: React.FC<CalendarProps> = ({
             currentDateOnly >= startDate && currentDateOnly <= hoveredDate &&
             hoveredDate >= startDate
 
-          let dateClasses = `text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
+          let dateClasses = `text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
 
           if (isExpiredRange) {
             // 過期範圍：黃色，不可選擇
@@ -274,7 +274,7 @@ const Calendar: React.FC<CalendarProps> = ({
           dateCells.push(
             <div
               key={`empty-${i}`}
-              className={`text-left text-white ${cellSize} font-semibold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+              className={`text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
             />
           )
         }
@@ -337,14 +337,14 @@ const Calendar: React.FC<CalendarProps> = ({
     const firstCells = padToRows(firstMonth.dateCells, displayRows, cellSize)
     const secondCells = padToRows(secondMonth.dateCells, displayRows, cellSize)
 
-    const prevButtonClasses = `nav-arrow prev text-white text-[2rem] select-none ${
+    const prevButtonClasses = `nav-arrow prev text-white text-xl select-none ${
       canGoPrev() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
     }`
-    const nextButtonClasses = `nav-arrow next text-white text-[2rem] select-none ${
+    const nextButtonClasses = `nav-arrow next text-white text-xl select-none ${
       canGoNext() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
     }`
 
-    const monthTitleSize = variant === 'dialog' ? 'text-content' : 'text-[2rem]'
+    const monthTitleSize = variant === 'dialog' ? 'text-m' : 'text-xl'
     const calendarPadding = variant === 'dialog' ? 'pb-4' : 'pb-8'
 
     return (
@@ -431,17 +431,17 @@ const Calendar: React.FC<CalendarProps> = ({
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <button
-          className={`text-white text-xl ${canGoPrev() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
+          className={`text-white text-m ${canGoPrev() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
           onClick={handlePrevMonth}
           disabled={!canGoPrev()}
         >
           &lt;
         </button>
-        <div className="text-white text-lg font-['Inter',_sans-serif]">
+        <div className="text-white text-s font-['Inter',_sans-serif]">
           {monthCalendar.title}
         </div>
         <button
-          className={`text-white text-xl ${canGoNext() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
+          className={`text-white text-m ${canGoNext() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
           onClick={handleNextMonth}
           disabled={!canGoNext()}
         >

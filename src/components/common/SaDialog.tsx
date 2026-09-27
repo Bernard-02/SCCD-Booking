@@ -35,8 +35,8 @@ const SA_CONTACTS = [...CONTACTS, WEBSITE_CONTACT]
 // 區塊標題（左欄）：英文上、中文下
 const SectionTitle: React.FC<{ en: string; zh: string }> = ({ en, zh }) => (
   <div>
-    <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">{en}</div>
-    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">{zh}</div>
+    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">{en}</div>
+    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">{zh}</div>
   </div>
 )
 
@@ -78,12 +78,12 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
           className="absolute top-4 right-4 text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center z-10"
           aria-label="Close"
         >
-          <span className="material-icons text-[24px]">close</span>
+          <span className="material-icons text-l">close</span>
         </button>
 
         {/* 標題區 */}
         <div className="px-8 pt-6 pb-5 pr-14 flex-shrink-0">
-          <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
+          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
             Student Association{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">系學會</span>
           </h2>
@@ -95,10 +95,10 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
           <section className="grid grid-cols-[140px_1fr] gap-6">
             <SectionTitle en="About" zh="學會簡介" />
             <div>
-              <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+              <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
                 {ABOUT.en}
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed mt-2">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed mt-2">
                 {ABOUT.zh}
               </p>
             </div>
@@ -110,16 +110,16 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
             <ul className="space-y-3">
               {SERVICES.map((s, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className="flex-shrink-0 text-[#cccccc] text-tiny">・</span>
+                  <span className="flex-shrink-0 text-[#cccccc] text-xs">・</span>
                   <div>
-                    <p className="text-white text-tiny">
+                    <p className="text-white text-xs">
                       <span className="font-['Inter',_sans-serif]">{s.en}</span>{' '}
                       <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{s.zh}</span>
                     </p>
-                    <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed mt-1">
+                    <p className="font-['Inter',_sans-serif] text-xs text-[#cccccc] leading-relaxed mt-1">
                       {s.descEn}
                     </p>
-                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc] leading-relaxed">
                       {s.descZh}
                     </p>
                   </div>

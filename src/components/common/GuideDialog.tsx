@@ -134,8 +134,8 @@ const DEPOSITS: { en: string; zh: string }[] = [
 // 區塊標題（左欄）：英文上、中文下
 const SectionTitle: React.FC<{ en: string; zh: string }> = ({ en, zh }) => (
   <div>
-    <div className="font-['Inter',_sans-serif] text-tiny text-[#cccccc]">{en}</div>
-    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc]">{zh}</div>
+    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">{en}</div>
+    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">{zh}</div>
   </div>
 )
 
@@ -144,10 +144,10 @@ const BulletList: React.FC<{ items: { en: string; zh: string }[] }> = ({ items }
   <ul className="space-y-3">
     {items.map((r, i) => (
       <li key={i} className="flex gap-2">
-        <span className="flex-shrink-0 text-[#cccccc] text-tiny">・</span>
+        <span className="flex-shrink-0 text-[#cccccc] text-xs">・</span>
         <div>
-          <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">{r.en}</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">{r.zh}</p>
+          <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">{r.en}</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">{r.zh}</p>
         </div>
       </li>
     ))}
@@ -192,12 +192,12 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
           className="absolute top-4 right-4 text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center z-10"
           aria-label="Close"
         >
-          <span className="material-icons text-[24px]">close</span>
+          <span className="material-icons text-l">close</span>
         </button>
 
         {/* 標題區（往下留 padding，捲動時內容不會貼著標題） */}
         <div className="px-8 pt-6 pb-5 pr-14 flex-shrink-0">
-          <h2 className="font-['Inter',_sans-serif] text-small-title text-white font-medium">
+          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
             User Guide{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">使用教學</span>
           </h2>
@@ -209,10 +209,10 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
           <section className="grid grid-cols-[140px_1fr] gap-6">
             <SectionTitle en="Purpose" zh="宗旨" />
             <div>
-              <p className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+              <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
                 {PURPOSE.en}
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">
                 {PURPOSE.zh}
               </p>
             </div>
@@ -248,18 +248,18 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
             <ol className="space-y-4">
               {STEPS.map((s, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full border border-[#545454] text-white text-tiny flex items-center justify-center font-['Inter',_sans-serif]">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full border border-[#545454] text-white text-xs flex items-center justify-center font-['Inter',_sans-serif]">
                     {i + 1}
                   </span>
                   <div>
-                    <p className="text-white text-tiny">
+                    <p className="text-white text-xs">
                       <span className="font-['Inter',_sans-serif]">{s.en}</span>{' '}
                       <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{s.zh}</span>
                     </p>
-                    <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed mt-1">
+                    <p className="font-['Inter',_sans-serif] text-xs text-[#cccccc] leading-relaxed mt-1">
                       {s.descEn}
                     </p>
-                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc] leading-relaxed">
                       {s.descZh}
                     </p>
                   </div>
@@ -275,7 +275,7 @@ const GuideDialog: React.FC<GuideDialogProps> = ({ isOpen, onClose }) => {
               href="https://docs.google.com/document/d/1gSzAqyPO922dO6Y61sYF070jZmntP8Kyjz24YQbp4uA/edit?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-tiny text-white underline underline-offset-4 hover:opacity-70 transition-opacity self-start"
+              className="text-xs text-white underline underline-offset-4 hover:opacity-70 transition-opacity self-start"
             >
               <span className="font-['Inter',_sans-serif]">Booking System Usage Guide</span>{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">Booking 預約系統使用說明（Google 文件）</span>

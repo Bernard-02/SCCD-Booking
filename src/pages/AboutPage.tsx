@@ -43,10 +43,10 @@ const AboutPage = () => {
           <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
             {/* 左：標題（不做進場動畫） */}
             <div className="flex-shrink-0">
-              <h1 className="font-['Inter',_sans-serif] text-white text-medium-title">
+              <h1 className="font-['Inter',_sans-serif] text-white text-xl">
                 Who Made This
               </h1>
-              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title">
+              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xl">
                 誰做的系統
               </h1>
             </div>
@@ -57,7 +57,7 @@ const AboutPage = () => {
               <div className="float-up-container">
                 <div className="float-up space-y-4">
                   {PARAGRAPHS.map((p, i) => (
-                    <p key={`en-${i}`} className="font-['Inter',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p key={`en-${i}`} className="font-['Inter',_sans-serif] text-s text-white leading-relaxed">
                       {p.en}
                     </p>
                   ))}
@@ -68,7 +68,7 @@ const AboutPage = () => {
               <div className="float-up-container">
                 <div className="float-up space-y-4" style={{ animationDelay: '0.15s' }}>
                   {PARAGRAPHS.map((p, i) => (
-                    <p key={`zh-${i}`} className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-white leading-relaxed">
+                    <p key={`zh-${i}`} className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white leading-relaxed">
                       {p.zh}
                     </p>
                   ))}
@@ -84,10 +84,10 @@ const AboutPage = () => {
                 />
                 <div className="float-up-container">
                   <div className="float-up space-y-2" style={{ animationDelay: '0.3s' }}>
-                    <p className="font-['Inter',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter',_sans-serif] text-s text-[#cccccc] leading-relaxed">
                       {QUOTE.en}
                     </p>
-                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny text-[#cccccc] leading-relaxed">
+                    <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-[#cccccc] leading-relaxed">
                       {QUOTE.zh}
                     </p>
                   </div>

@@ -213,10 +213,10 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
     <div className="w-full">
       {cart.length === 0 && (
         <div className="empty-message-container flex-col">
-          <p className="text-header text-white tracking-wide font-['Inter',_sans-serif]">
+          <p className="text-s text-white font-['Inter',_sans-serif]">
             This list is empty.
           </p>
-          <p className="text-header text-white tracking-wide font-['Inter','Noto_Sans_TC',_sans-serif]">
+          <p className="text-s text-white font-['Inter','Noto_Sans_TC',_sans-serif]">
             此清單是空的。
           </p>
         </div>
@@ -307,12 +307,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
               </button>
 
               {/* 時間 */}
-              <h3 className={`font-['Inter',_sans-serif] text-medium-title ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
+              <h3 className={`font-['Inter',_sans-serif] text-xl ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
                 {formatDate(group.startDate)} - {formatDate(group.endDate)} ({getTotalItemCount()})
               </h3>
 
               {/* 押金（應用上限） */}
-              <span className={`font-['Inter',_sans-serif] text-medium-title ml-auto ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
+              <span className={`font-['Inter',_sans-serif] text-xl ml-auto ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
                 NT$ {groupDeposit.toLocaleString()}
               </span>
 
@@ -328,7 +328,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 className="flex items-center justify-center cursor-pointer"
               >
                 <span
-                  className={`material-icons transition-transform text-[30px] ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-scale4' : 'text-white'}`}
+                  className={`material-icons transition-transform text-xl ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-scale4' : 'text-white'}`}
                   style={{ fontSize: '30px' }}
                 >
                   expand_more
@@ -340,7 +340,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
             <div className="flex items-center gap-3 py-4 pl-9">
               {/* 類別標籤 (SPC 空間 / EQPT 設備) */}
               <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
-                <span className={`font-['Inter',_sans-serif] text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
+                <span className={`font-['Inter',_sans-serif] text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
                   {categoryLabel.en}{' '}
                   <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{categoryLabel.zh}</span>
                 </span>
@@ -348,7 +348,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
               {/* 租借類型標籤 (個人/團體 或 小量/大量) */}
               <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
-                <span className={`font-['Inter',_sans-serif] text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
+                <span className={`font-['Inter',_sans-serif] text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
                   {bookingTypeLabel.en}{' '}
                   <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
                 </span>
@@ -372,10 +372,10 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       : 'bg-[#ffff00] hover:bg-[#e6e600] cursor-pointer'
                   }`}
                 >
-                  <span className={`material-icons text-[20px] ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
+                  <span className={`material-icons text-m ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
                     {bookingDetails[dateKey] ? 'check' : 'edit'}
                   </span>
-                  <span className={`text-tiny whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
+                  <span className={`text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
                     {bookingDetails[dateKey] ? (
                       <><span className="font-['Inter',_sans-serif]">Filled</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">資訊已填</span></>
                     ) : (
@@ -397,9 +397,9 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       : 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
                   }`}
                 >
-                  <span className="material-icons text-[20px]" style={{ fontSize: '20px' }}>add</span>
-                  <span className="font-['Inter',_sans-serif] text-tiny whitespace-nowrap">Add</span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-tiny whitespace-nowrap">新增</span>
+                  <span className="material-icons text-m" style={{ fontSize: '20px' }}>add</span>
+                  <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">Add</span>
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs whitespace-nowrap">新增</span>
                 </button>
               </div>
             </div>
@@ -407,14 +407,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
             {/* 第三行：過期提示 + 編輯日期按鈕（僅過期時顯示） */}
             {isExpired && (
               <div className="flex items-center justify-between py-2 px-4 ml-9 mb-4 bg-[#ffff00] rounded-lg">
-                <span className="text-tiny text-black">
+                <span className="text-xs text-black">
                   <span className="font-['Inter',_sans-serif]">Some orders have expired dates, please click Edit to update</span>
                   {' '}
                   <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分訂單日期已過期，請點擊 Edit 編輯日期</span>
                 </span>
                 <button
                   onClick={() => handleEditDate(group.startDate, group.endDate, dateKey, group.category, bookingType)}
-                  className="text-small-title font-normal text-black hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
+                  className="text-s font-normal text-black hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
                 >
                   <span className="font-['Inter',_sans-serif]">Edit</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">編輯日期</span>
                 </button>
@@ -479,12 +479,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱（區域 + 所有編號） */}
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title text-white">
+                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
                             {areaName}（{blockIds.join('、')}）
                           </div>
 
                           {/* 押金（總和） */}
-                          <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                          <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                             NT$ {totalDeposit.toLocaleString()}
                           </div>
 
@@ -494,7 +494,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                               // 刪除該區域的所有區塊
                               blocks.forEach(block => handleRemoveItem(block.id, group.startDate, group.endDate))
                             }}
-                            className="font-['Inter',_sans-serif] text-small-title text-white hover:text-gray-scale1 transition-colors cursor-pointer"
+                            className="font-['Inter',_sans-serif] text-s text-white hover:text-gray-scale1 transition-colors cursor-pointer"
                             title={`移除 ${areaName} 所有區塊`}
                           >
                             ✕
@@ -527,19 +527,19 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱 */}
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title text-white">
+                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
                             {item.name}
                           </div>
 
                           {/* 押金 */}
-                          <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                          <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                             NT$ 5,000
                           </div>
 
                           {/* 刪除按鈕 */}
                           <button
                             onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                            className="font-['Inter',_sans-serif] text-small-title text-white hover:text-gray-scale1 transition-colors cursor-pointer"
+                            className="font-['Inter',_sans-serif] text-s text-white hover:text-gray-scale1 transition-colors cursor-pointer"
                           >
                             ✕
                           </button>
@@ -611,16 +611,16 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
                         {/* 名稱和庫存狀態 */}
                         <div className="flex flex-col gap-1">
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-small-title text-white">
+                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
                             {item.name}
                           </div>
                           {/* 只在完全缺貨（灰色狀態）時顯示錯誤訊息 */}
                           {isOutOfStock && (
                             <div className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-tiny text-[#ff448a]">
+                              <span className="material-symbols-outlined text-xs text-[#ff448a]">
                                 error
                               </span>
-                              <span className="font-['Inter',_sans-serif] text-tiny text-[#ff448a]">
+                              <span className="font-['Inter',_sans-serif] text-xs text-[#ff448a]">
                                 Out of Stock{' '}
                                 <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">缺貨</span>
                                 {' '}(Available: {maxQtyForThisItem})
@@ -634,7 +634,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1 || isOutOfStock}
-                            className={`font-['Inter',_sans-serif] text-small-title transition-colors ${
+                            className={`font-['Inter',_sans-serif] text-s transition-colors ${
                               item.quantity <= 1 || isOutOfStock
                                 ? 'text-gray-scale4 cursor-not-allowed'
                                 : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -642,13 +642,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           >
                             -
                           </button>
-                          <span className="font-['Inter',_sans-serif] text-small-title text-white w-8 text-center">
+                          <span className="font-['Inter',_sans-serif] text-s text-white w-8 text-center">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity + 1)}
                             disabled={!canIncrement}
-                            className={`font-['Inter',_sans-serif] text-small-title transition-colors ${
+                            className={`font-['Inter',_sans-serif] text-s transition-colors ${
                               !canIncrement
                                 ? 'text-gray-scale4 cursor-not-allowed'
                                 : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -659,14 +659,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         </div>
 
                         {/* 押金 */}
-                        <div className="font-['Inter',_sans-serif] text-small-title text-white text-center">
+                        <div className="font-['Inter',_sans-serif] text-s text-white text-center">
                           NT$ {(item.deposit * item.quantity).toLocaleString()}
                         </div>
 
                         {/* 刪除按鈕 */}
                         <button
                           onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                          className="font-['Inter',_sans-serif] text-small-title text-white hover:text-gray-scale1 transition-colors cursor-pointer"
+                          className="font-['Inter',_sans-serif] text-s text-white hover:text-gray-scale1 transition-colors cursor-pointer"
                         >
                           ✕
                         </button>
@@ -689,7 +689,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
           {/* 關閉按鈕 */}
           <button
             onClick={() => setPreviewImage(null)}
-            className="absolute top-20 right-8 text-white text-4xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
             aria-label="關閉"
           >
             ×

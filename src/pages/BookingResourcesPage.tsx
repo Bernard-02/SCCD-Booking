@@ -17,8 +17,8 @@ const BookingResourcesPage = () => {
         <div className="container hidden md:flex flex-1 gap-6 overflow-hidden items-stretch pb-20 pt-12">
           {/* 左側標題 */}
           <div className="flex-shrink-0 overflow-hidden">
-            <h1 className="font-['Inter',_sans-serif] text-white text-medium-title">Category</h1>
-            <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-medium-title mb-6">類別</h1>
+            <h1 className="font-['Inter',_sans-serif] text-white text-xl">Category</h1>
+            <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xl mb-6">類別</h1>
           </div>
 
           {/* 右側：兩個卡片橫向排列，高度自適應 */}
@@ -46,11 +46,11 @@ const BookingResourcesPage = () => {
                 }}
               ></div>
               {/* 文字內容 */}
-              <div className="relative z-10 h-full flex flex-col justify-end" style={{ paddingBottom: '2%' }}>
-                <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
+              <div className="relative z-10 h-full flex flex-col justify-end">
+                <h1 className="text-2xl font-['Inter',_sans-serif] font-normal">
                   Space
                 </h1>
-                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">空間</h1>
+                <h1 className="text-2xl font-['Inter','Noto_Sans_TC',_sans-serif] font-normal">空間</h1>
               </div>
             </Link>
 
@@ -77,11 +77,11 @@ const BookingResourcesPage = () => {
                 }}
               ></div>
               {/* 文字內容 */}
-              <div className="relative z-10 h-full flex flex-col justify-end" style={{ paddingBottom: '2%' }}>
-                <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
+              <div className="relative z-10 h-full flex flex-col justify-end">
+                <h1 className="text-2xl font-['Inter',_sans-serif] font-normal">
                   Equipment
                 </h1>
-                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">設備</h1>
+                <h1 className="text-2xl font-['Inter','Noto_Sans_TC',_sans-serif] font-normal">設備</h1>
               </div>
             </Link>
           </div>
@@ -106,10 +106,10 @@ const BookingResourcesPage = () => {
                 }}
               ></div>
               <div className="relative z-10 h-full flex flex-col justify-end text-left">
-                <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
+                <h1 className="text-2xl font-['Inter',_sans-serif] font-normal">
                   Space
                 </h1>
-                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">空間</h1>
+                <h1 className="text-2xl font-['Inter','Noto_Sans_TC',_sans-serif] font-normal">空間</h1>
               </div>
             </Link>
 
@@ -133,10 +133,10 @@ const BookingResourcesPage = () => {
                 }}
               ></div>
               <div className="relative z-10 h-full flex flex-col justify-end text-left">
-                <h1 className="text-large-title font-['Inter',_sans-serif] font-normal">
+                <h1 className="text-2xl font-['Inter',_sans-serif] font-normal">
                   Equipment
                 </h1>
-                <h1 className="text-large-title font-['Inter','Noto_Sans_TC',_sans-serif] font-medium">設備</h1>
+                <h1 className="text-2xl font-['Inter','Noto_Sans_TC',_sans-serif] font-normal">設備</h1>
               </div>
             </Link>
         </div>

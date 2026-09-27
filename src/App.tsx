@@ -17,7 +17,6 @@ const EquipmentPage = lazy(() => import('./pages/EquipmentPage'))
 const SpacePage = lazy(() => import('./pages/SpacePage'))
 const RentalListPage = lazy(() => import('./pages/RentalListPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
-const BookingPage = lazy(() => import('./pages/BookingPage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
@@ -31,7 +30,7 @@ const AdminBlackoutsPage = lazy(() => import('./pages/AdminBlackoutsPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
-    <div className="font-chinese text-sm text-zinc-400">載入中…</div>
+    <div className="font-chinese text-xs text-zinc-400">載入中…</div>
   </div>
 )
 
@@ -53,9 +52,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                 {/* 租借流程 */}
-                <Route path="/booking" element={<BookingResourcesPage />} />
                 <Route path="/catalog" element={<BookingResourcesPage />} />
-                <Route path="/booking-date" element={<BookingPage />} />
                 <Route path="/equipment" element={<EquipmentPage />} />
                 <Route path="/space" element={<SpacePage />} />
                 <Route path="/cart" element={<RentalListPage />} />
