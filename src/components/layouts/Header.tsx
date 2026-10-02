@@ -175,7 +175,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
             <div className="flex items-center" style={{ gap: '1.5rem' }}>
               <Link
                 to={isAuthenticated ? "/catalog" : "/"}
-                className="font-['Inter',_sans-serif] font-bold text-white text-m"
+                className="font-['Inter',_sans-serif] font-bold text-white text-md"
               >
                 SCCDSA Booking
               </Link>
@@ -185,7 +185,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   type="button"
                   onClick={() => setGuideOpen(true)}
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link cursor-pointer ${guideOpen ? 'active' : ''}`}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link cursor-pointer ${guideOpen ? 'active' : ''}`}
                   style={{ '--rotation-angle': `${angleFor('guide')}deg` } as React.CSSProperties}
                   onMouseEnter={spinOnHover('guide')}
                 >
@@ -201,7 +201,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   type="button"
                   onClick={() => setSaOpen(true)}
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link cursor-pointer ${saOpen ? 'active' : ''}`}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link cursor-pointer ${saOpen ? 'active' : ''}`}
                   style={{ '--rotation-angle': `${angleFor('sa')}deg` } as React.CSSProperties}
                   onMouseEnter={spinOnHover('sa')}
                 >
@@ -210,7 +210,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 </button>
                 <Link
                   to="/catalog"
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link ${isActive('/catalog') ? 'active' : ''}`}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link ${isActive('/catalog') ? 'active' : ''}`}
                   style={{ '--rotation-angle': `${angleFor('catalog')}deg` } as React.CSSProperties}
                   onMouseEnter={spinOnHover('catalog')}
                 >
@@ -220,7 +220,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <Link
                   to="/cart"
                   state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link ${isActive('/cart') ? 'active' : ''}`}
+                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link ${isActive('/cart') ? 'active' : ''}`}
                   style={{ '--rotation-angle': `${angleFor('cart')}deg` } as React.CSSProperties}
                   onMouseEnter={spinOnHover('cart')}
                 >
@@ -230,7 +230,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   <Link
                     to="/profile"
                     onClick={handleProfileClick}
-                    className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-m header-nav-link ${isActive('/profile') ? 'active' : ''}`}
+                    className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link ${isActive('/profile') ? 'active' : ''}`}
                     style={{ '--rotation-angle': `${angleFor('profile')}deg` } as React.CSSProperties}
                     onMouseEnter={spinOnHover('profile')}
                   >
@@ -264,7 +264,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                     onClick={handleNotificationClick}
                     className="relative flex items-center text-white hover:opacity-70 transition-opacity cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-m">
+                    <span className="material-symbols-outlined text-md">
                       notifications
                     </span>
                     {/* 全域紅點：只有在選單關閉且有未讀訊息時顯示 */}
@@ -281,7 +281,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                     >
                       {/* Header */}
                       <div className="flex justify-between items-center px-6 py-4 border-b border-[#545454]">
-                        <h2 className="text-s text-white">
+                        <h2 className="text-sm text-white">
                           <span className="font-['Inter',_sans-serif]">Notification</span>{' '}
                           <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">通知</span>
                         </h2>
@@ -290,7 +290,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                           className="text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center"
                           aria-label="Close"
                         >
-                          <span className="material-icons text-l">close</span>
+                          <span className="material-icons text-lg">close</span>
                         </button>
                       </div>
 
@@ -313,6 +313,9 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
                                 {/* 內容 */}
                                 <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs mb-2 pr-4 leading-relaxed">
+                                  {n.announcement && (
+                                    <span className="inline-block mr-2 px-1.5 rounded border border-white text-[0.7rem] leading-4 align-[1px]">公告</span>
+                                  )}
                                   {n.content}
                                 </p>
 

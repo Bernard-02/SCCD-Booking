@@ -17,7 +17,7 @@ const areaMapping: Record<string, { name: string; english: string; deposit: numb
   'Back_Terrace': { name: '後陽台', english: 'Back Terrace', deposit: 2000, key: 'back-terrace', subCategoryId: 'BackTerrace' },
   'Glass_Wall': { name: '玻璃牆', english: 'Glass Wall', deposit: 1000, key: 'glass-wall', subCategoryId: 'GlassWall' },
   'Pillar': { name: '專案許可區', english: 'Case Permit Area', deposit: 1000, key: 'pillar', subCategoryId: 'CasePermitArea' },
-  'Glass_Wall_Y4-Y7': { name: '專案許可區', english: 'Case Permit Area', deposit: 1000, key: 'glass-wall-y4y7', subCategoryId: 'CasePermitArea' }
+  'Glass_Wall_Y4-Y7': { name: '專案許可區', english: 'Case Permit Area', deposit: 1000, key: 'corridor', subCategoryId: 'CasePermitArea' } // Y4–Y7 在 DB 屬 corridor
 };
 
 // 子分類對應
@@ -273,7 +273,9 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
             addEventListener(group, 'click', clickHandler);
           }
 
-          const mouseEnterHandler = (e: MouseEvent) => setTooltip({ visible: true, x: e.clientX, y: e.clientY, ...areaData });
+          // 押金以 DB 為準（後台整區改）：取該區任一格，查無才用上面的預設值
+          const deposit = Object.values(blocksData).find(b => b.area === areaData.key)?.deposit ?? areaData.deposit;
+          const mouseEnterHandler = (e: MouseEvent) => setTooltip({ visible: true, x: e.clientX, y: e.clientY, ...areaData, deposit });
           const mouseMoveHandler = (e: MouseEvent) => setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
           const mouseLeaveHandler = () => setTooltip(prev => ({ ...prev, visible: false }));
 
@@ -307,7 +309,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           className="fixed pointer-events-none z-50 bg-black/80 px-4 py-3 min-w-[200px]"
           style={{ left: tooltip.x + 16, top: tooltip.y + 16 }}
         >
-          <p className="text-white text-s font-normal mb-2">
+          <p className="text-white text-sm font-normal mb-2">
             <span className="font-['Inter',_sans-serif]">{tooltip.english}</span>{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{tooltip.name}</span>
           </p>

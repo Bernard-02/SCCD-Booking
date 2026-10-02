@@ -7,14 +7,17 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminCollectPenalty, adminCancelOrder, adminExtendOrder, fetchClosedDates } from '../services/ordersService'
-import type { AdminOrderRow, OrderStatus } from '../services/ordersService'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
+import type { AdminOrderRow, OrderStatus, OrderInfo } from '../services/ordersService'
 import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
-import { overduePenalty, isOnDuty } from '../utils/timeUtils'
+import { overduePenalty, isOnDuty, slotLabel, toDateKey } from '../utils/timeUtils'
 import { ADMIN_HANDLER_KEY, ADMIN_ORDER_COLS_KEY } from '../utils/storageKeys'
-import { STATUS_META, STATUS_ORDER, BOOKING_TYPE_META, StatusChip, actionBtn, inputCls, PageTitle } from '../components/admin/adminUi'
-import OrderActionDialog from '../components/admin/OrderActionDialog'
+import { STATUS_META, STATUS_ORDER, ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, inputCls, PageTitle, itemsSummary, usePager, Pager, EditIconBtn, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
+import OrderActionDialog, { type AdminActionMode } from '../components/admin/OrderActionDialog'
+import OrderInfoDialog from '../components/admin/OrderInfoDialog'
+import { useToast } from '../hooks/useToast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const FILTERS: { key: 'all' | OrderStatus; en: string; zh: string }[] = [
   { key: 'all', en: 'All', zh: '全部' },
@@ -22,9 +25,6 @@ const FILTERS: { key: 'all' | OrderStatus; en: string; zh: string }[] = [
 ]
 
 const fmtDate = (d: string) => d?.slice(5).replace('-', '/') // 'YYYY-MM-DD' → 'MM/DD'
-
-const itemsSummary = (o: AdminOrderRow) =>
-  o.order_items.map(i => `${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`).join('、')
 
 // 可排序欄位（Notion 式：每一欄都能點表頭排序）
 type SortField =
@@ -38,6 +38,7 @@ const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
     case 'items': return itemsSummary(o)
     case 'reason': return o.reason ?? ''
     case 'paid_by': return o.paid_by ?? ''
+    case 'booking_type': return orderKind(o)
     default: return (o[f] ?? '') as string
   }
 }
@@ -55,7 +56,8 @@ const COLUMNS: { field: SortField; en: string; zh: string }[] = [
   { field: 'paid_by', en: 'Handler', zh: '經手' }
 ]
 
-const th = 'px-3 py-2 font-normal whitespace-nowrap'
+// 表頭固定在表格捲動區頂端；border-collapse 下 sticky 的格線不跟著走，底線改用 inset shadow 畫
+const th = 'px-3 py-2 font-normal whitespace-nowrap sticky top-0 z-10 bg-black shadow-[inset_0_-1px_0_var(--color-gray-scale4)]'
 const td = 'px-3 py-3 whitespace-nowrap'
 
 // 每欄的儲存格渲染：依 colOrder 查表，讓表頭拖曳換位時列內容跟著換
@@ -63,18 +65,36 @@ const CELL: Record<SortField, (o: AdminOrderRow) => React.ReactNode> = {
   rental_number: o => <td key="rental_number" className={`${td} font-english`}>{o.rental_number}</td>,
   name: o => <td key="name" className={`${td} font-chinese`}>{o.students?.name ?? '—'}</td>,
   student_id: o => <td key="student_id" className={`${td} text-gray-scale2 font-english`}>{o.students?.student_id ?? ''}</td>,
-  booking_type: o => <td key="booking_type" className={`${td} font-chinese`}>{BOOKING_TYPE_META[o.booking_type]?.zh ?? o.booking_type}</td>,
+  booking_type: o => <td key="booking_type" className={`${td} font-chinese`}>{orderKindMeta(o).zh}</td>,
   start_date: o => <td key="start_date" className={`${td} font-english`}>{fmtDate(o.start_date)}–{fmtDate(o.end_date)}</td>,
   deposit_total: o => <td key="deposit_total" className={`${td} font-english`}>NT$ {o.deposit_total.toLocaleString()}</td>,
-  status: o => <td key="status" className={td}><StatusChip status={o.status} /></td>,
-  // 品項與原因較長，允許換行
-  items: o => <td key="items" className="px-3 py-3 font-chinese min-w-[10rem] max-w-[18rem]">{itemsSummary(o)}</td>,
+  // 大量設備預選時段：待繳押金時列出預約的繳押金／取件時段；已繳待取件逾起租日 → 紅字提醒（學會手動處理）
+  status: o => (
+    <td key="status" className={td}>
+      <StatusChip status={o.status} awaitingPickup={isAwaitingPickup(o)} />
+      {o.status === 'pending' && o.pickup_slot && (
+        <div className="mt-1 font-chinese text-gray-scale2 leading-5">
+          {!o.deposit_paid_at && o.deposit_date && o.deposit_slot && (
+            <div>繳 {slotLabel({ date: o.deposit_date, slot: o.deposit_slot })}</div>
+          )}
+          <div>取 {slotLabel({ date: o.start_date, slot: o.pickup_slot })}</div>
+        </div>
+      )}
+      {isPickupLate(o, toDateKey(new Date())) && (
+        <div className="mt-1 font-chinese" style={{ color: 'var(--color-error2)' }}>逾時未取件</div>
+      )}
+    </td>
+  ),
+  // 品項與原因較長，允許換行；品項一項一行（\n + whitespace-pre-line）
+  items: o => <td key="items" className="px-3 py-3 font-chinese min-w-[10rem] max-w-[18rem] whitespace-pre-line">{itemsSummary(o)}</td>,
   reason: o => <td key="reason" className="px-3 py-3 font-chinese text-gray-scale2 min-w-[8rem] max-w-[16rem]">{o.reason || '—'}</td>,
   paid_by: o => (
     <td key="paid_by" className={td}>
       {o.paid_by || o.returned_by ? (
         <div className="font-chinese leading-5">
           {o.paid_by && <div><span className="text-gray-scale2">收</span> {o.paid_by}</div>}
+          {/* 大量設備先繳後取：取件經手人不同時另列 */}
+          {o.picked_up_by && o.picked_up_by !== o.paid_by && <div><span className="text-gray-scale2">取</span> {o.picked_up_by}</div>}
           {o.returned_by && <div><span className="text-gray-scale2">還</span> {o.returned_by}</div>}
         </div>
       ) : (
@@ -87,10 +107,11 @@ const CELL: Record<SortField, (o: AdminOrderRow) => React.ReactNode> = {
 // 工具列 icon 按鈕（active = 展開中或有生效的篩選）
 const iconBtn = (active: boolean) =>
   `w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
-    active ? 'text-white bg-white/10' : 'text-gray-scale2 hover:text-white hover:bg-white/10'
+    active ? 'text-white bg-white/10' : 'text-gray-scale2 hover:!text-white hover:bg-white/10'
   }`
 
 const AdminOrdersPage: React.FC = () => {
+  const { showToast, toastElement } = useToast()
   const [searchParams] = useSearchParams()
   const urlStatus = searchParams.get('status')
   const [orders, setOrders] = useState<AdminOrderRow[]>([])
@@ -117,12 +138,25 @@ const AdminOrdersPage: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null) // 正在操作的單號
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set())
   const [staff, setStaff] = useState<StaffMember[]>([]) // 幹部（經手人選單，值班中優先）
-  const [action, setAction] = useState<{ order: AdminOrderRow; mode: 'paid' | 'return' | 'penalty' | 'cancel' | 'extend' } | null>(null)
+  const [action, setAction] = useState<{ order: AdminOrderRow; mode: AdminActionMode } | null>(null)
+
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   const load = () =>
     fetchAllOrders()
-      .then(rows => { setOrders(rows); setLoading(false) })
+      .then(rows => { setOrders(rows); setError(null); setUpdatedAt(new Date()); setLoading(false) })
       .catch(err => { setError(err.message ?? '讀取失敗'); setLoading(false) })
+
+  // 更新：失敗不蓋掉現有列表（背景下次再試；「更新於」時間停住即代表資料可能過時），手動按才跳提示
+  const refresh = (manual = false) => {
+    setRefreshing(true)
+    return fetchAllOrders()
+      .then(rows => { setOrders(rows); setError(null); setUpdatedAt(new Date()) })
+      .catch(() => { if (manual) showToast('更新失敗，請檢查網路後再試') })
+      .finally(() => setRefreshing(false))
+  }
+  useAutoRefresh(() => refresh())
 
   useEffect(() => {
     void load()
@@ -132,15 +166,15 @@ const AdminOrdersPage: React.FC = () => {
 
   // 對話框確認：收押金／歸還／收罰款／代取消／代延期（經手人記住供下次預選；
   // 歸還支援部分歸還——全勾整單、部分勾拆子單）
-  const handleAction = async (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number) => {
+  const handleAction = async (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean) => {
     if (!action) return
     const { order, mode } = action
     setAction(null)
     localStorage.setItem(ADMIN_HANDLER_KEY, handler)
     setBusy(order.rental_number)
     const res =
-      mode === 'paid'
-        ? await adminMarkPaid(order.rental_number, handler)
+      mode === 'paid' || mode === 'pickup'
+        ? await adminMarkPaid(order.rental_number, handler, pickup)
         : mode === 'penalty'
           ? await adminCollectPenalty(order.rental_number, handler)
           : mode === 'cancel'
@@ -149,7 +183,34 @@ const AdminOrdersPage: React.FC = () => {
               ? await adminExtendOrder(order.rental_number, days, handler)
               : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler, penaltyPaid)
     setBusy(null)
-    if (!res.ok) { alert(res.message ?? '操作失敗'); return }
+    if (!res.ok) { showToast(res.message ?? '操作失敗'); return }
+    const rn = order.rental_number
+    const penaltyNote = penalty > 0 ? `，罰款 NT$ ${penalty}${penaltyPaid ? '已繳清' : '記為欠繳'}` : ''
+    showToast(
+      mode === 'pickup' ? `已完成取件 ${rn}，租借開始`
+      : mode === 'paid' && !pickup ? `已收押金 ${rn}，待取件`
+      : mode === 'paid' ? `已確認收押金 ${rn}`
+      : mode === 'penalty' ? `已收罰款 ${rn}`
+      : mode === 'cancel' ? `已取消 ${rn}`
+      : mode === 'extend' ? `已將 ${rn} 延期 ${days} 天`
+      : itemIds.length < order.order_items.length ? `已部分歸還 ${rn}，未還品項已拆成子單續租${penaltyNote}`
+      : `已完成歸還 ${rn}${penaltyNote}`,
+      'success'
+    )
+    await load()
+  }
+
+  // 修改借用資訊（軟性欄位）：失敗時對話框保留，內容不丟
+  const [infoOrder, setInfoOrder] = useState<AdminOrderRow | null>(null)
+  const [infoSaving, setInfoSaving] = useState(false)
+  const handleInfoSave = async (info: OrderInfo) => {
+    if (!infoOrder) return
+    setInfoSaving(true)
+    const res = await adminUpdateOrderInfo(infoOrder.rental_number, info)
+    setInfoSaving(false)
+    if (!res.ok) { showToast(res.message ?? '儲存失敗'); return }
+    setInfoOrder(null)
+    showToast(`已更新 ${infoOrder.rental_number} 的借用資訊`, 'success')
     await load()
   }
 
@@ -157,7 +218,7 @@ const AdminOrdersPage: React.FC = () => {
   const base = useMemo(() => {
     const q = search.trim().toLowerCase()
     return orders.filter(o => {
-      if (typeFilter !== 'all' && o.booking_type !== typeFilter) return false
+      if (typeFilter !== 'all' && orderKind(o) !== typeFilter) return false
       if (!q) return true
       return [
         o.rental_number,
@@ -190,6 +251,8 @@ const AdminOrdersPage: React.FC = () => {
       return 0
     })
   }, [base, filter, sorts])
+
+  const { pageRows, pager } = usePager(visible, [search, filter, typeFilter, sorts])
 
   // 表頭點擊＝快速單一排序：同欄再點切換升降冪，換欄則重設為該欄升冪
   const toggleSort = (f: SortField) => {
@@ -263,12 +326,29 @@ const AdminOrdersPage: React.FC = () => {
   const hasFilter = filter !== 'all' || typeFilter !== 'all'
 
   return (
-    <div>
+    // 撐滿視窗（扣 AdminLayout main 的 py-10 上下各 2.5rem）：標題／工具列／分頁固定，只有表格區捲動
+    <div className="h-[calc(100vh-5rem)] flex flex-col">
       <PageTitle en="Orders" zh="訂單全覽" />
 
       {/* 工具列（Notion 式 compact）：左筆數、右搜尋／篩選 icon */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs text-gray-scale2 font-chinese mr-auto">{visible.length} 筆</span>
+        <span className="text-xs text-gray-scale2 font-chinese mr-auto">
+          {visible.length} 筆
+          {updatedAt && (
+            <span className="text-gray-scale3 ml-3">
+              更新於 {updatedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </span>
+          )}
+        </span>
+        <button
+          onClick={() => refresh(true)}
+          disabled={refreshing}
+          className={iconBtn(false)}
+          title="重新整理 Refresh（每分鐘自動更新）"
+          aria-label="重新整理"
+        >
+          <span className={`material-symbols-outlined ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '20px' }}>refresh</span>
+        </button>
         {showSearch ? (
           <input
             type="search"
@@ -318,7 +398,7 @@ const AdminOrdersPage: React.FC = () => {
                 onPointerMove={onGripMove}
                 onPointerUp={onGripUp}
                 style={{ touchAction: 'none' }}
-                className="flex items-center text-gray-scale3 hover:text-white cursor-grab active:cursor-grabbing select-none"
+                className="flex items-center text-gray-scale3 hover:!text-white cursor-grab active:cursor-grabbing select-none"
                 aria-label="拖曳排序"
                 title="拖曳調整優先順序"
               >
@@ -343,7 +423,7 @@ const AdminOrdersPage: React.FC = () => {
               </select>
               <button
                 onClick={() => removeSort(i)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-scale2 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-scale2 hover:!text-white hover:bg-white/10 transition-colors cursor-pointer"
                 aria-label="移除排序"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
@@ -353,7 +433,7 @@ const AdminOrdersPage: React.FC = () => {
           {sorts.length < COLUMNS.length && (
             <button
               onClick={addSort}
-              className="text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer"
+              className="text-xs text-gray-scale2 hover:!text-white transition-colors cursor-pointer"
             >
               ＋ <span className="font-english">Add sort</span> <span className="font-chinese">新增排序</span>
             </button>
@@ -369,7 +449,7 @@ const AdminOrdersPage: React.FC = () => {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={`text-xs whitespace-nowrap transition-colors cursor-pointer ${
-                filter === f.key ? 'text-white font-bold' : 'text-gray-scale2 hover:text-white'
+                filter === f.key ? 'text-white font-bold' : 'text-gray-scale2 hover:!text-white'
               }`}
             >
               <span className="font-english">{f.en}</span> <span className="font-chinese">{f.zh}</span>
@@ -382,7 +462,7 @@ const AdminOrdersPage: React.FC = () => {
             className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
           >
             <option value="all">全部種類</option>
-            {Object.entries(BOOKING_TYPE_META).map(([key, meta]) => (
+            {Object.entries(ORDER_KIND_META).map(([key, meta]) => (
               <option key={key} value={key}>{meta.zh}</option>
             ))}
           </select>
@@ -390,15 +470,13 @@ const AdminOrdersPage: React.FC = () => {
       )}
 
       {loading && <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>}
-      {error && (
-        <div className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>讀取失敗：{error}</div>
-      )}
+      {!loading && error && <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />}
 
       {!loading && !error && (
-        <div className="overflow-x-auto">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="min-w-full text-xs border-collapse">
             <thead>
-              <tr className="text-left text-gray-scale2 border-b border-gray-scale4">
+              <tr className="text-left text-gray-scale2">
                 {colOrder.map(f => COLUMNS.find(c => c.field === f)!).map(col => (
                   <th
                     key={col.field}
@@ -425,15 +503,20 @@ const AdminOrdersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {visible.map(o => (
+              {pageRows.map(o => (
                 <tr key={o.id} className="border-b border-gray-scale4 hover:bg-white/5">
                   {colOrder.map(f => CELL[f](o))}
                   <td className={td}>
                     {(() => {
                       // 各狀態可用的後台動作（情境 2／9／13）
-                      const acts: { mode: 'paid' | 'return' | 'penalty' | 'cancel' | 'extend'; en: string; zh: string }[] =
+                      const acts: { mode: AdminActionMode; en: string; zh: string }[] =
                         o.status === 'pending'
-                          ? [{ mode: 'paid', en: 'Deposit', zh: '收押金' }, { mode: 'cancel', en: 'Cancel', zh: '取消' }]
+                          ? [
+                              isAwaitingPickup(o)
+                                ? { mode: 'pickup', en: 'Pick up', zh: '取件' } // 大量設備已預繳押金
+                                : { mode: 'paid', en: 'Deposit', zh: '收押金' },
+                              { mode: 'cancel', en: 'Cancel', zh: '取消' }
+                            ]
                           : o.status === 'in-progress'
                             ? [
                                 { mode: 'return', en: 'Return', zh: '歸還' },
@@ -445,10 +528,11 @@ const AdminOrdersPage: React.FC = () => {
                               : o.status === 'returned' && (o.penalty_total ?? 0) > 0 && o.penalty_paid === false
                                 ? [{ mode: 'penalty', en: 'Penalty', zh: '收罰款' }] // 欠繳罰款：收清才解除擋單
                                 : []
-                      if (acts.length === 0) return <span className="text-gray-scale3">—</span>
                       if (busy === o.rental_number) return <span className="font-chinese text-gray-scale2">處理中…</span>
                       return (
                         <div className="flex items-center gap-3">
+                          {/* 借用資訊（原因／班級／老師）任何狀態都可代改，修學生打錯字 */}
+                          <EditIconBtn onClick={() => setInfoOrder(o)} label="修改借用資訊 Edit Info" />
                           {acts.map(a => (
                             <button
                               key={a.mode}
@@ -473,6 +557,9 @@ const AdminOrdersPage: React.FC = () => {
         </div>
       )}
 
+      {/* 分頁：放在 overflow 容器外，表格橫捲時不跟著跑 */}
+      {!loading && !error && <Pager {...pager} />}
+
       {/* 收押金／歸還對話框（必選經手人） */}
       {action && (
         <OrderActionDialog
@@ -491,6 +578,15 @@ const AdminOrdersPage: React.FC = () => {
           onCancel={() => setAction(null)}
         />
       )}
+      {infoOrder && (
+        <OrderInfoDialog
+          order={infoOrder}
+          busy={infoSaving}
+          onSave={handleInfoSave}
+          onCancel={() => setInfoOrder(null)}
+        />
+      )}
+      {toastElement}
     </div>
   )
 }

@@ -10,6 +10,7 @@ export interface AppNotification {
   content: string
   timestamp: number
   read: boolean
+  announcement: boolean // 後台全站通知（鈴鐺標「公告」）
 }
 
 /** 讀取自己 7 天內的通知（新的在前） */
@@ -17,7 +18,7 @@ export async function fetchMyNotifications(): Promise<AppNotification[]> {
   const since = new Date(Date.now() - 7 * 86400000).toISOString()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, message, is_read, created_at')
+    .select('id, type, message, is_read, created_at')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -26,7 +27,8 @@ export async function fetchMyNotifications(): Promise<AppNotification[]> {
     id: String(row.id),
     content: row.message,
     timestamp: new Date(row.created_at).getTime(),
-    read: row.is_read
+    read: row.is_read,
+    announcement: row.type === 'announcement'
   }))
 }
 

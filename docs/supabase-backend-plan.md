@@ -9,7 +9,7 @@
 |---|---|---|
 | 登入／會員／忘記密碼 | **Supabase Auth**（email + 密碼，自助重設） | 待接線 |
 | 資料庫（設備／訂單／空間／學生狀態） | **Supabase PostgreSQL** + RLS | 待接線 |
-| 圖片（設備照等） | **Supabase Storage**（資料表只存 URL） | 待接線 |
+| 圖片（設備照等） | **Supabase Storage**（資料表只存 URL） | 已接線（bucket `images`，後台換圖；supabase/space-edit-images.sql） |
 | 過渡期後台 | **Supabase Studio**（試算表式介面，人工審核頂替） | 現成 |
 | 正式後台 | 自寫 `/admin` 頁面（roadmap 階段 2，等痛了再做） | 未動工 |
 | 網站 Hosting | **維持 Vercel**（`vercel.json` 已設好，不搬家） | 現行 |

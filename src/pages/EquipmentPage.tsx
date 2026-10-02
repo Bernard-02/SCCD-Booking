@@ -9,6 +9,7 @@ import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import EquipmentGrid from '../components/equipment/EquipmentGrid'
 import DatePickerBar from '../components/DatePickerBar'
+import { EQUIPMENT_CATEGORIES } from '../types/equipment'
 import type { BookingType } from '../types/equipment'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 
@@ -65,16 +66,10 @@ const EquipmentPage: React.FC = () => {
     })
   }
 
-  // 分類列表（對應 Supabase equipment.category 的大類；搖頭燈已併入燈具、延長線改稱電源線）
+  // 分類列表：全部＋固定分類（與後台設備管理共用 EQUIPMENT_CATEGORIES）＋收藏
   const categories = [
     { en: 'All', zh: '全部', icon: 'apps' },
-    { en: 'Cables', zh: '線材', icon: 'cable' },
-    { en: 'Power Cords', zh: '電源線', icon: 'electrical_services' },
-    { en: 'Audio/Video', zh: '視聽', icon: 'videocam' },
-    { en: 'Lighting', zh: '燈具', icon: 'lightbulb' },
-    { en: 'Displays/Tables', zh: '展版/展桌/展台', icon: 'table_restaurant' },
-    { en: 'Tools', zh: '工具', icon: 'handyman' },
-    { en: 'Machinery', zh: '機具', icon: 'precision_manufacturing' },
+    ...EQUIPMENT_CATEGORIES,
     { en: 'Favorites', zh: '收藏', icon: 'bookmark' }
   ]
 
@@ -131,7 +126,7 @@ const EquipmentPage: React.FC = () => {
                   <div key={category.en} className="text-left">
                     <button
                       onClick={() => setSelectedCategory(category.zh)}
-                      className={`text-s font-bold transition-colors cursor-pointer inline-flex items-center gap-2 ${
+                      className={`text-sm font-bold transition-colors cursor-pointer inline-flex items-center gap-2 ${
                         selectedCategory === category.zh
                           ? 'text-white'
                           : 'text-gray-scale2 hover:!text-white'
@@ -160,7 +155,7 @@ const EquipmentPage: React.FC = () => {
                   >
                     <div className="w-3 h-3 bg-[#00ff80]"></div>
                     <span className={`text-xs transition-colors ${
-                      statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                      statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
                     </span>
@@ -172,7 +167,7 @@ const EquipmentPage: React.FC = () => {
                   >
                     <div className="w-3 h-3 bg-[#ff448a]"></div>
                     <span className={`text-xs transition-colors ${
-                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
                     </span>
@@ -184,7 +179,7 @@ const EquipmentPage: React.FC = () => {
                   >
                     <div className="w-3 h-3 bg-[#ffa500]"></div>
                     <span className={`text-xs transition-colors ${
-                      statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                      statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
                     </span>

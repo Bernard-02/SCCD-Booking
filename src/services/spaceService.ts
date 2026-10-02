@@ -11,6 +11,7 @@ export interface SpaceBlock {
   area: string   // square / corridor / front-terrace / back-terrace / glass-wall / pillar / classroom
   deposit: number
   name: string | null
+  image_url?: string | null // 教室圖（後台上傳；null＝沿用 /Images/{id}.webp）
 }
 
 export type SpaceBlocksMap = Record<string, SpaceBlock>
@@ -24,15 +25,16 @@ export const loadSpaceBlocks = (): Promise<SpaceBlocksMap> => {
 
   inflight = (async () => {
     try {
+      // select('*')：image_url 欄位的 SQL（space-edit-images.sql）尚未執行時也不會壞
       const { data, error } = await supabase
         .from('space')
-        .select('id, area, deposit, name')
+        .select('*')
         .eq('is_active', true)
       if (error) throw error
       cache = Object.fromEntries(
-        (data as { id: string; area: string; deposit: number; name: string | null }[]).map(row => [
+        (data as (SpaceBlock & { id: string })[]).map(row => [
           row.id,
-          { area: row.area, deposit: row.deposit, name: row.name }
+          { area: row.area, deposit: row.deposit, name: row.name, image_url: row.image_url }
         ])
       )
       return cache

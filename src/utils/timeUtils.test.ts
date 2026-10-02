@@ -13,6 +13,9 @@ import {
   overduePenalty,
   isWithinExtendWindow,
   isOnDuty,
+  closedDayImpact,
+  addBusinessMs,
+  dutySlotOptions,
   PENDING_LIMIT_MS
 } from './timeUtils'
 
@@ -154,5 +157,56 @@ describe('isOnDuty', () => {
     ]
     expect(isOnDuty(multi, tue1230)).toBe(true)
     expect(isOnDuty([], tue1230)).toBe(false)
+  })
+})
+
+describe('closedDayImpact（新增公休日 → 通知受影響訂單）', () => {
+  const order = (start_date: string, end_date: string) => ({ start_date, end_date })
+
+  it('歸還日當天公休 → 順延到隔天營業日', () => {
+    // 週二歸還、週二公休 → 週三
+    expect(closedDayImpact(order('2026-07-13', '2026-07-14'), '2026-07-14', new Set(['2026-07-14'])))
+      .toEqual({ pickup: false, newDue: '2026-07-15' })
+  })
+
+  it('週末連鎖：週六歸還本已順延到週一，週一再公休 → 週二', () => {
+    expect(closedDayImpact(order('2026-07-13', '2026-07-18'), '2026-07-20', new Set(['2026-07-20'])))
+      .toEqual({ pickup: false, newDue: '2026-07-21' })
+  })
+
+  it('取件日公休；歸還日不受影響', () => {
+    expect(closedDayImpact(order('2026-07-14', '2026-07-16'), '2026-07-14', new Set(['2026-07-14'])))
+      .toEqual({ pickup: true, newDue: null })
+  })
+
+  it('公休日落在租借期間中間 → 不通知', () => {
+    expect(closedDayImpact(order('2026-07-13', '2026-07-17'), '2026-07-15', new Set(['2026-07-15'])))
+      .toEqual({ pickup: false, newDue: null })
+  })
+})
+
+describe('addBusinessMs／dutySlotOptions（大量設備選繳押金／取件時段）', () => {
+  it('週五 15:00 送單＋24 工作時 → 跳過週末，下週一 15:00', () => {
+    const d = addBusinessMs(new Date('2026-07-17T15:00'), PENDING_LIMIT_MS, NONE)
+    expect(d).toEqual(new Date('2026-07-20T15:00'))
+  })
+
+  it('週一臨時公休 → 再順延到週二 15:00', () => {
+    const d = addBusinessMs(new Date('2026-07-17T15:00'), PENDING_LIMIT_MS, new Set(['2026-07-20']))
+    expect(d).toEqual(new Date('2026-07-21T15:00'))
+  })
+
+  it('只列區間內、未結束、非公休日的值班時段', () => {
+    const duties = [
+      { weekday: 1, start_time: '12:00:00', end_time: '13:00:00' }, // 週一
+      { weekday: 3, start_time: '12:00:00', end_time: '13:00:00' }, // 週三
+      { weekday: 6, start_time: '10:00:00', end_time: '11:00:00' }  // 週六（公休，不列）
+    ]
+    // 週一 12:30 起：週一時段尚未結束 → 列入；週三在 until 內 → 列入；下週一超出 until
+    const opts = dutySlotOptions(duties, new Date('2026-07-13T12:30'), new Date('2026-07-17T18:00'), NONE)
+    expect(opts).toEqual([
+      { date: '2026-07-13', slot: '12:00-13:00' },
+      { date: '2026-07-15', slot: '12:00-13:00' }
+    ])
   })
 })

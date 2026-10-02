@@ -107,7 +107,7 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 五分區：總覽／訂單／幹部名單／公休日／寒暑假封鎖）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；剩代客延期、拆單、代取消、手動建單、庫存管理、助教直借等（清單見 roadmap.md）。admin 帳號學號 `sccdsa`。
+- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩段：值班＝總覽／訂單／空間地圖；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／營業時間〔公休日（新增自動發全站公告 template＋通知受影響訂單）＋法定假日（自動匯入）＋寒暑假封鎖〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；剩代客延期、拆單、代取消、手動建單、庫存管理、助教直借等（清單見 roadmap.md）。admin 帳號學號 `sccdsa`。
 - **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）。2026-09-26 情境補完新增一項待做：延期不得延入封鎖期（`extend_my_order` 補檢查）。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
@@ -136,3 +136,5 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 - 檔頭常有 `/** 功能說明 */` 區塊註解。
 - 路徑 alias：`@/*` → `src/*`、`@legacy/*` → `./*`（後者已不再需要）。
 - TypeScript 設定為 `strict: true`，並啟用 `noUnusedLocals` 與 `noUnusedParameters`，build 時型別錯誤會擋住。
+- **灰字 hover 變色一律加 `!`**：舊 `css/colors.css` 的 `.text-gray-scale*` 帶 `!important` 且不在 Tailwind layer，
+  一般的 `hover:text-white` 永遠蓋不過（只會看到其他 hover 效果如變粗）——寫 `hover:!text-white`、`group-hover:!text-white`。

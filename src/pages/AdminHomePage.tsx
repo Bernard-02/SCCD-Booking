@@ -10,12 +10,16 @@ import { fetchAllOrders, fetchClosedDates } from '../services/ordersService'
 import type { AdminOrderRow, OrderStatus } from '../services/ordersService'
 import { listSuspendedStudents, unsuspendStudent } from '../services/adminService'
 import type { SuspendedStudent } from '../services/adminService'
-import { STATUS_META, STATUS_ORDER, PageTitle } from '../components/admin/adminUi'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { useToast } from '../hooks/useToast'
+import { STATUS_META, STATUS_ORDER, PageTitle, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
 import {
   pendingMsRemaining,
   overdueBusinessDays,
   overduePenalty,
   toDateKey,
+  slotLabel,
   SUSPENSION_OVERDUE_DAYS
 } from '../utils/timeUtils'
 
@@ -29,14 +33,14 @@ const SectionTitle: React.FC<{ en: string; zh: string; count: number; onMore?: (
   onMore
 }) => (
   <div className="flex items-baseline justify-between border-b border-gray-scale4 pb-3">
-    <h2 className="text-s text-white">
+    <h2 className="text-sm text-white">
       <span className="font-english">{en}</span> <span className="font-chinese">{zh}</span>
       <span className="font-english text-gray-scale2 ml-2">{count}</span>
     </h2>
     {onMore && (
       <button
         onClick={onMore}
-        className="text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer"
+        className="text-xs text-gray-scale2 hover:!text-white transition-colors cursor-pointer"
       >
         <span className="font-english">View</span> <span className="font-chinese">查看</span> →
       </button>
@@ -50,6 +54,8 @@ const Empty: React.FC<{ zh: string }> = ({ zh }) => (
 
 const AdminHomePage: React.FC = () => {
   const navigate = useNavigate()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
+  const { showToast, toastElement } = useToast()
   const [orders, setOrders] = useState<AdminOrderRow[]>([])
   const [suspended, setSuspended] = useState<SuspendedStudent[]>([])
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set())
@@ -57,16 +63,20 @@ const AdminHomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const now = new Date() // 進頁當下即可，摘要不需要倒數重繪
 
-  useEffect(() => {
+  // background＝自動更新：失敗不蓋掉現有畫面，下次再試
+  const load = (background = false) =>
     Promise.all([fetchAllOrders(), listSuspendedStudents(), fetchClosedDates()])
       .then(([o, s, c]) => {
         setOrders(o)
         setSuspended(s)
         setClosedDates(c)
+        setError(null)
       })
-      .catch(err => setError(err.message ?? '讀取失敗'))
+      .catch(err => { if (!background) setError(err.message ?? '讀取失敗') })
       .finally(() => setLoading(false))
-  }, [])
+
+  useEffect(() => { void load() }, [])
+  useAutoRefresh(() => load(true))
 
   // 各狀態訂單數
   const counts = useMemo(() => {
@@ -91,7 +101,9 @@ const AdminHomePage: React.FC = () => {
     [orders, today]
   )
 
-  const pendingOrders = useMemo(() => orders.filter(o => o.status === 'pending'), [orders])
+  // 大量設備已預繳押金的 pending 不算待繳押金（不倒數、不會自動取消），另列「待取件」
+  const pendingOrders = useMemo(() => orders.filter(o => o.status === 'pending' && !o.deposit_paid_at), [orders])
+  const pickupOrders = useMemo(() => orders.filter(isAwaitingPickup), [orders])
   const overdueOrders = useMemo(() => orders.filter(o => o.status === 'overdue'), [orders])
 
   const goOrders = (status?: OrderStatus) =>
@@ -102,11 +114,7 @@ const AdminHomePage: React.FC = () => {
       <PageTitle en="Overview" zh="總覽" />
 
       {loading && <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>}
-      {error && (
-        <div className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>
-          讀取失敗：{error}
-        </div>
-      )}
+      {!loading && error && <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />}
 
       {!loading && !error && (
         <>
@@ -143,14 +151,14 @@ const AdminHomePage: React.FC = () => {
                   className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                 >
                   <div>
-                    <div className="text-m font-chinese text-white">
+                    <div className="text-md font-chinese text-white">
                       {i.name}
                       {i.quantity > 1 ? ` ×${i.quantity}` : ''}
                     </div>
                     <div className="text-xs text-gray-scale2 font-english">{o.rental_number}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-m font-chinese text-white">{o.students?.name ?? '—'}</div>
+                    <div className="text-md font-chinese text-white">{o.students?.name ?? '—'}</div>
                     <div className="text-xs text-gray-scale2 font-english">
                       {o.students?.student_id} · <span className="font-chinese">至</span> {fmtMD(o.end_date)}
                     </div>
@@ -177,7 +185,7 @@ const AdminHomePage: React.FC = () => {
                     className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                   >
                     <div>
-                      <div className="text-m font-chinese text-white">
+                      <div className="text-md font-chinese text-white">
                         {o.students?.name ?? '—'}
                         <span className="font-english text-xs text-gray-scale2 ml-2">
                           {o.students?.student_id}
@@ -185,6 +193,9 @@ const AdminHomePage: React.FC = () => {
                       </div>
                       <div className="text-xs text-gray-scale2 font-english">
                         {o.rental_number} · NT$ {o.deposit_total.toLocaleString()}
+                        {o.deposit_date && o.deposit_slot && (
+                          <span className="font-chinese"> · 預約 {slotLabel({ date: o.deposit_date, slot: o.deposit_slot })}</span>
+                        )}
                       </div>
                     </div>
                     {ms > 0 ? (
@@ -205,6 +216,30 @@ const AdminHomePage: React.FC = () => {
               {pendingOrders.length === 0 && <Empty zh="沒有待繳押金的訂單" />}
             </section>
 
+            {/* 待取件（大量設備已預繳押金）：只在有單時顯示；過起租日未取件 → 紅字，由學會聯絡或代取消 */}
+            {pickupOrders.length > 0 && (
+              <section>
+                <SectionTitle en="Awaiting Pickup" zh="已繳押金・待取件" count={pickupOrders.length} onMore={() => goOrders('pending')} />
+                {pickupOrders.map(o => (
+                  <div key={o.id} className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-md font-chinese text-white">
+                        {o.students?.name ?? '—'}
+                        <span className="font-english text-xs text-gray-scale2 ml-2">{o.students?.student_id}</span>
+                      </div>
+                      <div className="text-xs text-gray-scale2 font-english">{o.rental_number}</div>
+                    </div>
+                    <span
+                      className="text-xs font-chinese whitespace-nowrap"
+                      style={{ color: isPickupLate(o, today) ? 'var(--color-error2)' : 'var(--color-cyan-blue)' }}
+                    >
+                      {isPickupLate(o, today) ? '逾時未取件' : `取件 ${o.pickup_slot ? slotLabel({ date: o.start_date, slot: o.pickup_slot }) : fmtMD(o.start_date)}`}
+                    </span>
+                  </div>
+                ))}
+              </section>
+            )}
+
             {/* 違規帳號：停權名單＋逾期中訂單 */}
             <section className="lg:col-span-2">
               <SectionTitle
@@ -218,7 +253,7 @@ const AdminHomePage: React.FC = () => {
                   key={s.student_id}
                   className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                 >
-                  <div className="text-m font-chinese text-white">
+                  <div className="text-md font-chinese text-white">
                     {s.name}
                     <span className="font-english text-xs text-gray-scale2 ml-2">{s.student_id}</span>
                   </div>
@@ -232,12 +267,18 @@ const AdminHomePage: React.FC = () => {
                     {/* 解除停權（情境 7 sticky 停權的人工解鎖：罰款繳清／老師通融） */}
                     <button
                       onClick={async () => {
-                        if (!window.confirm(`解除 ${s.name}（${s.student_id}）的停權？請確認罰款已繳清或老師已通融。`)) return
+                        const ok = await confirm({
+                          title: '解除停權', titleEn: 'Unsuspend',
+                          message: `解除 ${s.name}（${s.student_id}）的停權？請確認罰款已繳清或老師已通融。`,
+                          confirmText: 'Unsuspend', confirmTextZh: '解除'
+                        })
+                        if (!ok) return
                         const res = await unsuspendStudent(s.student_id)
-                        if (!res.ok) { alert(res.message ?? '解除失敗'); return }
+                        if (!res.ok) { showToast(res.message ?? '解除失敗'); return }
+                        showToast(`已解除 ${s.name} 的停權`, 'success')
                         setSuspended(prev => prev.filter(x => x.student_id !== s.student_id))
                       }}
-                      className="text-xs text-gray-scale2 hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+                      className="text-xs text-gray-scale2 hover:!text-white transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <span className="font-english">Unsuspend</span> <span className="font-chinese">解除停權</span>
                     </button>
@@ -253,7 +294,7 @@ const AdminHomePage: React.FC = () => {
                     className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4"
                   >
                     <div>
-                      <div className="text-m font-chinese text-white">
+                      <div className="text-md font-chinese text-white">
                         {o.students?.name ?? '—'}
                         <span className="font-english text-xs text-gray-scale2 ml-2">
                           {o.students?.student_id}
@@ -289,6 +330,8 @@ const AdminHomePage: React.FC = () => {
           </div>
         </>
       )}
+      <ConfirmDialog />
+      {toastElement}
     </div>
   )
 }

@@ -149,19 +149,14 @@ create policy "space: public read" on public.space
 create policy "space: admin write" on public.space
   for all using (public.user_role() = 'admin');
 
--- orders：本人建立／讀取自己的；admin 全權；staff 建單免審核（狀態直接 in-progress 由應用層帶）
-create policy "orders: insert own" on public.orders
-  for insert with check (student_id = auth.uid());
+-- orders：本人只能讀自己的；admin 全權。學生建單一律走 submit_orders RPC（security definer），
+-- 不開直接 insert——否則可繞過庫存／押金／封鎖檢查（見 orders-lockdown.sql）
 create policy "orders: read own" on public.orders
   for select using (student_id = auth.uid());
 create policy "orders: admin all" on public.orders
   for all using (public.user_role() = 'admin');
 
--- order_items：跟隨所屬訂單的權限
-create policy "order_items: insert via own order" on public.order_items
-  for insert with check (
-    exists (select 1 from public.orders o where o.id = order_id and o.student_id = auth.uid())
-  );
+-- order_items：跟隨所屬訂單的權限（同上，寫入只經 RPC）
 create policy "order_items: read via own order" on public.order_items
   for select using (
     exists (select 1 from public.orders o where o.id = order_id and o.student_id = auth.uid())

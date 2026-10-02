@@ -24,9 +24,11 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
 const AdminHomePage = lazy(() => import('./pages/AdminHomePage'))
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
-const AdminStaffPage = lazy(() => import('./pages/AdminStaffPage'))
-const AdminClosedDatesPage = lazy(() => import('./pages/AdminClosedDatesPage'))
-const AdminBlackoutsPage = lazy(() => import('./pages/AdminBlackoutsPage'))
+const AdminHoursPage = lazy(() => import('./pages/AdminHoursPage'))
+const AdminMembersPage = lazy(() => import('./pages/AdminMembersPage'))
+const AdminEquipmentPage = lazy(() => import('./pages/AdminEquipmentPage'))
+const AdminSpacesPage = lazy(() => import('./pages/AdminSpacesPage'))
+const AdminSpaceMapPage = lazy(() => import('./pages/AdminSpaceMapPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -81,9 +83,11 @@ function App() {
                 >
                   <Route index element={<AdminHomePage />} />
                   <Route path="orders" element={<AdminOrdersPage />} />
-                  <Route path="staff" element={<AdminStaffPage />} />
-                  <Route path="closed-dates" element={<AdminClosedDatesPage />} />
-                  <Route path="blackouts" element={<AdminBlackoutsPage />} />
+                  <Route path="hours" element={<AdminHoursPage />} />
+                  <Route path="members" element={<AdminMembersPage />} />
+                  <Route path="equipment" element={<AdminEquipmentPage />} />
+                  <Route path="spaces" element={<AdminSpacesPage />} />
+                  <Route path="space-map" element={<AdminSpaceMapPage />} />
                 </Route>
 
                 {/* 關於 */}

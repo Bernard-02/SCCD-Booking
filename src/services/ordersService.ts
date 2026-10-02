@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase'
 import type { BookingType } from '../types/equipment'
+import type { DutySlot } from '../utils/timeUtils'
 
 export type OrderStatus = 'pending' | 'in-progress' | 'overdue' | 'returned' | 'canceled'
 
@@ -27,9 +28,16 @@ export interface OrderRow {
   deposit_total: number
   has_extended: boolean
   reason: string | null
+  class_name: string | null      // 大量／團體必填：使用班級
+  teacher: string | null         // 大量／團體必填：負責老師
   created_at: string
   penalty_total: number | null   // 歸還時凍結的最終罰款（null = 尚未結算）
   penalty_paid: boolean          // 罰款是否已繳清（false = 欠繳，submit_orders 擋新單）
+  // 大量設備預選時段（mass-pickup.sql）：繳押金日＋時段、取件時段（日期＝起租日）
+  deposit_date: string | null
+  deposit_slot: string | null    // 'HH:MM-HH:MM'
+  pickup_slot: string | null
+  deposit_paid_at: string | null // 已收押金；status 仍為 pending ＝ 已繳待取件
   order_items: OrderItemRow[]
 }
 
@@ -47,6 +55,7 @@ export async function fetchMyOrders(): Promise<OrderRow[]> {
 export interface AdminOrderRow extends OrderRow {
   student_id: string
   paid_by: string | null      // 收押金經手幹部（姓名快照）
+  picked_up_by: string | null // 取件經手幹部（大量設備先繳後取時才與 paid_by 不同）
   returned_by: string | null  // 歸還經手幹部（姓名快照）
   students: { student_id: string; name: string } | null
 }
@@ -81,6 +90,19 @@ export async function fetchClosedDates(): Promise<Set<string>> {
 }
 
 /**
+ * 系學會值班時段（星期＋起訖，不含幹部個資；RPC duty_slots，見 mass-pickup.sql）。
+ * 大量設備選繳押金／取件時段用。讀取失敗回空陣列（選單顯示「無可選時段」）。
+ */
+export async function fetchDutySlots(): Promise<DutySlot[]> {
+  const { data, error } = await supabase.rpc('duty_slots')
+  if (error) {
+    console.error('讀取值班時段失敗:', error.message)
+    return []
+  }
+  return (data ?? []) as DutySlot[]
+}
+
+/**
  * 寒暑假封鎖區間（情境 11-a）：學生不可租借的日期範圍。
  * 前端日曆據此把封鎖日期標為不可選；server 端 submit_orders 亦擋 student（防線）。
  * 讀取失敗時退回空陣列（不擋日曆），server 端仍會攔。
@@ -102,14 +124,37 @@ export async function fetchBlackouts(): Promise<{ start: string; end: string }[]
   return blackoutsCache
 }
 
-/** 後台：確認收押金（pending → in-progress，僅 admin；handler = 值班經手幹部） */
+/**
+ * 後台：修改訂單軟性欄位（原因／班級／老師，學生打錯字時代改）。
+ * 直接 update 表：RLS 只有 `orders: admin all` 允許更新，學生端無 update 權限、前台也無編輯介面。
+ * 硬性資料（日期／品項／狀態／押金）不走這裡，一律走專用 RPC（order-lifecycle 情境 9）。
+ */
+/** 小量只有 reason；大量／團體三項皆有（不帶的欄位不會被更新） */
+export type OrderInfo = { reason: string; class_name?: string; teacher?: string }
+
+export async function adminUpdateOrderInfo(
+  rentalNumber: string,
+  info: OrderInfo
+): Promise<{ ok: boolean; message?: string }> {
+  // select().single()：RLS 擋下或單號不存在時 update 會「成功但 0 列」，這樣才會報錯
+  const { error } = await supabase.from('orders').update(info).eq('rental_number', rentalNumber).select('id').single()
+  if (error) return { ok: false, message: error.code === 'PGRST116' ? '訂單不存在或無修改權限' : error.message }
+  return { ok: true }
+}
+
+/**
+ * 後台：收押金／取件（僅 admin；handler = 值班經手幹部）。
+ * pickup = true：收押金＋取件（或已預繳者取件）→ in-progress；false：只收押金，維持 pending＝已繳待取件
+ */
 export async function adminMarkPaid(
   rentalNumber: string,
-  handler: string
+  handler: string,
+  pickup = true
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_mark_paid', {
     p_rental_number: rentalNumber,
-    p_handler: handler
+    p_handler: handler,
+    p_pickup: pickup
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }

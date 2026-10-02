@@ -1,14 +1,17 @@
 /**
- * 後台操作對話框：收押金／歸還（逾期時含罰款確認）＋值班經手人選擇。
+ * 後台操作對話框：收押金／取件／歸還（逾期時含罰款確認）＋值班經手人選擇。
  * 經手人必選（追溯用）；樣式沿用 common/ConfirmDialog。
+ * 大量設備預選了繳押金／取件時段（mass-pickup.sql）：收押金時可選「同時取件」，
+ * 不勾＝只收押金（已繳待取件），之後再用 pickup 模式確認取件。
  */
 
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { AdminOrderRow } from '../../services/ordersService'
+import { slotLabel, toDateKey } from '../../utils/timeUtils'
 
-export type AdminActionMode = 'paid' | 'return' | 'penalty' | 'cancel' | 'extend'
-// penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期
+export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'penalty' | 'cancel' | 'extend'
+// pickup = 已預繳者取件；penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期
 
 interface Props {
   order: AdminOrderRow
@@ -16,7 +19,7 @@ interface Props {
   staff: { name: string; onDuty: boolean }[] // 幹部（值班中排前面，選單來源）
   defaultHandler: string // 上次選擇的經手人（同班次免重選）
   estPenalty: number // 逾期試算罰款（overdue 時預填，可修改）
-  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number) => void
+  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean) => void
   onCancel: () => void
 }
 
@@ -39,6 +42,9 @@ const OrderActionDialog: React.FC<Props> = ({
   const [paidNow, setPaidNow] = useState(true)
   // 代客延期天數（1-7；更長分次延）
   const [days, setDays] = useState('1')
+  // 收押金時是否同時取件：有預選取件時段（大量設備）才可選，預設＝已到起租日；其他單一律同時
+  const hasPickupSlot = !!order.pickup_slot
+  const [pickupNow, setPickupNow] = useState(!hasPickupSlot || order.start_date <= toDateKey(new Date()))
 
   // 部分歸還（情境 5-①）：勾「已歸還」品項，預設全勾；部分勾＝未還品項拆子單續租
   const [returnIds, setReturnIds] = useState<Set<number>>(
@@ -70,6 +76,7 @@ const OrderActionDialog: React.FC<Props> = ({
 
   const title =
     mode === 'paid' ? { en: 'Deposit', zh: '確認收押金' }
+    : mode === 'pickup' ? { en: 'Pick up', zh: '確認取件' }
     : mode === 'penalty' ? { en: 'Penalty', zh: '收罰款' }
     : mode === 'cancel' ? { en: 'Cancel Order', zh: '代取消訂單' }
     : mode === 'extend' ? { en: 'Extend', zh: '代客延期' }
@@ -98,7 +105,7 @@ const OrderActionDialog: React.FC<Props> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-english text-s text-white font-normal">
+          <h2 className="font-english text-sm text-white font-normal">
             {title.en} <span className="font-chinese">{title.zh}</span>
           </h2>
           <p className="font-english text-xs text-gray-scale2 mt-1">
@@ -112,7 +119,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 代取消：說明退押金與否 */}
           {mode === 'cancel' && (
             <p className="text-tiny text-white font-chinese">
-              {order.status === 'pending'
+              {order.status === 'pending' && !order.deposit_paid_at
                 ? '此單尚未繳押金，取消後直接作廢、佔用釋放。'
                 : <>已繳押金 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>，請當場退還現金後再按確認。</>}
             </p>
@@ -140,6 +147,34 @@ const OrderActionDialog: React.FC<Props> = ({
             </div>
           )}
 
+          {/* 收押金（大量設備有預選時段）：顯示學生預約的時段＋是否同時取件 */}
+          {mode === 'paid' && hasPickupSlot && (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-gray-scale2 font-chinese">
+                學生預約：繳押金 {order.deposit_date && order.deposit_slot
+                  ? slotLabel({ date: order.deposit_date, slot: order.deposit_slot }) : '—'}
+                ；取件 {slotLabel({ date: order.start_date, slot: order.pickup_slot! })}
+              </p>
+              <label className="flex items-center gap-3 text-xs text-white cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="custom-checkbox flex-shrink-0"
+                  checked={pickupNow}
+                  onChange={e => setPickupNow(e.target.checked)}
+                />
+                <span className="font-chinese">同時取件（設備當場交付，租借開始；不勾＝只收押金，之後再取件）</span>
+              </label>
+            </div>
+          )}
+
+          {/* 取件（已預繳）：押金已收，交付設備後確認 */}
+          {mode === 'pickup' && (
+            <p className="text-xs text-white font-chinese">
+              押金已於 <span className="font-english">{order.deposit_paid_at?.slice(5, 10).replace('-', '/')}</span> 收取
+              {order.paid_by && <>（經手 {order.paid_by}）</>}，設備交付後按確認，租借開始。
+            </p>
+          )}
+
           {/* 收罰款：顯示欠繳金額 */}
           {mode === 'penalty' && (
             <p className="text-xs text-white font-chinese">
@@ -155,7 +190,7 @@ const OrderActionDialog: React.FC<Props> = ({
             </label>
             {staff.length === 0 ? (
               <p className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>
-                尚無幹部，請先到「幹部名單 Staff」新增成員
+                尚無系學會成員，請先到「會員管理 Members」把幹部的身分設為系學會
               </p>
             ) : (
               <select
@@ -269,7 +304,7 @@ const OrderActionDialog: React.FC<Props> = ({
 
         {/* 按鈕區 */}
         <div className="px-6 py-4 flex justify-end gap-6">
-          <button onClick={onCancel} className="text-gray-scale2 hover:text-white transition-colors cursor-pointer">
+          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white transition-colors cursor-pointer">
             <span className="font-english text-xs">
               Cancel <span className="font-chinese">取消</span>
             </span>
@@ -282,7 +317,8 @@ const OrderActionDialog: React.FC<Props> = ({
                 chargePenalty ? penaltyNum : 0,
                 [...returnIds],
                 chargePenalty && penaltyNum > 0 ? paidNow : true,
-                mode === 'extend' ? daysNum : 0
+                mode === 'extend' ? daysNum : 0,
+                mode === 'pickup' || pickupNow
               )
             }
             disabled={!canConfirm}

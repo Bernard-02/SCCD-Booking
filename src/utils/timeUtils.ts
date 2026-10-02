@@ -50,6 +50,23 @@ export const businessMsBetween = (
   return totalMs
 }
 
+/** 從 from 起算經過 ms 個有效毫秒（跳過公休日）後的時間點：繳押金期限＝送單＋24 工作時 */
+export const addBusinessMs = (from: Date, ms: number, closedDates: ReadonlySet<string>): Date => {
+  const t = new Date(from)
+  let left = ms
+  while (left > 0) {
+    const nextMidnight = new Date(t)
+    nextMidnight.setHours(24, 0, 0, 0)
+    if (!isOffDay(t, closedDates)) {
+      const step = Math.min(left, nextMidnight.getTime() - t.getTime())
+      left -= step
+      if (left === 0) return new Date(t.getTime() + step)
+    }
+    t.setTime(nextMidnight.getTime())
+  }
+  return t
+}
+
 /** 繳押金剩餘毫秒數（負值 = 已逾時） */
 export const pendingMsRemaining = (
   createdAt: string,
@@ -85,6 +102,22 @@ export const effectiveReturnDeadline = (
   while (isOffDay(d, closedDates)) d.setDate(d.getDate() + 1)
   d.setHours(19, 0, 0, 0)
   return d
+}
+
+/**
+ * 新增公休日 day 對一張訂單的影響（後台通知受影響同學用）：
+ * pickup＝取件日剛好公休；newDue＝歸還期限因此順延後的日期（沒變為 null，含週末連鎖順延）。
+ * closedAfter 為「已含 day」的公休日集合。
+ */
+export const closedDayImpact = (
+  order: { start_date: string; end_date: string },
+  day: string,
+  closedAfter: ReadonlySet<string>
+): { pickup: boolean; newDue: string | null } => {
+  const before = new Set([...closedAfter].filter(d => d !== day))
+  const due = effectiveReturnDeadline(order.end_date, closedAfter)
+  const changed = due.getTime() !== effectiveReturnDeadline(order.end_date, before).getTime()
+  return { pickup: order.start_date === day, newDue: changed ? toDateKey(due) : null }
 }
 
 /**
@@ -135,6 +168,48 @@ export const isOnDuty = (duties: readonly DutySlot[], now: Date = new Date()): b
     d => d.weekday === now.getDay() && hhmm >= d.start_time.slice(0, 5) && hhmm < d.end_time.slice(0, 5)
   )
 }
+
+/** 某一天的某個值班時段（大量設備選繳押金／取件時段）：slot＝'HH:MM-HH:MM' */
+export interface DatedSlot { date: string; slot: string }
+
+/**
+ * 列出 [from, until] 之間可選的值班時段（跳過公休日）：時段尚未結束（end > from）且開始不晚於 until。
+ * 繳押金：from＝現在、until＝min(送單＋24 工作時, 取件時段開始)；取件：限起租日當天。
+ */
+export const dutySlotOptions = (
+  duties: readonly DutySlot[],
+  from: Date,
+  until: Date,
+  closedDates: ReadonlySet<string>
+): DatedSlot[] => {
+  const out: DatedSlot[] = []
+  const day = new Date(from)
+  day.setHours(0, 0, 0, 0)
+  for (; day <= until; day.setDate(day.getDate() + 1)) {
+    if (isOffDay(day, closedDates)) continue
+    const date = toDateKey(day)
+    duties
+      .filter(d => d.weekday === day.getDay())
+      .forEach(d => {
+        const [s, e] = [d.start_time.slice(0, 5), d.end_time.slice(0, 5)]
+        const start = new Date(`${date}T${s}`)
+        const end = new Date(`${date}T${e}`)
+        if (end > from && start <= until) out.push({ date, slot: `${s}-${e}` })
+      })
+  }
+  return out
+}
+
+/** 時段顯示：'10/5（一）12:00–13:00' */
+const WD = ['日', '一', '二', '三', '四', '五', '六']
+export const slotLabel = ({ date, slot }: DatedSlot) => {
+  const d = new Date(`${date}T00:00`)
+  return `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${slot.replace('-', '–')}`
+}
+
+/** 時段開始／結束的 Date（date＝'YYYY-MM-DD'、slot＝'HH:MM-HH:MM'） */
+export const slotStart = (date: string, slot: string) => new Date(`${date}T${slot.slice(0, 5)}`)
+export const slotEnd = (date: string, slot: string) => new Date(`${date}T${slot.slice(6, 11)}`)
 
 /** 滿 6 個逾期營業日 = 未完成清潔歸還 → 停權 */
 export const SUSPENSION_OVERDUE_DAYS = 6
