@@ -23,6 +23,7 @@ declare
   v_reserved int;
   v_grade text;
   v_sophomore_up boolean; -- 大二以上（含碩士）；grade 未填從嚴視為大一
+  v_is_equip boolean;     -- 本單為設備單（分單後一張單全設備或全空間）
 begin
   if v_uid is null then
     raise exception '未登入';
@@ -30,6 +31,10 @@ begin
   -- 停權檢查（情境 7）：未完成清潔歸還者不可再使用預約系統（擋送單，不擋登入）
   if (select account_level from public.students where id = v_uid) >= 5 then
     raise exception '帳號已停權（未完成清潔歸還），無法送出預約，請聯絡系學會';
+  end if;
+  -- 休學擋單（2026-10-01，後台會員管理標記；欄位見 members.sql）：同停權，只擋新借
+  if (select on_leave from public.students where id = v_uid) then
+    raise exception '帳號目前標記為休學，暫停租借；復學後請洽系學會恢復';
   end if;
   -- 罰款欠繳擋單（情境 13，2026-09-26）：有未繳清的逾期罰款者不可再下單（僅擋 student）
   if public.user_role() = 'student' and exists (
@@ -57,7 +62,14 @@ begin
       raise exception '所選租借期間為寒暑假封鎖期，暫不開放租借';
     end if;
 
-    -- 重複下單檢查（rental-rules §6，原僅前端）：同一時段僅能有一張小量訂單
+    -- 設備／空間分單（rental-rules 新規則 4，2026-10-02 實作）：一張單只能全是設備或全是空間
+    if (select count(distinct (i ->> 'item_type' = 'equipment'))
+          from jsonb_array_elements(v_order -> 'items') i) > 1 then
+      raise exception '設備與空間須分開成兩張訂單';
+    end if;
+    v_is_equip := (v_order -> 'items' -> 0 ->> 'item_type') = 'equipment';
+
+    -- 重複下單檢查（rental-rules §6，原僅前端）：同一時段同類別（設備／空間）僅能有一張小量訂單
     if v_order ->> 'booking_type' = 'little' and exists (
       select 1 from public.orders o
       where o.student_id = v_uid
@@ -65,8 +77,25 @@ begin
         and o.status in ('pending', 'in-progress', 'overdue')
         and o.start_date = (v_order ->> 'start_date')::date
         and o.end_date = (v_order ->> 'end_date')::date
+        and exists (select 1 from public.order_items oi
+                    where oi.order_id = o.id and oi.item_type = 'equipment') = v_is_equip
     ) then
-      raise exception '該時段已有一張小量訂單（同一時段僅能有一張小量訂單）';
+      raise exception '該時段已有一張%訂單（同一時段同類僅能有一張）',
+        case when v_is_equip then '小量設備' else '個人空間' end;
+    end if;
+
+    -- 大量設備預選繳押金／取件時段（新規則 3，見 mass-pickup.sql）。
+    -- ponytail: 時段是否為值班時段、是否在 24 工作時內由前端選單把關；這裡只守必填與日期範圍
+    --（選錯時段只影響學生自己，逾時未繳仍由 auto-cancel 取消）
+    if v_is_equip and v_order ->> 'booking_type' = 'mass-personal' then
+      if coalesce(v_order ->> 'deposit_slot', '') = '' or coalesce(v_order ->> 'pickup_slot', '') = ''
+         or v_order ->> 'deposit_date' is null then
+        raise exception '大量設備訂單需選擇繳押金與取件時段';
+      end if;
+      if (v_order ->> 'deposit_date')::date < (now() at time zone 'Asia/Taipei')::date
+         or (v_order ->> 'deposit_date')::date > (v_order ->> 'start_date')::date then
+        raise exception '繳押金日期需介於今天與起租日之間，請重新選擇時段';
+      end if;
     end if;
 
     -- 庫存檢查：鎖定設備列（for update），避免兩人同時搶最後一件。
@@ -151,14 +180,15 @@ begin
 
     insert into public.orders
       (rental_number, student_id, start_date, end_date, booking_type, status,
-       deposit_total, reason, class_name, teacher)
+       deposit_total, reason, class_name, teacher, deposit_date, deposit_slot, pickup_slot)
     values
       (v_rental, v_uid,
        (v_order ->> 'start_date')::date, (v_order ->> 'end_date')::date,
        v_order ->> 'booking_type',
        case when public.user_role() = 'staff' then 'in-progress' else 'pending' end,
        v_equip_dep + v_space_dep,
-       v_order ->> 'reason', v_order ->> 'class_name', v_order ->> 'teacher')
+       v_order ->> 'reason', v_order ->> 'class_name', v_order ->> 'teacher',
+       (v_order ->> 'deposit_date')::date, v_order ->> 'deposit_slot', v_order ->> 'pickup_slot')
     returning id into v_order_id;
 
     insert into public.order_items (order_id, item_type, item_id, name, quantity, deposit)
@@ -183,35 +213,53 @@ begin
 end;
 $$;
 
--- 後台：確認收押金（pending → in-progress）。僅 admin（情境 4）。
--- 繳押金當下直接取件，無中間態；發通知告知學生租借已開始。
--- p_handler = 值班經手幹部姓名（快照寫入 orders.paid_by，供追溯；名單見 staff-members.sql）。
-drop function if exists public.admin_mark_paid(text); -- 舊簽名（未帶經手人）
-create or replace function public.admin_mark_paid(p_rental_number text, p_handler text default null)
+-- 後台：收押金／取件。僅 admin（情境 4；大量設備預繳見 mass-pickup.sql）。
+--   p_pickup = true（預設）：收押金＋取件同時進行，或已預繳者來取件 → in-progress，租借開始。
+--   p_pickup = false：只收押金（大量設備先繳後取）→ 仍為 pending，記 deposit_paid_at（＝已繳待取件）。
+-- p_handler = 值班經手幹部姓名（快照：收押金寫 paid_by、取件寫 picked_up_by；名單見 staff-members.sql）。
+drop function if exists public.admin_mark_paid(text);       -- 舊簽名（未帶經手人）
+drop function if exists public.admin_mark_paid(text, text); -- 舊簽名（未帶取件選項）
+create or replace function public.admin_mark_paid(
+  p_rental_number text, p_handler text default null, p_pickup boolean default true)
 returns void
 language plpgsql
 security definer set search_path = public
 as $$
 declare
-  v_student uuid;
+  v_order public.orders%rowtype;
 begin
   if public.user_role() <> 'admin' then
     raise exception '僅限管理員';
   end if;
 
-  update public.orders
-    set status = 'in-progress',
-        paid_by = p_handler
+  select * into v_order from public.orders
     where rental_number = p_rental_number and status = 'pending'
-    returning student_id into v_student;
-
+    for update;
   if not found then
-    raise exception '訂單不存在或非待繳押金狀態';
+    raise exception '訂單不存在或非待繳押金／待取件狀態';
+  end if;
+  if not p_pickup and v_order.deposit_paid_at is not null then
+    raise exception '此訂單已收過押金，請改按「取件」';
   end if;
 
+  -- set 內引用的欄位皆為更新前的值
+  update public.orders
+    set status = case when p_pickup then 'in-progress' else 'pending' end,
+        deposit_paid_at = coalesce(deposit_paid_at, now()),
+        paid_by = case when deposit_paid_at is null then p_handler else paid_by end,
+        picked_up_by = case when p_pickup then p_handler else picked_up_by end
+    where id = v_order.id;
+
   insert into public.notifications (student_id, type, title, message, link)
-  values (v_student, 'success', '押金已確認',
-          '訂單 ' || p_rental_number || ' 押金已收，租借開始。', '/profile');
+  values (v_order.student_id, 'success',
+          case when p_pickup then '租借開始' else '押金已確認' end,
+          '訂單 ' || p_rental_number ||
+          case when p_pickup then
+                 case when v_order.deposit_paid_at is null then ' 押金已收並完成取件，租借開始。'
+                      else ' 已完成取件，租借開始。' end
+               else ' 押金已收，請於 ' || to_char(v_order.start_date, 'MM/DD') || ' '
+                    || coalesce(v_order.pickup_slot, '值班時段') || ' 取件。' end,
+          '/profile');
 end;
 $$;
 

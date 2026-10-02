@@ -18,6 +18,8 @@ export const checkDuplicateOrder = (
     if (receipt.items && receipt.items.length > 0) {
       // 假設一張訂單只有一個時段（目前系統邏輯）
       const firstItem = receipt.items[0]
+      // 設備／空間分單：只跟同類比對（目前僅 SpacePage 呼叫 → 略過設備單）
+      if (firstItem.category === 'equipment') continue
       const existingStart = new Date(firstItem.startDate).getTime()
       const existingEnd = new Date(firstItem.endDate).getTime()
 

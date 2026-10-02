@@ -10,7 +10,8 @@ import jsPDF from 'jspdf'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../components/cart/cartHelpers'
-import { displayOrderStatus, overduePenalty } from '../utils/timeUtils'
+import { displayOrderStatus, overduePenalty, slotLabel } from '../utils/timeUtils'
+import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
 import { fetchClosedDates } from '../services/ordersService'
 
 interface OrderItem {
@@ -37,6 +38,11 @@ interface OrderData {
   status?: OrderStatus
   statusUpdatedAt?: string
   reason?: string // 借用使用原因
+  // 大量設備預選時段（mass-pickup.sql）；depositPaidAt 有值且仍 pending＝已繳押金待取件
+  depositPaidAt?: string | null
+  depositDate?: string | null
+  depositSlot?: string | null
+  pickupSlot?: string | null
 }
 
 interface DateGroup {
@@ -115,8 +121,10 @@ const OrderPage: React.FC = () => {
   }
 
   // 計算當前訂單狀態（與 ProfilePage 同一套判定，修正列表已取消／詳情仍 pending 的不同步）
-  const currentStatus = displayOrderStatus(rentalData.status, rentalData.createdAt, closedDates)
-  const statusInfo = getStatusInfo(currentStatus)
+  // 大量設備已預繳押金待取件：不走逾時判定，標籤同 Profile／後台
+  const awaitingPickup = rentalData.status === 'pending' && !!rentalData.depositPaidAt
+  const currentStatus = awaitingPickup ? 'pending' : displayOrderStatus(rentalData.status, rentalData.createdAt, closedDates)
+  const statusInfo = awaitingPickup ? AWAITING_PICKUP_META : getStatusInfo(currentStatus)
 
   // 逾期累計罰款試算（僅 overdue 顯示）
   const endDateStr = [...rentalData.rentalDates].sort()[rentalData.rentalDates.length - 1]
@@ -253,7 +261,7 @@ const OrderPage: React.FC = () => {
             {/* 狀態標籤（逾期時加累計罰款試算，最終金額歸還時由系學會確認） */}
             <div className="flex items-center gap-4">
               {currentStatus === 'overdue' && penalty > 0 && (
-                <span className="font-['Inter',_sans-serif] text-s text-error2">
+                <span className="font-['Inter',_sans-serif] text-sm text-error2">
                   Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
                 </span>
               )}
@@ -262,7 +270,7 @@ const OrderPage: React.FC = () => {
                 style={{ backgroundColor: statusInfo.color }}
               >
                 <span
-                  className="font-['Inter',_sans-serif] text-s font-normal"
+                  className="font-['Inter',_sans-serif] text-sm font-normal"
                   style={{ color: statusInfo.textColor }}
                 >
                   {statusInfo.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
@@ -288,15 +296,15 @@ const OrderPage: React.FC = () => {
                           {/* Equipment 標題 */}
                           <div className="w-full grid grid-cols-[1fr_140px_120px] gap-6 items-center py-3 pr-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-['Inter',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>Equipment</span>
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>設備</span>
+                              <span className="font-['Inter',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>Equipment</span>
+                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>設備</span>
                             </div>
                             {/* 總數量 */}
-                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-sm text-white text-center" style={{ fontWeight: 500 }}>
                               {group.equipmentItems.reduce((sum, item) => sum + (item.quantity || 1), 0)}
                             </div>
                             {/* 總押金 */}
-                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-sm text-white text-center" style={{ fontWeight: 500 }}>
                               NT$ {Math.min(group.equipmentItems.reduce((sum, item) => sum + (item.deposit * (item.quantity || 1)), 0), 5000).toLocaleString()}
                             </div>
                           </div>
@@ -318,17 +326,17 @@ const OrderPage: React.FC = () => {
                                 </div>
 
                                 {/* 名稱 */}
-                                <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
+                                <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                                   {item.name}
                                 </div>
 
                                 {/* 數量 */}
-                                <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                                <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                                   {item.quantity || 1}
                                 </div>
 
                                 {/* 押金 */}
-                                <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                                <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                                   NT$ {(item.deposit * (item.quantity || 1)).toLocaleString()}
                                 </div>
                               </div>
@@ -343,11 +351,11 @@ const OrderPage: React.FC = () => {
                           {/* Space 標題 */}
                           <div className="w-full grid grid-cols-[1fr_140px_120px] gap-6 items-center py-3 pr-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-['Inter',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>Space</span>
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-m text-white" style={{ fontWeight: 500 }}>空間</span>
+                              <span className="font-['Inter',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>Space</span>
+                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>空間</span>
                             </div>
                             {/* 總數量 */}
-                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-sm text-white text-center" style={{ fontWeight: 500 }}>
                               {(() => {
                                 // 計算總數量：區塊總數（按編號計算）+ 教室數
                                 const blocks = group.spaceItems.filter(item => item.category === 'space-block')
@@ -360,7 +368,7 @@ const OrderPage: React.FC = () => {
                               })()}
                             </div>
                             {/* 總押金 */}
-                            <div className="font-['Inter',_sans-serif] text-s text-white text-center" style={{ fontWeight: 500 }}>
+                            <div className="font-['Inter',_sans-serif] text-sm text-white text-center" style={{ fontWeight: 500 }}>
                               NT$ {Math.min(group.spaceItems.reduce((sum, item) => sum + item.deposit, 0), 5000).toLocaleString()}
                             </div>
                           </div>
@@ -412,17 +420,17 @@ const OrderPage: React.FC = () => {
                                     </div>
 
                                     {/* 名稱（區域 + 所有編號） */}
-                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
+                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                                       {areaName}（{blockIds.join('、')}）
                                     </div>
 
                                     {/* 數量（區塊數） */}
-                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                                       {blocks.length}
                                     </div>
 
                                     {/* 押金（總和） */}
-                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                                       NT$ {totalDeposit.toLocaleString()}
                                     </div>
                                   </div>
@@ -446,17 +454,17 @@ const OrderPage: React.FC = () => {
                                     </div>
 
                                     {/* 名稱 */}
-                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
+                                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                                       {item.name}
                                     </div>
 
                                     {/* 數量 */}
-                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                                       1
                                     </div>
 
                                     {/* 押金 */}
-                                    <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                                    <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                                       NT$ 5,000
                                     </div>
                                   </div>
@@ -521,6 +529,22 @@ const OrderPage: React.FC = () => {
                     NT$ {rentalData.totalDeposit.toLocaleString()}
                   </div>
                 </div>
+
+                {/* 大量設備預選時段：繳押金（已繳則略過）＋取件 */}
+                {rentalData.pickupSlot && (
+                  <div className="grid grid-cols-[140px_1fr] gap-4">
+                    <div>
+                      <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Schedule</div>
+                      <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">預約時段</div>
+                    </div>
+                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white text-right leading-6">
+                      {!rentalData.depositPaidAt && rentalData.depositDate && rentalData.depositSlot && (
+                        <div>繳押金 {slotLabel({ date: rentalData.depositDate, slot: rentalData.depositSlot })}</div>
+                      )}
+                      <div>取件 {slotLabel({ date: [...rentalData.rentalDates].sort()[0], slot: rentalData.pickupSlot })}</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* User Guide */}
@@ -583,12 +607,12 @@ const OrderPage: React.FC = () => {
           {/* A. 第一部分：Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h1 className="text-l font-bold mb-1">SCCDSA Booking</h1>
-              <p className="text-l font-bold">實踐媒傳系學會借用系統</p>
+              <h1 className="text-lg font-bold mb-1">SCCDSA Booking</h1>
+              <p className="text-lg font-bold">實踐媒傳系學會借用系統</p>
             </div>
             <div className="text-right">
               <h2 className="text-xl font-bold mb-1">Receipt 收據</h2>
-              <p className="text-l font-bold">{rentalData.rentalNumber}</p>
+              <p className="text-lg font-bold">{rentalData.rentalNumber}</p>
             </div>
           </div>
 
@@ -597,16 +621,16 @@ const OrderPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div>
               <p className="text-xs text-black mb-1 font-bold">Order Time 送出時間</p>
-              <p className="text-s font-bold">{formatOrderTime()}</p>
+              <p className="text-sm font-bold">{formatOrderTime()}</p>
             </div>
             <div>
               <p className="text-xs text-black mb-1 font-bold">Booking Date 使用日期</p>
-              <p className="text-s font-bold">{formatBookingDateRange()}</p>
+              <p className="text-sm font-bold">{formatBookingDateRange()}</p>
             </div>
             <div className="flex flex-col items-center">
               <div className="text-left w-fit">
                 <p className="text-xs text-black mb-1 font-bold">User 使用者</p>
-                <p className="text-s font-bold">{rentalData.borrowerName}</p>
+                <p className="text-sm font-bold">{rentalData.borrowerName}</p>
               </div>
             </div>
           </div>
@@ -615,11 +639,11 @@ const OrderPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-4 mb-8">
             <div>
               <p className="text-xs text-black mb-1 font-bold">Order Type 訂單種類</p>
-              <p className="text-s font-bold">{getBookingTypeLabel(rentalData.items[0]?.bookingType)}</p>
+              <p className="text-sm font-bold">{getBookingTypeLabel(rentalData.items[0]?.bookingType)}</p>
             </div>
             <div>
               <p className="text-xs text-black mb-1 font-bold">Reason 使用原因</p>
-              <p className="text-s font-bold text-black">{rentalData.reason || '—'}</p>
+              <p className="text-sm font-bold text-black">{rentalData.reason || '—'}</p>
             </div>
           </div>
 
@@ -652,7 +676,7 @@ const OrderPage: React.FC = () => {
                   if (spaceItems.length > 0) {
                     rows.push(
                       <tr key="header-space">
-                        <td colSpan={3} className="py-2 font-bold pt-4 text-s">Space 空間</td>
+                        <td colSpan={3} className="py-2 font-bold pt-4 text-sm">Space 空間</td>
                       </tr>
                     )
                     spaceItems.forEach((item, idx) => {
@@ -676,7 +700,7 @@ const OrderPage: React.FC = () => {
                   if (equipmentItems.length > 0) {
                     rows.push(
                       <tr key="header-equip">
-                        <td colSpan={3} className="py-2 font-bold pt-4 text-s">Equipment 設備</td>
+                        <td colSpan={3} className="py-2 font-bold pt-4 text-sm">Equipment 設備</td>
                       </tr>
                     )
                     equipmentItems.forEach((item, idx) => {

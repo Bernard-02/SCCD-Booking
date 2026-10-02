@@ -15,7 +15,9 @@ import { changePassword, updateMyPhone } from '../services/authService'
 import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadEquipmentData } from '../services/equipmentService'
-import { pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
+import { loadSpaceBlocks } from '../services/spaceService'
+import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
+import { slotLabel, pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
 import { useSuspension } from '../hooks/useSuspension'
 
 type ProfileSection = 'history' | 'profile'
@@ -44,6 +46,11 @@ interface Receipt {
   status?: OrderStatus // 訂單狀態
   statusUpdatedAt?: string // 狀態更新時間（用於 in-progress 的倒數）
   hasExtended?: boolean // 是否已延期
+  // 大量設備預選時段（mass-pickup.sql）；depositPaidAt 有值且仍 pending＝已繳押金待取件
+  depositPaidAt?: string | null
+  depositDate?: string | null
+  depositSlot?: string | null
+  pickupSlot?: string | null
 }
 
 const ProfilePage: React.FC = () => {
@@ -82,7 +89,7 @@ const ProfilePage: React.FC = () => {
         <div className="container h-full flex flex-col">
           {/* 上半部：問候區塊（問候語小、放名字上方；名字靠左） */}
           <div className="mb-12 flex-shrink-0">
-            <p className="font-['Inter',_sans-serif] text-white text-s mb-2">
+            <p className="font-['Inter',_sans-serif] text-white text-sm mb-2">
               {greeting} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{greetingZh}</span>
             </p>
             <p className="font-['Inter',_sans-serif] text-white text-xl">
@@ -100,7 +107,7 @@ const ProfilePage: React.FC = () => {
                   <button
                     key={item.id}
                     onClick={() => setCurrentSection(item.id)}
-                    className={`text-s font-semibold transition-colors cursor-pointer text-left self-start ${
+                    className={`text-sm font-semibold transition-colors cursor-pointer text-left self-start ${
                       currentSection === item.id
                         ? 'text-white'
                         : 'text-gray-scale2 hover:!text-white'
@@ -145,13 +152,13 @@ const RentalHistorySection: React.FC = () => {
   // 從 Supabase 讀取自己的訂單（RLS 只回本人的），組成畫面用的 Receipt 形狀
   const loadOrders = React.useCallback(async () => {
     try {
-      const [orders, equipmentData] = await Promise.all([fetchMyOrders(), loadEquipmentData()])
+      const [orders, equipmentData, spaceBlocks] = await Promise.all([fetchMyOrders(), loadEquipmentData(), loadSpaceBlocks()])
 
       const itemImage = (item: OrderRow['order_items'][number]): string => {
         if (item.item_type === 'equipment') {
           return equipmentData[item.item_id]?.mainImage || 'Images/Extension Cord.webp'
         }
-        if (item.item_type === 'classroom') return `/Images/${item.item_id}.webp`
+        if (item.item_type === 'classroom') return spaceBlocks[item.item_id]?.image_url || `/Images/${item.item_id}.webp`
         return '/Area/A5F Area Booking.svg'
       }
 
@@ -173,7 +180,11 @@ const RentalHistorySection: React.FC = () => {
         })),
         createdAt: order.created_at,
         status: order.status,
-        hasExtended: order.has_extended
+        hasExtended: order.has_extended,
+        depositPaidAt: order.deposit_paid_at,
+        depositDate: order.deposit_date,
+        depositSlot: order.deposit_slot,
+        pickupSlot: order.pickup_slot
       }))
 
       setAllReceipts(receipts)
@@ -312,6 +323,17 @@ const RentalHistorySection: React.FC = () => {
 
   // 渲染倒數計時
   const renderCountdown = (receipt: Receipt, status: OrderStatus) => {
+    // 大量設備：已繳押金待取件 → 顯示取件時段；尚未繳 → 倒數下方附預約的繳押金／取件時段
+    const pickupText = receipt.pickupSlot ? slotLabel({ date: receipt.rentalDates[0], slot: receipt.pickupSlot }) : ''
+    if (status === 'pending' && receipt.depositPaidAt) {
+      return (
+        <div className="text-right mt-2">
+          <span className="font-['Inter',_sans-serif] text-sm" style={{ color: 'var(--color-cyan-blue)' }}>
+            Pickup <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取件</span> {pickupText}
+          </span>
+        </div>
+      )
+    }
     if (status === 'pending') {
       // Pending: 24 工作時倒數（排除週末與臨時公休日）
       const msRemaining = pendingMsRemaining(receipt.createdAt, now, closedDates)
@@ -325,10 +347,15 @@ const RentalHistorySection: React.FC = () => {
       
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-s text-yellow">
+          <span className="font-['Inter',_sans-serif] text-sm text-yellow">
             Expires in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離繳交押金</span> {hoursRemaining} hrs
             {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
           </span>
+          {receipt.depositDate && receipt.depositSlot && (
+            <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2 mt-1">
+              繳押金 {slotLabel({ date: receipt.depositDate, slot: receipt.depositSlot })}・取件 {pickupText}
+            </div>
+          )}
         </div>
       )
     } else if (status === 'in-progress') {
@@ -352,7 +379,7 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-s text-blue">
+          <span className="font-['Inter',_sans-serif] text-sm text-blue">
             Due in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
           </span>
         </div>
@@ -367,7 +394,7 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-s text-error2">
+          <span className="font-['Inter',_sans-serif] text-sm text-error2">
             Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
           </span>
         </div>
@@ -379,9 +406,11 @@ const RentalHistorySection: React.FC = () => {
   // 渲染收據項目
   const renderReceiptItem = (receipt: Receipt, index: number) => {
     // 顯示狀態：資料庫為準；pending 額外做逾時判定（cron 掃描前的即時顯示）
-    const status = displayOrderStatus(receipt.status, receipt.createdAt, closedDates, now)
-    
-    const statusInfo = getStatusInfo(status)
+    // 已預繳押金待取件不走 24 工作時逾時判定（不會被自動取消）
+    const awaitingPickup = receipt.status === 'pending' && !!receipt.depositPaidAt
+    const status = awaitingPickup ? 'pending' : displayOrderStatus(receipt.status, receipt.createdAt, closedDates, now)
+
+    const statusInfo = awaitingPickup ? AWAITING_PICKUP_META : getStatusInfo(status)
     // 可延期＝租借中、未延期過、且未逾「前三天」期限
     const endDate = receipt.rentalDates[receipt.rentalDates.length - 1]
     const canExtend = status === 'in-progress' && !receipt.hasExtended && isWithinExtendWindow(endDate)
@@ -413,10 +442,10 @@ const RentalHistorySection: React.FC = () => {
             </div>
             {/* 日期和押金在同一行，有間距 */}
             <div className="flex items-center gap-8">
-              <span className="font-['Inter',_sans-serif] text-m text-white">
+              <span className="font-['Inter',_sans-serif] text-md text-white">
                 {formatDateRange(receipt.rentalDates)}
               </span>
-              <span className="font-['Inter',_sans-serif] text-m text-white">
+              <span className="font-['Inter',_sans-serif] text-md text-white">
                 NT$ {receipt.totalDeposit.toLocaleString()}
               </span>
             </div>
@@ -471,7 +500,7 @@ const RentalHistorySection: React.FC = () => {
     <div>
       {/* 所有訂單 */}
       {allReceipts.length === 0 ? (
-        <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale4 text-m">尚無訂單記錄</p>
+        <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale4 text-md">尚無訂單記錄</p>
       ) : (
         <div>
           {allReceipts.map((receipt, index) => renderReceiptItem(receipt, index))}
@@ -571,10 +600,10 @@ const ProfileDataSection: React.FC = () => {
         {isSuspended ? (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-m">
+              <p className="font-['Inter',_sans-serif] text-white text-md">
                 Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span>
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-m">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-md">
                 您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span>
               </p>
             </div>
@@ -590,10 +619,10 @@ const ProfileDataSection: React.FC = () => {
         ) : worstOverdueDays > 0 ? (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-m">
+              <p className="font-['Inter',_sans-serif] text-white text-md">
                 Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span>
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-m">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-md">
                 帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span>
               </p>
             </div>
@@ -609,10 +638,10 @@ const ProfileDataSection: React.FC = () => {
         ) : (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-m">
+              <p className="font-['Inter',_sans-serif] text-white text-md">
                 You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
               </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-m">
+              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-md">
                 您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
               </p>
             </div>
@@ -638,11 +667,11 @@ const ProfileDataSection: React.FC = () => {
         <div className="grid grid-cols-2 gap-24">
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Name</span> <span className="font-chinese">姓名</span></label>
-            <p className="font-chinese text-white text-s">{currentUser?.name || '阿志'}</p>
+            <p className="font-chinese text-white text-sm">{currentUser?.name || '阿志'}</p>
           </div>
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Class</span> <span className="font-chinese">班級</span></label>
-            <p className="font-chinese text-white text-s">
+            <p className="font-chinese text-white text-sm">
               {formatClassName(currentUser?.studentId)}
             </p>
           </div>
@@ -652,13 +681,13 @@ const ProfileDataSection: React.FC = () => {
         <div className="grid grid-cols-2 gap-24">
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Student ID</span> <span className="font-chinese">學號</span></label>
-            <p className="font-english text-white text-s">{currentUser?.studentId || 'A111144001'}</p>
+            <p className="font-english text-white text-sm">{currentUser?.studentId || 'A111144001'}</p>
           </div>
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Password</span> <span className="font-chinese">密碼</span></label>
             <div className="flex items-center gap-3">
               {/* 密碼僅存雜湊，無法顯示明文；此處固定遮罩，變更走右側編輯 */}
-              <span className="font-english text-white text-s flex-1">••••••••</span>
+              <span className="font-english text-white text-sm flex-1">••••••••</span>
               <button
                 onClick={() => setEditMode('password')}
                 className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
@@ -676,7 +705,7 @@ const ProfileDataSection: React.FC = () => {
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Phone</span> <span className="font-chinese">手機號碼</span></label>
             <div className="flex items-center gap-3">
-              <p className="font-english text-white text-s flex-1">
+              <p className="font-english text-white text-sm flex-1">
                 {phone ? maskPhone(phone) : '未設定'}
               </p>
               <button
@@ -691,7 +720,7 @@ const ProfileDataSection: React.FC = () => {
           </div>
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Email</span> <span className="font-chinese">電子郵件</span></label>
-            <p className="font-english text-white text-s">
+            <p className="font-english text-white text-sm">
               {maskEmail((currentUser?.email || `${currentUser?.studentId}@gm2.usc.edu.tw`).toLowerCase())}
             </p>
           </div>

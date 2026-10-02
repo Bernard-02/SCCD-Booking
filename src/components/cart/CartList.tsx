@@ -187,36 +187,20 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
     }
   }
 
-  // 檢查是否達到小量限制（9件）
-  const isLittleBookingLimitReached = (group: DateGroup): boolean => {
-    if (group.items.length === 0) return false
-
-    const bookingType = group.items[0].bookingType || 'little'
-
-    // 只有小量才有 9 件限制
-    if (bookingType !== 'little') return false
-
-    // 需要檢查同一時段所有組的總數（設備+空間）
-    const dateKey = `${group.startDate}_${group.endDate}`
-    const allGroupsInSamePeriod = dateGroups.filter(g => `${g.startDate}_${g.endDate}` === dateKey)
-
-    const totalInPeriod = allGroupsInSamePeriod.reduce((sum, g) => {
-      return sum + (g.category === 'equipment'
-        ? g.items.reduce((s: number, item: CartItem) => s + item.quantity, 0)
-        : g.items.length)
-    }, 0)
-
-    return totalInPeriod >= 9
-  }
+  // 檢查是否達到小量限制（9件）：僅小量設備組，只計本組（設備／空間分單，空間由押金 cap 限量）
+  const isLittleBookingLimitReached = (group: DateGroup): boolean =>
+    group.category === 'equipment' &&
+    (group.items[0]?.bookingType || 'little') === 'little' &&
+    group.items.reduce((s, item) => s + item.quantity, 0) >= 9
 
   return (
     <div className="w-full">
       {cart.length === 0 && (
         <div className="empty-message-container flex-col">
-          <p className="text-s text-white font-['Inter',_sans-serif]">
+          <p className="text-sm text-white font-['Inter',_sans-serif]">
             This list is empty.
           </p>
-          <p className="text-s text-white font-['Inter','Noto_Sans_TC',_sans-serif]">
+          <p className="text-sm text-white font-['Inter','Noto_Sans_TC',_sans-serif]">
             此清單是空的。
           </p>
         </div>
@@ -359,7 +343,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 {/* 填寫狀態按鈕 */}
                 <button
                   onClick={() => {
-                    setCurrentEditingGroup(dateKey)
+                    setCurrentEditingGroup(groupKey) // 借用資訊每張訂單各填（設備／空間分單）
                     setCurrentBookingType(bookingType)
                     setIsDetailsDialogOpen(true)
                   }}
@@ -367,16 +351,16 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                   className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 transition-colors rounded-lg ${
                     isExpired
                       ? 'bg-gray-scale4 cursor-not-allowed'
-                      : bookingDetails[dateKey]
+                      : bookingDetails[groupKey]
                       ? 'bg-[#00ff80] hover:bg-[#00e070] cursor-pointer'
                       : 'bg-[#ffff00] hover:bg-[#e6e600] cursor-pointer'
                   }`}
                 >
-                  <span className={`material-icons text-m ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
-                    {bookingDetails[dateKey] ? 'check' : 'edit'}
+                  <span className={`material-icons text-md ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
+                    {bookingDetails[groupKey] ? 'check' : 'edit'}
                   </span>
                   <span className={`text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
-                    {bookingDetails[dateKey] ? (
+                    {bookingDetails[groupKey] ? (
                       <><span className="font-['Inter',_sans-serif]">Filled</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">資訊已填</span></>
                     ) : (
                       <><span className="font-['Inter',_sans-serif]">Details</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">借用資訊</span></>
@@ -397,7 +381,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       : 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
                   }`}
                 >
-                  <span className="material-icons text-m" style={{ fontSize: '20px' }}>add</span>
+                  <span className="material-icons text-md" style={{ fontSize: '20px' }}>add</span>
                   <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">Add</span>
                   <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs whitespace-nowrap">新增</span>
                 </button>
@@ -414,7 +398,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 </span>
                 <button
                   onClick={() => handleEditDate(group.startDate, group.endDate, dateKey, group.category, bookingType)}
-                  className="text-s font-normal text-black hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
+                  className="text-sm font-normal text-black hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
                 >
                   <span className="font-['Inter',_sans-serif]">Edit</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">編輯日期</span>
                 </button>
@@ -479,12 +463,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱（區域 + 所有編號） */}
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
+                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                             {areaName}（{blockIds.join('、')}）
                           </div>
 
                           {/* 押金（總和） */}
-                          <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                          <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                             NT$ {totalDeposit.toLocaleString()}
                           </div>
 
@@ -494,7 +478,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                               // 刪除該區域的所有區塊
                               blocks.forEach(block => handleRemoveItem(block.id, group.startDate, group.endDate))
                             }}
-                            className="font-['Inter',_sans-serif] text-s text-white hover:text-gray-scale1 transition-colors cursor-pointer"
+                            className="font-['Inter',_sans-serif] text-sm text-white hover:text-gray-scale1 transition-colors cursor-pointer"
                             title={`移除 ${areaName} 所有區塊`}
                           >
                             ✕
@@ -527,19 +511,19 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱 */}
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
+                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                             {item.name}
                           </div>
 
                           {/* 押金 */}
-                          <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                          <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                             NT$ 5,000
                           </div>
 
                           {/* 刪除按鈕 */}
                           <button
                             onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                            className="font-['Inter',_sans-serif] text-s text-white hover:text-gray-scale1 transition-colors cursor-pointer"
+                            className="font-['Inter',_sans-serif] text-sm text-white hover:text-gray-scale1 transition-colors cursor-pointer"
                           >
                             ✕
                           </button>
@@ -559,33 +543,8 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     const otherItemsQty = getCartQuantity(item.id) - item.quantity
                     const maxQtyForThisItem = totalStock - otherItemsQty
 
-                    // 檢查小量訂單 9 件限制
-                    const bookingType = item.bookingType || 'little'
-                    let canIncrementByLimit = true
-                    if (bookingType === 'little') {
-                      // 計算同一時段的總數量
-                      const dateKey = `${group.startDate}_${group.endDate}`
-                      const allGroupsInSamePeriod = dateGroups.filter(g => `${g.startDate}_${g.endDate}` === dateKey)
-
-                      let totalInPeriod = 0
-                      allGroupsInSamePeriod.forEach(g => {
-                        const gBookingType = g.items.length > 0 ? (g.items[0].bookingType || 'little') : 'little'
-                        if (gBookingType === 'little') {
-                          if (g.category === 'equipment') {
-                            totalInPeriod += g.items.reduce((s: number, i: CartItem) => s + i.quantity, 0)
-                          } else {
-                            totalInPeriod += g.items.length
-                          }
-                        }
-                      })
-
-                      // 如果已經達到 9 件，禁止增加
-                      if (totalInPeriod >= 9) {
-                        canIncrementByLimit = false
-                      }
-                    }
-
-                    const canIncrement = item.quantity < maxQtyForThisItem && canIncrementByLimit
+                    // 檢查小量設備 9 件限制（本組已達 9 件即禁止增加）
+                    const canIncrement = item.quantity < maxQtyForThisItem && !isLittleBookingLimitReached(group)
 
                     // 判斷是否完全缺貨（當前數量超過最大可用數量）
                     const isOutOfStock = item.quantity > maxQtyForThisItem
@@ -611,7 +570,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
                         {/* 名稱和庫存狀態 */}
                         <div className="flex flex-col gap-1">
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s text-white">
+                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                             {item.name}
                           </div>
                           {/* 只在完全缺貨（灰色狀態）時顯示錯誤訊息 */}
@@ -634,7 +593,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1 || isOutOfStock}
-                            className={`font-['Inter',_sans-serif] text-s transition-colors ${
+                            className={`font-['Inter',_sans-serif] text-sm transition-colors ${
                               item.quantity <= 1 || isOutOfStock
                                 ? 'text-gray-scale4 cursor-not-allowed'
                                 : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -642,13 +601,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           >
                             -
                           </button>
-                          <span className="font-['Inter',_sans-serif] text-s text-white w-8 text-center">
+                          <span className="font-['Inter',_sans-serif] text-sm text-white w-8 text-center">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity + 1)}
                             disabled={!canIncrement}
-                            className={`font-['Inter',_sans-serif] text-s transition-colors ${
+                            className={`font-['Inter',_sans-serif] text-sm transition-colors ${
                               !canIncrement
                                 ? 'text-gray-scale4 cursor-not-allowed'
                                 : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -659,14 +618,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         </div>
 
                         {/* 押金 */}
-                        <div className="font-['Inter',_sans-serif] text-s text-white text-center">
+                        <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
                           NT$ {(item.deposit * item.quantity).toLocaleString()}
                         </div>
 
                         {/* 刪除按鈕 */}
                         <button
                           onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                          className="font-['Inter',_sans-serif] text-s text-white hover:text-gray-scale1 transition-colors cursor-pointer"
+                          className="font-['Inter',_sans-serif] text-sm text-white hover:text-gray-scale1 transition-colors cursor-pointer"
                         >
                           ✕
                         </button>
@@ -713,6 +672,11 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
       <BookingDetailsDialog
         isOpen={isDetailsDialogOpen}
         bookingType={currentBookingType}
+        pickupDate={(() => {
+          // 大量設備單：起租日＝取件日，對話框據此列繳押金／取件時段
+          const g = dateGroups.find(g => `${g.category}_${g.startDate}_${g.endDate}` === currentEditingGroup)
+          return g?.category === 'equipment' && currentBookingType === 'mass-personal' ? g.startDate : undefined
+        })()}
         initialData={currentEditingGroup ? bookingDetails[currentEditingGroup] : undefined}
         onConfirm={(data) => {
           if (currentEditingGroup) {

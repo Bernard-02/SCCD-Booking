@@ -29,7 +29,7 @@ const AREA_MAPPING: Record<string, string[]> = {
 }
 
 const SpacePage: React.FC = () => {
-  const { cart, addToCart, removeFromCart, checkLittleBookingLimit, isSuspended } = useCart()
+  const { cart, addToCart, removeFromCart, isSuspended } = useCart()
   const { getCurrentSpaceDates } = useDateSelection()
   const { currentUser } = useAuth()
   const location = useLocation()
@@ -138,24 +138,33 @@ const SpacePage: React.FC = () => {
       .map(item => item.id)
   }, [cart])
 
-  // 教室資料
+  // 教室資料：名稱／押金／圖片以 space 表為準（後台空間管理可改），載入前沿用預設值
   const classroomData = [
     { id: 'A503', name: 'A503 教室', enName: 'A503 Classroom', price: 5000, image: '/Images/A503.webp' },
     { id: 'A507', name: 'A507 教室', enName: 'A507 Classroom', price: 5000, image: '/Images/A507.webp' },
     { id: 'A508', name: 'A508 教室', enName: 'A508 Classroom', price: 5000, image: '/Images/A508.webp' },
-  ]
+  ].map(c => {
+    const db = spaceBlocks[c.id]
+    return db ? { ...c, name: db.name || c.name, price: db.deposit, image: db.image_url || c.image } : c
+  })
 
   // 檢查教室是否在購物車中
   const isClassroomInCart = (id: string) => cart.some(item => item.id === id && item.category === 'classroom')
 
-  // 篩選教室 - 根據 statusFilters 狀態
+  // 教室開放狀態尊重 space 表 is_active（後台空間管理 toggle，2026-09-29 新規則 #1）：
+  // spaceBlocks 只含 is_active=true；載入完成前（空物件）暫不過濾，避免清單閃爍
+  const isClassroomOpen = (id: string) =>
+    Object.keys(spaceBlocks).length === 0 || id in spaceBlocks
+
+  // 篩選教室 - 先濾掉後台關閉的，再根據 statusFilters 狀態
   const filteredClassrooms = useMemo(() => {
+    const openClassrooms = classroomData.filter(c => isClassroomOpen(c.id))
     if (statusFilters.size === 0 || statusFilters.size === 3) {
-      // 顯示所有教室
-      return classroomData
+      // 顯示所有開放教室
+      return openClassrooms
     }
 
-    return classroomData.filter(classroom => {
+    return openClassrooms.filter(classroom => {
       const inCart = isClassroomInCart(classroom.id)
 
       // Available: 不在購物車中
@@ -166,7 +175,7 @@ const SpacePage: React.FC = () => {
 
       return false
     })
-  }, [statusFilters, cart])
+  }, [statusFilters, cart, spaceBlocks])
 
   // 處理區塊選擇（只能選擇當前子分類的區塊）
   const handleBlockSelect = (blockId: string) => {
@@ -266,26 +275,6 @@ const SpacePage: React.FC = () => {
     // 保留之前的選擇，只補上尚未選取的
     setSelectedBlocks(prev => [...prev, ...availableBlockIds.filter(id => !prev.includes(id))])
   }
-
-  // 檢查加入所有選中的區塊後是否超過小量訂單 9 件限制
-  const wouldExceedLightLimitForBlocks = useMemo(() => {
-    if (!hasSelectedDates || selectedBlocks.length === 0) return false
-
-    // 檢查第一個區塊，因為所有區塊都會被加入同一時段
-    const firstBlockItem = {
-      id: selectedBlocks[0],
-      name: `區塊 ${selectedBlocks[0]}`,
-      category: 'space-block',
-      deposit: getBlockDeposit(selectedBlocks[0]),
-      image: '/Area/A5F Area Booking.svg',
-      quantity: selectedBlocks.length, // 加入的總數量
-      startDate: spaceDates.startDate!.toISOString(),
-      endDate: spaceDates.endDate!.toISOString(),
-      bookingType: spaceDates.bookingType
-    }
-
-    return !checkLittleBookingLimit(firstBlockItem).allowed
-  }, [selectedBlocks, spaceDates, hasSelectedDates, checkLittleBookingLimit])
 
   // 加入選取的區塊到購物車
   const handleAddBlocks = () => {
@@ -458,7 +447,7 @@ const SpacePage: React.FC = () => {
   }, [selectedBlocks, spaceBlocks])
 
   // Add 按鈕的阻擋條件（僅控制外觀；仍可點擊，點擊時 toast 提示缺什麼）
-  const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || wouldExceedLightLimitForBlocks || isSuspended
+  const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || isSuspended
 
   return (
     <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
@@ -507,7 +496,7 @@ const SpacePage: React.FC = () => {
                     // 點擊 A5F 編號區時，回到外層並清空未送出的選擇
                     handleBackToNumberedArea()
                   }}
-                  className={`text-s font-bold transition-colors cursor-pointer text-left ${
+                  className={`text-sm font-bold transition-colors cursor-pointer text-left ${
                     isNumberedAreaSelected
                       ? 'text-white'
                       : 'text-gray-scale2 hover:!text-white'
@@ -533,7 +522,7 @@ const SpacePage: React.FC = () => {
                             onClick={() => handleSubCategoryChange(
                               selectedSubCategory === category.id ? null : category.id
                             )}
-                            className={`text-s font-bold transition-colors cursor-pointer text-left ${
+                            className={`text-sm font-bold transition-colors cursor-pointer text-left ${
                               isSelected
                                 ? activeColor
                                 : `text-gray-scale2 ${hoverColor}`
@@ -556,7 +545,7 @@ const SpacePage: React.FC = () => {
                     setSelectedMainCategory('Classroom')
                     setSelectedBlocks([])
                   }}
-                  className={`text-s font-bold transition-colors cursor-pointer text-left ${
+                  className={`text-sm font-bold transition-colors cursor-pointer text-left ${
                     selectedMainCategory === 'Classroom'
                       ? 'text-white'
                       : 'text-gray-scale2 hover:!text-white'
@@ -578,7 +567,7 @@ const SpacePage: React.FC = () => {
                   >
                     <div className="w-3 h-3 bg-[#00ff80]"></div>
                     <span className={`text-xs transition-colors ${
-                      statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                      statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
                     </span>
@@ -590,7 +579,7 @@ const SpacePage: React.FC = () => {
                   >
                     <div className="w-3 h-3 bg-[#ff448a]"></div>
                     <span className={`text-xs transition-colors ${
-                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
                     </span>
@@ -602,7 +591,7 @@ const SpacePage: React.FC = () => {
                   >
                     <div className="w-3 h-3 bg-[#ffa500]"></div>
                     <span className={`text-xs transition-colors ${
-                      statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                      statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
                     </span>
@@ -641,7 +630,7 @@ const SpacePage: React.FC = () => {
                       {/* Available: 不透明淺綠色 rgb(0, 128, 64) */}
                       <div className="w-3 h-3 bg-[rgb(0,128,64)]"></div>
                       <span className={`text-xs transition-colors ${
-                        statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                        statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借用</span>
                       </span>
@@ -654,7 +643,7 @@ const SpacePage: React.FC = () => {
                       {/* Unavailable: #ff448a - 與 SVG is-rented 一致 */}
                       <div className="w-3 h-3 bg-[#ff448a]"></div>
                       <span className={`text-xs transition-colors ${
-                        statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                        statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
                       </span>
@@ -667,7 +656,7 @@ const SpacePage: React.FC = () => {
                       {/* Partial: #ffa500 橘色警告色 */}
                       <div className="w-3 h-3 bg-[#ffa500]"></div>
                       <span className={`text-xs transition-colors ${
-                        statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+                        statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
                         <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段可借用</span>
                       </span>
@@ -691,7 +680,7 @@ const SpacePage: React.FC = () => {
                         <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">選擇區塊</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4">
-                        <span className="text-m font-['Inter',_sans-serif] font-normal break-words">
+                        <span className="text-md font-['Inter',_sans-serif] font-normal break-words">
                           {sortedSelectedBlocks.length > 0 ? sortedSelectedBlocks.join(', ') : '--'}
                         </span>
                       </div>
@@ -702,7 +691,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={handleSelectAll}
                           disabled={!selectedSubCategory || allAvailableSelected}
-                          className={`text-s font-['Inter',_sans-serif] font-normal transition-colors ${
+                          className={`text-sm font-['Inter',_sans-serif] font-normal transition-colors ${
                             !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
@@ -711,7 +700,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={() => setSelectedBlocks([])}
                           disabled={!selectedSubCategory || selectedBlocks.length === 0}
-                          className={`text-s font-['Inter',_sans-serif] font-normal transition-colors ${
+                          className={`text-sm font-['Inter',_sans-serif] font-normal transition-colors ${
                             !selectedSubCategory || selectedBlocks.length === 0 ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
@@ -774,7 +763,7 @@ const SpacePage: React.FC = () => {
                       <button
                         onClick={handleAddBlocks}
                         aria-disabled={isAddBlocked}
-                        className={`px-6 py-3 rounded-lg text-s font-['Inter',_sans-serif] font-normal transition ${
+                        className={`px-6 py-3 rounded-lg text-sm font-['Inter',_sans-serif] font-normal transition ${
                           isAddBlocked
                             ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                             : 'bg-white text-black hover:opacity-70 cursor-pointer'

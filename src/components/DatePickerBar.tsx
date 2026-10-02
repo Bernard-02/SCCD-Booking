@@ -189,7 +189,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     return {
       radio: isActive ? 'border-white' : 'border-gray-scale2 group-hover:border-white',
       dot: 'bg-white',
-      text: isActive ? 'text-white' : 'text-gray-scale2 group-hover:text-white'
+      text: isActive ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
     }
   }
 
@@ -203,7 +203,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      // 先計算每個時段的總數量（包括設備和空間），用於檢查小量限制
+      // 先計算每個時段的小量設備總數，用於檢查 9 件限制（僅計設備；空間由押金 cap 限量）
       const periodTotals = new Map<string, number>()
 
       cart.forEach(item => {
@@ -212,17 +212,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         itemStartDate.setHours(0, 0, 0, 0)
         if (itemStartDate < today) return
 
-        const periodKey = `${item.startDate}_${item.endDate}`
-        const bookingType = item.bookingType || 'little'
-
-        // 只計算小量/個人訂單
-        if (bookingType === 'little') {
-          const currentTotal = periodTotals.get(periodKey) || 0
-          if (item.category === 'equipment') {
-            periodTotals.set(periodKey, currentTotal + item.quantity)
-          } else {
-            periodTotals.set(periodKey, currentTotal + 1)
-          }
+        if (item.category === 'equipment' && (item.bookingType || 'little') === 'little') {
+          const periodKey = `${item.startDate}_${item.endDate}`
+          periodTotals.set(periodKey, (periodTotals.get(periodKey) || 0) + item.quantity)
         }
       })
 
@@ -254,7 +246,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           const isExpired = groupStartDate < today
 
           // 小量訂單且已達到 9 件限制時禁用（過期時段不禁用，開放點擊編輯日期）
-          const isDisabled = !isExpired && bookingType === 'little' && periodTotal >= 9
+          const isDisabled = !isExpired && type === 'equipment' && bookingType === 'little' && periodTotal >= 9
 
           dateGroups.set(key, {
             startDate: item.startDate,
@@ -482,7 +474,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <button
               disabled={!isResetEnabled}
               onClick={handleReset}
-              className={`text-s font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
+              className={`text-sm font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
                 isResetEnabled
                   ? 'text-white hover:opacity-70 transition-opacity cursor-pointer'
                   : 'text-gray-scale4 cursor-not-allowed'
@@ -495,7 +487,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <button
               onClick={() => setShowExistingDates(!showExistingDates)}
               disabled={existingCartDates.length === 0}
-              className={`existing-dates-btn text-s font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
+              className={`existing-dates-btn text-sm font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
                 existingCartDates.length > 0
                   ? 'text-white hover:opacity-70 transition-opacity cursor-pointer'
                   : 'text-gray-scale4 cursor-not-allowed'
@@ -509,10 +501,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-lg min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
                 <div className="px-4 py-3 border-b border-gray-scale4">
-                  <span className="text-s font-['Inter',_sans-serif] text-white">
+                  <span className="text-sm font-['Inter',_sans-serif] text-white">
                     Existing Cart Dates{' '}
                   </span>
-                  <span className="text-s font-['Inter','Noto_Sans_TC',_sans-serif] text-white">
+                  <span className="text-sm font-['Inter','Noto_Sans_TC',_sans-serif] text-white">
                     購物車已選日期
                   </span>
                 </div>

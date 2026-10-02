@@ -66,6 +66,7 @@ begin
     update public.orders
        set status = 'canceled'
      where status = 'pending'
+       and deposit_paid_at is null -- 大量設備已預繳、待取件的不取消（mass-pickup.sql）
        and public.business_hours_since(created_at) > 24
      returning rental_number, student_id
   )

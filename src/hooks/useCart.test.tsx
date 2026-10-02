@@ -92,6 +92,23 @@ describe('addToCart', () => {
     expect(res!.reason).toContain('小量')
   })
 
+  it('設備／空間分單：空間不佔 9 件額度、兩類租借類型互不影響', () => {
+    const { result } = renderHook(() => useCart())
+    act(() => { result.current.addToCart(item({ quantity: 9 })) })
+    let res: { ok: boolean; reason?: string }
+    act(() => { res = result.current.addToCart(item({ id: 'A1', name: '區塊 A1', category: 'space-block', deposit: 1000 })) })
+    expect(res!.ok).toBe(true)
+    // 購物車已有個人空間 → 團體空間被擋（空間個人／團體擇一，不分時段）；設備不受影響
+    act(() => {
+      res = result.current.addToCart(item({
+        id: 'A2', name: '區塊 A2', category: 'space-block', bookingType: 'mass-group',
+        startDate: '2099-02-01', endDate: '2099-02-03'
+      }))
+    })
+    expect(res!.ok).toBe(false)
+    expect(res!.reason).toContain('個人空間')
+  })
+
   it('停權帳號被擋且購物車不變', () => {
     vi.mocked(useSuspension).mockReturnValue(true)
     const { result } = renderHook(() => useCart())

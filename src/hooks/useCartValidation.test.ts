@@ -88,10 +88,18 @@ describe('借用資訊', () => {
     expect(bookingDetailsValidation.valid).toBe(false)
   })
 
-  it('所有時段都有填 → 有效', () => {
+  it('所有訂單都有填 → 有效', () => {
     const { bookingDetailsValidation } = run([item()], {
-      '2099-01-01_2099-01-03': { reason: '課堂作業' }
+      'equipment_2099-01-01_2099-01-03': { reason: '課堂作業' }
     })
     expect(bookingDetailsValidation.valid).toBe(true)
+  })
+
+  it('同時段設備與空間分單，各自要填', () => {
+    const space = item({ id: 'A1', name: '區塊 A1', category: 'space-block' })
+    const { bookingDetailsValidation } = run([item(), space], {
+      'equipment_2099-01-01_2099-01-03': { reason: '課堂作業' }
+    })
+    expect(bookingDetailsValidation.valid).toBe(false)
   })
 })

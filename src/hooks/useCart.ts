@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { cartGroupKey } from '../types/equipment'
 import type { CartItem, Equipment } from '../types/equipment'
 import { useEquipmentData } from '../services/equipmentService'
 import { useSuspension } from './useSuspension'
@@ -87,11 +88,9 @@ export const useCart = () => {
   // 檢查添加項目後是否超過時段押金上限
   const checkDepositLimit = useCallback(
     (newItem: CartItem): { allowed: boolean; reason?: string } => {
-      // 計算該時段現有的押金
-      const dateKey = `${newItem.startDate}_${newItem.endDate}`
-      const itemsInSamePeriod = cart.filter(
-        (item) => `${item.startDate}_${item.endDate}` === dateKey
-      )
+      // 計算同一張訂單（同類別同時段）現有的押金
+      const groupKey = cartGroupKey(newItem)
+      const itemsInSamePeriod = cart.filter((item) => cartGroupKey(item) === groupKey)
 
       // 取得租借類型（從該時段已有項目或新項目）
       const bookingType = itemsInSamePeriod.length > 0
@@ -167,87 +166,45 @@ export const useCart = () => {
     [cart, saveCart]
   )
 
-  // 檢查租借類型衝突
+  // 檢查租借類型衝突（2026-10-02）：購物車內設備只能小量／大量擇一、空間只能個人／團體擇一（不分時段）；
+  // 設備與空間可同時存在，送單時自動拆成兩張訂單
   const checkBookingTypeConflict = useCallback(
     (newItem: CartItem): { allowed: boolean; reason?: string } => {
-      const dateKey = `${newItem.startDate}_${newItem.endDate}`
-      const itemsInSamePeriod = cart.filter(
-        (item) => `${item.startDate}_${item.endDate}` === dateKey
-      )
+      const isEquipment = newItem.category === 'equipment'
+      const existing = cart.find((item) => (item.category === 'equipment') === isEquipment)
+      if (!existing) return { allowed: true }
 
-      if (itemsInSamePeriod.length === 0) {
-        return { allowed: true }
+      const existingType = existing.bookingType || 'little'
+      const newType = newItem.bookingType || 'little'
+      if (existingType === newType) return { allowed: true }
+
+      // 標籤同購物車：設備 小量／大量、空間 個人／團體
+      const label = (t: string) => (t === 'little' ? (isEquipment ? '小量' : '個人') : isEquipment ? '大量' : '團體')
+      const what = isEquipment ? '設備' : '空間'
+      return {
+        allowed: false,
+        reason: `購物車已有${label(existingType)}${what}，${what}只能選${label('little')}或${label('mass')}其中一種，請先送出或清除後再加入${label(newType)}${what}`
       }
-
-      const newBookingType = newItem.bookingType || 'little'
-
-      // 檢查該時段現有的租借類型
-      const existingBookingTypes = new Set(
-        itemsInSamePeriod.map(item => item.bookingType || 'little')
-      )
-
-      // 規則：小量和大量-個人不能共存
-      if (newBookingType === 'little' && existingBookingTypes.has('mass-personal')) {
-        return {
-          allowed: false,
-          reason: '該時段已有大量-個人訂單，無法加入小量訂單'
-        }
-      }
-
-      if (newBookingType === 'mass-personal' && existingBookingTypes.has('little')) {
-        return {
-          allowed: false,
-          reason: '該時段已有小量訂單，無法加入大量-個人訂單'
-        }
-      }
-
-      // 大量-個人和大量-團體可以共存
-      return { allowed: true }
     },
     [cart]
   )
 
-  // 檢查小量訂單的 9 件限制
+  // 檢查小量訂單的 9 件限制：僅計設備（2026-09-30 定案，空間由押金 cap 5,000 限量）
   const checkLittleBookingLimit = useCallback(
     (newItem: CartItem): { allowed: boolean; reason?: string } => {
-      const bookingType = newItem.bookingType || 'little'
-
-      // 只檢查小量訂單，大量訂單沒有數量限制
-      if (bookingType !== 'little') {
+      if ((newItem.bookingType || 'little') !== 'little' || newItem.category !== 'equipment') {
         return { allowed: true }
       }
 
-      const dateKey = `${newItem.startDate}_${newItem.endDate}`
-      const itemsInSamePeriod = cart.filter(
-        (item) => `${item.startDate}_${item.endDate}` === dateKey
-      )
+      const groupKey = cartGroupKey(newItem)
+      const currentCount = cart
+        .filter((item) => cartGroupKey(item) === groupKey)
+        .reduce((sum, item) => sum + item.quantity, 0)
 
-      // 只計算同為小量訂單的項目數量
-      let currentCount = 0
-      itemsInSamePeriod.forEach(item => {
-        const itemBookingType = item.bookingType || 'little'
-        if (itemBookingType === 'little') {
-          if (item.category === 'equipment') {
-            currentCount += item.quantity
-          } else if (item.category === 'space-block' || item.category === 'classroom') {
-            currentCount += 1
-          }
-        }
-      })
-
-      // 計算新增項目的數量
-      let newItemCount = 0
-      if (newItem.category === 'equipment') {
-        newItemCount = newItem.quantity
-      } else if (newItem.category === 'space-block' || newItem.category === 'classroom') {
-        newItemCount = 1
-      }
-
-      // 檢查是否超過 9 件
-      if (currentCount + newItemCount > 9) {
+      if (currentCount + newItem.quantity > 9) {
         return {
           allowed: false,
-          reason: `小量訂單上限為 9 件，該時段已有 ${currentCount} 件，無法再加入 ${newItemCount} 件`
+          reason: `小量設備上限為 9 件，該時段已有 ${currentCount} 件，無法再加入 ${newItem.quantity} 件`
         }
       }
 
@@ -327,34 +284,10 @@ export const useCart = () => {
       }
 
       // 檢查小量訂單 9 件限制（只在增加數量時檢查）
-      if (newQuantity > item.quantity) {
-        const bookingType = item.bookingType || 'little'
-
-        if (bookingType === 'little') {
-          const dateKey = `${item.startDate}_${item.endDate}`
-          const itemsInSamePeriod = cart.filter(
-            (cartItem) => `${cartItem.startDate}_${cartItem.endDate}` === dateKey
-          )
-
-          // 計算當前同時段小量訂單的總數量（排除當前要更新的項目）
-          let currentCount = 0
-          itemsInSamePeriod.forEach(cartItem => {
-            const itemBookingType = cartItem.bookingType || 'little'
-            if (itemBookingType === 'little' && cartItem.id !== equipmentId) {
-              if (cartItem.category === 'equipment') {
-                currentCount += cartItem.quantity
-              } else if (cartItem.category === 'space-block' || cartItem.category === 'classroom') {
-                currentCount += 1
-              }
-            }
-          })
-
-          // 檢查新數量是否會超過 9 件限制
-          if (currentCount + newQuantity > 9) {
-            console.warn('無法更新數量: 小量訂單上限為 9 件')
-            return false
-          }
-        }
+      // 增加量當作新加入的一筆檢查：組內現有（含本項原數量）＋差額 > 9 即擋
+      if (newQuantity > item.quantity && !checkLittleBookingLimit({ ...item, quantity: newQuantity - item.quantity }).allowed) {
+        console.warn('無法更新數量: 小量設備上限為 9 件')
+        return false
       }
 
       // 檢查押金上限（只在增加數量時檢查）
@@ -376,7 +309,7 @@ export const useCart = () => {
       saveCart([...cart])
       return true
     },
-    [cart, getOriginalQuantity, saveCart, checkDepositLimit, removeFromCart]
+    [cart, getOriginalQuantity, saveCart, checkDepositLimit, checkLittleBookingLimit, removeFromCart]
   )
 
   // 清空購物車

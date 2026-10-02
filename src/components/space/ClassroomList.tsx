@@ -22,7 +22,7 @@ interface ClassroomListProps {
 
 const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
   const { getCurrentSpaceDates } = useDateSelection()
-  const { cart, checkLittleBookingLimit, isSuspended } = useCart()
+  const { cart, isSuspended } = useCart()
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
   // 獲取當前模式的日期
@@ -33,25 +33,6 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
 
   // 檢查教室是否在購物車中
   const isInCart = (id: string) => cart.some(item => item.id === id && item.category === 'classroom')
-
-  // 檢查加入教室後是否超過小量訂單 9 件限制
-  const wouldExceedLightLimit = (classroom: Classroom): boolean => {
-    if (!hasSelectedDates) return false
-
-    const tempItem = {
-      id: classroom.id,
-      name: classroom.name,
-      category: 'classroom',
-      deposit: classroom.price,
-      image: classroom.image,
-      quantity: 1,
-      startDate: spaceDates.startDate!.toISOString(),
-      endDate: spaceDates.endDate!.toISOString(),
-      bookingType: spaceDates.bookingType
-    }
-
-    return !checkLittleBookingLimit(tempItem).allowed
-  }
 
   // 處理圖片點擊 - 全螢幕顯示
   const handleImageClick = (e: React.MouseEvent, imageSrc: string) => {
@@ -147,8 +128,6 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
             const inCart = isInCart(classroom.id)
             const isAvailable = !inCart
             const statusColor = inCart ? 'var(--color-error)' : 'var(--color-success)'
-            const wouldExceedLimit = wouldExceedLightLimit(classroom)
-
             return (
               <div
                 key={classroom.id}
@@ -176,37 +155,37 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
 
                 {/* 教室名稱 - 英文在上，中文在下 */}
                 <div className={`flex flex-col ${!isAvailable ? 'text-[#545454]' : 'text-white'}`}>
-                  <span className="font-['Inter',_sans-serif] text-s">
+                  <span className="font-['Inter',_sans-serif] text-sm">
                     {classroom.enName}
                   </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-s">
+                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm">
                     {classroom.name}
                   </span>
                 </div>
 
                 {/* 總數量 - 教室固定為 1 */}
-                <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   1
                 </div>
 
                 {/* 可借數量 - 在購物車中為 0，否則為 1 */}
-                <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   {isAvailable ? 1 : 0}
                 </div>
 
                 {/* 保留中數量 - 暫時顯示假數據 */}
-                <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   0
                 </div>
 
                 {/* 押金 */}
-                <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   NT$ {classroom.price.toLocaleString()}
@@ -219,9 +198,9 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                       e.stopPropagation()
                       onAdd(classroom.id)
                     }}
-                    disabled={!isAvailable || !hasSelectedDates || wouldExceedLimit}
-                    className={`font-['Inter',_sans-serif] text-s ${
-                      isAvailable && hasSelectedDates && !wouldExceedLimit && !isSuspended
+                    disabled={!isAvailable || !hasSelectedDates}
+                    className={`font-['Inter',_sans-serif] text-sm ${
+                      isAvailable && hasSelectedDates && !isSuspended
                         ? 'text-white hover:text-gray-scale1 cursor-pointer'
                         : 'text-[#545454] cursor-not-allowed'
                     }`}
@@ -235,8 +214,8 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-s">No Classroom Found</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-s">找不到符合條件的教室</p>
+          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-sm">No Classroom Found</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-sm">找不到符合條件的教室</p>
         </div>
       )}
     </div>

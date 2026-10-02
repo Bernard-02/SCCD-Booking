@@ -7,12 +7,17 @@
  */
 
 import { useMemo } from 'react'
+import { cartGroupKey } from '../types/equipment'
+import { slotEnd } from '../utils/timeUtils'
 import type { CartItem } from '../types/equipment'
 
 interface BookingDetailsData {
   reason: string
   className?: string
   teacher?: string
+  depositDate?: string
+  depositSlot?: string
+  pickupSlot?: string
 }
 
 interface BaseResult {
@@ -43,15 +48,19 @@ interface UseCartValidationResult {
   bookingDetailsValidation: BaseResult
 }
 
-const groupByDateKey = (cart: CartItem[]): Record<string, CartItem[]> => {
+// 過期以時段為單位（CartList／RentalListPage 用 `${start}_${end}` 比對）；
+// 大量 10 件、借用資訊以訂單為單位（cartGroupKey：設備／空間分單）
+const groupBy = (cart: CartItem[], keyOf: (item: CartItem) => string): Record<string, CartItem[]> => {
   const groups: Record<string, CartItem[]> = {}
   cart.forEach(item => {
-    const key = `${item.startDate}_${item.endDate}`
+    const key = keyOf(item)
     if (!groups[key]) groups[key] = []
     groups[key].push(item)
   })
   return groups
 }
+const groupByDateKey = (cart: CartItem[]) => groupBy(cart, item => `${item.startDate}_${item.endDate}`)
+const groupByOrder = (cart: CartItem[]) => groupBy(cart, cartGroupKey)
 
 export const useCartValidation = ({
   cart,
@@ -62,7 +71,7 @@ export const useCartValidation = ({
   return useMemo(() => {
     // 大量租借（Mass）需至少 10 件
     const cartValidation: BaseResult = (() => {
-      const groups = groupByDateKey(cart)
+      const groups = groupByOrder(cart)
       for (const items of Object.values(groups)) {
         if (items.length === 0) continue
         const bookingType = items[0].bookingType || 'little'
@@ -73,7 +82,7 @@ export const useCartValidation = ({
           if (totalQuantity < 10) {
             return {
               valid: false,
-              message: '大量租借需滿 10 件項目',
+              message: '大量／團體訂單需各滿 10 件項目',
               detail: 'Mass booking requires min. 10 items'
             }
           }
@@ -138,19 +147,25 @@ export const useCartValidation = ({
 
     // 借用資訊填寫檢查
     const bookingDetailsValidation: BaseResult = (() => {
-      const groups = groupByDateKey(cart)
+      const groups = groupByOrder(cart)
       const missing: string[] = []
       for (const [key, items] of Object.entries(groups)) {
         if (items.length === 0) continue
-        if (!bookingDetails[key]) {
+        const d = bookingDetails[key]
+        // 大量設備單另需繳押金／取件時段，且繳押金時段不能已經過了（填完隔幾天才送單的情況）
+        const needsSlots = key.startsWith('equipment_') && items[0].bookingType === 'mass-personal'
+        const slotsOk = !needsSlots || (
+          !!d?.pickupSlot && !!d.depositDate && !!d.depositSlot && slotEnd(d.depositDate, d.depositSlot) > new Date()
+        )
+        if (!d || !slotsOk) {
           missing.push(`${items[0].startDate} - ${items[0].endDate}`)
         }
       }
       if (missing.length > 0) {
         return {
           valid: false,
-          message: '請完成所有時段的借用資訊填寫',
-          detail: 'Please complete booking details for all periods'
+          message: '請完成所有訂單的借用資訊填寫（大量設備需選繳押金與取件時段，已過的時段請重選）',
+          detail: 'Please complete booking details for all orders'
         }
       }
       return { valid: true, message: '', detail: '' }

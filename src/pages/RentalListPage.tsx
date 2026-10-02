@@ -16,6 +16,7 @@ import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useCartValidation } from '../hooks/useCartValidation'
 import { useOrderSubmission } from '../hooks/useOrderSubmission'
 import { useSuspension } from '../hooks/useSuspension'
+import { useToast } from '../hooks/useToast'
 import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
 
 interface BookingDetailsData {
@@ -45,6 +46,7 @@ const RentalListPage = () => {
     getCartQuantity
   } = useCart()
   const { confirm, ConfirmDialog } = useConfirmDialog()
+  const { showToast: showErrorToast, toastElement } = useToast()
 
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [previousPage, setPreviousPage] = useState<'equipment' | 'space' | null>(null)
@@ -300,7 +302,7 @@ const RentalListPage = () => {
     // 失敗時購物車保留原樣，提示重送即可
     const result = await submitOrder()
     if (!result.ok) {
-      alert(result.reason || '送出失敗，請再試一次')
+      showErrorToast(result.reason || '送出失敗，請再試一次')
     }
   }
 
@@ -361,7 +363,7 @@ const RentalListPage = () => {
                 <button
                   onClick={handleClearAll}
                   disabled={selectedGroups.size === 0}
-                  className={`text-s font-normal whitespace-nowrap ${
+                  className={`text-sm font-normal whitespace-nowrap ${
                     selectedGroups.size === 0
                       ? 'text-gray-scale4 cursor-not-allowed'
                       : 'text-white hover:opacity-70 transition-opacity cursor-pointer'
@@ -681,7 +683,7 @@ const RentalListPage = () => {
                   <button
                     onClick={handleCheckout}
                     disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid}
-                    className={`px-8 py-2 rounded-lg text-s font-normal whitespace-nowrap transition ${
+                    className={`px-8 py-2 rounded-lg text-sm font-normal whitespace-nowrap transition ${
                       isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid
                         ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                         : 'bg-white text-black hover:opacity-70 cursor-pointer'
@@ -723,6 +725,7 @@ const RentalListPage = () => {
 
       {/* 確認對話框 */}
       <ConfirmDialog />
+      {toastElement}
     </div>
   )
 }
