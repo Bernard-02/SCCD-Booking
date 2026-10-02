@@ -241,7 +241,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
         {/* 標題和關閉按鈕 */}
         <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
           <div className="flex items-start justify-between mb-4">
-            <h2 className="text-s text-white">
+            <h2 className="text-sm text-white">
               <span className="font-['Inter',_sans-serif]">Extend</span>{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期規則</span>
             </h2>
@@ -250,7 +250,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1"
               aria-label="Close"
             >
-              <span className="material-icons text-l">close</span>
+              <span className="material-icons text-lg">close</span>
             </button>
           </div>
 

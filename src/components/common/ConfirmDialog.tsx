@@ -78,7 +78,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
+          <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
             {titleEn && <>{titleEn} </>}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{title}</span>
           </h2>

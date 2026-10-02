@@ -344,7 +344,7 @@ const Calendar: React.FC<CalendarProps> = ({
       canGoNext() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
     }`
 
-    const monthTitleSize = variant === 'dialog' ? 'text-m' : 'text-xl'
+    const monthTitleSize = variant === 'dialog' ? 'text-md' : 'text-xl'
     const calendarPadding = variant === 'dialog' ? 'pb-4' : 'pb-8'
 
     return (
@@ -431,17 +431,17 @@ const Calendar: React.FC<CalendarProps> = ({
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <button
-          className={`text-white text-m ${canGoPrev() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
+          className={`text-white text-md ${canGoPrev() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
           onClick={handlePrevMonth}
           disabled={!canGoPrev()}
         >
           &lt;
         </button>
-        <div className="text-white text-s font-['Inter',_sans-serif]">
+        <div className="text-white text-sm font-['Inter',_sans-serif]">
           {monthCalendar.title}
         </div>
         <button
-          className={`text-white text-m ${canGoNext() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
+          className={`text-white text-md ${canGoNext() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
           onClick={handleNextMonth}
           disabled={!canGoNext()}
         >

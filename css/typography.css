@@ -1,5 +1,5 @@
 /* ===== 字體族定義 ===== */
-/* 字級系統已收斂為 src/index.css @theme 的 7 級 token（text-xs/s/m/l/xl/2xl/3xl，text-s = 1rem 基準），
+/* 字級系統已收斂為 src/index.css @theme 的 7 級 token（text-xs/sm/md/lg/xl/2xl/3xl，text-sm = 1rem 基準），
    舊的 9 個 .text-* class 已全數遷移並移除（2026-09-26）。 */
 
 .font-chinese {

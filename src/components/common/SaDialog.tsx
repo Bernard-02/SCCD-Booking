@@ -78,12 +78,12 @@ const SaDialog: React.FC<SaDialogProps> = ({ isOpen, onClose }) => {
           className="absolute top-4 right-4 text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center z-10"
           aria-label="Close"
         >
-          <span className="material-icons text-l">close</span>
+          <span className="material-icons text-lg">close</span>
         </button>
 
         {/* 標題區 */}
         <div className="px-8 pt-6 pb-5 pr-14 flex-shrink-0">
-          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
+          <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
             Student Association{' '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">系學會</span>
           </h2>

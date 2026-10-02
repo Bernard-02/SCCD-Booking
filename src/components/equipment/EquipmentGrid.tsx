@@ -423,35 +423,35 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   </div>
 
                   {/* 設備名稱 */}
-                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-s ${
+                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-sm ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.name}
                   </div>
 
                   {/* 總數量 */}
-                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.originalQuantity}
                   </div>
 
                   {/* 可借數量 */}
-                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {availableQty}
                   </div>
 
                   {/* 待繳押金數量（該時段 pending 訂單佔用） */}
-                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {reservedMap[item.id]?.onHold ?? 0}
                   </div>
 
                   {/* 押金/個 */}
-                  <div className={`font-['Inter',_sans-serif] text-s text-center ${
+                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     NT$ {item.deposit}
@@ -465,7 +465,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         decrementQuantity(item.id)
                       }}
                       disabled={!isAvailable || quantity <= 1}
-                      className={`font-['Inter',_sans-serif] text-s ${
+                      className={`font-['Inter',_sans-serif] text-sm ${
                         !isAvailable || quantity <= 1
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -482,7 +482,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       onBlur={() => handleQuantityBlur(item.id)}
                       onClick={(e) => e.stopPropagation()}
                       disabled={!isAvailable}
-                      className={`font-['Inter',_sans-serif] text-s w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      className={`font-['Inter',_sans-serif] text-sm w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         !isAvailable ? 'text-[#545454] cursor-not-allowed' : 'text-white'
                       }`}
                       style={{
@@ -496,7 +496,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         incrementQuantity(item.id)
                       }}
                       disabled={!isAvailable || quantity >= availableQty}
-                      className={`font-['Inter',_sans-serif] text-s ${
+                      className={`font-['Inter',_sans-serif] text-sm ${
                         !isAvailable || quantity >= availableQty
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -514,7 +514,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         handleAddToCart(item)
                       }}
                       aria-disabled={!isAvailable || !hasSelectedDates || wouldExceedLightLimit || isSuspended}
-                      className={`font-['Inter',_sans-serif] text-s ${
+                      className={`font-['Inter',_sans-serif] text-sm ${
                         isAvailable && hasSelectedDates && !wouldExceedLightLimit && !isSuspended
                           ? 'text-white hover:text-gray-scale1 cursor-pointer'
                           : 'text-[#545454] cursor-not-allowed'
@@ -529,8 +529,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-s">No Equipment Found</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-s">找不到符合條件的設備</p>
+          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-sm">No Equipment Found</p>
+          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-sm">找不到符合條件的設備</p>
         </div>
       )}
     </div>

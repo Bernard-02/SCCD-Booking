@@ -64,7 +64,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
         {/* 標題區 */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-start justify-between mb-4">
-            <h2 className="text-s text-white">
+            <h2 className="text-sm text-white">
               <span className="font-['Inter',_sans-serif]">Edit Date</span>{' '}
               <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">編輯日期</span>
             </h2>
@@ -74,7 +74,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1"
               aria-label="Close"
             >
-              <span className="material-icons text-l">close</span>
+              <span className="material-icons text-lg">close</span>
             </button>
           </div>
 

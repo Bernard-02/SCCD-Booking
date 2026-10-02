@@ -10,16 +10,16 @@
 @theme {
   --font-weight-bold: 600;
 
-  /* 字級系統：7 級，text-s（1rem）為基準。xs/xl/2xl/3xl 覆寫 Tailwind 預設值。
-     舊的 text-sm/base/lg/4xl 與 css/typography.css 的 text-* class 屬遷移期過渡，逐頁換成這 7 級 */
+  /* 字級系統：7 級，text-sm（1rem）為基準。xs/sm/lg/xl/2xl/3xl 覆寫 Tailwind 預設值（md 為新增）。
+     舊的 text-base/4xl 與 css/typography.css 的 text-* class 屬遷移期過渡，逐頁換成這 7 級 */
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.4;
-  --text-s: 1rem;
-  --text-s--line-height: 1.4;
-  --text-m: 1.25rem;
-  --text-m--line-height: 1.4;
-  --text-l: 1.5rem;
-  --text-l--line-height: 1.4;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.4;
+  --text-md: 1.25rem;
+  --text-md--line-height: 1.4;
+  --text-lg: 1.5rem;
+  --text-lg--line-height: 1.4;
   --text-xl: 2rem;
   --text-xl--line-height: 1.4;
   --text-2xl: 2.5rem;

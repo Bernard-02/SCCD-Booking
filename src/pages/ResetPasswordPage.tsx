@@ -67,11 +67,11 @@ const ResetPasswordPage = () => {
           </h1>
 
           {done ? (
-            <p className="text-m text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
+            <p className="text-md text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               密碼已更新，即將回到登入頁…
             </p>
           ) : !ready ? (
-            <p className="text-m text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
+            <p className="text-md text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               請從「忘記密碼」重設信中的連結進入此頁。
             </p>
           ) : (
@@ -81,7 +81,7 @@ const ResetPasswordPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="New password 新密碼（至少 8 碼）"
-                className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-m focus:outline-none focus:border-white"
+                className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
                 style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               />
               <input
@@ -89,14 +89,14 @@ const ResetPasswordPage = () => {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="Confirm password 再次輸入新密碼"
-                className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-m focus:outline-none focus:border-white"
+                className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
                 style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               />
               {error && <p className="text-xs text-[#ff8698]">{error}</p>}
               <button
                 type="submit"
                 disabled={!password || !confirm}
-                className={`w-full py-3 rounded-lg text-m font-normal transition ${
+                className={`w-full py-3 rounded-lg text-md font-normal transition ${
                   password && confirm
                     ? 'bg-white text-black hover:opacity-70 cursor-pointer'
                     : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'

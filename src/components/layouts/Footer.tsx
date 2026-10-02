@@ -123,7 +123,7 @@ const Footer: React.FC = () => {
           <div className="flex items-center header-menu nav-gap">
             <Link
               to="/about"
-              className={`font-['Inter',_sans-serif] font-bold text-white flex items-center text-s header-nav-link ${pathname === '/about' ? 'active' : ''}`}
+              className={`font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link ${pathname === '/about' ? 'active' : ''}`}
               style={{ '--rotation-angle': `${angleFor('footer-about')}deg` } as React.CSSProperties}
               onMouseEnter={spinOnHover('footer-about')}
             >
@@ -134,7 +134,7 @@ const Footer: React.FC = () => {
               href="https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-s header-nav-link group"
+              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link group"
               style={{ '--rotation-angle': `${angleFor('footer-studio')}deg` } as React.CSSProperties}
               onMouseEnter={spinOnHover('footer-studio')}
             >
@@ -148,7 +148,7 @@ const Footer: React.FC = () => {
               href="https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-s header-nav-link group"
+              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link group"
               style={{ '--rotation-angle': `${angleFor('footer-film-studio')}deg` } as React.CSSProperties}
               onMouseEnter={spinOnHover('footer-film-studio')}
             >
@@ -163,7 +163,7 @@ const Footer: React.FC = () => {
           {/* 右側：Copyright 和 To SCCD */}
           <div className="flex items-center header-menu nav-gap">
             <div
-              className="copyright desktop-copyright font-['Inter',_sans-serif] font-bold text-white text-right text-s"
+              className="copyright desktop-copyright font-['Inter',_sans-serif] font-bold text-white text-right text-sm"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
             >
@@ -182,7 +182,7 @@ const Footer: React.FC = () => {
               href="https://sccd.usc.edu.tw/"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-s header-nav-link"
+              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link"
               style={{ '--rotation-angle': `${angleFor('footer-sccd')}deg` } as React.CSSProperties}
               onMouseEnter={spinOnHover('footer-sccd')}
             >

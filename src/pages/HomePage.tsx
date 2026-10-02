@@ -95,7 +95,7 @@ const HomePage = () => {
                                 autoComplete="username"
                                 style={{ width: '100%', borderColor: studentIdError ? 'var(--color-error2)' : '' }}
                               />
-                              <label htmlFor="desktop-student-id" className="input-label text-s pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
+                              <label htmlFor="desktop-student-id" className="input-label text-sm pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
                                 Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
                               </label>
                               {studentIdError && (
@@ -117,13 +117,13 @@ const HomePage = () => {
                                 autoComplete="current-password"
                                 style={{ width: '100%', borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
                               />
-                              <label htmlFor="desktop-password" className="input-label text-s pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
+                              <label htmlFor="desktop-password" className="input-label text-sm pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
                                 Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
                               </label>
                               <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-0 top-0 h-full px-3 flex items-center justify-center text-gray-scale2 hover:text-white transition-colors z-10"
+                                className="absolute right-0 top-0 h-full px-3 flex items-center justify-center text-gray-scale2 hover:!text-white transition-colors z-10"
                                 tabIndex={-1}
                               >
                                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
@@ -185,7 +185,7 @@ const HomePage = () => {
                               <button
                                 type="submit"
                                 disabled={!studentId || !password}
-                                className="text-s font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
+                                className="text-sm font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
                               >
                                 <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                               </button>
@@ -263,7 +263,7 @@ const HomePage = () => {
                       autoComplete="username"
                       style={{ borderColor: studentIdError ? 'var(--color-error2)' : '' }}
                     />
-                    <label htmlFor="mobile-student-id" className="input-label text-s pointer-events-none">
+                    <label htmlFor="mobile-student-id" className="input-label text-sm pointer-events-none">
                       Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
                     </label>
                     {studentIdError && (
@@ -316,13 +316,13 @@ const HomePage = () => {
                       autoComplete="current-password"
                       style={{ borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
                     />
-                    <label htmlFor="mobile-password" className="input-label text-s pointer-events-none">
+                    <label htmlFor="mobile-password" className="input-label text-sm pointer-events-none">
                       Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-0 top-0 h-full px-3 flex items-center justify-center text-gray-scale2 hover:text-white transition-colors z-10"
+                      className="absolute right-0 top-0 h-full px-3 flex items-center justify-center text-gray-scale2 hover:!text-white transition-colors z-10"
                       tabIndex={-1}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
@@ -348,7 +348,7 @@ const HomePage = () => {
                 <button
                   type="submit"
                   disabled={!studentId || !password}
-                  className="text-s font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
+                  className="text-sm font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
                 >
                   <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
                 </button>
@@ -371,7 +371,7 @@ const HomePage = () => {
           <div className="relative bg-[#1a1a1a] border border-[#7c7c7c] rounded-2xl p-8 max-w-md w-full shadow-2xl transform transition-all">
             <button 
               onClick={() => setShowForgotPasswordModal(false)}
-              className="absolute top-4 right-4 text-gray-scale2 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-gray-scale2 hover:!text-white transition-colors"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -380,7 +380,7 @@ const HomePage = () => {
               忘記密碼？
             </h3>
 
-            <div className="space-y-4 text-m text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
+            <div className="space-y-4 text-md text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
               {resetSent ? (
                 <p>
                   重設密碼信已寄至 <span className="font-['Inter',_sans-serif] text-white">{resetSent}</span>
@@ -407,7 +407,7 @@ const HomePage = () => {
                       value={resetStudentId}
                       onChange={(e) => setResetStudentId(e.target.value)}
                       placeholder="Student ID 學號"
-                      className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-m focus:outline-none focus:border-white"
+                      className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
                       style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
                     />
                     {resetError && (
@@ -417,7 +417,7 @@ const HomePage = () => {
                       <button
                         type="submit"
                         disabled={!resetStudentId.trim()}
-                        className={`px-6 py-2 rounded-lg text-m font-normal transition ${
+                        className={`px-6 py-2 rounded-lg text-md font-normal transition ${
                           resetStudentId.trim()
                             ? 'bg-white text-black hover:opacity-70 cursor-pointer'
                             : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'

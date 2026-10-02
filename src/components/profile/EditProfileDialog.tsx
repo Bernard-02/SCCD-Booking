@@ -120,7 +120,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       >
         {/* 標題 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-s text-white font-normal">
+          <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
             {isPassword ? 'Change Password ' : 'Change Phone '}
             <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">
               {isPassword ? '修改密碼' : '修改手機號碼'}
