@@ -16,11 +16,6 @@ describe('classLabel', () => {
     expect(classLabel('大三', '日媒三乙')).toBe('日媒三乙')
     expect(classLabel('大三', '乙班')).toBe('日媒三乙')
   })
-  it('class_name 沒填時用學號代碼（141 甲、144 乙）', () => {
-    expect(classLabel('大四', null, 'B111144001')).toBe('日媒四乙')
-    expect(classLabel('大四', '', 'B111141001')).toBe('日媒四甲')
-    expect(classLabel('大四', '甲', 'B111144001')).toBe('日媒四甲') // class_name 優先
-  })
   it('格式不符原樣顯示', () => {
     expect(classLabel(null, null)).toBe('')
     expect(classLabel('延畢', '甲')).toBe('延畢 甲')

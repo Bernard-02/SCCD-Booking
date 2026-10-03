@@ -57,16 +57,3 @@ export interface CartItem {
  */
 export const cartGroupKey = (item: Pick<CartItem, 'category' | 'startDate' | 'endDate'>) =>
   `${item.category === 'equipment' ? 'equipment' : 'space'}_${item.startDate}_${item.endDate}`
-
-/**
- * 儲存於 localStorage 的訂單收據
- */
-export interface Receipt {
-  borrowerName: string
-  rentalDates: string[]
-  rentalNumber: string
-  totalDeposit: number
-  items: CartItem[]
-  createdAt: string
-  reason?: string // 借用使用原因（填寫借用資訊時取得）
-}

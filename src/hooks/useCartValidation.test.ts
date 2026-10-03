@@ -103,3 +103,13 @@ describe('借用資訊', () => {
     expect(bookingDetailsValidation.valid).toBe(false)
   })
 })
+
+describe('同類別一次一張訂單（舊購物車）', () => {
+  it('同類別兩個時段 → 無效；設備＋空間各一 → 有效', () => {
+    const twoEquip = run([item(), item({ id: 'light', startDate: '2099-02-01', endDate: '2099-02-03' })])
+    expect(twoEquip.singleOrderValidation.valid).toBe(false)
+    expect(twoEquip.singleOrderValidation.message).toContain('設備')
+    const equipAndSpace = run([item(), item({ id: 'A1', category: 'space-block', startDate: '2099-02-01', endDate: '2099-02-03' })])
+    expect(equipAndSpace.singleOrderValidation.valid).toBe(true)
+  })
+})

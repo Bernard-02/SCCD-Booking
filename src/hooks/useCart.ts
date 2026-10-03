@@ -166,8 +166,9 @@ export const useCart = () => {
     [cart, saveCart]
   )
 
-  // 檢查租借類型衝突（2026-10-02）：購物車內設備只能小量／大量擇一、空間只能個人／團體擇一（不分時段）；
-  // 設備與空間可同時存在，送單時自動拆成兩張訂單
+  // 同類別一次一張訂單（2026-10-02，rental-rules §5＋新規則 7）：購物車內設備、空間各最多一張——
+  // 類型擇一（設備小量／大量、空間個人／團體），時段也只能一個（學會規定上一張歸還才能開下一張；
+  // 送單時 submit_orders 另擋同類型未歸還單）。設備與空間可同時存在，送單時自動拆成兩張訂單
   const checkBookingTypeConflict = useCallback(
     (newItem: CartItem): { allowed: boolean; reason?: string } => {
       const isEquipment = newItem.category === 'equipment'
@@ -176,14 +177,22 @@ export const useCart = () => {
 
       const existingType = existing.bookingType || 'little'
       const newType = newItem.bookingType || 'little'
-      if (existingType === newType) return { allowed: true }
+      const samePeriod = existing.startDate === newItem.startDate && existing.endDate === newItem.endDate
+      if (existingType === newType && samePeriod) return { allowed: true }
 
       // 標籤同購物車：設備 小量／大量、空間 個人／團體
       const label = (t: string) => (t === 'little' ? (isEquipment ? '小量' : '個人') : isEquipment ? '大量' : '團體')
       const what = isEquipment ? '設備' : '空間'
+      const order = `${label(existingType)}${what}訂單（${existing.startDate} – ${existing.endDate}）`
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const start = new Date(existing.startDate)
+      start.setHours(0, 0, 0, 0)
       return {
         allowed: false,
-        reason: `購物車已有${label(existingType)}${what}，${what}只能選${label('little')}或${label('mass')}其中一種，請先送出或清除後再加入${label(newType)}${what}`
+        reason: start < today
+          ? `購物車內的${order}已過期，請先到購物車重選日期或清除；${what}一次只能有一張訂單`
+          : `購物車已有一張${order}，${what}一次只能有一張訂單（${label('little')}／${label('mass')}擇一、時段一個），請先送出或清除後再加入`
       }
     },
     [cart]

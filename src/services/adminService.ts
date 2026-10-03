@@ -365,11 +365,7 @@ export async function updateEquipment(
   return { ok: true }
 }
 
-/** 圖片路徑補前導斜線：seed 存相對路徑 'Images/…'，在 /admin/* 底下會解析錯 */
-export const imageSrc = (url: string | null | undefined, fallback = '/Images/Extension Cord.webp'): string => {
-  if (!url) return fallback
-  return url.startsWith('/') || url.startsWith('http') ? url : `/${url}`
-}
+export { imageSrc } from './equipmentService'
 
 export async function setEquipmentActive(id: string, active: boolean): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('equipment').update({ is_active: active }).eq('id', id)

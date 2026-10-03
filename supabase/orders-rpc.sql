@@ -24,6 +24,7 @@ declare
   v_grade text;
   v_sophomore_up boolean; -- 大二以上（含碩士）；grade 未填從嚴視為大一
   v_is_equip boolean;     -- 本單為設備單（分單後一張單全設備或全空間）
+  v_open text;            -- 同類型未歸還單的單號（同類型限一單）
 begin
   if v_uid is null then
     raise exception '未登入';
@@ -82,6 +83,29 @@ begin
     ) then
       raise exception '該時段已有一張%訂單（同一時段同類僅能有一張）',
         case when v_is_equip then '小量設備' else '個人空間' end;
+    end if;
+
+    -- 同類型限一單（rental-rules 新規則 7，2026-10-02 實作）：學會規定上一張歸還後才能開下一張。
+    -- 同類型＝小量設備／大量設備／個人空間／團體空間四格；未歸還＝pending／in-progress／overdue
+    -- （returned／canceled 才算結案，含拆單的子單）。同次送出的多張單也會互擋（前一張已寫入本 transaction）。
+    -- 僅擋 student（系秘／助教直借不受限）；購物車層 useCart 另擋同類別第二個時段（UX）。
+    if public.user_role() = 'student' then
+      select o.rental_number into v_open
+        from public.orders o
+        where o.student_id = v_uid
+          and o.status in ('pending', 'in-progress', 'overdue')
+          and (o.booking_type = 'little') = (v_order ->> 'booking_type' = 'little')
+          and exists (select 1 from public.order_items oi
+                      where oi.order_id = o.id and oi.item_type = 'equipment') = v_is_equip
+        limit 1;
+      if v_open is not null then
+        raise exception '您已有一張未歸還的%訂單（%），需歸還後才能再借同類型',
+          case when v_is_equip
+            then case when v_order ->> 'booking_type' = 'little' then '小量設備' else '大量設備' end
+            else case when v_order ->> 'booking_type' = 'little' then '個人空間' else '團體空間' end
+          end,
+          v_open;
+      end if;
     end if;
 
     -- 大量設備預選繳押金／取件時段（新規則 3，見 mass-pickup.sql）。
@@ -217,10 +241,13 @@ $$;
 --   p_pickup = true（預設）：收押金＋取件同時進行，或已預繳者來取件 → in-progress，租借開始。
 --   p_pickup = false：只收押金（大量設備先繳後取）→ 仍為 pending，記 deposit_paid_at（＝已繳待取件）。
 -- p_handler = 值班經手幹部姓名（快照：收押金寫 paid_by、取件寫 picked_up_by；名單見 staff-members.sql）。
-drop function if exists public.admin_mark_paid(text);       -- 舊簽名（未帶經手人）
-drop function if exists public.admin_mark_paid(text, text); -- 舊簽名（未帶取件選項）
+-- p_deposit_total = 已繳待取件的單在繳押金後被學生改過品項時，學會現場補收／退還後的押金總額（null＝不變）。
+drop function if exists public.admin_mark_paid(text);                -- 舊簽名（未帶經手人）
+drop function if exists public.admin_mark_paid(text, text);          -- 舊簽名（未帶取件選項）
+drop function if exists public.admin_mark_paid(text, text, boolean); -- 舊簽名（未帶押金調整）
 create or replace function public.admin_mark_paid(
-  p_rental_number text, p_handler text default null, p_pickup boolean default true)
+  p_rental_number text, p_handler text default null, p_pickup boolean default true,
+  p_deposit_total int default null)
 returns void
 language plpgsql
 security definer set search_path = public
@@ -241,11 +268,15 @@ begin
   if not p_pickup and v_order.deposit_paid_at is not null then
     raise exception '此訂單已收過押金，請改按「取件」';
   end if;
+  if p_deposit_total < 0 then
+    raise exception '押金金額不可為負';
+  end if;
 
   -- set 內引用的欄位皆為更新前的值
   update public.orders
     set status = case when p_pickup then 'in-progress' else 'pending' end,
         deposit_paid_at = coalesce(deposit_paid_at, now()),
+        deposit_total = coalesce(p_deposit_total, deposit_total),
         paid_by = case when deposit_paid_at is null then p_handler else paid_by end,
         picked_up_by = case when p_pickup then p_handler else picked_up_by end
     where id = v_order.id;
@@ -302,7 +333,9 @@ end;
 $$;
 
 -- 查詢設備在指定時段的佔用量（給型錄顯示可借數量；只回傳統計，不含個資）
--- reserved = pending + in-progress + overdue 的重疊訂單數量；on_hold = 其中 pending 的部分
+-- reserved = pending + in-progress + overdue 的重疊訂單數量；on_hold = 其中押金還沒繳的部分
+--   （待繳押金的單＋小量單取件後新增、尚未點交補押金的品項；已繳待取件與大量單取件後新增＝押金已繳，直接扣）
+--   pickup_pending 欄位見 modify-order.sql（需先執行）
 create or replace function public.equipment_reserved(p_start date, p_end date)
 returns table(item_id text, reserved bigint, on_hold bigint)
 language sql
@@ -311,7 +344,10 @@ stable
 as $$
   select oi.item_id,
          sum(oi.quantity)::bigint as reserved,
-         coalesce(sum(oi.quantity) filter (where o.status = 'pending'), 0)::bigint as on_hold
+         coalesce(sum(oi.quantity) filter (
+           where (o.status = 'pending' and o.deposit_paid_at is null)
+              or (oi.pickup_pending and o.booking_type = 'little')
+         ), 0)::bigint as on_hold
   from public.order_items oi
   join public.orders o on o.id = oi.order_id
   where oi.item_type = 'equipment'

@@ -46,7 +46,8 @@ language sql
 security definer set search_path = public
 stable
 as $$
-  select role from public.students where id = auth.uid();
+  -- 查無學生列（未登入）回傳 'anon'：NULL 會讓後台 RPC 的 `<> 'admin'` 檢查失效（見 user-role-fix.sql）
+  select coalesce((select role from public.students where id = auth.uid()), 'anon');
 $$;
 
 -- ---------- 2. 設備 ----------

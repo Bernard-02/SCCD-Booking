@@ -15,7 +15,6 @@ import { useCart } from '../hooks/useCart'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
-import { checkDuplicateOrder } from '../utils/orderValidation'
 import { isSophomoreOrAbove } from '../utils/gradeUtils'
 import { sortBlockIds } from '../components/cart/cartHelpers'
 
@@ -284,14 +283,6 @@ const SpacePage: React.FC = () => {
       return
     }
 
-    // 檢查是否重複下單
-    const validation = checkDuplicateOrder(
-      currentUser?.studentId,
-      spaceDates.startDate,
-      spaceDates.endDate,
-      spaceDates.bookingType
-    )
-
     if (selectedBlocks.length === 0) {
       showToast('請先選擇區塊', 'error')
       return
@@ -299,11 +290,6 @@ const SpacePage: React.FC = () => {
 
     if (hasCasePermitBlocks && !hasProjectPermission) {
       showToast('請先勾選專案許可確認', 'error')
-      return
-    }
-
-    if (validation.isDuplicate) {
-      showToast(validation.message, 'error')
       return
     }
 
@@ -387,19 +373,6 @@ const SpacePage: React.FC = () => {
     // A508 限大二以上（submit_orders 亦擋，此處為 UX 提前提示）
     if (id === 'A508' && !isSophomoreOrAbove(currentUser?.year)) {
       showToast('A508 教室僅限大二以上（含碩士）借用', 'error')
-      return
-    }
-
-    // 檢查是否重複下單
-    const validation = checkDuplicateOrder(
-      currentUser?.studentId,
-      spaceDates.startDate,
-      spaceDates.endDate,
-      spaceDates.bookingType
-    )
-
-    if (validation.isDuplicate) {
-      showToast(validation.message, 'error')
       return
     }
 

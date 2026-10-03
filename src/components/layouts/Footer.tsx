@@ -16,7 +16,8 @@ const Footer: React.FC = () => {
   const animationIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const isAnimatingRef = useRef(false)
 
-  const originalText = 'Copyright © 2025 111屆系學會All rights reserved.'
+  // 彩蛋絕對定位疊在原文上：原文要比彩蛋長，否則會蓋到旁邊的 To SCCD
+  const originalText = 'Copyright © SCCDSA All rights reserved.'
   const targetText = 'SHIH CHIEN COMMUNICATIONS DESIGN'
   const maxLength = Math.min(originalText.length, targetText.length)
   const truncatedTarget = targetText.substring(0, maxLength)
@@ -169,9 +170,8 @@ const Footer: React.FC = () => {
             >
               <p>
                 <span className="copyright-original" style={{ opacity: showEasterEgg ? 0 : 1 }}>
-                  <span className="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>
-                  屆系學會
-                  <span className="font-['Inter',_sans-serif]">All rights reserved.</span>
+                  <span className="font-['Inter',_sans-serif] uppercase">Copyright © SCCDSA</span>
+                  <span className="font-['Inter',_sans-serif]"> All rights reserved.</span>
                 </span>
                 <span className="copyright-easter-egg" style={{ opacity: showEasterEgg ? 1 : 0 }}>
                   {easterEggText}

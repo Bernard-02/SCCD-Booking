@@ -7,11 +7,12 @@
 
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { AdminOrderRow } from '../../services/ordersService'
+import { suggestedDeposit, type AdminOrderRow } from '../../services/ordersService'
 import { slotLabel, toDateKey } from '../../utils/timeUtils'
 
-export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'penalty' | 'cancel' | 'extend'
-// pickup = 已預繳者取件；penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期
+export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'penalty' | 'cancel' | 'extend' | 'handover'
+// pickup = 已預繳者取件；penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期；
+// handover = 點交學生取件後新增的設備（modify-order.sql）
 
 interface Props {
   order: AdminOrderRow
@@ -19,7 +20,7 @@ interface Props {
   staff: { name: string; onDuty: boolean }[] // 幹部（值班中排前面，選單來源）
   defaultHandler: string // 上次選擇的經手人（同班次免重選）
   estPenalty: number // 逾期試算罰款（overdue 時預填，可修改）
-  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean) => void
+  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean, depositTotal?: number) => void
   onCancel: () => void
 }
 
@@ -60,6 +61,18 @@ const OrderActionDialog: React.FC<Props> = ({
   }
   const isPartialReturn = mode === 'return' && returnIds.size < order.order_items.length
 
+  // 押金現場計算、系統記錄：點交新增設備，或已繳待取件的單繳押金後被學生改過品項 → 取件時一併記錄
+  const pendingItems = order.order_items.filter(i => i.pickup_pending)
+  const needDeposit =
+    mode === 'handover' ||
+    (mode === 'pickup' && !!order.items_updated_at && !!order.deposit_paid_at &&
+      new Date(order.items_updated_at) > new Date(order.deposit_paid_at))
+  // 建議值＝最新品項小計 cap 5,000；助教直借（押金 0）維持 0
+  const suggested = order.deposit_total === 0 ? 0 : suggestedDeposit(order.order_items)
+  const [deposit, setDeposit] = useState(String(suggested))
+  const depositNum = parseInt(deposit, 10)
+  const depositValid = !needDeposit || (!Number.isNaN(depositNum) && depositNum >= 0)
+
   // 按 ESC 鍵關閉
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
@@ -72,7 +85,7 @@ const OrderActionDialog: React.FC<Props> = ({
   const daysNum = parseInt(days, 10)
   const daysValid = mode !== 'extend' || (!Number.isNaN(daysNum) && daysNum >= 1 && daysNum <= 7)
   const canConfirm =
-    handler !== '' && penaltyValid && daysValid && (mode !== 'return' || returnIds.size > 0)
+    handler !== '' && penaltyValid && daysValid && depositValid && (mode !== 'return' || returnIds.size > 0)
 
   const title =
     mode === 'paid' ? { en: 'Deposit', zh: '確認收押金' }
@@ -80,6 +93,7 @@ const OrderActionDialog: React.FC<Props> = ({
     : mode === 'penalty' ? { en: 'Penalty', zh: '收罰款' }
     : mode === 'cancel' ? { en: 'Cancel Order', zh: '代取消訂單' }
     : mode === 'extend' ? { en: 'Extend', zh: '代客延期' }
+    : mode === 'handover' ? { en: 'Handover', zh: '點交新增設備' }
     : { en: 'Return', zh: '確認歸還' }
 
   // 代客延期的新歸還日預覽
@@ -173,6 +187,40 @@ const OrderActionDialog: React.FC<Props> = ({
               押金已於 <span className="font-english">{order.deposit_paid_at?.slice(5, 10).replace('-', '/')}</span> 收取
               {order.paid_by && <>（經手 {order.paid_by}）</>}，設備交付後按確認，租借開始。
             </p>
+          )}
+
+          {/* 點交：學生取件後新增、尚未交付的設備 */}
+          {mode === 'handover' && (
+            <div className="text-xs text-white font-chinese">
+              <p className="text-gray-scale2 mb-2">學生取件後新增的設備，交付後按確認：</p>
+              {pendingItems.map(i => (
+                <div key={i.id}>{i.name} <span className="font-english text-gray-scale2">×{i.quantity}</span></div>
+              ))}
+            </div>
+          )}
+
+          {/* 押金（現場計算，系統只記錄）：預填最新品項的建議值，可修改 */}
+          {needDeposit && (
+            <div>
+              <label className="text-gray-scale2 text-xs block mb-2">
+                <span className="font-english">Deposit</span> <span className="font-chinese">押金總額（現場計算後填入）</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={deposit}
+                onChange={e => setDeposit(e.target.value)}
+                className={`${field} font-english`}
+              />
+              <p className="text-xs text-gray-scale2 font-chinese mt-2">
+                目前已收 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>
+                ，依最新品項建議 <span className="font-english">NT$ {suggested.toLocaleString()}</span>
+                {depositValid && depositNum !== order.deposit_total && (
+                  <>（{depositNum > order.deposit_total ? '補收' : '退還'}{' '}
+                    <span className="font-english">NT$ {Math.abs(depositNum - order.deposit_total).toLocaleString()}</span>）</>
+                )}
+              </p>
+            </div>
           )}
 
           {/* 收罰款：顯示欠繳金額 */}
@@ -318,7 +366,8 @@ const OrderActionDialog: React.FC<Props> = ({
                 [...returnIds],
                 chargePenalty && penaltyNum > 0 ? paidNow : true,
                 mode === 'extend' ? daysNum : 0,
-                mode === 'pickup' || pickupNow
+                mode === 'pickup' || pickupNow,
+                needDeposit ? depositNum : undefined
               )
             }
             disabled={!canConfirm}

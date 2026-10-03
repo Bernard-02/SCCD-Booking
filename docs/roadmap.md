@@ -3,7 +3,7 @@
 > 距離可上線，剩下的階段與任務。整體現況（2026-09 更新）：**階段 1 後端接線已完成**——
 > 登入／訂單／庫存／空間／通知全部走 Supabase，mock 已全數移除。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端用 **Supabase**（Auth + PostgreSQL + RLS）。
-> 階段 2 → 3 有依賴順序；階段 4（品質）與階段 5（手機版）可與任何階段並行。
+> 階段 2 → 3 有依賴順序；階段 4（品質）可與任何階段並行；階段 5（手機版）等階段 1.5 桌面版驗收確認後再做（Bernard 2026-10-03）。
 
 ## 階段 1：Supabase 後端接線 ✅（2026-07 完成）
 
@@ -18,8 +18,8 @@
 - [x] 送單 RPC＋庫存扣減（`equipment_reserved`）＋空間佔用（`space_occupied`）＋延期（`extend_my_order`）
 - [x] Profile 讀真實訂單、Header 讀真實通知（已讀入庫）
 - [ ] 決定購物車與日期選擇是否跟帳號走（跨裝置同步）——未定案，不擋上線
-- [ ] 收尾：`orderValidation` 重複下單檢查仍讀 localStorage receipts（server 端已把關，
-      本地檢查與 `useOrderSubmission` 的 receipts 雙寫可一併移除）
+- [x] 收尾（2026-10-03）：刪除 `orderValidation`（讀 localStorage receipts 的重複下單檢查）與
+      `useOrderSubmission` 的 receipts 雙寫——server 端 `submit_orders`＋`DatePickerBar` 同類型未歸還檢查已取代
 
 ## 階段 1.5：桌面版整體驗收（先於階段 2 與手機版，已與 Bernard 議定）
 
@@ -70,7 +70,8 @@
 - [x] 值班可靠性（2026-10-02）：訂單／總覽／空間地圖自動更新（`useAutoRefresh`：每 60 秒＋切回分頁即更新，
       背景失敗不蓋畫面；訂單工具列「更新於 hh:mm」＋手動重新整理）；後台全部頁面
       載入失敗改顯示原因＋重試（`LoadError`，不再誤顯示成「沒有資料」）；所有寫入操作成功皆有 Toast
-- [ ] 手動建單（電話／現場預約，admin 代下）——**要做，排在後面（2026-10-01 Bernard：晚點再弄）**
+- [ ] 手動建單（電話／現場預約，admin 代下）——**2026-10-02 Bernard 評估中：要不要提供，或一律學生自己下單**
+- [ ] 畢業生帳號自動停用（方向定案 2026-10-02：有東西沒歸還者除外；判定時點與「停用」定義待定，見 rental-rules 帳號身分）
 - [x] **後台改版：側欄分兩段**（2026-09-30 定案）——「值班 Daily」（總覽／訂單／空間地圖）
       與「設定 Settings」（設備管理／空間管理／會員管理／營業時間）分開，防誤觸：
       查看與寫入不同頁、設定段寫入一律確認 dialog、下架＝軟性停用不刪資料（`AdminLayout` 分組）
@@ -106,29 +107,35 @@
 - [x] 寒暑假封鎖前端日曆：封鎖日期灰化不可選＋擋跨封鎖選取（`Calendar` 讀 `fetchBlackouts`）
 - [x] 延期不得延入寒暑假封鎖：`extend_my_order` 補 blackout 檢查＋`ExtendDialog` 封鎖日灰化
       （SQL 改在 orders-rpc.sql，已重貼生效）
-- [ ] 大量單調整品項（送單後～取件前，含 pending）：學生前台自助加／減（減不低於 10 件）
-      ＋server 逐項庫存檢查，押金 cap 不動免補繳（情境 3，2026-09-26 範圍擴大）
+- [x] 修改已送出的設備單（2026-10-03，情境 3）：小量／大量都改原單——取件前可增減、取件後只能加（新增待學會點交）；
+      小量 ≤ 9、大量 ≥ 10、增量查庫存；押金已繳的差額現場算、系統記錄；品項標「已更動／待點交」＋最後修改時間；
+      新增未領 24 工作時自動取消（pg_cron）、總覽「新增待點交」清單。
+      （SQL：modify-order.sql＋重貼 orders-rpc.sql，已執行 2026-10-03）
 - [x] 設備／空間分單（2026-10-02）：購物車組別＝訂單（`types/equipment.ts` `cartGroupKey`）——
       借用資訊每單各填、送單分組、類型互斥／押金／9 件（**僅計設備**）皆以單為單位；
-      `submit_orders` 擋混合單、小量重複檢查分類別（**重貼 orders-rpc.sql**）；
+      `submit_orders` 擋混合單、小量重複檢查分類別（orders-rpc.sql 已重貼 2026-10-03）；
       後台種類欄四格（小量設備／大量設備／個人空間／團體空間，`adminUi` 的 `orderKind`）
 - [x] 大量設備預繳押金＋自選取件時間（2026-10-02）：購物車借用資訊選繳押金／取件時段（值班時段；
       取件＝起租日、繳押金＝24 工作時內且不晚於取件）；後台收押金可「同時取件」或先收後取（已繳待取件），
       逾時未取件紅字提醒。**SQL：執行 mass-pickup.sql，再重貼 orders-rpc.sql、auto-cancel.sql、admin-actions.sql**
-- [ ] 同類型限一單（2026-09-30 新規則，兩層）：小量設備／大量設備／個人空間／團體空間四格——
-      購物車各最多一組時段（`useCart` 擋＋Exist Cart 清單簡化）；
-      **server 端 `submit_orders` 擋同類型未歸還單**（pending／in-progress／overdue 未結案即擋）
+- [x] 同類型限一單（2026-09-30 新規則，2026-10-02 實作兩層）：小量設備／大量設備／個人空間／團體空間四格——
+      購物車同類別一張（`useCart` 擋類型＋時段、舊購物車結帳擋、日期列點衝突類型當下提示）；
+      **server 端 `submit_orders` 擋同類型未歸還單**（僅 student；orders-rpc.sql 已重貼 2026-10-03）
 - [ ] 遠期單阻擋（方向定案 2026-09-30）：起租日最遠可選範圍**待 Bernard 與學會討論定細則**
       （rental-rules 待確認 #4）——定案後改日曆可選範圍＋server 端擋
-- [ ] Order 頁提示補「現金交易不找零」文案（2026-09-29 新規則）
+- [x] Order 頁使用說明補「現金交易不找零」（2026-10-03，畫面＋PDF 收據兩處）
 
 ## 階段 4：品質（可並行）
 
 - [x] 測試基礎：vitest 已建置（`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
+- [x] **安全修正（2026-10-03）**：`user_role()` 未登入回傳 NULL，後台 RPC 的 `<> 'admin'` 檢查被跳過
+      （只帶 anon key 即可呼叫收押金／歸還／取消等 9 支）→ 改回傳 `'anon'`（supabase/user-role-fix.sql，已執行並驗證擋下）
 - [ ] Tech debt：拆 700 行大檔（`CartList`、`OrderPage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
-- [ ] 零散 TODO：延長線佔位圖（`EquipmentGrid.tsx:230`）、`ProfilePage` 狀態圓點（`ProfilePage.tsx:628`）
+- [x] 設備圖片（2026-10-03）：前台清單／購物車原本寫死延長線圖，改讀設備 `image_url`（`equipmentService.imageSrc`，
+      未上傳才用預設圖）——圖片之後由後台設備管理上傳即生效
+- [ ] `ProfilePage` 狀態圓點（`ProfilePage.tsx:642`）——等 Bernard 定 Profile 樣式再做
 
-## 階段 5：手機版（純前端，可與階段 1-3 並行）
+## 階段 5：手機版（純前端；等階段 1.5 桌面版驗收確認後再執行）
 
 RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：Home、Booking、BookingResources、About、Header（mobile menu）。
 

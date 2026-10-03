@@ -11,7 +11,6 @@ import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import CartList from '../components/cart/CartList'
 import { useCart } from '../hooks/useCart'
-import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useCartValidation } from '../hooks/useCartValidation'
 import { useOrderSubmission } from '../hooks/useOrderSubmission'
@@ -37,7 +36,6 @@ const parseGroupKey = (key: string): { category: string; startDate: string; endD
 
 const RentalListPage = () => {
   const location = useLocation()
-  const { currentUser } = useAuth()
   const {
     cart,
     updateEquipmentQuantity,
@@ -84,12 +82,13 @@ const RentalListPage = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
   }
 
-  // 彙整四種購物車驗證規則
+  // 彙整購物車驗證規則
   const {
     cartValidation,
     expiredOrdersValidation,
     stockAvailabilityValidation,
-    bookingDetailsValidation
+    bookingDetailsValidation,
+    singleOrderValidation
   } = useCartValidation({ cart, bookingDetails, getOriginalQuantity, getCartQuantity })
 
   // 計算不同類型的項目數量
@@ -285,7 +284,7 @@ const RentalListPage = () => {
   }
 
   // 送單流程（建收據、寫通知、清空購物車、導向 /profile）
-  const submitOrder = useOrderSubmission({ cart, currentUser, clearCart, bookingDetails })
+  const submitOrder = useOrderSubmission({ cart, clearCart, bookingDetails })
 
   // 停權帳號直接鎖住送單按鈕（即時查詢；真正的防線在 submit_orders RPC，此處為 UX）
   const isSuspended = useSuspension()
@@ -613,6 +612,22 @@ const RentalListPage = () => {
                       </div>
                     )}
 
+                    {/* 條件 0.6: 同類別多張訂單（規則上線前的舊購物車）- 僅違規時顯示 */}
+                    {!singleOrderValidation.valid && (
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-xs" style={{ color: '#ffff00', marginTop: '2px' }}>
+                          info
+                        </span>
+                        <div className="flex-1">
+                          <span className="text-xs text-[#ffff00]">
+                            <span className="font-['Inter',_sans-serif]">{singleOrderValidation.detail}</span>
+                            {' '}
+                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{singleOrderValidation.message}</span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 條件 1: 填寫借用資訊 - 常駐 */}
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-xs" style={{
@@ -682,9 +697,9 @@ const RentalListPage = () => {
                   )}
                   <button
                     onClick={handleCheckout}
-                    disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid}
+                    disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid}
                     className={`px-8 py-2 rounded-lg text-sm font-normal whitespace-nowrap transition ${
-                      isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid
+                      isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid
                         ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                         : 'bg-white text-black hover:opacity-70 cursor-pointer'
                     }`}

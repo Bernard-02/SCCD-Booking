@@ -1,6 +1,6 @@
 /**
  * 後台 · 總覽 Dashboard
- * 唯讀摘要：訂單概況、教室／空間使用中、待繳押金、違規帳號。
+ * 唯讀摘要：訂單概況、教室／空間使用中、待繳押金、新增待點交、違規帳號。
  * 操作細項都在側欄各分區，這裡只看數字與名單；點擊統計或「查看」跳到對應篩選的訂單頁。
  */
 
@@ -105,6 +105,8 @@ const AdminHomePage: React.FC = () => {
   const pendingOrders = useMemo(() => orders.filter(o => o.status === 'pending' && !o.deposit_paid_at), [orders])
   const pickupOrders = useMemo(() => orders.filter(isAwaitingPickup), [orders])
   const overdueOrders = useMemo(() => orders.filter(o => o.status === 'overdue'), [orders])
+  // 取件後學生新增、尚未點交的設備（modify-order.sql；24 工作時未領自動取消）
+  const handoverOrders = useMemo(() => orders.filter(o => o.order_items.some(i => i.pickup_pending)), [orders])
 
   const goOrders = (status?: OrderStatus) =>
     navigate(status ? `/admin/orders?status=${status}` : '/admin/orders')
@@ -239,6 +241,38 @@ const AdminHomePage: React.FC = () => {
                 ))}
               </section>
             )}
+
+            {/* 新增待點交：學生取件後加的設備，來領時在訂單頁按「點交」並記錄押金 */}
+            <section>
+              <SectionTitle en="Added Items" zh="新增待點交" count={handoverOrders.length} onMore={() => goOrders('in-progress')} />
+              {handoverOrders.map(o => {
+                const added = o.order_items.filter(i => i.pickup_pending)
+                const since = added.map(i => i.changed_at).filter((d): d is string => !!d).sort()[0]
+                const ms = since ? pendingMsRemaining(since, now, closedDates) : 0
+                return (
+                  <div key={o.id} className="py-4 border-b border-gray-scale4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-md font-chinese text-white">
+                        {o.students?.name ?? '—'}
+                        <span className="font-english text-xs text-gray-scale2 ml-2">{o.students?.student_id}</span>
+                      </div>
+                      <div className="text-xs text-gray-scale2">
+                        <span className="font-english">{o.rental_number}</span>
+                        <span className="font-chinese"> · {added.map(i => `${i.name} ×${i.quantity}`).join('、')}</span>
+                      </div>
+                    </div>
+                    {ms > 0 ? (
+                      <span className="text-xs font-english whitespace-nowrap" style={{ color: 'var(--color-yellow)' }}>
+                        <span className="font-chinese">剩</span> {Math.ceil(ms / 3_600_000)} hrs
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-scale3 font-chinese whitespace-nowrap">已逾時，將自動取消</span>
+                    )}
+                  </div>
+                )
+              })}
+              {handoverOrders.length === 0 && <Empty zh="沒有待點交的新增設備" />}
+            </section>
 
             {/* 違規帳號：停權名單＋逾期中訂單 */}
             <section className="lg:col-span-2">

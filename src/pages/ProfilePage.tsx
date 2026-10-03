@@ -4,18 +4,19 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import ExtendDialog from '../components/profile/ExtendDialog'
+import ModifyOrderDialog, { type ModifyLine } from '../components/profile/ModifyOrderDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
 import Toast from '../components/common/Toast'
 import { changePassword, updateMyPhone } from '../services/authService'
-import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates } from '../services/ordersService'
+import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
-import { loadEquipmentData } from '../services/equipmentService'
-import { loadSpaceBlocks } from '../services/spaceService'
+import { loadItemImages } from '../services/equipmentService'
+import { classLabel } from '../utils/gradeUtils'
 import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
 import { slotLabel, pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
 import { useSuspension } from '../hooks/useSuspension'
@@ -32,6 +33,8 @@ interface ReceiptItem {
   endDate: string
   image: string
   bookingType?: 'little' | 'mass-personal' | 'mass-group'
+  changedAt?: string | null  // 送單後改過（修改訂單）
+  pickupPending?: boolean    // 取件後新增、尚未點交
 }
 
 type OrderStatus = 'pending' | 'in-progress' | 'returned' | 'overdue' | 'canceled'
@@ -51,6 +54,19 @@ interface Receipt {
   depositDate?: string | null
   depositSlot?: string | null
   pickupSlot?: string | null
+  itemsUpdatedAt?: string | null // 學生最後一次改品項
+}
+
+/** 修改訂單用：同設備合併（取件後同一設備可能分「已點交」與「待點交」兩列） */
+const toModifyLines = (r: Receipt): ModifyLine[] => {
+  const map = new Map<string, ModifyLine>()
+  for (const i of r.items) {
+    const l = map.get(i.id) ?? { id: i.id, name: i.name, deposit: i.deposit, quantity: 0, held: 0 }
+    l.quantity += i.quantity
+    if (!i.pickupPending) l.held += i.quantity
+    map.set(i.id, l)
+  }
+  return [...map.values()]
 }
 
 const ProfilePage: React.FC = () => {
@@ -143,7 +159,9 @@ const ProfilePage: React.FC = () => {
 const RentalHistorySection: React.FC = () => {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [allReceipts, setAllReceipts] = useState<Receipt[]>([])
+  const [modifying, setModifying] = useState<Receipt | null>(null) // 修改訂單（情境 3）
   const [now, setNow] = useState(new Date()) // 用於倒數計時更新
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set()) // 臨時公休日
   const [isExtendDialogOpen, setIsExtendDialogOpen] = useState(false)
@@ -152,13 +170,13 @@ const RentalHistorySection: React.FC = () => {
   // 從 Supabase 讀取自己的訂單（RLS 只回本人的），組成畫面用的 Receipt 形狀
   const loadOrders = React.useCallback(async () => {
     try {
-      const [orders, equipmentData, spaceBlocks] = await Promise.all([fetchMyOrders(), loadEquipmentData(), loadSpaceBlocks()])
+      const [orders, images] = await Promise.all([fetchMyOrders(), loadItemImages()])
 
       const itemImage = (item: OrderRow['order_items'][number]): string => {
         if (item.item_type === 'equipment') {
-          return equipmentData[item.item_id]?.mainImage || 'Images/Extension Cord.webp'
+          return images[item.item_id] || '/Images/Extension Cord.webp'
         }
-        if (item.item_type === 'classroom') return spaceBlocks[item.item_id]?.image_url || `/Images/${item.item_id}.webp`
+        if (item.item_type === 'classroom') return images[item.item_id] || `/Images/${item.item_id}.webp`
         return '/Area/A5F Area Booking.svg'
       }
 
@@ -176,7 +194,9 @@ const RentalHistorySection: React.FC = () => {
           startDate: order.start_date,
           endDate: order.end_date,
           image: itemImage(item),
-          bookingType: order.booking_type
+          bookingType: order.booking_type,
+          changedAt: item.changed_at,
+          pickupPending: item.pickup_pending
         })),
         createdAt: order.created_at,
         status: order.status,
@@ -184,7 +204,8 @@ const RentalHistorySection: React.FC = () => {
         depositPaidAt: order.deposit_paid_at,
         depositDate: order.deposit_date,
         depositSlot: order.deposit_slot,
-        pickupSlot: order.pickup_slot
+        pickupSlot: order.pickup_slot,
+        itemsUpdatedAt: order.items_updated_at
       }))
 
       setAllReceipts(receipts)
@@ -197,6 +218,26 @@ const RentalHistorySection: React.FC = () => {
     loadOrders()
     fetchClosedDates().then(setClosedDates)
   }, [loadOrders])
+
+  // 從日期列「修改訂單」跳過來（同類型已有未歸還單）：訂單載入後直接開修改視窗，只開一次
+  const editTarget = (location.state as { editOrder?: string } | null)?.editOrder
+  useEffect(() => {
+    if (!editTarget) return
+    const r = allReceipts.find(x => x.rentalNumber === editTarget)
+    if (!r) return
+    setModifying(r)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [editTarget, allReceipts, navigate, location.pathname])
+
+  // 儲存修改：失敗回傳原因由對話框顯示（視窗保留，內容不丟）
+  const handleConfirmModify = async (items: { item_id: string; quantity: number }[]) => {
+    if (!modifying) return null
+    const res = await modifyMyOrder(modifying.rentalNumber, items)
+    if (!res.ok) return res.message ?? '修改失敗，請再試一次'
+    setModifying(null)
+    await loadOrders()
+    return null
+  }
 
   // 每分鐘更新一次時間，觸發倒數計時重繪
   useEffect(() => {
@@ -368,6 +409,10 @@ const RentalHistorySection: React.FC = () => {
 
       if (msRemaining <= 0) return null // 已逾期
 
+      // 取件後新增、待點交的設備：24 工作時內要來領（起算＝第一次新增），逾時自動取消
+      const addedAt = receipt.items.filter(i => i.pickupPending && i.changedAt).map(i => i.changedAt!).sort()[0]
+      const addMs = addedAt ? pendingMsRemaining(addedAt, now, closedDates) : 0
+
       const days = Math.floor(msRemaining / (1000 * 60 * 60 * 24))
       const hours = Math.floor(msRemaining / (1000 * 60 * 60))
       const minutes = Math.floor(msRemaining / (1000 * 60))
@@ -382,6 +427,11 @@ const RentalHistorySection: React.FC = () => {
           <span className="font-['Inter',_sans-serif] text-sm text-blue">
             Due in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
           </span>
+          {addMs > 0 && (
+            <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs mt-1" style={{ color: 'var(--color-yellow)' }}>
+              新增設備待點交・剩 <span className="font-['Inter',_sans-serif]">{Math.ceil(addMs / 3_600_000)}</span> hrs
+            </div>
+          )}
         </div>
       )
     } else if (status === 'overdue') {
@@ -416,6 +466,10 @@ const RentalHistorySection: React.FC = () => {
     const canExtend = status === 'in-progress' && !receipt.hasExtended && isWithinExtendWindow(endDate)
     const bookingType = receipt.items.length > 0 ? receipt.items[0].bookingType : 'little'
     const bookingTypeLabel = getBookingTypeLabel(bookingType)
+    // 可修改＝設備單（小量／大量）且待繳押金／已繳待取件／租借中（情境 3：改原單，不另開新單）
+    const canModify =
+      receipt.items[0]?.category === 'equipment' && bookingType !== 'mass-group' &&
+      (status === 'pending' || status === 'in-progress')
 
     return (
       <div
@@ -474,6 +528,26 @@ const RentalHistorySection: React.FC = () => {
                 </span>
               </button>
 
+              {/* Edit 修改：設備單才顯示（空間單不開放修改） */}
+              {receipt.items[0]?.category === 'equipment' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (canModify) setModifying(receipt)
+                  }}
+                  disabled={!canModify}
+                  className={`px-3 py-1 flex items-center justify-center border rounded-lg group-hover:!opacity-100 transition-colors ${
+                    canModify
+                      ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
+                      : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
+                  }`}
+                >
+                  <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">
+                    Edit <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">修改</span>
+                  </span>
+                </button>
+              )}
+
               {/* 狀態標籤 */}
               <div
                 className="px-3 py-1 flex items-center justify-center rounded-lg border border-transparent"
@@ -505,6 +579,21 @@ const RentalHistorySection: React.FC = () => {
         <div>
           {allReceipts.map((receipt, index) => renderReceiptItem(receipt, index))}
         </div>
+      )}
+
+      {/* 修改訂單對話框（情境 3） */}
+      {modifying && (
+        <ModifyOrderDialog
+          rentalNumber={modifying.rentalNumber}
+          startDate={modifying.rentalDates[0]}
+          endDate={modifying.rentalDates[modifying.rentalDates.length - 1]}
+          isMass={modifying.items[0]?.bookingType === 'mass-personal'}
+          picked={modifying.status === 'in-progress'}
+          depositPaid={modifying.status !== 'pending' || !!modifying.depositPaidAt}
+          lines={toModifyLines(modifying)}
+          onConfirm={handleConfirmModify}
+          onCancel={() => setModifying(null)}
+        />
       )}
 
       {/* 延期對話框 */}
@@ -575,23 +664,6 @@ const ProfileDataSection: React.FC = () => {
     return { ok: true }
   }
 
-  // 格式化班級名稱
-  const formatClassName = (studentId: string | undefined) => {
-    if (!studentId || studentId.length < 7) return '乙班'
-
-    const yearCode = studentId.substring(1, 4) // 111
-    const classCode = studentId.substring(4, 7) // 144 或 141
-
-    const admissionYear = parseInt(yearCode)
-    const currentYear = new Date().getFullYear() - 1911 // 民國年
-    const grade = currentYear - admissionYear + 1
-
-    const className = classCode === '141' ? '甲' : '乙'
-    const chineseNumbers = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
-    const chineseGrade = chineseNumbers[grade] || grade.toString()
-
-    return `日媒${chineseGrade}${className}`
-  }
 
   return (
     <div style={{ width: '80%' }}>
@@ -672,7 +744,8 @@ const ProfileDataSection: React.FC = () => {
           <div>
             <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Class</span> <span className="font-chinese">班級</span></label>
             <p className="font-chinese text-white text-sm">
-              {formatClassName(currentUser?.studentId)}
+              {/* 班級以名單資料為準（grade＋class_name，同後台會員管理），不從學號推 */}
+              {classLabel(currentUser?.year, currentUser?.className) || '—'}
             </p>
           </div>
         </div>

@@ -227,7 +227,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       name: item.name,
       category: 'equipment',
       deposit: item.deposit,
-      image: '/Images/Extension Cord.webp', // TODO: 使用實際圖片
+      image: item.mainImage,
       quantity: quantity,
       startDate: equipmentDates.startDate!.toISOString(),
       endDate: equipmentDates.endDate!.toISOString(),
@@ -373,7 +373,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                 name: item.name,
                 category: 'equipment',
                 deposit: item.deposit,
-                image: '/Images/Extension Cord.webp',
+                image: item.mainImage,
                 quantity: quantity,
                 startDate: equipmentDates.startDate?.toISOString() || '',
                 endDate: equipmentDates.endDate?.toISOString() || '',
@@ -413,10 +413,10 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   {/* 設備圖片 */}
                   <div
                     className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
-                    onClick={(e) => handleImageClick(e, '/Images/Extension Cord.webp')}
+                    onClick={(e) => handleImageClick(e, item.mainImage)}
                   >
                     <img
-                      src="/Images/Extension Cord.webp"
+                      src={item.mainImage}
                       alt={item.name}
                       className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                     />
@@ -443,7 +443,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     {availableQty}
                   </div>
 
-                  {/* 待繳押金數量（該時段 pending 訂單佔用） */}
+                  {/* 待繳押金數量（該時段押金未繳的佔用，見 equipment_reserved） */}
                   <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>

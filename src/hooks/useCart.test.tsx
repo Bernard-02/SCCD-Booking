@@ -109,6 +109,30 @@ describe('addToCart', () => {
     expect(res!.reason).toContain('個人空間')
   })
 
+  it('同類型限一單：同類別第二個時段被擋，另一類別不受影響', () => {
+    const { result } = renderHook(() => useCart())
+    act(() => { result.current.addToCart(item()) })
+    let res: { ok: boolean; reason?: string }
+    act(() => { res = result.current.addToCart(item({ id: 'light', name: '燈', startDate: '2099-02-01', endDate: '2099-02-03' })) })
+    expect(res!.ok).toBe(false)
+    expect(res!.reason).toContain('一次只能有一張訂單')
+    act(() => {
+      res = result.current.addToCart(item({
+        id: 'A1', name: '區塊 A1', category: 'space-block', deposit: 1000, startDate: '2099-02-01', endDate: '2099-02-03'
+      }))
+    })
+    expect(res!.ok).toBe(true)
+  })
+
+  it('同類別既有訂單已過期：提示先重選日期', () => {
+    const { result } = renderHook(() => useCart())
+    act(() => { result.current.addToCart(item({ startDate: '2020-01-01', endDate: '2020-01-03' })) })
+    let res: { ok: boolean; reason?: string }
+    act(() => { res = result.current.addToCart(item({ id: 'light', name: '燈' })) })
+    expect(res!.ok).toBe(false)
+    expect(res!.reason).toContain('已過期')
+  })
+
   it('停權帳號被擋且購物車不變', () => {
     vi.mocked(useSuspension).mockReturnValue(true)
     const { result } = renderHook(() => useCart())

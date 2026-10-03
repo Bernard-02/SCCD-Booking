@@ -30,7 +30,7 @@ src/
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
   stores/bookmarkStore.ts       # Zustand 收藏 store
   services/                     # 空資料夾（保留給未來真實後端，目前無檔案）
-  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils、orderValidation
+  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils
   data/equipment-data.json      # 設備主資料（包含庫存、分類）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
@@ -85,7 +85,6 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 | `sccd_space_dates` | 空間日期選擇（24h 過期） |
 | `sccd_bookmarks` 或 `sccd_bookmarks_{studentId}` | 收藏（依是否登入） |
 | `sccd_favorites_equipment` / `sccd_favorites_classroom` | 舊的收藏 key（legacy-bridge 使用） |
-| `booking_receipts_{studentId\|guest}` | 訂單收據（`storageKeys.ts` 的 `receiptsKey`） |
 | `sccd_notifications_{studentId\|guest}` | 通知（`notificationsKey`） |
 | `sccd_read_notifications_{studentId\|guest}` | 已讀通知（`readNotificationsKey`） |
 | `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
@@ -111,7 +110,7 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 - **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）。2026-09-26 情境補完新增一項待做：延期不得延入封鎖期（`extend_my_order` 補檢查）。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
-- **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」。
+- **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」；等桌面版驗收（階段 1.5）確認後再做。
 - **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
 
 ## 手機版（RWD）標準

@@ -5,11 +5,14 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Calendar from './Calendar'
 import DateEditDialog from './cart/DateEditDialog'
 import { readCart, writeCart, formatYmd } from './cart/cartHelpers'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import { fetchMyOrders } from '../services/ordersService'
 import { isSeniorOrGraduate } from '../utils/gradeUtils'
 import type { BookingType } from '../types/equipment'
 
@@ -19,6 +22,8 @@ interface DatePickerBarProps {
 
 const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   const { currentUser } = useAuth()
+  const navigate = useNavigate()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
   // 空間上限：一般生 14 天，大四／碩士放寬 30 天（rental-rules「年級限制」）
   const spaceMaxDays = isSeniorOrGraduate(currentUser?.year) ? 30 : 14
   const [isExpanded, setIsExpanded] = useState(false)
@@ -97,8 +102,123 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     }
   }
 
+  // ---- 同類型限一單（rental-rules §5、新規則 7）：選日期／切類型的當下就擋，不用等到購物車或送單 ----
+  const isMassType = (t: BookingType) => t !== 'little'
+  const typeLabel = (t: BookingType) =>
+    !isMassType(t) ? (type === 'space' ? '個人' : '小量') : (type === 'space' ? '團體' : '大量')
+  const what = type === 'space' ? '空間' : '設備'
+  const periodText = (s: string, e: string) => `${formatDateFull(s)} – ${formatDateFull(e)}`
+
+  // 未歸還的訂單（待繳押金／租借中／逾期）：同類型要等上一張歸還才能再借。只擋學生（系秘／助教直借不限）；
+  // 進頁面查一次，查不到就不擋——送單時 submit_orders 仍會擋
+  const [openOrders, setOpenOrders] = useState<
+    { rentalNumber: string; startDate: string; endDate: string; isEquip: boolean; isMass: boolean; modifiable: boolean }[]
+  >([])
+  const isStudent = !!currentUser && (currentUser.role ?? 'student') === 'student'
+  useEffect(() => {
+    if (!isStudent) { setOpenOrders([]); return }
+    let alive = true
+    fetchMyOrders()
+      .then(rows => {
+        if (!alive) return
+        setOpenOrders(rows
+          .filter(o => o.status === 'pending' || o.status === 'in-progress' || o.status === 'overdue')
+          .map(o => ({
+            rentalNumber: o.rental_number,
+            startDate: o.start_date,
+            endDate: o.end_date,
+            isEquip: o.order_items.some(i => i.item_type === 'equipment'),
+            isMass: o.booking_type !== 'little',
+            // 設備單（小量／大量）待繳押金／已繳待取件／租借中 → 可直接改原單加設備（情境 3）
+            modifiable: o.order_items.some(i => i.item_type === 'equipment') && o.status !== 'overdue'
+          })))
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [isStudent])
+  const openOrderFor = (t: BookingType) =>
+    openOrders.find(o => o.isEquip === (type === 'equipment') && o.isMass === isMassType(t))
+
+  const promptOpenOrder = async (o: (typeof openOrders)[number], t: BookingType) => {
+    // 設備單常是忘了還有一張：不用另開新單，直接帶去修改那張
+    if (o.modifiable) {
+      const edit = await confirm({
+        title: '已有一張訂單', titleEn: 'Existing Order',
+        message: `您已有一張${typeLabel(t)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
+          `學會規定同類型一次一張。要加設備請直接修改這張訂單。`,
+        confirmText: 'Edit Order', confirmTextZh: '修改訂單'
+      })
+      if (edit) navigate('/profile', { state: { editOrder: o.rentalNumber } })
+      return
+    }
+    const ok = await confirm({
+      title: '尚有未歸還的訂單', titleEn: 'Unreturned Order',
+      message: `您有一張未歸還的${typeLabel(t)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
+        `學會規定上一張歸還後才能再借同類型，目前無法選擇日期。`,
+      confirmText: 'View Orders', confirmTextZh: '查看訂單'
+    })
+    if (ok) navigate('/profile')
+  }
+
+  // 購物車裡同類別的訂單（一次只能一張；舊購物車可能多張，過期的優先——要先 Renew）。
+  // match 可再篩租借類型（切類型時只找「另一種」類型）
+  const findCartOrder = (match: (t: BookingType) => boolean = () => true) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const items = readCart().filter(item =>
+      (item.category === 'equipment' ? 'equipment' : 'space') === type && match(item.bookingType || 'little')
+    )
+    if (items.length === 0) return null
+    const isExpired = (d: string) => { const s = new Date(d); s.setHours(0, 0, 0, 0); return s < today }
+    const pick = items.find(item => isExpired(item.startDate)) ?? items[0]
+    return {
+      startDate: pick.startDate,
+      endDate: pick.endDate,
+      bookingType: (pick.bookingType || 'little') as BookingType,
+      isExpired: isExpired(pick.startDate)
+    }
+  }
+
+  // 購物車已有同類別訂單時的提示：過期 → Renew（開日期編輯）；切到另一種類型 → 已達上限（前往購物車）；
+  // 同類型另選日期 → 一次一張，提供沿用這張訂單的日期繼續加入
+  const promptCartOrder = async (c: NonNullable<ReturnType<typeof findCartOrder>>, newType?: BookingType) => {
+    const period = periodText(c.startDate, c.endDate)
+    if (c.isExpired) {
+      const ok = await confirm({
+        title: '訂單需要重新選擇日期', titleEn: 'Renew Required',
+        message: `購物車內的${typeLabel(c.bookingType)}${what}訂單（${period}）已過期，需要重新選擇日期（Renew）才能送出。\n` +
+          `${what}一次只能有一張訂單，請先處理這張訂單。`,
+        confirmText: 'Renew', confirmTextZh: '重新選擇日期'
+      })
+      if (ok) setEditingExpired({ startDate: c.startDate, endDate: c.endDate, bookingType: c.bookingType })
+    } else if (newType) {
+      const ok = await confirm({
+        title: '已達訂單上限', titleEn: 'Order Limit Reached',
+        message: `購物車已有一張${typeLabel(c.bookingType)}${what}訂單（${period}），${what}一次只能有一張訂單，` +
+          `無法再新增${typeLabel(newType)}${what}訂單。\n請先送出或清除購物車內的訂單。`,
+        confirmText: 'Go to Cart', confirmTextZh: '前往購物車'
+      })
+      if (ok) navigate('/cart')
+    } else {
+      const ok = await confirm({
+        title: '購物車已有訂單', titleEn: 'Order in Cart',
+        message: `購物車已有一張${typeLabel(c.bookingType)}${what}訂單（${period}），${what}一次只能有一張訂單，無法另選日期。\n` +
+          `要沿用這張訂單的日期繼續加入嗎？（要換日期請到購物車修改）`,
+        confirmText: 'Use These Dates', confirmTextZh: '沿用此日期'
+      })
+      if (ok) handleSelectExistingDate(c.startDate, c.endDate, c.bookingType)
+    }
+  }
+
   // 處理租借類型變更
   const handleBookingTypeChange = (newType: 'little' | 'mass-personal' | 'mass-group') => {
+    if (newType !== bookingType) {
+      const open = openOrderFor(newType)
+      if (open) { void promptOpenOrder(open, newType); return }
+      const conflict = findCartOrder(t => isMassType(t) !== isMassType(newType))
+      if (conflict) { void promptCartOrder(conflict, newType); return }
+    }
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -147,17 +267,21 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     }
   }
 
-  // 處理起租日點擊 - 開啟日曆
+  // 處理起租日點擊 - 開啟日曆（開之前先擋：同類型有未歸還單、或購物車已有同類別訂單）
   const handleStartDateClick = () => {
-    if (!isExpanded) {
-      // 展開日曆，並保存當前日期狀態
-      const datesToSave = type === 'equipment' ? getCurrentEquipmentDates() : getCurrentSpaceDates()
-      setOriginalDates({
-        startDate: datesToSave.startDate,
-        endDate: datesToSave.endDate
-      })
-      setIsExpanded(true)
-    }
+    if (isExpanded) return
+    const open = openOrderFor(bookingType)
+    if (open) { void promptOpenOrder(open, bookingType); return }
+    const cartOrder = findCartOrder()
+    if (cartOrder) { void promptCartOrder(cartOrder); return }
+
+    // 展開日曆，並保存當前日期狀態
+    const datesToSave = type === 'equipment' ? getCurrentEquipmentDates() : getCurrentSpaceDates()
+    setOriginalDates({
+      startDate: datesToSave.startDate,
+      endDate: datesToSave.endDate
+    })
+    setIsExpanded(true)
   }
 
   // 處理 Reset 按鈕
@@ -608,6 +732,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           onCancel={() => setEditingExpired(null)}
         />
       )}
+
+      {/* 類型衝突提示（Renew／已達上限） */}
+      <ConfirmDialog />
     </div>
   )
 }

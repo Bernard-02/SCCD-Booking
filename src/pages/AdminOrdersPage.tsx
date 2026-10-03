@@ -7,7 +7,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
 import type { AdminOrderRow, OrderStatus, OrderInfo } from '../services/ordersService'
 import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
@@ -25,6 +25,10 @@ const FILTERS: { key: 'all' | OrderStatus; en: string; zh: string }[] = [
 ]
 
 const fmtDate = (d: string) => d?.slice(5).replace('-', '/') // 'YYYY-MM-DD' → 'MM/DD'
+const fmtDateTime = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 
 // 可排序欄位（Notion 式：每一欄都能點表頭排序）
 type SortField =
@@ -85,8 +89,22 @@ const CELL: Record<SortField, (o: AdminOrderRow) => React.ReactNode> = {
       )}
     </td>
   ),
-  // 品項與原因較長，允許換行；品項一項一行（\n + whitespace-pre-line）
-  items: o => <td key="items" className="px-3 py-3 font-chinese min-w-[10rem] max-w-[18rem] whitespace-pre-line">{itemsSummary(o)}</td>,
+  // 品項與原因較長，允許換行；一項一行。學生改單（情境 3）：取件後新增＝待點交、送單後改過＝已更動
+  items: o => (
+    <td key="items" className="px-3 py-3 font-chinese min-w-[10rem] max-w-[18rem]">
+      {o.order_items.map(i => (
+        <div key={i.id}>
+          {i.name}{i.item_type === 'equipment' && <span className="font-english"> ×{i.quantity}</span>}
+          {i.pickup_pending
+            ? <span className="ml-1" style={{ color: 'var(--color-yellow)' }}>待點交</span>
+            : i.changed_at && <span className="ml-1 text-gray-scale2">已更動</span>}
+        </div>
+      ))}
+      {o.items_updated_at && (
+        <div className="text-gray-scale2 mt-1">改於 <span className="font-english">{fmtDateTime(o.items_updated_at)}</span></div>
+      )}
+    </td>
+  ),
   reason: o => <td key="reason" className="px-3 py-3 font-chinese text-gray-scale2 min-w-[8rem] max-w-[16rem]">{o.reason || '—'}</td>,
   paid_by: o => (
     <td key="paid_by" className={td}>
@@ -166,7 +184,7 @@ const AdminOrdersPage: React.FC = () => {
 
   // 對話框確認：收押金／歸還／收罰款／代取消／代延期（經手人記住供下次預選；
   // 歸還支援部分歸還——全勾整單、部分勾拆子單）
-  const handleAction = async (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean) => {
+  const handleAction = async (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean, depositTotal?: number) => {
     if (!action) return
     const { order, mode } = action
     setAction(null)
@@ -174,7 +192,9 @@ const AdminOrdersPage: React.FC = () => {
     setBusy(order.rental_number)
     const res =
       mode === 'paid' || mode === 'pickup'
-        ? await adminMarkPaid(order.rental_number, handler, pickup)
+        ? await adminMarkPaid(order.rental_number, handler, pickup, depositTotal)
+        : mode === 'handover'
+          ? await adminHandoverItems(order.rental_number, handler, depositTotal ?? order.deposit_total)
         : mode === 'penalty'
           ? await adminCollectPenalty(order.rental_number, handler)
           : mode === 'cancel'
@@ -187,7 +207,8 @@ const AdminOrdersPage: React.FC = () => {
     const rn = order.rental_number
     const penaltyNote = penalty > 0 ? `，罰款 NT$ ${penalty}${penaltyPaid ? '已繳清' : '記為欠繳'}` : ''
     showToast(
-      mode === 'pickup' ? `已完成取件 ${rn}，租借開始`
+      mode === 'handover' ? `已點交 ${rn} 新增的設備`
+      : mode === 'pickup' ? `已完成取件 ${rn}，租借開始`
       : mode === 'paid' && !pickup ? `已收押金 ${rn}，待取件`
       : mode === 'paid' ? `已確認收押金 ${rn}`
       : mode === 'penalty' ? `已收罰款 ${rn}`
@@ -508,7 +529,9 @@ const AdminOrdersPage: React.FC = () => {
                   {colOrder.map(f => CELL[f](o))}
                   <td className={td}>
                     {(() => {
-                      // 各狀態可用的後台動作（情境 2／9／13）
+                      // 各狀態可用的後台動作（情境 2／9／13）；學生取件後新增設備 → 前面多一個「點交」
+                      const handover: { mode: AdminActionMode; en: string; zh: string }[] =
+                        o.order_items.some(i => i.pickup_pending) ? [{ mode: 'handover', en: 'Handover', zh: '點交' }] : []
                       const acts: { mode: AdminActionMode; en: string; zh: string }[] =
                         o.status === 'pending'
                           ? [
@@ -519,12 +542,13 @@ const AdminOrdersPage: React.FC = () => {
                             ]
                           : o.status === 'in-progress'
                             ? [
+                                ...handover,
                                 { mode: 'return', en: 'Return', zh: '歸還' },
                                 { mode: 'extend', en: 'Extend', zh: '延期' },
                                 { mode: 'cancel', en: 'Cancel', zh: '取消' }
                               ]
                             : o.status === 'overdue'
-                              ? [{ mode: 'return', en: 'Return', zh: '歸還' }, { mode: 'extend', en: 'Extend', zh: '延期' }]
+                              ? [...handover, { mode: 'return', en: 'Return', zh: '歸還' }, { mode: 'extend', en: 'Extend', zh: '延期' }]
                               : o.status === 'returned' && (o.penalty_total ?? 0) > 0 && o.penalty_paid === false
                                 ? [{ mode: 'penalty', en: 'Penalty', zh: '收罰款' }] // 欠繳罰款：收清才解除擋單
                                 : []

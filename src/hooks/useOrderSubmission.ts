@@ -3,23 +3,17 @@
  * - 將購物車依「設備／空間 × 時段」分組（一組＝一張訂單，cartGroupKey），呼叫 Supabase RPC submit_orders
  *   （訂單＋品項＋通知包在同一個 transaction，要嘛全成立要嘛全不算）
  * - 失敗時回傳原因，購物車保留，由呼叫端提示重送
- * - 成功後仍寫一份 localStorage receipts：orderValidation 的重複下單檢查
- *   尚依賴它（roadmap 階段 3 搬 server 端後移除）
  */
 
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
+import { useDateSelection } from '../contexts/DateSelectionContext'
 import { cartGroupKey } from '../types/equipment'
-import type { CartItem, Receipt } from '../types/equipment'
-import type { Student } from '../utils/authTypes'
-import { receiptsKey } from '../utils/storageKeys'
-
-const DEPOSIT_CAP_PER_CATEGORY = 5000
+import type { CartItem } from '../types/equipment'
 
 interface UseOrderSubmissionArgs {
   cart: CartItem[]
-  currentUser: Student | null
   clearCart: () => void
   // 借用資訊，依 cartGroupKey 為 key（與下方分組相同）
   bookingDetails?: Record<string, {
@@ -55,8 +49,9 @@ export const submitErrorMessage = (error: { code?: string; message?: string } | 
   return `送出失敗（${msg || '未知錯誤'}），請再試一次`
 }
 
-export const useOrderSubmission = ({ cart, currentUser, clearCart, bookingDetails = {} }: UseOrderSubmissionArgs) => {
+export const useOrderSubmission = ({ cart, clearCart, bookingDetails = {} }: UseOrderSubmissionArgs) => {
   const navigate = useNavigate()
+  const { clearAllDates } = useDateSelection()
 
   return useCallback(async (): Promise<SubmitResult> => {
     if (cart.length === 0) return { ok: false, reason: '購物車是空的' }
@@ -99,37 +94,13 @@ export const useOrderSubmission = ({ cart, currentUser, clearCart, bookingDetail
       return { ok: false, reason: submitErrorMessage(error) }
     }
 
-    // ---- localStorage receipts 同步（僅供 orderValidation 重複下單檢查，階段 3 移除） ----
-    const receiptsStorageKey = receiptsKey(currentUser?.studentId)
-    const existingReceipts: Receipt[] = JSON.parse(localStorage.getItem(receiptsStorageKey) || '[]')
-
-    const newReceipts: Receipt[] = Object.entries(dateGroups).map(([dateKey, items], index) => {
-      const equipmentDeposit = Math.min(
-        items.filter(i => i.category === 'equipment').reduce((s, i) => s + i.deposit * i.quantity, 0),
-        DEPOSIT_CAP_PER_CATEGORY
-      )
-      const spaceDeposit = Math.min(
-        items.filter(i => i.category === 'space-block' || i.category === 'classroom').reduce((s, i) => s + i.deposit, 0),
-        DEPOSIT_CAP_PER_CATEGORY
-      )
-      return {
-        borrowerName: currentUser?.name || '訪客',
-        rentalDates: [items[0].startDate, items[0].endDate],
-        rentalNumber: (rentalNumbers as string[])[index],
-        totalDeposit: equipmentDeposit + spaceDeposit,
-        items,
-        createdAt: new Date().toISOString(),
-        reason: bookingDetails[dateKey]?.reason
-      }
-    })
-    localStorage.setItem(receiptsStorageKey, JSON.stringify([...existingReceipts, ...newReceipts]))
-    // ---- receipts 同步結束 ----
-
     // 通知已由 submit_orders 在資料庫端寫入，這裡只通知 Header 重新讀取
     window.dispatchEvent(new Event('notificationUpdated'))
 
     clearCart()
+    // 送出後日期選擇也清掉：下一張單要從選日期開始，才會經過 DatePickerBar 的「同類型未歸還」檢查
+    clearAllDates()
     navigate('/profile')
     return { ok: true }
-  }, [cart, currentUser, clearCart, navigate, bookingDetails])
+  }, [cart, clearCart, clearAllDates, navigate, bookingDetails])
 }

@@ -445,9 +445,8 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="copyright font-['Inter',_sans-serif] font-bold text-white text-left text-xl">
                 <p>
                   <span className="copyright-original">
-                    <span className="font-['Inter',_sans-serif] uppercase">Copyright © 2025 111</span>
-                    屆系學會
-                    <span className="font-['Inter',_sans-serif]">All rights reserved.</span>
+                    <span className="font-['Inter',_sans-serif] uppercase">Copyright © SCCDSA</span>
+                    <span className="font-['Inter',_sans-serif]"> All rights reserved.</span>
                   </span>
                 </p>
               </div>

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import type { CartItem, BookingType } from '../../types/equipment'
 import { useCart } from '../../hooks/useCart'
+import { useItemImages } from '../../services/equipmentService'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import BookingDetailsDialog from '../common/BookingDetailsDialog'
 import DateEditDialog from './DateEditDialog'
@@ -34,6 +35,8 @@ interface CartListProps {
 const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveItem, bookingDetails, onBookingDetailsChange, expiredDateKeys = [], selectedGroups: externalSelectedGroups, onSelectedGroupsChange }) => {
   const navigate = useNavigate()
   const { getOriginalQuantity, getCartQuantity } = useCart()
+  // 加入購物車時存的是當下的圖片網址；顯示一律用後台最新的（含已下架／關閉的）
+  const images = useItemImages()
   const { ConfirmDialog } = useConfirmDialog()
 
   // 只展開第一個日期組
@@ -501,10 +504,10 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           {/* 縮圖 */}
                           <div
                             className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
-                            onClick={(e) => handleImageClick(e, item.image)}
+                            onClick={(e) => handleImageClick(e, images[item.id] || item.image)}
                           >
                             <img
-                              src={item.image}
+                              src={images[item.id] || item.image}
                               alt={item.name}
                               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                             />
@@ -559,10 +562,10 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         {/* 縮圖 */}
                         <div
                           className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
-                          onClick={(e) => handleImageClick(e, item.image)}
+                          onClick={(e) => handleImageClick(e, images[item.id] || item.image)}
                         >
                           <img
-                            src={item.image}
+                            src={images[item.id] || item.image}
                             alt={item.name}
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                           />

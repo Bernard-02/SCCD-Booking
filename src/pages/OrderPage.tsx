@@ -24,6 +24,8 @@ interface OrderItem {
   startDate: string
   endDate: string
   bookingType?: string
+  changedAt?: string | null // 送單後改過（修改訂單）
+  pickupPending?: boolean   // 取件後新增、尚未點交
 }
 
 type OrderStatus = 'pending' | 'in-progress' | 'returned' | 'overdue' | 'canceled'
@@ -43,6 +45,7 @@ interface OrderData {
   depositDate?: string | null
   depositSlot?: string | null
   pickupSlot?: string | null
+  itemsUpdatedAt?: string | null // 學生最後一次改品項（收據印出，對照紙本新舊）
 }
 
 interface DateGroup {
@@ -171,10 +174,10 @@ const OrderPage: React.FC = () => {
     })
   }
 
-  // 格式化送單時間（日期 + 時間）
-  const formatOrderTime = () => {
-    if (!rentalData.createdAt) return ''
-    const date = new Date(rentalData.createdAt)
+  // 格式化送單時間（日期 + 時間）；也用於最後修改時間
+  const formatOrderTime = (iso: string | null | undefined = rentalData.createdAt) => {
+    if (!iso) return ''
+    const date = new Date(iso)
     const dateStr = date.toLocaleDateString('zh-TW', {
       year: 'numeric',
       month: '2-digit',
@@ -255,9 +258,16 @@ const OrderPage: React.FC = () => {
         <div className="container flex-1 overflow-hidden flex flex-col">
           {/* 標題和狀態 */}
           <div className="flex-shrink-0 mb-6 flex items-center justify-between">
-            <h1 className="font-['Inter',_sans-serif] text-2xl text-white" style={{ fontWeight: 500 }}>
-              {rentalData.rentalNumber}
-            </h1>
+            <div className="flex items-baseline gap-4">
+              <h1 className="font-['Inter',_sans-serif] text-2xl text-white" style={{ fontWeight: 500 }}>
+                {rentalData.rentalNumber}
+              </h1>
+              {rentalData.itemsUpdatedAt && (
+                <span className="font-['Inter',_sans-serif] text-xs text-gray-scale2">
+                  Updated <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">最後修改</span> {formatOrderTime(rentalData.itemsUpdatedAt)}
+                </span>
+              )}
+            </div>
             {/* 狀態標籤（逾期時加累計罰款試算，最終金額歸還時由系學會確認） */}
             <div className="flex items-center gap-4">
               {currentStatus === 'overdue' && penalty > 0 && (
@@ -328,6 +338,10 @@ const OrderPage: React.FC = () => {
                                 {/* 名稱 */}
                                 <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
                                   {item.name}
+                                  {/* 修改訂單（情境 3）：取件後新增待點交／送單後改過 */}
+                                  {item.pickupPending
+                                    ? <span className="text-xs ml-2" style={{ color: 'var(--color-yellow)' }}>待點交</span>
+                                    : item.changedAt && <span className="text-xs text-gray-scale2 ml-2">已更動</span>}
                                 </div>
 
                                 {/* 數量 */}
@@ -559,7 +573,7 @@ const OrderPage: React.FC = () => {
                       1. Please bring this receipt to the SA during business hours to pay the deposit and complete your reservation.
                     </p>
                     <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
-                      2. Cash payments only.
+                      2. Cash payments only. No change given.
                     </p>
                     <p className="font-['Inter',_sans-serif] text-xs text-white leading-relaxed">
                       3. On the return date, please present this receipt at the SA to retrieve your deposit.
@@ -570,7 +584,7 @@ const OrderPage: React.FC = () => {
                       1. 請在系學會營業時間內携帶此收據繳交押金以完成預約程序。
                     </p>
                     <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">
-                      2. 僅接受現金交易。
+                      2. 僅接受現金交易，恕不找零。
                     </p>
                     <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-white leading-relaxed">
                       3. 歸還日到期時，憑藉此收據至系學會索取押金。
@@ -622,6 +636,12 @@ const OrderPage: React.FC = () => {
             <div>
               <p className="text-xs text-black mb-1 font-bold">Order Time 送出時間</p>
               <p className="text-sm font-bold">{formatOrderTime()}</p>
+              {rentalData.itemsUpdatedAt && (
+                <>
+                  <p className="text-xs text-black mb-1 mt-2 font-bold">Updated 最後修改</p>
+                  <p className="text-sm font-bold">{formatOrderTime(rentalData.itemsUpdatedAt)}</p>
+                </>
+              )}
             </div>
             <div>
               <p className="text-xs text-black mb-1 font-bold">Booking Date 使用日期</p>
@@ -707,7 +727,10 @@ const OrderPage: React.FC = () => {
                       rows.push(
                         <tr key={`equip-${idx}`}>
                           <td className="border-b border-[#7c7c7c]">
-                            <div className="pt-2 pb-4">{item.name}</div>
+                            <div className="pt-2 pb-4">
+                              {item.name}
+                              {item.pickupPending ? '（待點交）' : item.changedAt ? '（已更動）' : ''}
+                            </div>
                           </td>
                           <td className="border-b border-[#7c7c7c]">
                             <div className="pt-2 pb-4 text-left">{item.quantity || 1}</div>
@@ -745,7 +768,7 @@ const OrderPage: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <span className="flex-shrink-0">2.</span>
-                    <span>Cash payments only. 僅接受現金。</span>
+                    <span>Cash payments only. No change given. 僅接受現金，恕不找零。</span>
                   </div>
                   <div className="flex gap-2">
                     <span className="flex-shrink-0">3.</span>

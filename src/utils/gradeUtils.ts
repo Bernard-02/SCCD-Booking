@@ -19,19 +19,17 @@ export const isSeniorOrGraduate = (grade?: string | null): boolean => {
 
 const NUM = ['一', '二', '三', '四']
 
-// 學號第 5–7 碼的班別代碼（同 ProfilePage.formatClassName）
-const SECTION_BY_CODE: Record<string, string> = { '141': '甲', '144': '乙' }
-
 /**
  * 班級標籤「日媒四乙」「碩媒一甲」＝ grade（年級，規則與 9/1 升級都看它）＋ class_name（班別甲／乙）。
  * 兩欄分開存、顯示才組起來，升級後標籤自動跟著變。grade 格式不符（舊資料）原樣顯示。
- * 班別：class_name 裡的甲／乙（可能存「乙」「乙班」「日媒四乙」）；沒填就看學號代碼。
+ * 班別取 class_name 裡的甲／乙（可能存「乙」「乙班」「日媒四乙」）。不從學號代碼推——
+ * 正式名單會連班級一起匯入後台（2026-10-02 Bernard 定）。
  */
-export const classLabel = (grade?: string | null, className?: string | null, studentId?: string): string => {
+export const classLabel = (grade?: string | null, className?: string | null): string => {
   const m = (grade ?? '').match(/^(大|碩)?([1-4]|[一二三四])$/)
   if (!m) return [grade, className].filter(Boolean).join(' ')
   const year = /\d/.test(m[2]) ? NUM[Number(m[2]) - 1] : m[2]
-  const section = (className ?? '').match(/[甲乙]/)?.[0] ?? SECTION_BY_CODE[studentId?.substring(4, 7) ?? ''] ?? ''
+  const section = (className ?? '').match(/[甲乙]/)?.[0] ?? ''
   return `${m[1] === '碩' ? '碩' : '日'}媒${year}${section}`
 }
 

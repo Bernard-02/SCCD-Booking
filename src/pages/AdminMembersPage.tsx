@@ -141,7 +141,7 @@ const AdminMembersPage: React.FC = () => {
   const q = search.trim().toLowerCase()
   const base = q
     ? members.filter(m =>
-        [m.student_id, m.name, classLabel(m.grade, m.class_name, m.student_id), m.email, m.phone ?? ''].some(v => v.toLowerCase().includes(q))
+        [m.student_id, m.name, classLabel(m.grade, m.class_name), m.email, m.phone ?? ''].some(v => v.toLowerCase().includes(q))
       )
     : members
   const visible = base.filter(m => matches(m, filter))
@@ -151,7 +151,7 @@ const AdminMembersPage: React.FC = () => {
     setEditingId(m.id)
     setOpenId(m.id)
     setDraft({
-      classText: classLabel(m.grade, m.class_name, m.student_id),
+      classText: classLabel(m.grade, m.class_name),
       identity: identityOf(m),
       position: staffBySid[m.student_id]?.position ?? '',
       on_leave: !!m.on_leave,
@@ -161,7 +161,7 @@ const AdminMembersPage: React.FC = () => {
 
   const handleSave = async (m: Member) => {
     // 班級沒改就原值寫回（舊資料格式不符也不會被擋）
-    const cls = draft.classText.trim() === classLabel(m.grade, m.class_name, m.student_id)
+    const cls = draft.classText.trim() === classLabel(m.grade, m.class_name)
       ? { grade: m.grade, class_name: m.class_name }
       : parseClassLabel(draft.classText)
     if (!cls) { showToast('班級格式：日媒四乙、碩媒一甲'); return }
@@ -375,7 +375,7 @@ const AdminMembersPage: React.FC = () => {
                 >
                   <div className="font-english">{m.student_id}</div>
                   <div className="font-chinese">{m.name || '—'}</div>
-                  <div className="font-chinese">{classLabel(m.grade, m.class_name, m.student_id) || '—'}</div>
+                  <div className="font-chinese">{classLabel(m.grade, m.class_name) || '—'}</div>
                   <div className="flex flex-wrap gap-1.5">{tags}</div>
                   <div className="flex flex-wrap gap-1.5">{flags.length > 0 ? flags : <span className="text-gray-scale3">—</span>}</div>
                   <div className="text-center whitespace-nowrap">

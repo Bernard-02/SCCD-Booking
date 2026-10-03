@@ -16,6 +16,10 @@ export interface OrderItemRow {
   name: string
   quantity: number
   deposit: number
+  // 學生改單（modify-order.sql）：changed_at＝送單後加／改過；pickup_pending＝取件後新增、尚未點交
+  changed_at: string | null
+  pickup_pending: boolean
+  handed_over_by: string | null
 }
 
 export interface OrderRow {
@@ -38,6 +42,7 @@ export interface OrderRow {
   deposit_slot: string | null    // 'HH:MM-HH:MM'
   pickup_slot: string | null
   deposit_paid_at: string | null // 已收押金；status 仍為 pending ＝ 已繳待取件
+  items_updated_at: string | null // 學生最後一次改品項（收據／PDF 印出，對照紙本新舊）
   order_items: OrderItemRow[]
 }
 
@@ -145,16 +150,19 @@ export async function adminUpdateOrderInfo(
 /**
  * 後台：收押金／取件（僅 admin；handler = 值班經手幹部）。
  * pickup = true：收押金＋取件（或已預繳者取件）→ in-progress；false：只收押金，維持 pending＝已繳待取件
+ * depositTotal：已繳待取件的單繳押金後被學生改過品項，取件時記錄現場補收／退還後的押金總額（不帶＝不變）
  */
 export async function adminMarkPaid(
   rentalNumber: string,
   handler: string,
-  pickup = true
+  pickup = true,
+  depositTotal?: number
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_mark_paid', {
     p_rental_number: rentalNumber,
     p_handler: handler,
-    p_pickup: pickup
+    p_pickup: pickup,
+    p_deposit_total: depositTotal ?? null
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }
@@ -293,3 +301,38 @@ export async function extendMyOrderPartial(
   if (error) return { ok: false, message: error.message }
   return { ok: true, resultNumber: data as string }
 }
+
+/**
+ * 學生修改自己的設備訂單（modify-order.sql）：items＝改完後的完整清單。
+ * 取件前可增減；取件後只能加（新增的待學會點交）。數量／庫存／押金規則皆由 server 把關。
+ */
+export async function modifyMyOrder(
+  rentalNumber: string,
+  items: { item_id: string; quantity: number }[]
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('modify_my_order', {
+    p_rental_number: rentalNumber,
+    p_items: items
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 後台：點交取件後新增的品項，記錄現場計算後的押金總額（modify-order.sql） */
+export async function adminHandoverItems(
+  rentalNumber: string,
+  handler: string,
+  depositTotal: number
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_handover_items', {
+    p_rental_number: rentalNumber,
+    p_handler: handler,
+    p_deposit_total: depositTotal
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 押金建議值：品項小計（單價×數量）cap 5,000，同 submit_orders；學會現場計算時預填用 */
+export const suggestedDeposit = (items: Pick<OrderItemRow, 'deposit' | 'quantity'>[]): number =>
+  Math.min(items.reduce((s, i) => s + i.deposit * i.quantity, 0), 5000)

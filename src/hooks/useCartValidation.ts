@@ -46,6 +46,7 @@ interface UseCartValidationResult {
   expiredOrdersValidation: ExpiredResult
   stockAvailabilityValidation: StockResult
   bookingDetailsValidation: BaseResult
+  singleOrderValidation: BaseResult
 }
 
 // 過期以時段為單位（CartList／RentalListPage 用 `${start}_${end}` 比對）；
@@ -171,11 +172,26 @@ export const useCartValidation = ({
       return { valid: true, message: '', detail: '' }
     })()
 
+    // 同類別一次一張訂單（新規則 7）：加入時已擋，這裡攔規則上線前就存在的舊購物車
+    const singleOrderValidation: BaseResult = (() => {
+      const orders = Object.keys(groupByOrder(cart))
+      const over = (['equipment', 'space'] as const).filter(c => orders.filter(k => k.startsWith(`${c}_`)).length > 1)
+      if (over.length > 0) {
+        return {
+          valid: false,
+          message: `${over.map(c => (c === 'equipment' ? '設備' : '空間')).join('、')}一次只能有一張訂單，請移除多餘的時段`,
+          detail: 'Only one order per category'
+        }
+      }
+      return { valid: true, message: '', detail: '' }
+    })()
+
     return {
       cartValidation,
       expiredOrdersValidation,
       stockAvailabilityValidation,
-      bookingDetailsValidation
+      bookingDetailsValidation,
+      singleOrderValidation
     }
   }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity])
 }
