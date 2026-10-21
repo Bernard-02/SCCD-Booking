@@ -11,12 +11,13 @@ import SpaceAreaMap from '../components/space/SpaceAreaMap'
 import ClassroomList from '../components/space/ClassroomList'
 import { useSpaceBlocks, fetchOccupiedSpaces } from '../services/spaceService'
 import { toDateKey } from '../components/cart/cartHelpers'
-import { useCart } from '../hooks/useCart'
+import { useCart, LOGIN_REQUIRED_MSG } from '../hooks/useCart'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
 import { isSophomoreOrAbove } from '../utils/gradeUtils'
 import { sortBlockIds } from '../components/cart/cartHelpers'
+import { useT } from '../stores/langStore'
 
 // 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
 const AREA_MAPPING: Record<string, string[]> = {
@@ -28,9 +29,10 @@ const AREA_MAPPING: Record<string, string[]> = {
 }
 
 const SpacePage: React.FC = () => {
+  const t = useT()
   const { cart, addToCart, removeFromCart, isSuspended } = useCart()
   const { getCurrentSpaceDates } = useDateSelection()
-  const { currentUser } = useAuth()
+  const { currentUser, isAuthenticated } = useAuth()
   const location = useLocation()
 
   // 獲取當前模式的日期
@@ -200,8 +202,8 @@ const SpacePage: React.FC = () => {
     // 個人租借：選取總押金不可超過每時段空間押金上限 5,000
     // （計入該時段購物車中既有的空間押金——區塊與教室共用同一個上限）
     if (isPersonalBooking) {
-      const start = spaceDates.startDate!.toISOString()
-      const end = spaceDates.endDate!.toISOString()
+      const start = toDateKey(spaceDates.startDate!)
+      const end = toDateKey(spaceDates.endDate!)
       const cartSpaceDeposit = cart
         .filter(item =>
           (item.category === 'space-block' || item.category === 'classroom') &&
@@ -293,7 +295,11 @@ const SpacePage: React.FC = () => {
       return
     }
 
-    // 停權早退：在清空選取前擋下，保留使用者已選的區塊
+    // 訪客／停權早退：在清空選取前擋下，保留使用者已選的區塊
+    if (!isAuthenticated) {
+      showToast(LOGIN_REQUIRED_MSG, 'error')
+      return
+    }
     if (isSuspended) {
       showToast('帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會', 'error')
       return
@@ -336,8 +342,8 @@ const SpacePage: React.FC = () => {
         deposit: getBlockDeposit(blockId), // 根據區域計算押金
         image: '/Area/A5F Area Booking.svg', // 區塊使用地圖圖片
         quantity: 1,
-        startDate: spaceDates.startDate!.toISOString(),
-        endDate: spaceDates.endDate!.toISOString(),
+        startDate: toDateKey(spaceDates.startDate!),
+        endDate: toDateKey(spaceDates.endDate!),
         bookingType: spaceDates.bookingType
       })
 
@@ -391,8 +397,8 @@ const SpacePage: React.FC = () => {
         deposit: classroom.price,
         image: classroom.image,
         quantity: 1,
-        startDate: spaceDates.startDate!.toISOString(),
-        endDate: spaceDates.endDate!.toISOString(),
+        startDate: toDateKey(spaceDates.startDate!),
+        endDate: toDateKey(spaceDates.endDate!),
         bookingType: spaceDates.bookingType
       })
       if (result.ok) {
@@ -436,11 +442,11 @@ const SpacePage: React.FC = () => {
               </Link>
               <span> </span>
               <Link to="/catalog" className="breadcrumb-item text-xs">
-                <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
+                {t('Category', '類別')}
               </Link>
               <span className="breadcrumb-separator text-xs">/</span>
               <span className="breadcrumb-item text-xs">
-                <span className="font-['Inter',_sans-serif]">Space</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">空間</span>
+                {t('Space', '空間')}
               </span>
             </nav>
           </div>
@@ -451,12 +457,7 @@ const SpacePage: React.FC = () => {
           <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden relative">
             {/* 標題 - 加上 padding-top 避免被麵包屑遮擋 */}
             <div className="flex-shrink-0">
-              <h1 className="font-['Inter',_sans-serif] text-white text-xl pt-12">
-                Space
-              </h1>
-              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xl mb-6">
-                空間
-              </h1>
+              <h1 className="text-white text-xl mb-6">{t('Space', '空間')}</h1>
             </div>
 
             {/* 中間區域：A5F 和 Classroom 選項 - 使用 flex-1 自動填充 */}
@@ -475,8 +476,7 @@ const SpacePage: React.FC = () => {
                       : 'text-gray-scale2 hover:!text-white'
                   }`}
                 >
-                  <span className="font-['Inter',_sans-serif] block">A5F Numbered Area</span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">A5F編號區</span>
+                  <span className="block">{t('A5F Numbered Area', 'A5F編號區')}</span>
                 </button>
 
                 {/* 編號區子分類 - 只在編號區被選中時顯示 */}
@@ -501,8 +501,7 @@ const SpacePage: React.FC = () => {
                                 : `text-gray-scale2 ${hoverColor}`
                             }`}
                           >
-                            <span className="font-['Inter',_sans-serif] block">{category.en}</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">{category.zh}</span>
+                            <span className="block">{t(category.en, category.zh)}</span>
                           </button>
                         </div>
                       )
@@ -524,8 +523,7 @@ const SpacePage: React.FC = () => {
                       : 'text-gray-scale2 hover:!text-white'
                   }`}
                 >
-                  <span className="font-['Inter',_sans-serif] block">Classroom</span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">教室</span>
+                  <span className="block">{t('Classroom', '教室')}</span>
                 </button>
               </div>
             </div>
@@ -542,7 +540,7 @@ const SpacePage: React.FC = () => {
                     <span className={`text-xs transition-colors ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
+                      {t('Available', '全時段借用')}
                     </span>
                   </button>
 
@@ -554,7 +552,7 @@ const SpacePage: React.FC = () => {
                     <span className={`text-xs transition-colors ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
+                      {t('Unavailable', '不可借用')}
                     </span>
                   </button>
 
@@ -566,7 +564,7 @@ const SpacePage: React.FC = () => {
                     <span className={`text-xs transition-colors ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
+                      {t('Partially Available', '部分時段借用')}
                     </span>
                   </button>
                 </div>
@@ -605,7 +603,7 @@ const SpacePage: React.FC = () => {
                       <span className={`text-xs transition-colors ${
                         statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
-                        <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借用</span>
+                        {t('Available', '可借用')}
                       </span>
                     </button>
 
@@ -618,7 +616,7 @@ const SpacePage: React.FC = () => {
                       <span className={`text-xs transition-colors ${
                         statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
-                        <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
+                        {t('Unavailable', '不可借用')}
                       </span>
                     </button>
 
@@ -631,7 +629,7 @@ const SpacePage: React.FC = () => {
                       <span className={`text-xs transition-colors ${
                         statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
-                        <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段可借用</span>
+                        {t('Partially Available', '部分時段可借用')}
                       </span>
                     </button>
 
@@ -639,7 +637,7 @@ const SpacePage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-[#00ff80]"></div>
                       <span className="text-xs text-white">
-                        <span className="font-['Inter',_sans-serif]">Selected</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">已選擇</span>
+                        {t('Selected', '已選擇')}
                       </span>
                     </div>
                   </div>
@@ -649,8 +647,7 @@ const SpacePage: React.FC = () => {
                     {/* 選擇區塊 */}
                     <div className="mb-4">
                       <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2">Selected Area</span>
-                        <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">選擇區塊</span>
+                        <span className="text-xs text-gray-scale2">{t('Selected Area', '選擇區塊')}</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4">
                         <span className="text-md font-['Inter',_sans-serif] font-normal break-words">
@@ -668,7 +665,7 @@ const SpacePage: React.FC = () => {
                             !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
-                          Select All 全選
+                          {t('Select All', '全選')}
                         </button>
                         <button
                           onClick={() => setSelectedBlocks([])}
@@ -677,7 +674,7 @@ const SpacePage: React.FC = () => {
                             !selectedSubCategory || selectedBlocks.length === 0 ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
-                          Clear 清除
+                          {t('Clear', '清除')}
                         </button>
                       </div>
                     </div>
@@ -688,8 +685,7 @@ const SpacePage: React.FC = () => {
                     {/* 押金金額 */}
                     <div className="mb-6">
                       <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2">Deposit</span>
-                        <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2">押金</span>
+                        <span className="text-xs text-gray-scale2">{t('Deposit', '押金')}</span>
                       </div>
                       <span className="text-2xl font-['Inter',_sans-serif] font-normal">
                         NT$ {calculateTotalDeposit(selectedBlocks).toLocaleString()}
@@ -742,7 +738,7 @@ const SpacePage: React.FC = () => {
                             : 'bg-white text-black hover:opacity-70 cursor-pointer'
                         }`}
                       >
-                        Add 加入清單
+                        {t('Add', '加入清單')}
                       </button>
                     </div>
                   </div>

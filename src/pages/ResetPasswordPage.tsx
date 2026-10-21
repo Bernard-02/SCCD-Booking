@@ -8,10 +8,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { updatePassword } from '../services/authService'
+import { useT } from '../stores/langStore'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 
 const ResetPasswordPage = () => {
+  const t = useT()
   const navigate = useNavigate()
   const [ready, setReady] = useState(false) // recovery session 是否就緒
   const [password, setPassword] = useState('')
@@ -62,8 +64,7 @@ const ResetPasswordPage = () => {
       <section className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <h1 className="text-xl text-white mb-6">
-            <span className="font-['Inter',_sans-serif]">Reset Password</span>{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">重設密碼</span>
+            {t('Reset Password', '重設密碼')}
           </h1>
 
           {done ? (
@@ -80,7 +81,7 @@ const ResetPasswordPage = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="New password 新密碼（至少 8 碼）"
+                placeholder={t('New password', '新密碼（至少 8 碼）')}
                 className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
                 style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               />
@@ -88,7 +89,7 @@ const ResetPasswordPage = () => {
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Confirm password 再次輸入新密碼"
+                placeholder={t('Confirm password', '再次輸入新密碼')}
                 className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
                 style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               />
@@ -102,8 +103,7 @@ const ResetPasswordPage = () => {
                     : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
                 }`}
               >
-                <span className="font-['Inter',_sans-serif]">Confirm</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認</span>
+                {t('Confirm', '確認')}
               </button>
             </form>
           )}

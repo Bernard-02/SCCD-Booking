@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { useSpaceBlocks } from '../../services/spaceService'
+import { useT } from '../../stores/langStore'
 
 // --- CONSTANTS ---
 
@@ -78,6 +79,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
   rentedBlocks = [],
   cartBlocks = []
 }) => {
+  const t = useT()
   // 區塊定義（id → 區域）來自 Supabase space_blocks；佔用狀態由 rentedBlocks prop 傳入
   const blocksData = useSpaceBlocks();
 
@@ -298,8 +300,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
         {/* 只在 SVG 還沒載入時顯示 loading */}
         {!svgContent && (
           <div className="text-gray-scale2 text-center">
-            <p className="font-['Inter',_sans-serif]">Loading floor plan...</p>
-            <p className="font-['Inter','Noto_Sans_TC',_sans-serif]">載入平面圖中...</p>
+            <p>{t('Loading floor plan...', '載入平面圖中...')}</p>
           </div>
         )}
       </div>
@@ -310,20 +311,15 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           style={{ left: tooltip.x + 16, top: tooltip.y + 16 }}
         >
           <p className="text-white text-sm font-normal mb-2">
-            <span className="font-['Inter',_sans-serif]">{tooltip.english}</span>{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{tooltip.name}</span>
+            {t(tooltip.english, tooltip.name)}
           </p>
           <div className="flex justify-between items-center mb-1">
-            <span className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">Deposit/Pcs</span>
+            <span className="text-gray-scale2 text-xs">{t('Deposit/Pcs', '押金/塊')}</span>
             <span className="font-['Inter',_sans-serif] text-white text-xs">NT$ {tooltip.deposit.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">押金/塊</span>
           </div>
           <div className="border-t border-gray-scale3 my-3"></div>
           <div>
-            <p className="font-['Inter',_sans-serif] text-white text-xs">Click to Book</p>
-            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs">點擊區塊以開始租借</p>
+            <p className="text-white text-xs">{t('Click to Book', '點擊區塊以開始租借')}</p>
           </div>
         </div>
       )}

@@ -1,15 +1,27 @@
 /**
- * Footer 組件
- * 從 index-old.html 遷移
- * 包含 Copyright Easter Egg 效果
+ * Footer 組件（桌機）
+ * 左 Profile icon（在 /profile 再點 → 登出選單）、中 Copyright（Easter Egg）、右 語言切換＋link icon（工作室／攝影棚／官網）
  */
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { angleFor, spinOnHover } from '../../utils/rotationAngle'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { useLangStore, useT } from '../../stores/langStore'
+
+const EXTERNAL_LINKS = [
+  { en: 'Studio', zh: '工作室', icon: 'desk', href: 'https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link' },
+  { en: 'Film Studio', zh: '專業攝影棚', icon: 'photo_camera', href: 'https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link' },
+  { en: 'To SCCD', zh: '官網', icon: 'school', href: 'https://sccd.usc.edu.tw/' },
+]
 
 const Footer: React.FC = () => {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+  const t = useT()
+  const toggleLang = useLangStore((s) => s.toggleLang)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [linksMenuOpen, setLinksMenuOpen] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
   const [easterEggText, setEasterEggText] = useState('')
   const [showEasterEgg, setShowEasterEgg] = useState(false)
@@ -115,80 +127,111 @@ const Footer: React.FC = () => {
     }
   }, [isHovering])
 
+  // 點選單外關閉
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.profile-dropdown-container')) setProfileMenuOpen(false)
+      if (!target.closest('.links-dropdown-container')) setLinksMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleLogout = async () => {
+    await logout()
+    setProfileMenuOpen(false)
+    navigate('/login', { replace: true })
+  }
+
   return (
     <footer className="bg-transparent footer-main">
       <div className="container">
         {/* 桌面版 Footer */}
-        <div className="hidden md:flex justify-between items-center">
-          {/* 左側：About, Studio, Film Studio */}
-          <div className="flex items-center header-menu nav-gap">
+        <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-end">
+          {/* 左：Profile（在 /profile 再點一次 → 往上開登出選單） */}
+          <div className="profile-dropdown-container relative justify-self-start">
             <Link
-              to="/about"
-              className={`font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link ${pathname === '/about' ? 'active' : ''}`}
-              style={{ '--rotation-angle': `${angleFor('footer-about')}deg` } as React.CSSProperties}
-              onMouseEnter={spinOnHover('footer-about')}
+              to="/profile"
+              onClick={(e) => {
+                if (pathname === '/profile') {
+                  e.preventDefault()
+                  setProfileMenuOpen(!profileMenuOpen)
+                }
+              }}
+              className="flex items-center text-white"
+              aria-label={t('Profile', '我的')}
             >
-              <span>About</span>
-              <span className="chinese-label">&nbsp;關於</span>
+              <span className="material-symbols-outlined">account_circle</span>
             </Link>
-            <a
-              href="https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link group"
-              style={{ '--rotation-angle': `${angleFor('footer-studio')}deg` } as React.CSSProperties}
-              onMouseEnter={spinOnHover('footer-studio')}
-            >
-              <span>Studio</span>
-              <span className="chinese-label">&nbsp;工作室</span>
-              <svg className="w-6 h-6 ml-2 transform rotate-[-45deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </a>
-            <a
-              href="https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link group"
-              style={{ '--rotation-angle': `${angleFor('footer-film-studio')}deg` } as React.CSSProperties}
-              onMouseEnter={spinOnHover('footer-film-studio')}
-            >
-              <span>Film Studio</span>
-              <span className="chinese-label">&nbsp;專業攝影棚</span>
-              <svg className="w-6 h-6 ml-2 transform rotate-[-45deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </a>
+
+            {profileMenuOpen && (
+              <div className="absolute bottom-full left-0 mb-4 bg-[#151515] border border-[#545454] rounded-2xl py-3 px-4" style={{ zIndex: 1000 }}>
+                <button
+                  onClick={handleLogout}
+                  className="text-white hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap text-xs"
+                >
+                  {t('Log out', '登出')}
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* 右側：Copyright 和 To SCCD */}
-          <div className="flex items-center header-menu nav-gap">
-            <div
-              className="copyright desktop-copyright font-['Inter',_sans-serif] font-bold text-white text-right text-sm"
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
+          {/* 中：Copyright（hover 彩蛋） */}
+          <div
+            className="copyright desktop-copyright font-['Inter',_sans-serif] font-bold text-white text-center text-sm"
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+          >
+            <p>
+              <span className="copyright-original" style={{ opacity: showEasterEgg ? 0 : 1 }}>
+                <span className="font-['Inter',_sans-serif] uppercase">Copyright © SCCDSA</span>
+                <span className="font-['Inter',_sans-serif]"> All rights reserved.</span>
+              </span>
+              <span className="copyright-easter-egg" style={{ opacity: showEasterEgg ? 1 : 0 }}>
+                {easterEggText}
+              </span>
+            </p>
+          </div>
+
+          {/* 右：語言切換（中／EN）＋外部連結（往上開） */}
+          <div className="links-dropdown-container relative justify-self-end flex items-center gap-6">
+            <button
+              type="button"
+              onClick={toggleLang}
+              className="flex items-center text-white cursor-pointer"
+              aria-label={t('切換為中文', 'Switch to English')}
             >
-              <p>
-                <span className="copyright-original" style={{ opacity: showEasterEgg ? 0 : 1 }}>
-                  <span className="font-['Inter',_sans-serif] uppercase">Copyright © SCCDSA</span>
-                  <span className="font-['Inter',_sans-serif]"> All rights reserved.</span>
-                </span>
-                <span className="copyright-easter-egg" style={{ opacity: showEasterEgg ? 1 : 0 }}>
-                  {easterEggText}
-                </span>
-              </p>
-            </div>
-            <a
-              href="https://sccd.usc.edu.tw/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-['Inter',_sans-serif] font-bold text-white flex items-center text-sm header-nav-link"
-              style={{ '--rotation-angle': `${angleFor('footer-sccd')}deg` } as React.CSSProperties}
-              onMouseEnter={spinOnHover('footer-sccd')}
+              <span className="material-symbols-outlined">language</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLinksMenuOpen(!linksMenuOpen)}
+              className="flex items-center text-white cursor-pointer"
+              aria-label="Links"
+              aria-expanded={linksMenuOpen}
             >
-              <span>To SCCD</span>
-              <span className="chinese-label">&nbsp;官網</span>
-            </a>
+              <span className="material-symbols-outlined text-md">link</span>
+            </button>
+
+            {linksMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-4 flex flex-col gap-2 min-w-[240px]" style={{ zIndex: 1000 }}>
+                {EXTERNAL_LINKS.map(({ en, zh, icon, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setLinksMenuOpen(false)}
+                    className="flex items-center gap-4 px-5 py-3 bg-[#151515] border border-[#545454] rounded-2xl text-white text-sm hover:bg-[#222] whitespace-nowrap no-underline"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
+                    <span className="flex-1">{t(en, zh)}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_outward</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../compo
 import { displayOrderStatus, overduePenalty, slotLabel } from '../utils/timeUtils'
 import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
 import { fetchClosedDates } from '../services/ordersService'
+import { useT } from '../stores/langStore'
 
 interface OrderItem {
   id: string
@@ -99,6 +100,7 @@ const getStatusInfo = (status: OrderStatus) => {
 }
 
 const OrderPage: React.FC = () => {
+  const t = useT()
   const location = useLocation()
   const navigate = useNavigate()
   const receiptRef = React.useRef<HTMLDivElement>(null)
@@ -247,8 +249,7 @@ const OrderPage: React.FC = () => {
             <nav className="breadcrumb-inline whitespace-nowrap">
               <Link to="/profile" className="breadcrumb-item text-xs">
                 <span className="mr-2">←</span>
-                <span>Back</span>
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]"> 返回</span>
+                <span>{t('Back', '返回')}</span>
               </Link>
             </nav>
           </div>
@@ -264,7 +265,7 @@ const OrderPage: React.FC = () => {
               </h1>
               {rentalData.itemsUpdatedAt && (
                 <span className="font-['Inter',_sans-serif] text-xs text-gray-scale2">
-                  Updated <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">最後修改</span> {formatOrderTime(rentalData.itemsUpdatedAt)}
+                  {t('Updated', '最後修改')} {formatOrderTime(rentalData.itemsUpdatedAt)}
                 </span>
               )}
             </div>
@@ -272,7 +273,7 @@ const OrderPage: React.FC = () => {
             <div className="flex items-center gap-4">
               {currentStatus === 'overdue' && penalty > 0 && (
                 <span className="font-['Inter',_sans-serif] text-sm text-error2">
-                  Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
+                  {t('Penalty', '累計罰款')} NT$ {penalty.toLocaleString()}
                 </span>
               )}
               <div
@@ -283,7 +284,7 @@ const OrderPage: React.FC = () => {
                   className="font-['Inter',_sans-serif] text-sm font-normal"
                   style={{ color: statusInfo.textColor }}
                 >
-                  {statusInfo.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
+                  {t(statusInfo.en, statusInfo.zh)}
                 </span>
               </div>
             </div>
@@ -306,8 +307,7 @@ const OrderPage: React.FC = () => {
                           {/* Equipment 標題 */}
                           <div className="w-full grid grid-cols-[1fr_140px_120px] gap-6 items-center py-3 pr-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-['Inter',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>Equipment</span>
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>設備</span>
+                              <span className="text-md text-white" style={{ fontWeight: 500 }}>{t('Equipment', '設備')}</span>
                             </div>
                             {/* 總數量 */}
                             <div className="font-['Inter',_sans-serif] text-sm text-white text-center" style={{ fontWeight: 500 }}>
@@ -365,8 +365,7 @@ const OrderPage: React.FC = () => {
                           {/* Space 標題 */}
                           <div className="w-full grid grid-cols-[1fr_140px_120px] gap-6 items-center py-3 pr-4">
                             <div className="flex items-center gap-2">
-                              <span className="font-['Inter',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>Space</span>
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-md text-white" style={{ fontWeight: 500 }}>空間</span>
+                              <span className="text-md text-white" style={{ fontWeight: 500 }}>{t('Space', '空間')}</span>
                             </div>
                             {/* 總數量 */}
                             <div className="font-['Inter',_sans-serif] text-sm text-white text-center" style={{ fontWeight: 500 }}>
@@ -479,7 +478,7 @@ const OrderPage: React.FC = () => {
 
                                     {/* 押金 */}
                                     <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
-                                      NT$ 5,000
+                                      NT$ {item.deposit.toLocaleString()}
                                     </div>
                                   </div>
                                 )
@@ -503,8 +502,7 @@ const OrderPage: React.FC = () => {
                 {/* Order Time */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Order Time</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">送單時間</div>
+                    <div className="text-xs text-[#cccccc]">{t('Order Time', '送單時間')}</div>
                   </div>
                   <div className="font-['Inter',_sans-serif] text-xl text-white text-right">
                     {formatOrderTime()}
@@ -514,8 +512,7 @@ const OrderPage: React.FC = () => {
                 {/* Booking Date */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Booking Date</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">借用日期</div>
+                    <div className="text-xs text-[#cccccc]">{t('Booking Date', '借用日期')}</div>
                   </div>
                   <div className="font-['Inter',_sans-serif] text-xl text-white text-right">
                     {formatBookingDateRange()}
@@ -525,8 +522,7 @@ const OrderPage: React.FC = () => {
                 {/* User */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">User</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">借用者</div>
+                    <div className="text-xs text-[#cccccc]">{t('User', '借用者')}</div>
                   </div>
                   <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xl text-white text-right">
                     {rentalData.borrowerName}
@@ -536,8 +532,7 @@ const OrderPage: React.FC = () => {
                 {/* Deposit */}
                 <div className="grid grid-cols-[140px_1fr] gap-4">
                   <div>
-                    <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Deposit</div>
-                    <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">押金</div>
+                    <div className="text-xs text-[#cccccc]">{t('Deposit', '押金')}</div>
                   </div>
                   <div className="font-['Inter',_sans-serif] text-xl text-white text-right">
                     NT$ {rentalData.totalDeposit.toLocaleString()}
@@ -548,8 +543,7 @@ const OrderPage: React.FC = () => {
                 {rentalData.pickupSlot && (
                   <div className="grid grid-cols-[140px_1fr] gap-4">
                     <div>
-                      <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">Schedule</div>
-                      <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">預約時段</div>
+                      <div className="text-xs text-[#cccccc]">{t('Schedule', '預約時段')}</div>
                     </div>
                     <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white text-right leading-6">
                       {!rentalData.depositPaidAt && rentalData.depositDate && rentalData.depositSlot && (
@@ -564,8 +558,7 @@ const OrderPage: React.FC = () => {
               {/* User Guide */}
               <div className="grid grid-cols-[140px_1fr] gap-2 mb-4 flex-shrink-0">
                 <div>
-                  <div className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">User Guide</div>
-                  <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">使用說明</div>
+                  <div className="text-xs text-[#cccccc]">{t('User Guide', '使用說明')}</div>
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">

@@ -39,6 +39,8 @@ interface UseCartValidationArgs {
   bookingDetails: Record<string, BookingDetailsData>
   getOriginalQuantity: (id: string) => number
   getCartQuantity: (id: string) => number
+  /** 該品項時段已被他人訂單佔用的量（含 On Hold）；未給視為 0 */
+  getReserved?: (item: CartItem) => number
 }
 
 interface UseCartValidationResult {
@@ -67,7 +69,8 @@ export const useCartValidation = ({
   cart,
   bookingDetails,
   getOriginalQuantity,
-  getCartQuantity
+  getCartQuantity,
+  getReserved = () => 0
 }: UseCartValidationArgs): UseCartValidationResult => {
   return useMemo(() => {
     // 大量租借（Mass）需至少 10 件
@@ -124,9 +127,12 @@ export const useCartValidation = ({
     // 設備缺貨檢查
     const stockAvailabilityValidation: StockResult = (() => {
       const outOfStockItems: string[] = []
+      const todayMs = new Date().setHours(0, 0, 0, 0)
       cart.forEach(item => {
         if (item.category !== 'equipment') return
-        const totalStock = getOriginalQuantity(item.id)
+        // 過期時段由「日期已過期」擋；改日期後才依新時段判斷庫存
+        if (new Date(item.startDate).setHours(0, 0, 0, 0) < todayMs) return
+        const totalStock = getOriginalQuantity(item.id) - getReserved(item)
         const otherItemsQty = getCartQuantity(item.id) - item.quantity
         const maxQtyForThisItem = totalStock - otherItemsQty
         if (item.quantity > maxQtyForThisItem) {
@@ -193,5 +199,5 @@ export const useCartValidation = ({
       bookingDetailsValidation,
       singleOrderValidation
     }
-  }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity])
+  }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved])
 }

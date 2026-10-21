@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   businessMsBetween,
+  minStartDate,
   pendingMsRemaining,
   displayOrderStatus,
   effectiveReturnDeadline,
@@ -208,5 +209,16 @@ describe('addBusinessMs／dutySlotOptions（大量設備選繳押金／取件時
       { date: '2026-07-13', slot: '12:00-13:00' },
       { date: '2026-07-15', slot: '12:00-13:00' }
     ])
+  })
+})
+
+describe('minStartDate', () => {
+  it('只有大量設備要 3 天前，團體空間當天可借', () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const days = (d: Date) => Math.round((d.getTime() - today.getTime()) / 86400000)
+    expect(days(minStartDate('equipment', 'mass-personal'))).toBe(3)
+    expect(days(minStartDate('equipment', 'little'))).toBe(0)
+    expect(days(minStartDate('space', 'mass-group'))).toBe(0)
   })
 })

@@ -1,18 +1,24 @@
 /**
  * 首頁 - 登入畫面
- * 100vh 高度，底部是 Footer，主要內容在 Footer 上方
+ * 單欄直排（標題→登入→訪客→工作室連結），無 Header／Footer；手機置中、桌機靠右
  */
 
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { requestPasswordReset } from '../services/authService'
-import Header from '../components/layouts/Header'
-import Footer from '../components/layouts/Footer'
+import { useT } from '../stores/langStore'
+import ConfirmDialog from '../components/common/ConfirmDialog'
+
+const STUDIO_LINKS = [
+  { en: 'Studio', zh: '工作室', icon: 'desk', href: 'https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link' },
+  { en: 'Film Studio', zh: '專業攝影棚', icon: 'photo_camera', href: 'https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link' },
+]
 
 const HomePage = () => {
   const navigate = useNavigate()
   const { login, isAuthenticated, currentUser } = useAuth()
+  const t = useT()
 
   // 登入後導向：admin 進後台，其餘進型錄
   const landingPath = (role?: string) => (role === 'admin' ? '/admin' : '/catalog')
@@ -27,6 +33,28 @@ const HomePage = () => {
   const [resetStudentId, setResetStudentId] = useState('')
   const [resetSent, setResetSent] = useState('') // 已寄出：存遮罩後的 email
   const [resetError, setResetError] = useState('')
+  const [resetSending, setResetSending] = useState(false)
+
+  const sendReset = async () => {
+    if (!resetStudentId.trim() || resetSending) return
+    setResetError('')
+    setResetSending(true)
+    const result = await requestPasswordReset(resetStudentId.trim())
+    setResetSending(false)
+    if (result.ok && result.maskedEmail) {
+      setResetSent(result.maskedEmail)
+    } else {
+      setResetError(result.message || '寄送失敗')
+    }
+  }
+
+  // 關閉時重置，下次打開回到輸入學號
+  const closeForgotPassword = () => {
+    setShowForgotPasswordModal(false)
+    setResetStudentId('')
+    setResetSent('')
+    setResetError('')
+  }
 
   // 如果已登入，自動導向到 BookingResourcesPage
   useEffect(() => {
@@ -37,405 +65,175 @@ const HomePage = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setStudentIdError('')
-    setPasswordError('')
+    // 空白欄位先擋，不打 API
+    const idError = studentId.trim() ? '' : '請輸入學號'
+    const pwError = password ? '' : '請輸入密碼'
+    setStudentIdError(idError)
+    setPasswordError(pwError)
+    if (idError || pwError) return
 
     const result = await login(studentId.trim(), password, rememberMe)
 
     if (result.success) {
       navigate(landingPath(result.student?.role), { replace: true })
+    } else if (result.error === 'user_not_found') {
+      setStudentIdError(t('ID Incorrect', '學號錯誤'))
     } else {
-      // 根據錯誤類型顯示不同訊息
-      if (result.error === 'user_not_found') {
-        setStudentIdError('error') // 使用簡單的標記
-      } else if (result.error === 'invalid_password') {
-        setPasswordError('error') // 使用簡單的標記
-      } else {
-        setPasswordError('error') // 使用簡單的標記
-      }
+      setPasswordError(t('Password Incorrect', '密碼錯誤'))
     }
   }
 
+  // 輸入框共用樣式：錯誤時改紅框（ring-inset 避免被 float-up-container 的 overflow 裁掉）
+  const inputClass = (hasError: string) =>
+    `w-full h-14 px-6 rounded-2xl bg-[#1a1a1a] text-sm text-white placeholder:text-white outline-none ring-inset focus:ring-1 focus:ring-white ${hasError ? 'ring-1 ring-[var(--color-error2)]' : ''}`
+
   return (
-    <div className="bg-black text-white h-screen flex flex-col">
-      <Header hideNavigation />
+    <div className="bg-black text-white min-h-screen flex items-center py-16">
+      <div className="container flex justify-center md:justify-end">
+        {/* 單欄：手機置中、桌機靠右 */}
+        <div className="w-full max-w-[340px] md:mr-[8%] float-up-container">
+          <div className="float-up flex flex-col">
+            <h1 className="text-lg text-center mb-16">SCCDSA Booking</h1>
 
-      {/* 主要內容區域 - 佔滿剩餘空間，Footer 固定在底部 */}
-      <section className="flex-1 flex items-end">
-        <div className="container w-full">
-          <div className="flex justify-between items-end">
-            {/* 桌面版佈局 */}
-            <div className="hidden md:flex justify-end items-end w-full">
-              {/* 右側 - 顯示登入表單 */}
-              <div className="flex-shrink-0">
-                  <div className="float-up-container">
-                    <div className="flex gap-4 float-up float-up-delay-5">
-                      {/* 左側：Login 區塊 */}
-                      <div className="h-[300px] border border-white rounded-2xl bg-black/80 backdrop-blur-sm p-8 flex flex-col relative" style={{ width: 'fit-content' }}>
-                        {/* 標題：往上對齊右上 Studio 第一行（Studio 雙行置中會頂出 padding，單行標題用負 margin 追上去） */}
-                        {/* ponytail: -mt-3 是純視覺對齊值，字級或 Studio 高度改了就微調這個數字 */}
-                        <div className="-mt-3 mb-8">
-                          <h2 className="font-['Inter',_sans-serif] text-xl text-white leading-tight whitespace-nowrap">
-                            Space &amp; Equipment <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white">空間與設備</span>
-                          </h2>
-                        </div>
-
-                        <form onSubmit={handleLogin} className="flex gap-6 flex-1">
-                          {/* 左側：Input 區域 */}
-                          <div className="flex flex-col gap-12" style={{ width: '200px' }}>
-                            {/* 學號輸入 */}
-                            <div className="input-group relative" style={{ marginBottom: 0 }}>
-                              <input
-                                type="text"
-                                id="desktop-student-id"
-                                value={studentId}
-                                onChange={(e) => setStudentId(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
-                                className="input-field"
-                                placeholder=" "
-                                autoComplete="username"
-                                style={{ width: '100%', borderColor: studentIdError ? 'var(--color-error2)' : '' }}
-                              />
-                              <label htmlFor="desktop-student-id" className="input-label text-sm pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
-                                Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
-                              </label>
-                              {studentIdError && (
-                                <div className="text-error2 text-xs absolute top-full left-0 mt-1 whitespace-nowrap">
-                                  <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號錯誤</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* 密碼輸入 */}
-                            <div className="input-group relative" style={{ marginBottom: 0 }}>
-                              <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="desktop-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value.replace(/[\u4E00-\u9FFF]/g, ''))}
-                                className="input-field"
-                                placeholder=" "
-                                autoComplete="current-password"
-                                style={{ width: '100%', borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
-                              />
-                              <label htmlFor="desktop-password" className="input-label text-sm pointer-events-none whitespace-nowrap" style={{ fontSize: '0.9rem' }}>
-                                Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
-                              </label>
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-0 top-0 h-full px-3 flex items-center justify-center text-gray-scale2 hover:!text-white transition-colors z-10"
-                                tabIndex={-1}
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                                  {showPassword ? 'visibility' : 'visibility_off'}
-                                </span>
-                              </button>
-                              {passwordError && (
-                                <div className="text-error2 text-xs absolute top-full left-0 mt-1 whitespace-nowrap">
-                                  <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 右側：Checkbox 和按鈕區域 */}
-                          <div className="flex items-end" style={{ width: 'fit-content' }}>
-                            <div className="flex flex-col gap-2 items-start">
-                              {/* 記住我 */}
-                              <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className="relative flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={rememberMe}
-                                    onChange={(e) => setRememberMe(e.target.checked)}
-                                    className="peer h-4 w-4 shrink-0 cursor-pointer appearance-none border border-gray-scale2 bg-transparent checked:border-white checked:bg-white transition-all"
-                                  />
-                                  <svg
-                                    className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity"
-                                    width="10"
-                                    height="8"
-                                    viewBox="0 0 10 8"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M1 4L3.5 6.5L9 1"
-                                      stroke="black"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                </div>
-                                <span className="text-xs text-white group-hover:text-gray-scale2 transition-colors leading-tight">
-                                  <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">記住我</span>
-                                </span>
-                              </label>
-
-                              {/* 忘記密碼 */}
-                              <button
-                                type="button"
-                                onClick={() => setShowForgotPasswordModal(true)}
-                                className="font-['Inter',_sans-serif] text-white text-xs hover:text-gray-scale2 transition-colors cursor-pointer text-left p-0 whitespace-nowrap"
-                              >
-                                Forgot Password? <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
-                              </button>
-
-                              {/* Login 按鈕 */}
-                              <button
-                                type="submit"
-                                disabled={!studentId || !password}
-                                className="text-sm font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30 mt-2"
-                              >
-                                <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
-                              </button>
-                            </div>
-                          </div>
-                        </form>
-                      </div>
-
-                      {/* 右側：導航區塊 */}
-                      <div className="w-[320px] h-[300px] flex flex-col gap-4">
-                        {/* 右上：Studio */}
-                        <a
-                          href="https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
-                        >
-                          <div className="flex flex-col z-10">
-                            <span className="font-['Inter',_sans-serif] text-xl text-white group-hover:text-black transition-colors">Studio</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xl text-white group-hover:text-black transition-colors">工作室</span>
-                          </div>
-                          {/* 斜45度箭頭 */}
-                          <div className="z-10">
-                             <svg className="w-12 h-12 text-white group-hover:text-black transition-colors transform rotate-[-45deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
-                             </svg>
-                          </div>
-                        </a>
-
-                        {/* 右下：Film Studio */}
-                        <a
-                          href="https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 border border-white rounded-2xl flex items-center justify-between p-8 hover:bg-white transition-colors group relative overflow-hidden no-underline bg-black/80 backdrop-blur-sm"
-                        >
-                          <div className="flex flex-col z-10">
-                            <span className="font-['Inter',_sans-serif] text-xl text-white group-hover:text-black transition-colors">Film Studio</span>
-                            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xl text-white group-hover:text-black transition-colors">專業攝影棚</span>
-                          </div>
-                          {/* 斜45度箭頭 */}
-                          <div className="z-10">
-                             <svg className="w-12 h-12 text-white group-hover:text-black transition-colors transform rotate-[-45deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
-                             </svg>
-                          </div>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div>
-
-            {/* 手機版佈局 */}
-            <div className="md:hidden flex flex-col items-start w-full gap-6">
-              {/* 標題 */}
-              <div className="float-up-container">
-                <h1 className="font-['Inter',_sans-serif] text-white text-3xl font-bold float-up float-up-slow">
-                  Booking
-                </h1>
+            {/* 錯誤訊息固定在輸入框下方的預留槽（h-9），出現時版面不跳動 */}
+            <form onSubmit={handleLogin} className="flex flex-col">
+              {/* 學號 */}
+              <div>
+                <input
+                  type="text"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
+                  className={inputClass(studentIdError)}
+                  placeholder={t('Student ID', '學號')}
+                  aria-label={t('Student ID', '學號')}
+                  aria-invalid={!!studentIdError}
+                  autoComplete="username"
+                />
+                <p className="h-9 pt-2 px-2 text-2xs text-error2" aria-live="polite">{studentIdError}</p>
               </div>
 
-              {/* 登入表單 */}
-              <form onSubmit={handleLogin} className="flex flex-col gap-4 w-full">
-                {/* 學號 */}
-                <div className="flex flex-col gap-2">
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      id="mobile-student-id"
-                      value={studentId}
-                      onChange={(e) => setStudentId(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
-                      className="input-field"
-                      placeholder=" "
-                      autoComplete="username"
-                      style={{ borderColor: studentIdError ? 'var(--color-error2)' : '' }}
-                    />
-                    <label htmlFor="mobile-student-id" className="input-label text-sm pointer-events-none">
-                      Student ID <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號</span>
-                    </label>
-                    {studentIdError && (
-                      <div className="text-error2 text-xs mt-1">
-                        <span className="font-['Inter',_sans-serif]">ID Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">學號錯誤</span>
-                      </div>
-                    )}
-                  </div>
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <div className="relative flex items-center mt-0.5">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="peer h-4 w-4 shrink-0 cursor-pointer appearance-none border border-gray-scale2 bg-transparent checked:border-white checked:bg-white transition-all"
-                      />
-                      <svg
-                        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity"
-                        width="10"
-                        height="8"
-                        viewBox="0 0 10 8"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M1 4L3.5 6.5L9 1"
-                          stroke="black"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-white group-hover:text-gray-scale2 transition-colors leading-tight">
-                      <span className="font-['Inter',_sans-serif]">Remember Me</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">記住我</span>
-                    </span>
-                  </label>
-                </div>
-
-                {/* 密碼 */}
-                <div className="flex flex-col gap-2">
-                  <div className="input-group relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="mobile-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value.replace(/[\u4E00-\u9FFF]/g, ''))}
-                      className="input-field"
-                      placeholder=" "
-                      autoComplete="current-password"
-                      style={{ borderColor: passwordError ? 'var(--color-error2)' : '', paddingRight: '2.5rem' }}
-                    />
-                    <label htmlFor="mobile-password" className="input-label text-sm pointer-events-none">
-                      Password <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-0 top-0 h-full px-3 flex items-center justify-center text-gray-scale2 hover:!text-white transition-colors z-10"
-                      tabIndex={-1}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                        {showPassword ? 'visibility' : 'visibility_off'}
-                      </span>
-                    </button>
-                    {passwordError && (
-                      <div className="text-error2 text-xs mt-1">
-                        <span className="font-['Inter',_sans-serif]">Password Incorrect</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">密碼錯誤</span>
-                      </div>
-                    )}
-                  </div>
+              {/* 密碼 */}
+              <div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value.replace(/[\u4E00-\u9FFF]/g, ''))}
+                    className={`${inputClass(passwordError)} pr-14`}
+                    placeholder={t('Password', '密碼')}
+                    aria-label={t('Password', '密碼')}
+                    aria-invalid={!!passwordError}
+                    autoComplete="current-password"
+                  />
                   <button
                     type="button"
-                    onClick={() => setShowForgotPasswordModal(true)}
-                    className="font-['Inter',_sans-serif] text-white text-xs text-left hover:text-gray-scale2 transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 inset-y-0 px-5 flex items-center text-white hover:opacity-70 transition-opacity cursor-pointer"
+                    aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
+                    tabIndex={-1}
                   >
-                    Forgot Password? <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">忘記密碼?</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                      {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
                   </button>
                 </div>
+                <p className="h-9 pt-2 px-2 text-2xs text-error2" aria-live="polite">{passwordError}</p>
+              </div>
 
-                {/* LOGIN 按鈕 */}
+              {/* 記住我／忘記密碼 */}
+              <div className="flex justify-between items-center px-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  {/* 原生 checkbox 藏起來保留鍵盤／讀屏，外觀用 Material Symbol */}
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <span className="material-symbols-outlined text-white rounded-full peer-focus-visible:outline peer-focus-visible:outline-1" style={{ fontSize: '20px' }}>
+                    {rememberMe ? 'check_circle' : 'circle'}
+                  </span>
+                  <span className="text-sm text-gray-scale2">{t('Remember Me', '記住我')}</span>
+                </label>
                 <button
-                  type="submit"
-                  disabled={!studentId || !password}
-                  className="text-sm font-normal whitespace-nowrap text-white hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
+                  type="button"
+                  onClick={() => setShowForgotPasswordModal(true)}
+                  className="text-sm text-white hover:opacity-70 transition-opacity cursor-pointer"
                 >
-                  <span className="font-['Inter',_sans-serif]">Login</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">登入</span>
+                  {t('Forgot Password?', '忘記密碼？')}
                 </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
+              </div>
 
-      {/* 忘記密碼 Modal */}
-      {showForgotPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          {/* 背景遮罩 */}
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowForgotPasswordModal(false)}
-          ></div>
-          
-          {/* Modal 內容 */}
-          <div className="relative bg-[#1a1a1a] border border-[#7c7c7c] rounded-2xl p-8 max-w-md w-full shadow-2xl transform transition-all">
-            <button 
-              onClick={() => setShowForgotPasswordModal(false)}
-              className="absolute top-4 right-4 text-gray-scale2 hover:!text-white transition-colors"
+              <button
+                type="submit"
+                className="mt-5 h-14 rounded-2xl bg-white text-black text-sm hover:opacity-70 transition-opacity cursor-pointer"
+              >
+                {t('Login', '登入')}
+              </button>
+            </form>
+
+            {/* 訪客：可逛型錄、選日期；加入清單時才要求登入（useCart 把關） */}
+            <Link
+              to="/catalog"
+              className="mt-5 self-center text-sm text-gray-scale2 underline underline-offset-4 hover:!text-white transition-colors"
             >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            
-            <h3 className="text-xl font-['Inter','Noto_Sans_TC',_sans-serif] text-white mb-4">
-              忘記密碼？
-            </h3>
+              訪客登入
+            </Link>
 
-            <div className="space-y-4 text-md text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
-              {resetSent ? (
-                <p>
-                  重設密碼信已寄至 <span className="font-['Inter',_sans-serif] text-white">{resetSent}</span>
-                  ，請至信箱點擊連結設定新密碼。
-                </p>
-              ) : (
-                <>
-                  <p>輸入學號，系統會寄送重設密碼連結到你的學校信箱。</p>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault()
-                      setResetError('')
-                      const result = await requestPasswordReset(resetStudentId.trim())
-                      if (result.ok && result.maskedEmail) {
-                        setResetSent(result.maskedEmail)
-                      } else {
-                        setResetError(result.message || '寄送失敗')
-                      }
-                    }}
-                    className="space-y-4"
-                  >
-                    <input
-                      type="text"
-                      value={resetStudentId}
-                      onChange={(e) => setResetStudentId(e.target.value)}
-                      placeholder="Student ID 學號"
-                      className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
-                      style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
-                    />
-                    {resetError && (
-                      <p className="text-xs text-[#ff8698]">{resetError}</p>
-                    )}
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={!resetStudentId.trim()}
-                        className={`px-6 py-2 rounded-lg text-md font-normal transition ${
-                          resetStudentId.trim()
-                            ? 'bg-white text-black hover:opacity-70 cursor-pointer'
-                            : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
-                        }`}
-                      >
-                        <span className="font-['Inter',_sans-serif]">Send</span>{' '}
-                        <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">寄送重設信</span>
-                      </button>
-                    </div>
-                  </form>
-                </>
-              )}
+            {/* 工作室／攝影棚外部連結 */}
+            <div className="mt-20 flex flex-col gap-5">
+              {STUDIO_LINKS.map(({ en, zh, href, icon }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-16 px-6 rounded-2xl border border-white/80 flex items-center gap-5 text-white hover:bg-white hover:text-black transition-colors no-underline"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
+                  <span className="flex-1 text-sm">{t(en, zh)}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_outward</span>
+                </a>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      <Footer />
+      {/* 忘記密碼：沿用 ConfirmDialog 外觀；寄出後同一個框改顯示結果 */}
+      <ConfirmDialog
+        isOpen={showForgotPasswordModal}
+        title={resetSent ? '重設信已寄出' : '忘記密碼'}
+        titleEn={resetSent ? undefined : 'Forgot Password'}
+        message={
+          resetSent
+            ? `重設密碼信已寄至 ${resetSent}，請至信箱點擊連結設定新密碼。`
+            : '輸入學號，系統會寄送重設密碼連結到你的學校信箱。'
+        }
+        confirmText={resetSent ? 'Confirm' : 'Send'}
+        confirmTextZh={resetSent ? '確認' : '寄送'}
+        confirmDisabled={!resetSent && (!resetStudentId.trim() || resetSending)}
+        hideCancel={!!resetSent}
+        onConfirm={resetSent ? closeForgotPassword : sendReset}
+        onCancel={closeForgotPassword}
+      >
+        {!resetSent && (
+          // form 讓輸入框按 Enter 也能寄送
+          <form onSubmit={(e) => { e.preventDefault(); sendReset() }} className="mt-4">
+            <input
+              type="text"
+              value={resetStudentId}
+              onChange={(e) => setResetStudentId(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
+              placeholder={t('Student ID', '學號')}
+              aria-label={t('Student ID', '學號')}
+              autoFocus
+              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
+            />
+            {resetError && <p className="mt-2 text-2xs text-[#ff8698]">{resetError}</p>}
+          </form>
+        )}
+      </ConfirmDialog>
+
     </div>
   )
 }

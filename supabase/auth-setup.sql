@@ -29,13 +29,15 @@ end;
 $$;
 
 -- 學號 → email（登入前的查詢；security definer 繞過 RLS，但只回傳 email 一個欄位）
+-- 不分大小寫：學生學號存大寫（A111144001）、admin 存小寫（sccdsa），輸入哪種都對得到
+-- ponytail: 全表 lower() 比對、沒走 unique index；學生數千筆內無感，量大再加 lower(student_id) 的 expression index
 create or replace function public.email_for_student(sid text)
 returns text
 language sql
 security definer set search_path = public
 stable
 as $$
-  select email from public.students where student_id = sid;
+  select email from public.students where lower(student_id) = lower(sid) limit 1;
 $$;
 
 -- 更新自己的手機號碼（students 的 update RLS 只開放 admin，

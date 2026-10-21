@@ -8,19 +8,22 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Calendar from './Calendar'
 import DateEditDialog from './cart/DateEditDialog'
-import { readCart, writeCart, formatYmd } from './cart/cartHelpers'
+import { readCart, writeCart, formatYmd, toDateKey } from './cart/cartHelpers'
+import { minStartDate } from '../utils/timeUtils'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { fetchMyOrders } from '../services/ordersService'
 import { isSeniorOrGraduate } from '../utils/gradeUtils'
 import type { BookingType } from '../types/equipment'
+import { useT } from '../stores/langStore'
 
 interface DatePickerBarProps {
   type: 'equipment' | 'space'
 }
 
 const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
+  const t = useT()
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const { confirm, ConfirmDialog } = useConfirmDialog()
@@ -61,26 +64,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   const bookingType = currentDates.bookingType
   const isMass = bookingType === 'mass-personal' || bookingType === 'mass-group'
 
-  // 計算最小可選日期
-  const getMinSelectableDate = (): Date => {
-    const now = new Date()
-    const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-    if (isMass) {
-      // 大量 - 個人 或 大量 - 團體
-      if (type === 'equipment') {
-        // 設備：今天 + 3天
-        minDate.setDate(minDate.getDate() + 3)
-      }
-      // 空間：今天（不延後）
-    }
-    // 小量/個人：今天
-
-    minDate.setHours(0, 0, 0, 0)
-    return minDate
-  }
-
-  const minSelectableDate = getMinSelectableDate()
+  const minSelectableDate = minStartDate(type, bookingType)
 
   // 格式化日期顯示
   const formatDate = (date: Date | null): string => {
@@ -103,9 +87,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   }
 
   // ---- 同類型限一單（rental-rules §5、新規則 7）：選日期／切類型的當下就擋，不用等到購物車或送單 ----
-  const isMassType = (t: BookingType) => t !== 'little'
-  const typeLabel = (t: BookingType) =>
-    !isMassType(t) ? (type === 'space' ? '個人' : '小量') : (type === 'space' ? '團體' : '大量')
+  const isMassType = (bt: BookingType) => bt !== 'little'
+  const typeLabel = (bt: BookingType) =>
+    !isMassType(bt) ? (type === 'space' ? '個人' : '小量') : (type === 'space' ? '團體' : '大量')
   const what = type === 'space' ? '空間' : '設備'
   const periodText = (s: string, e: string) => `${formatDateFull(s)} – ${formatDateFull(e)}`
 
@@ -136,15 +120,15 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
       .catch(() => {})
     return () => { alive = false }
   }, [isStudent])
-  const openOrderFor = (t: BookingType) =>
-    openOrders.find(o => o.isEquip === (type === 'equipment') && o.isMass === isMassType(t))
+  const openOrderFor = (bt: BookingType) =>
+    openOrders.find(o => o.isEquip === (type === 'equipment') && o.isMass === isMassType(bt))
 
-  const promptOpenOrder = async (o: (typeof openOrders)[number], t: BookingType) => {
+  const promptOpenOrder = async (o: (typeof openOrders)[number], bt: BookingType) => {
     // 設備單常是忘了還有一張：不用另開新單，直接帶去修改那張
     if (o.modifiable) {
       const edit = await confirm({
         title: '已有一張訂單', titleEn: 'Existing Order',
-        message: `您已有一張${typeLabel(t)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
+        message: `您已有一張${typeLabel(bt)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
           `學會規定同類型一次一張。要加設備請直接修改這張訂單。`,
         confirmText: 'Edit Order', confirmTextZh: '修改訂單'
       })
@@ -153,7 +137,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     }
     const ok = await confirm({
       title: '尚有未歸還的訂單', titleEn: 'Unreturned Order',
-      message: `您有一張未歸還的${typeLabel(t)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
+      message: `您有一張未歸還的${typeLabel(bt)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
         `學會規定上一張歸還後才能再借同類型，目前無法選擇日期。`,
       confirmText: 'View Orders', confirmTextZh: '查看訂單'
     })
@@ -162,7 +146,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
   // 購物車裡同類別的訂單（一次只能一張；舊購物車可能多張，過期的優先——要先 Renew）。
   // match 可再篩租借類型（切類型時只找「另一種」類型）
-  const findCartOrder = (match: (t: BookingType) => boolean = () => true) => {
+  const findCartOrder = (match: (bt: BookingType) => boolean = () => true) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const items = readCart().filter(item =>
@@ -215,7 +199,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     if (newType !== bookingType) {
       const open = openOrderFor(newType)
       if (open) { void promptOpenOrder(open, newType); return }
-      const conflict = findCartOrder(t => isMassType(t) !== isMassType(newType))
+      const conflict = findCartOrder(bt => isMassType(bt) !== isMassType(newType))
       if (conflict) { void promptCartOrder(conflict, newType); return }
     }
 
@@ -492,7 +476,6 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                 endDate={endDate}
                 onDateSelect={handleDateSelect}
                 minSelectableDate={minSelectableDate}
-                bookingType={isMass ? 'group' : 'personal'}
                 maxDays={type === 'space' ? spaceMaxDays : 30}
               />
             </div>
@@ -526,12 +509,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     )}
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className={`text-xs font-['Inter',_sans-serif] transition-colors leading-tight ${littleStyles.text}`}>
-                      {type === 'space' ? 'Personal' : 'Light'}
-                    </span>
-                    <span className={`text-xs font-['Inter','Noto_Sans_TC',_sans-serif] transition-colors leading-tight ${littleStyles.text}`}>
-                      {type === 'space' ? '個人' : '小量'}
-                    </span>
+                    <span className={`text-xs transition-colors leading-tight ${littleStyles.text}`}>{t(type === 'space' ? 'Personal' : 'Light', type === 'space' ? '個人' : '小量')}</span>
                   </div>
                 </button>
 
@@ -545,12 +523,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     )}
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className={`text-xs font-['Inter',_sans-serif] transition-colors leading-tight ${massStyles.text}`}>
-                      {type === 'space' ? 'Group' : 'Mass'}
-                    </span>
-                    <span className={`text-xs font-['Inter','Noto_Sans_TC',_sans-serif] transition-colors leading-tight ${massStyles.text}`}>
-                      {type === 'space' ? '團體' : '大量'}
-                    </span>
+                    <span className={`text-xs transition-colors leading-tight ${massStyles.text}`}>{t(type === 'space' ? 'Group' : 'Mass', type === 'space' ? '團體' : '大量')}</span>
                   </div>
                 </button>
               </div>
@@ -564,12 +537,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                 onClick={handleStartDateClick}
               >
               <div className="flex flex-col">
-                <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
-                  Start Date
-                </span>
-                <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
-                  起租日
-                </span>
+                <span className="text-xs text-gray-scale2 leading-tight">{t('Start Date', '起租日')}</span>
               </div>
               <span className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
                 {formatDate(startDate)}
@@ -579,12 +547,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             {/* 歸還日 */}
             <div className="flex items-center gap-8 flex-shrink-0">
               <div className="flex flex-col">
-                <span className="text-xs font-['Inter',_sans-serif] text-gray-scale2 leading-tight">
-                  End Date
-                </span>
-                <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 leading-tight">
-                  歸還日
-                </span>
+                <span className="text-xs text-gray-scale2 leading-tight">{t('End Date', '歸還日')}</span>
               </div>
               <span className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
                 {formatDate(endDate)}
@@ -604,7 +567,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                   : 'text-gray-scale4 cursor-not-allowed'
               }`}
             >
-              Reset 重置
+              {t('Reset', '重置')}
             </button>
 
             {/* Exist Cart 按鈕 */}
@@ -617,7 +580,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                   : 'text-gray-scale4 cursor-not-allowed'
               }`}
             >
-              Exist Cart <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">已選日期</span>
+              {t('Exist Cart', '已選日期')}
             </button>
 
             {/* 彈出視窗 - 在按鈕上方顯示 */}
@@ -625,28 +588,23 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-lg min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
                 <div className="px-4 py-3 border-b border-gray-scale4">
-                  <span className="text-sm font-['Inter',_sans-serif] text-white">
-                    Existing Cart Dates{' '}
-                  </span>
-                  <span className="text-sm font-['Inter','Noto_Sans_TC',_sans-serif] text-white">
-                    購物車已選日期
-                  </span>
+                  <span className="text-sm text-white">{t('Existing Cart Dates', '購物車已選日期')}</span>
                 </div>
 
                 {/* 日期列表 - 以分隔線方式呈現 */}
                 <div className="flex flex-col">
                   {existingCartDates.map((dateGroup, index) => {
                     const isCurrentSelection =
-                      startDate?.toISOString().split('T')[0] === dateGroup.startDate &&
-                      endDate?.toISOString().split('T')[0] === dateGroup.endDate &&
+                      startDate && toDateKey(startDate) === dateGroup.startDate &&
+                      endDate && toDateKey(endDate) === dateGroup.endDate &&
                       bookingType === dateGroup.bookingType
 
                     // 獲取類型文字
                     const getTypeText = () => {
                       if (type === 'space') {
-                        return dateGroup.bookingType === 'little' ? 'Personal 個人' : 'Group 團體'
+                        return dateGroup.bookingType === 'little' ? t('Personal', '個人') : t('Group', '團體')
                       } else {
-                        return dateGroup.bookingType === 'little' ? 'Light 小量' : 'Mass 大量'
+                        return dateGroup.bookingType === 'little' ? t('Light', '小量') : t('Mass', '大量')
                       }
                     }
                     const typeText = getTypeText()
@@ -705,8 +663,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                           )}
                           {dateGroup.isExpired && (
                             <span className="text-xs text-[#ffff00]">
-                              <span className="font-['Inter',_sans-serif]">Expired</span>{' '}
-                              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">已過期，點擊重選日期</span>
+                              <span>{t('Expired', '已過期，點擊重選日期')}</span>
                             </span>
                           )}
                         </div>

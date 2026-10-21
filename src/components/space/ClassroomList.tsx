@@ -6,6 +6,7 @@
 import React, { useState } from 'react'
 import { useDateSelection } from '../../contexts/DateSelectionContext'
 import { useCart } from '../../hooks/useCart'
+import { useT } from '../../stores/langStore'
 
 interface Classroom {
   id: string
@@ -21,6 +22,7 @@ interface ClassroomListProps {
 }
 
 const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
+  const t = useT()
   const { getCurrentSpaceDates } = useDateSelection()
   const { cart, isSuspended } = useCart()
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
@@ -86,18 +88,18 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
 
         {/* 總數量列 */}
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          Total Qty<br />總數量
+          {t('Total Qty', '總數量')}
         </div>
 
         {/* 可借數量列 */}
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          Available Qty<br />可借數量
+          {t('Available Qty', '可借數量')}
         </div>
 
         {/* 保留中數量列 */}
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
-            On Hold<br />待繳押金
+            {t('On Hold', '待繳押金')}
           </div>
           <div className="relative group">
             <span className="material-symbols-outlined text-gray-scale2 cursor-help" style={{ fontSize: '20px' }}>
@@ -114,7 +116,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
 
         {/* 押金列 */}
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          Deposit<br />押金
+          {t('Deposit', '押金')}
         </div>
 
         {/* 操作列 - 空白（不顯示標簽） */}
@@ -153,14 +155,9 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                   />
                 </div>
 
-                {/* 教室名稱 - 英文在上，中文在下 */}
-                <div className={`flex flex-col ${!isAvailable ? 'text-[#545454]' : 'text-white'}`}>
-                  <span className="font-['Inter',_sans-serif] text-sm">
-                    {classroom.enName}
-                  </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm">
-                    {classroom.name}
-                  </span>
+                {/* 教室名稱 */}
+                <div className={`text-sm ${!isAvailable ? 'text-[#545454]' : 'text-white'}`}>
+                  {t(classroom.enName, classroom.name)}
                 </div>
 
                 {/* 總數量 - 教室固定為 1 */}
@@ -214,8 +211,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-sm">No Classroom Found</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-sm">找不到符合條件的教室</p>
+          <p className="text-gray-scale2 text-sm">{t('No Classroom Found', '找不到符合條件的教室')}</p>
         </div>
       )}
     </div>

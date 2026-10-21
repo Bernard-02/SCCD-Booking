@@ -6,7 +6,7 @@
 
 - **React 18** + TypeScript (strict mode) + Vite 5
 - **React Router v7** — SPA 路由
-- **Zustand** — 收藏（bookmark）狀態
+- **Zustand** — 收藏（bookmark）狀態、介面語言（`stores/langStore.ts`）
 - **Tailwind CSS v4** (`@tailwindcss/vite`) 共存於舊的 `css/*.css` 檔案
 - **動畫**：GSAP（唯一動畫庫，舊的 framer-motion／animejs 已移除）
 - **其他**：jspdf、html2canvas（僅 OrderPage 使用）
@@ -17,7 +17,7 @@
 src/
   App.tsx                       # 路由配置
   main.tsx                      # 入口，全量載入舊 css/*.css
-  pages/                        # 各個頁面（BookingPage、EquipmentPage、SpacePage 等）
+  pages/                        # 各個頁面（前台 Equipment／Space／RentalList…、後台 Admin*Page）
   components/
     layouts/                    # Header、Footer、MainLayout
     equipment/                  # 實際使用的 EquipmentCard / EquipmentGrid
@@ -29,19 +29,20 @@ src/
   contexts/                     # AuthContext、DateSelectionContext
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
   stores/bookmarkStore.ts       # Zustand 收藏 store
-  services/                     # 空資料夾（保留給未來真實後端，目前無檔案）
-  utils/                        # authTypes（認證型別）、authStorage、storageKeys、timeUtils
-  data/equipment-data.json      # 設備主資料（包含庫存、分類）
+  stores/langStore.ts           # 前台中／EN 切換（useT），後台只有中文
+  services/                     # Supabase 存取層（supabase client、auth、orders、equipment、space、admin…）
+  utils/                        # authTypes、authStorage、storageKeys、timeUtils、gradeUtils
+  data/contactInfo.ts           # 系學會聯絡資訊（設備資料已改由 Supabase equipment 表提供）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
-js/                             # 舊靜態版本的 JS（已不再由新架構使用，可逐步移除）
-Images/、Icons/                 # 靜態資源（已移入 public/）
-public/Area/                    # SVG 區域圖
+public/                         # 靜態資源（Area SVG 區域圖、Images、Icons）
+supabase/                       # 資料庫 SQL（schema、RPC、pg_cron、各次變更；在 Supabase SQL Editor 執行）
 legacy/                         # 遷移前備份（已 gitignore）
 old-html-backup/                # 舊 HTML 備份（已 gitignore）
 docs/rental-rules.md            # 租借規則單一事實來源（改租借邏輯前必讀）
 docs/roadmap.md                 # 完成路線圖（階段 1-6 與任務清單）
 docs/supabase-backend-plan.md   # 後端定案與接線規劃（Supabase）
+docs/sa-discussion.md           # 待與系學會討論的規則（開會用，決議後回寫 rental-rules）
 docs/bookmark-system.md         # 收藏系統設計文檔
 ```
 
@@ -52,20 +53,14 @@ npm run dev        # Vite dev server，port 3000，自動開瀏覽器
 npm run build      # tsc 型別檢查 + vite build → dist/
 npm run preview    # 預覽 production build
 npx tsc --noEmit   # 僅型別檢查，不產生檔案
-npm test           # vitest 單元測試（timeUtils／useCart／useCartValidation）
+npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／useCartValidation）
 ```
 
-## 遷移狀態（重要背景）
+## 遷移背景
 
-此專案正在從純 HTML/JS 靜態站點遷移到 React SPA。歷史上根目錄曾有 `booking.html`、`login.html`、`equipment.html` 等多頁，對應 `js/*.js`。目前：
-
-- **已遷移**：Home、Booking、BookingResources、Equipment、Space、RentalList、Profile、Order
-- **已刪除**：所有根目錄的 `*.html`、多數 `js/*.js`（git status 中列為 D）
-- **新入口**：`index.html` → `src/main.tsx` → `App.tsx`
-- **SPA fallback**：`vite.config.ts` 的 `appType: 'spa'` 確保 `/space`、`/equipment` 等路徑 fallback 到 `index.html`
-- **下一步**：前端流程已完整（mock 資料跑得通），尚未完成的是接真實後端 API 與管理後台——詳見「尚未完成」一節。
-
-`legacy/` 與 `old-html-backup/` 皆為遷移前備份，兩者都已 gitignore。
+原本是純 HTML/JS 靜態站（根目錄 `*.html`＋`js/*.js`），已全部遷移成 React SPA 並刪除舊檔。
+入口 `index.html` → `src/main.tsx` → `App.tsx`；`vite.config.ts` 的 `appType: 'spa'` 讓 `/space` 等路徑 fallback 到 `index.html`。
+`legacy/` 與 `old-html-backup/` 為遷移前備份（已 gitignore）。
 
 ## 認證流程
 
@@ -85,9 +80,8 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 | `sccd_space_dates` | 空間日期選擇（24h 過期） |
 | `sccd_bookmarks` 或 `sccd_bookmarks_{studentId}` | 收藏（依是否登入） |
 | `sccd_favorites_equipment` / `sccd_favorites_classroom` | 舊的收藏 key（legacy-bridge 使用） |
-| `sccd_notifications_{studentId\|guest}` | 通知（`notificationsKey`） |
-| `sccd_read_notifications_{studentId\|guest}` | 已讀通知（`readNotificationsKey`） |
 | `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
+| `sccd_lang` | 前台介面語言（`zh`／`en`，zustand persist） |
 | `sccd_admin_order_cols` | 後台訂單表格欄位順序（`ADMIN_ORDER_COLS_KEY`） |
 
 ## 日期選擇邏輯
@@ -106,8 +100,8 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩段：值班＝總覽／訂單／空間地圖；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／營業時間〔公休日（新增自動發全站公告 template＋通知受影響訂單）＋法定假日（自動匯入）＋寒暑假封鎖〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；剩代客延期、拆單、代取消、手動建單、庫存管理、助教直借等（清單見 roadmap.md）。admin 帳號學號 `sccdsa`。
-- **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）。2026-09-26 情境補完新增一項待做：延期不得延入封鎖期（`extend_my_order` 補檢查）。grade 慣例見 rental-rules.md「年級限制」。
+- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩段：值班＝總覽／訂單／空間地圖；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／營業時間〔公休日（新增自動發全站公告 template＋通知受影響訂單）＋法定假日（自動匯入）＋寒暑假封鎖〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
+- **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）；之後補的延期不得延入封鎖期、同類型限一單、修改已送出設備單也已完成。剩遠期單阻擋（待學會定細則）。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
 - **階段 5 手機版**：Equipment／Space／RentalList／Order 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」；等桌面版驗收（階段 1.5）確認後再做。
@@ -116,22 +110,25 @@ npm test           # vitest 單元測試（timeUtils／useCart／useCartValidati
 ## 手機版（RWD）標準
 
 - **斷點**：以 Tailwind 的 `md`（768px）為手機／桌機唯一分界，不另設自訂斷點。
-- **模式**：複雜頁面採「同頁兩份 JSX」——桌機 `hidden md:block`／`md:flex`、手機 `md:hidden`（參考 `BookingPage`、`HomePage`、`BookingResourcesPage` 既有做法）；簡單版面優先用響應式 class 寫成單份 JSX（參考 `AboutPage`）。
+- **模式**：複雜頁面採「同頁兩份 JSX」——桌機 `hidden md:block`／`md:flex`、手機 `md:hidden`（參考 `BookingResourcesPage` 既有做法）；簡單版面優先用響應式 class 寫成單份 JSX（參考 `HomePage` 登入頁）。
 - **日曆**：`Calendar` 已有 `isMobile` prop（單月顯示），手機版直接傳 `isMobile={true}`。
 - **觸控**：hover-only 的互動（tooltip、hover 預覽）必須有觸控替代；可點擊目標最小 44×44px。
 - **驗證寬度**：手機以 375px 為基準寬度檢查，橫向不得出現頁面級卷軸。
 
 ## 已知 Tech Debt
 
-- **過大頁面／元件**：`CartList.tsx`（744 行）、`OrderPage.tsx`（737 行）、`SpacePage.tsx`（736 行）、`RentalListPage.tsx`（712 行）仍可續拆 hook。
+- **過大頁面／元件**：`ProfilePage`、`OrderPage`、`SpacePage`、`RentalListPage`、`DatePickerBar`、`CartList` 皆 700–820 行，做手機版動到時順手拆 hook。
 - **`DateSelectionContext` 複雜度**：一個 context 同時管設備／空間日期，可拆成兩個 context 降低耦合與 re-render。
-- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（3868 行）共存，長期可漸進遷移。
+- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（約 1470 行）共存，長期可漸進遷移。
 - ~~**Bundle 過大**~~：已用 `React.lazy` 做路由層 code-splitting（`App.tsx`），`jspdf`+`html2canvas` 隨 `OrderPage` 分離出 initial bundle。
 - ~~**Storage key 命名混用**~~：已抽 `utils/storageKeys.ts`（receipts／notifications）與 `utils/authStorage.ts`（登入）集中管理。
 
 ## 程式風格規則
 
 - 註解以繁體中文為主，符合既有慣例。
+- **前台文字中英分開**：不要再寫「Login 登入」並列，一律 `const t = useT()` 後 `{t('Login', '登入')}`（也可傳 JSX）；
+  Footer 的 language icon 切換、預設中文。英文之後由使用者重寫，**不要自行機器翻譯**只有中文的字串（Toast、server 錯誤原因維持中文）。
+  後台 `/admin` 與 PDF 收據不切換。
 - 檔頭常有 `/** 功能說明 */` 區塊註解。
 - 路徑 alias：`@/*` → `src/*`、`@legacy/*` → `./*`（後者已不再需要）。
 - TypeScript 設定為 `strict: true`，並啟用 `noUnusedLocals` 與 `noUnusedParameters`，build 時型別錯誤會擋住。

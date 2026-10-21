@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useEquipmentData, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
 import { EQUIPMENT_CATEGORIES } from '../../types/equipment'
+import { useT } from '../../stores/langStore'
 
 /** 目前品項（同設備合併）；held＝已點交數量（取件後的下限，取件前為 0） */
 export interface ModifyLine {
@@ -36,6 +37,7 @@ const MASS_MIN = 10
 const ModifyOrderDialog: React.FC<Props> = ({
   rentalNumber, startDate, endDate, isMass, picked, depositPaid, lines, onConfirm, onCancel
 }) => {
+  const t = useT()
   const equipmentData = useEquipmentData()
   const [reserved, setReserved] = useState<Record<string, ReservedInfo>>({})
   const [rows, setRows] = useState<ModifyLine[]>(lines)
@@ -103,23 +105,21 @@ const ModifyOrderDialog: React.FC<Props> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] rounded-lg max-w-[640px] w-[90%] mx-4 max-h-[90vh] flex flex-col"
+        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-[640px] w-[90%] mx-4 max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* 標題 */}
         <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
           <div className="flex items-start justify-between mb-4">
             <h2 className="text-sm text-white">
-              <span className="font-['Inter',_sans-serif]">Edit Order</span>{' '}
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">修改訂單</span>
+              <span>{t('Edit Order', '修改訂單')}</span>
             </h2>
             <button onClick={onCancel} className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1" aria-label="Close">
               <span className="material-icons text-lg">close</span>
             </button>
           </div>
           <div className="text-xs text-gray-scale2">
-            <span className="font-['Inter',_sans-serif]">Order</span>{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">訂單號碼</span>:{' '}
+            <span>{t('Order', '訂單號碼')}</span>:{' '}
             <span className="font-['Inter',_sans-serif] text-white">{rentalNumber}</span>
           </div>
         </div>
@@ -181,7 +181,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
             onChange={e => addItem(e.target.value)}
             className="mt-4 w-full bg-black border border-gray-scale4 rounded-lg px-3 py-2 text-xs text-white focus:border-white outline-none cursor-pointer font-['Inter','Noto_Sans_TC',_sans-serif]"
           >
-            <option value="" disabled>＋ 新增設備 Add equipment</option>
+            <option value="" disabled>＋ {t('Add equipment', '新增設備')}</option>
             {groups.map(g => {
               const items = addable.filter(e => e.category === g)
               if (items.length === 0) return null
@@ -221,7 +221,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
           <div className="flex justify-end gap-6">
             <button onClick={onCancel} className="text-[#cccccc] hover:text-white transition-colors cursor-pointer">
               <span className="font-['Inter',_sans-serif] text-xs">
-                Cancel <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
+                {t('Cancel', '取消')}
               </span>
             </button>
             <button
@@ -230,7 +230,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
               className={`transition-opacity ${canSave ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'}`}
             >
               <span className="font-['Inter',_sans-serif] text-xs">
-                {busy ? 'Saving…' : 'Save'} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">儲存</span>
+                {t(busy ? 'Saving…' : 'Save', '儲存')}
               </span>
             </button>
           </div>

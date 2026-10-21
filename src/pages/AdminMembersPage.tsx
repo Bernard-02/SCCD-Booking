@@ -31,7 +31,7 @@ import {
 type Identity = 'student' | 'sa' | 'secretary' | 'admin'
 const IDENTITY_ZH: Record<Identity, string> = { student: '學生', sa: '系學會', secretary: '系秘', admin: '管理員' }
 
-type FilterKey = 'all' | Identity | 'violation' | 'on_leave' | 'transfer'
+type FilterKey = 'all' | Identity | 'violation' | 'on_leave' | 'transfer' | 'graduated'
 const FILTERS: { key: FilterKey; en: string; zh: string }[] = [
   { key: 'all', en: 'All', zh: '全部' },
   { key: 'student', en: 'Student', zh: '學生' },
@@ -40,7 +40,8 @@ const FILTERS: { key: FilterKey; en: string; zh: string }[] = [
   { key: 'admin', en: 'Admin', zh: '管理員' },
   { key: 'violation', en: 'Violations', zh: '違規' },
   { key: 'on_leave', en: 'On Leave', zh: '休學' },
-  { key: 'transfer', en: 'Transfer', zh: '轉學生' }
+  { key: 'transfer', en: 'Transfer', zh: '轉學生' },
+  { key: 'graduated', en: 'Graduated', zh: '已畢業' }
 ]
 
 // 編輯班級的建議值：日媒一甲…日媒四乙、碩媒一甲…碩媒二乙
@@ -82,7 +83,7 @@ const AdminMembersPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   // 班級以「日媒四乙」字串編輯，儲存時拆回 grade＋class_name；身分系學會時附職位
   const [draft, setDraft] = useState({
-    classText: '', identity: 'student' as Identity, position: '', on_leave: false, is_transfer: false
+    classText: '', identity: 'student' as Identity, position: '', on_leave: false, is_transfer: false, graduated: false
   })
   const [busy, setBusy] = useState(false)
   // 值班時段小表單（一次只開一位）
@@ -134,6 +135,7 @@ const AdminMembersPage: React.FC = () => {
       case 'violation': { const v = violation(m); return v.suspended || v.overdue > 0 || v.unpaid > 0 }
       case 'on_leave': return !!m.on_leave
       case 'transfer': return !!m.is_transfer
+      case 'graduated': return !!m.graduated
       default: return identityOf(m) === f
     }
   }
@@ -155,7 +157,8 @@ const AdminMembersPage: React.FC = () => {
       identity: identityOf(m),
       position: staffBySid[m.student_id]?.position ?? '',
       on_leave: !!m.on_leave,
-      is_transfer: !!m.is_transfer
+      is_transfer: !!m.is_transfer,
+      graduated: !!m.graduated
     })
   }
 
@@ -178,6 +181,9 @@ const AdminMembersPage: React.FC = () => {
     if (toSa && !row) changes.push('加入系學會（收押金／歸還的經手人選單）')
     if (!isAdmin && !toSa && row) changes.push('移出系學會（從經手人選單移除；歷史經手紀錄不受影響）')
     if (draft.on_leave !== !!m.on_leave) changes.push(draft.on_leave ? '標記休學（無法送出新預約）' : '取消休學（恢復租借）')
+    if (draft.graduated !== !!m.graduated) {
+      changes.push(draft.graduated ? '標記已畢業（帳號停用：無法登入；還有東西沒歸還的可登入到歸還為止）' : '取消畢業標記（恢復帳號）')
+    }
     if (changes.length > 0) {
       const ok = await confirm({
         title: '確認變更', titleEn: 'Confirm Changes',
@@ -190,7 +196,7 @@ const AdminMembersPage: React.FC = () => {
     setBusy(true)
     try {
       const position = draft.position.trim()
-      const results = [await updateMember(m.id, { role, on_leave: draft.on_leave, is_transfer: draft.is_transfer, ...cls })]
+      const results = [await updateMember(m.id, { role, on_leave: draft.on_leave, is_transfer: draft.is_transfer, graduated: draft.graduated, ...cls })]
       if (toSa && !row) results.push(await addStaffBulk([{ student_id: m.id, position }]))
       else if (toSa && row.position !== position) results.push(await updateStaffPosition(row.id, position))
       else if (!isAdmin && !toSa && row) results.push(await deleteStaff(row.id))
@@ -359,7 +365,8 @@ const AdminMembersPage: React.FC = () => {
               </Tag>,
               identity === 'sa' && isOnDuty(sa.duties) && <Tag key="duty" color="var(--color-success)">值班中</Tag>,
               m.is_transfer && <Tag key="transfer">轉學生</Tag>,
-              m.on_leave && <Tag key="leave" color="var(--color-error2)">休學</Tag>
+              m.on_leave && <Tag key="leave" color="var(--color-error2)">休學</Tag>,
+              m.graduated && <Tag key="graduated" color="var(--color-gray-scale3)">已畢業</Tag>
             ]
             const flags = [
               v.suspended && <Tag key="suspended" color="var(--color-error2)">停權</Tag>,
@@ -441,6 +448,11 @@ const AdminMembersPage: React.FC = () => {
                           <input type="checkbox" checked={!!draft.is_transfer}
                             onChange={e => setDraft(d => ({ ...d, is_transfer: e.target.checked }))} />
                           轉學生
+                        </label>
+                        <label className="flex items-center gap-2 text-white font-chinese cursor-pointer">
+                          <input type="checkbox" checked={!!draft.graduated}
+                            onChange={e => setDraft(d => ({ ...d, graduated: e.target.checked }))} />
+                          已畢業（停用帳號）
                         </label>
                         <button onClick={() => handleSave(m)} disabled={busy} className={actionBtn(!busy)}>
                           <span className="font-english">Save <span className="font-chinese">儲存</span></span>

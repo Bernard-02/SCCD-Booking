@@ -83,6 +83,8 @@ export async function fetchAllOrders(): Promise<AdminOrderRow[]> {
  * 讀取失敗時退回空集合（只排除週末），不擋頁面。
  */
 let closedDatesCache: Set<string> | null = null
+/** 後台改了公休日後呼叫，下次 fetchClosedDates 重抓 */
+export const invalidateClosedDates = () => { closedDatesCache = null }
 export async function fetchClosedDates(): Promise<Set<string>> {
   if (closedDatesCache) return closedDatesCache
   const { data, error } = await supabase.from('closed_dates').select('day')
@@ -163,34 +165,6 @@ export async function adminMarkPaid(
     p_handler: handler,
     p_pickup: pickup,
     p_deposit_total: depositTotal ?? null
-  })
-  if (error) return { ok: false, message: error.message }
-  return { ok: true }
-}
-
-/** 後台：整單歸還（in-progress/overdue → returned，寫入確認罰款與經手人，僅 admin） */
-export async function adminMarkReturned(
-  rentalNumber: string,
-  penalty: number,
-  handler: string
-): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.rpc('admin_mark_returned', {
-    p_rental_number: rentalNumber,
-    p_penalty: penalty,
-    p_handler: handler
-  })
-  if (error) return { ok: false, message: error.message }
-  return { ok: true }
-}
-
-/** 延期自己的訂單（RPC：僅限租借中、未延期過、1-7 天） */
-export async function extendMyOrder(
-  rentalNumber: string,
-  days: number
-): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.rpc('extend_my_order', {
-    p_rental_number: rentalNumber,
-    p_days: days
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }

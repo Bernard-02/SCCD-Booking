@@ -11,6 +11,7 @@ import { fetchClosedDates, fetchDutySlots } from '../../services/ordersService'
 import {
   addBusinessMs, dutySlotOptions, slotStart, slotLabel, toDateKey, PENDING_LIMIT_MS, type DutySlot
 } from '../../utils/timeUtils'
+import { useT } from '../../stores/langStore'
 
 export interface BookingDetailsData {
   reason: string
@@ -39,6 +40,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   onConfirm,
   onCancel
 }) => {
+  const t = useT()
   const [reason, setReason] = useState('')
   const [className, setClassName] = useState('')
   const [teacher, setTeacher] = useState('')
@@ -155,15 +157,14 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
     >
       {/* 對話框容器 */}
       <div
-        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-lg"
+        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
           <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
-            Booking Details{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">借用資訊</span>
+            {t('Booking Details', '借用資訊')}
           </h2>
         </div>
 
@@ -172,12 +173,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {/* 使用原因 */}
           <div>
             <label className="block mb-2">
-              <span className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">
-                Reason{' '}
-              </span>
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">
-                使用原因
-              </span>
+              <span className="text-xs text-[#cccccc]">{t('Reason', '使用原因')}</span>
               <span className="text-[#ff8698] ml-1">*</span>
             </label>
             <textarea
@@ -186,7 +182,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white resize-none rounded-lg"
               style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
               rows={3}
-              placeholder="Please fill in the reason for use 請填寫使用原因"
+              placeholder={t('Please fill in the reason for use', '請填寫使用原因')}
             />
           </div>
 
@@ -196,12 +192,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               {/* 使用班級 */}
               <div>
                 <label className="block mb-2">
-                  <span className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">
-                    Class{' '}
-                  </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">
-                    使用班級
-                  </span>
+                  <span className="text-xs text-[#cccccc]">{t('Class', '使用班級')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -210,19 +201,14 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   onChange={(e) => setClassName(e.target.value)}
                   className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
                   style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
-                  placeholder="Please fill in the class 請填寫使用班級"
+                  placeholder={t('Please fill in the class', '請填寫使用班級')}
                 />
               </div>
 
               {/* 負責老師 */}
               <div>
                 <label className="block mb-2">
-                  <span className="font-['Inter',_sans-serif] text-xs text-[#cccccc]">
-                    Teacher{' '}
-                  </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-[#cccccc]">
-                    負責老師（若個人用就填個人）
-                  </span>
+                  <span className="text-xs text-[#cccccc]">{t('Teacher', '負責老師（若個人用就填個人）')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -231,7 +217,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                   onChange={(e) => setTeacher(e.target.value)}
                   className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
                   style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
-                  placeholder="Please fill in the teacher in charge 請填寫負責老師"
+                  placeholder={t('Please fill in the teacher in charge', '請填寫負責老師')}
                 />
               </div>
             </>
@@ -242,8 +228,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             <>
               <div>
                 <label className="block mb-2 text-xs text-[#cccccc]">
-                  <span className="font-['Inter',_sans-serif]">Pickup </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取件時段（起租日當天，系學會值班時間）</span>
+                  <span>{t('Pickup', '取件時段（起租日當天，系學會值班時間）')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <select value={pickupValid ? pickupSlot : ''} onChange={e => setPickupSlot(e.target.value)} className={selectCls}>
@@ -254,8 +239,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               </div>
               <div>
                 <label className="block mb-2 text-xs text-[#cccccc]">
-                  <span className="font-['Inter',_sans-serif]">Deposit </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">繳押金時段（送單後 24 工作時內；可與取件同時）</span>
+                  <span>{t('Deposit', '繳押金時段（送單後 24 工作時內；可與取件同時）')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <select value={depositValid ? deposit : ''} onChange={e => setDeposit(e.target.value)} className={selectCls}>
@@ -283,8 +267,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
             <span className="font-['Inter',_sans-serif] text-xs">
-              Cancel{' '}
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
+              {t('Cancel', '取消')}
             </span>
           </button>
 
@@ -299,8 +282,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             }`}
           >
             <span className="font-['Inter',_sans-serif] text-xs">
-              Confirm{' '}
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認</span>
+              {t('Confirm', '確認')}
             </span>
           </button>
         </div>

@@ -1,17 +1,18 @@
 /**
  * Header 組件
- * 從 index-old.html 遷移
+ * 桌機：左 logo（回型錄）；右 Info（開 InfoDialog：教學／系學會／關於）、Cart、通知 三個 icon
+ * Profile 與外部連結在 Footer
  */
 
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
 import { fetchMyNotifications, markAllNotificationsRead } from '../../services/notificationsService'
 import type { AppNotification as Notification } from '../../services/notificationsService'
-import GuideDialog from '../common/GuideDialog'
-import SaDialog from '../common/SaDialog'
-import { angleFor, spinOnHover } from '../../utils/rotationAngle'
+import InfoDialog from '../common/InfoDialog'
+import type { InfoTab } from '../common/InfoDialog'
+import { useT } from '../../stores/langStore'
 
 interface HeaderProps {
   hideNavigation?: boolean // 是否隱藏右側導航按鈕
@@ -19,15 +20,13 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   const location = useLocation()
-  const navigate = useNavigate()
+  const t = useT()
   const { cart } = useCart()
-  const { logout, isAuthenticated, currentUser } = useAuth()
+  const { isAuthenticated, currentUser } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
-  const [profileDropdownOpen, setProfileDropdownOpen] = React.useState(false)
   const [notificationMenuOpen, setNotificationMenuOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Notification[]>([])
-  const [guideOpen, setGuideOpen] = React.useState(false)
-  const [saOpen, setSaOpen] = React.useState(false)
+  const [infoTab, setInfoTab] = React.useState<InfoTab | null>(null) // null＝InfoDialog 關閉
 
   // 讀取通知（Supabase，7 天內；已讀狀態存資料庫）
   React.useEffect(() => {
@@ -55,13 +54,6 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   // 計算未讀數量
   const unreadCount = notifications.filter(n => !n.read).length
 
-  // 處理登出
-  const handleLogout = async () => {
-    await logout()
-    setProfileDropdownOpen(false)
-    navigate('/login', { replace: true })
-  }
-
   // 處理通知點擊
   const handleNotificationClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -69,35 +61,21 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
       closeNotificationMenu()
     } else {
       setNotificationMenuOpen(true)
-      setProfileDropdownOpen(false) // 關閉其他選單
     }
   }
 
-  // 關閉通知選單（並標記所有為已讀：本地樂觀更新 + 寫入資料庫）
+  // 關閉通知選單（X、點選單外、或再點一次鈴鐺）＝看過即全部已讀：本地樂觀更新 + 寫入資料庫
   const closeNotificationMenu = () => {
     setNotificationMenuOpen(false)
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     markAllNotificationsRead()
   }
 
-  // 處理 Profile 按鈕點擊
-  const handleProfileClick = (e: React.MouseEvent) => {
-    if (location.pathname === '/profile') {
-      e.preventDefault()
-      setProfileDropdownOpen(!profileDropdownOpen)
-      setNotificationMenuOpen(false) // 關閉其他選單
-    }
-  }
 
   // 點擊外部關閉下拉選單
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      
-      // 處理 Profile Dropdown
-      if (profileDropdownOpen && !target.closest('.profile-dropdown-container')) {
-        setProfileDropdownOpen(false)
-      }
       
       // 處理 Notification Dropdown
       if (notificationMenuOpen && !target.closest('.notification-dropdown-container')) {
@@ -106,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [profileDropdownOpen, notificationMenuOpen])
+  }, [notificationMenuOpen])
 
   // 格式化日期：2026/01/24 4:14PM
   const formatNotificationDate = (timestamp: number) => {
@@ -154,115 +132,50 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     return equipmentCount + spaceBlockCount + classroomCount
   }, [cart])
 
-  // 檢查是否為當前頁面
-  const isActive = (path: string) => {
-    // 如果在訂單頁面，Profile 也應該是 active 狀態
-    if (path === '/profile' && location.pathname === '/order') {
-      return true
-    }
-    // Catalog 頁面及其子頁面 (Equipment, Space)
-    if (path === '/catalog' && (location.pathname === '/equipment' || location.pathname === '/space')) {
-      return true
-    }
-    return location.pathname === path
-  }
-
   return (
     <>
       <header className="fixed top-0 left-0 right-0 bg-transparent header-main">
         <div className="container">
           <div className="flex justify-between items-center">
-            <div className="flex items-center" style={{ gap: '1.5rem' }}>
-              <Link
-                to={isAuthenticated ? "/catalog" : "/"}
-                className="font-['Inter',_sans-serif] font-bold text-white text-md"
-              >
-                SCCDSA Booking
-              </Link>
-
-              {/* Guide - 放在 logo 右邊；點擊開啟教學 lightbox，不換頁 */}
-              {!hideNavigation && (
-                <button
-                  type="button"
-                  onClick={() => setGuideOpen(true)}
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link cursor-pointer ${guideOpen ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${angleFor('guide')}deg` } as React.CSSProperties}
-                  onMouseEnter={spinOnHover('guide')}
-                >
-                  <span>Guide</span>
-                  <span className="chinese-label">&nbsp;教學</span>
-                </button>
-              )}
-            </div>
+            <Link to="/catalog" className="font-['Inter',_sans-serif] font-bold text-white text-md">
+              SCCDSA Booking
+            </Link>
 
             {/* 桌面版導航 - 如果 hideNavigation 為 true 則隱藏 */}
             {!hideNavigation && (
-              <nav className="flex items-center header-menu desktop-nav nav-gap relative">
+              <nav className="flex items-center desktop-nav gap-6">
+                {/* Info：開 InfoDialog（左分頁、右內容） */}
                 <button
                   type="button"
-                  onClick={() => setSaOpen(true)}
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link cursor-pointer ${saOpen ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${angleFor('sa')}deg` } as React.CSSProperties}
-                  onMouseEnter={spinOnHover('sa')}
+                  onClick={() => setInfoTab('guide')}
+                  className="flex items-center text-white cursor-pointer"
+                  aria-label="Info"
                 >
-                  <span>SA</span>
-                  <span className="chinese-label">&nbsp;系學會</span>
+                  <span className="material-symbols-outlined text-md">info</span>
                 </button>
-                <Link
-                  to="/catalog"
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link ${isActive('/catalog') ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${angleFor('catalog')}deg` } as React.CSSProperties}
-                  onMouseEnter={spinOnHover('catalog')}
-                >
-                  <span>Catalog</span>
-                  <span className="chinese-label">&nbsp;型錄</span>
-                </Link>
+
+                {/* Cart：右上角數量徽章 */}
                 <Link
                   to="/cart"
                   state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
-                  className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link ${isActive('/cart') ? 'active' : ''}`}
-                  style={{ '--rotation-angle': `${angleFor('cart')}deg` } as React.CSSProperties}
-                  onMouseEnter={spinOnHover('cart')}
+                  className="relative flex items-center text-white"
+                  aria-label={`${t('Cart', '清單')} (${cartCount})`}
                 >
-                  <span>Cart<span className="chinese-label">&nbsp;清單</span> (<span id="cart-count">{cartCount}</span>)</span>
-                </Link>
-                <div className="profile-dropdown-container relative">
-                  <Link
-                    to="/profile"
-                    onClick={handleProfileClick}
-                    className={`font-['Inter',_sans-serif] font-bold transition-colors text-white flex items-center text-md header-nav-link ${isActive('/profile') ? 'active' : ''}`}
-                    style={{ '--rotation-angle': `${angleFor('profile')}deg` } as React.CSSProperties}
-                    onMouseEnter={spinOnHover('profile')}
-                  >
-                    <span>Profile</span>
-                    <span className="chinese-label">&nbsp;我的</span>
-                  </Link>
-
-                  {/* Dropdown Menu */}
-                  {profileDropdownOpen && location.pathname === '/profile' && (
-                    <div
-                      className="absolute top-full right-0 mt-6 bg-[#151515] border border-[#545454] overflow-hidden rounded-lg"
-                      style={{ zIndex: 1000 }}
-                    >
-                      {/* Content */}
-                      <div className="py-3 px-4">
-                        <button
-                          onClick={handleLogout}
-                          className="text-white hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap"
-                        >
-                          <span className="font-['Inter',_sans-serif] text-xs">Log out</span>{' '}
-                          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs">登出</span>
-                        </button>
-                      </div>
-                    </div>
+                  <span className="material-symbols-outlined text-md">shopping_cart</span>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-white text-black text-2xs leading-4 text-center">
+                      {cartCount}
+                    </span>
                   )}
-                </div>
-                {/* 通知鈴鐺 Container - 移到 Profile 右邊 */}
-                <div className="notification-dropdown-container">
+                </Link>
+
+                {/* 通知鈴鐺 */}
+                <div className="notification-dropdown-container relative">
                   <Link
                     to="#"
                     onClick={handleNotificationClick}
-                    className="relative flex items-center text-white hover:opacity-70 transition-opacity cursor-pointer"
+                    className="relative flex items-center text-white cursor-pointer"
+                    aria-label="Notification"
                   >
                     <span className="material-symbols-outlined text-md">
                       notifications
@@ -276,16 +189,16 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   {/* Notification Dropdown */}
                   {notificationMenuOpen && (
                     <div
-                      className="absolute top-full right-0 mt-6 w-[450px] bg-[#151515] border border-[#545454] rounded-lg overflow-hidden"
+                      className="absolute top-full right-0 mt-6 w-[400px] bg-[#151515] border border-[#545454] rounded-2xl overflow-hidden"
                       style={{ zIndex: 1000 }}
                     >
                       {/* Header */}
-                      <div className="flex justify-between items-center px-6 py-4 border-b border-[#545454]">
+                      <div className="flex justify-between items-center p-4 border-b border-[#545454]">
                         <h2 className="text-sm text-white">
-                          <span className="font-['Inter',_sans-serif]">Notification</span>{' '}
-                          <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">通知</span>
+                          {t('Notification', '通知')}
                         </h2>
                         <button
+                          type="button"
                           onClick={closeNotificationMenu}
                           className="text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center"
                           aria-label="Close"
@@ -297,27 +210,25 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                       {/* List */}
                       <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                         {notifications.length === 0 ? (
-                          <div className="px-6 py-8 text-center">
-                            <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2">
+                          <div className="px-4 py-8 text-center">
+                            <p className="text-xs text-gray-scale2">
                               目前沒有新通知
                             </p>
                           </div>
                         ) : (
                           notifications.map((n, index) => (
                             <React.Fragment key={n.id}>
-                              <div className="px-6 py-4 relative transition-colors hover:bg-white/5">
-                                {/* 右上角紅點 (未讀) */}
-                                {!n.read && (
-                                  <div className="absolute top-6 right-6 w-2 h-2 bg-[#ff448a] rounded-full"></div>
-                                )}
-
-                                {/* 內容 */}
-                                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs mb-2 pr-4 leading-relaxed">
-                                  {n.announcement && (
-                                    <span className="inline-block mr-2 px-1.5 rounded border border-white text-[0.7rem] leading-4 align-[1px]">公告</span>
-                                  )}
-                                  {n.content}
-                                </p>
+                              <div className="p-4 transition-colors hover:bg-white/5">
+                                {/* 內容＋右側未讀紅點 */}
+                                <div className="flex gap-3 mb-2">
+                                  <p className="flex-1 text-white text-xs leading-relaxed">
+                                    {n.announcement && (
+                                      <span className="inline-block mr-2 px-1.5 rounded border border-white text-[0.7rem] leading-4 align-[1px]">公告</span>
+                                    )}
+                                    {n.content}
+                                  </p>
+                                  {!n.read && <span className="mt-2 w-2 h-2 shrink-0 bg-[#ff448a] rounded-full" />}
+                                </div>
 
                                 {/* 底部資訊 */}
                                 <div className="flex justify-between items-end">
@@ -425,16 +336,16 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
             </div>
             <div className="menu-animate-enter">
               <div className="menu-animate-enter-content menu-delay-4">
-                <Link
-                  to="/about"
+                <button
+                  type="button"
                   className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => { setMobileMenuOpen(false); setInfoTab('about') }}
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(ABOUT)</span>
                     <span className="menu-text-hidden">(ABOUT)</span>
                   </div>
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -455,11 +366,8 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
         </div>
       </div>
 
-      {/* 使用教學 lightbox */}
-      <GuideDialog isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
-
-      {/* 系學會資訊 lightbox */}
-      <SaDialog isOpen={saOpen} onClose={() => setSaOpen(false)} />
+      {/* Info lightbox：使用教學／系學會／關於 */}
+      <InfoDialog tab={infoTab} onTabChange={setInfoTab} onClose={() => setInfoTab(null)} />
     </>
   )
 }

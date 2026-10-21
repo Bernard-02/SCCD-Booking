@@ -9,6 +9,7 @@
 
 import { supabase } from './supabase'
 import { closedDayImpact, toDateKey } from '../utils/timeUtils'
+import { invalidateClosedDates } from './ordersService'
 
 // 不營業日類別（supabase/closed-date-kinds.sql）：學會自己的公休三種＋自動匯入的法定假日。
 // 四種對計算的效果都一樣（同週末：倒數／逾期跳過、歸還期限順延），差別只在後台分區與是否發公告。
@@ -113,9 +114,10 @@ export interface Member {
   account_level: number // 5＝停權
   on_leave?: boolean // 休學：擋新借（members.sql 執行前不存在）
   is_transfer?: boolean // 轉學生：純標記
+  graduated?: boolean // 已畢業：不能登入（有未歸還訂單者例外）、不能送新單；手動標記
 }
 
-export type MemberFields = Pick<Member, 'grade' | 'class_name' | 'role' | 'on_leave' | 'is_transfer'>
+export type MemberFields = Pick<Member, 'grade' | 'class_name' | 'role' | 'on_leave' | 'is_transfer' | 'graduated'>
 
 // ponytail: 一次撈全部（Supabase 預設上限 1000 列，系上規模夠用；破千再改分頁查詢）
 export async function listMembers(): Promise<Member[]> {
@@ -241,6 +243,7 @@ export async function listClosedDates(): Promise<ClosedDate[]> {
 export async function addClosedDate(day: string, kind: ClosedKind, reason: string | null): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('closed_dates').insert({ day, kind, reason })
   if (error) return { ok: false, message: error.message }
+  invalidateClosedDates()
   return { ok: true }
 }
 
@@ -270,6 +273,7 @@ export async function autoImportHolidays(): Promise<void> {
         }))
       // 已有同日的學會公休就保留原本那筆
       await supabase.from('closed_dates').upsert(rows, { onConflict: 'day', ignoreDuplicates: true })
+      invalidateClosedDates()
     } catch {
       // 網路錯誤：下次進後台再試
     }
@@ -279,6 +283,7 @@ export async function autoImportHolidays(): Promise<void> {
 export async function deleteClosedDate(day: string): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('closed_dates').delete().eq('day', day)
   if (error) return { ok: false, message: error.message }
+  invalidateClosedDates()
   return { ok: true }
 }
 

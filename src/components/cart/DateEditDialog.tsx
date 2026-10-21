@@ -9,6 +9,8 @@ import Calendar from '../Calendar'
 import { formatYmd, toDateKey } from './cartHelpers'
 import { useAuth } from '../../contexts/AuthContext'
 import { isSeniorOrGraduate } from '../../utils/gradeUtils'
+import { minStartDate } from '../../utils/timeUtils'
+import { useT } from '../../stores/langStore'
 
 interface DateEditDialogProps {
   isOpen: boolean
@@ -29,6 +31,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
   onConfirm,
   onCancel
 }) => {
+  const t = useT()
   const { currentUser } = useAuth()
   // 空間上限：一般生 14 天，大四／碩士放寬 30 天（與 DatePickerBar 同規則）
   const spaceMaxDays = isSeniorOrGraduate(currentUser?.year) ? 30 : 14
@@ -57,7 +60,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] rounded-lg max-w-6xl w-full mx-4 max-h-full overflow-y-auto flex flex-col"
+        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-6xl w-full mx-4 max-h-full overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -65,8 +68,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-start justify-between mb-4">
             <h2 className="text-sm text-white">
-              <span className="font-['Inter',_sans-serif]">Edit Date</span>{' '}
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">編輯日期</span>
+              <span>{t('Edit Date', '編輯日期')}</span>
             </h2>
             {/* 關閉按鈕 */}
             <button
@@ -86,10 +88,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               {category && (
                 <div className="px-3 py-1 bg-gray-scale4 rounded-lg flex items-center justify-center">
                   <span className="font-['Inter',_sans-serif] text-xs text-white whitespace-nowrap">
-                    {category === 'equipment' ? 'Equipment' : 'Space'}{' '}
-                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">
-                      {category === 'equipment' ? '設備' : '空間'}
-                    </span>
+                    {t(category === 'equipment' ? 'Equipment' : 'Space', category === 'equipment' ? '設備' : '空間')}
                   </span>
                 </div>
               )}
@@ -98,20 +97,17 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
                 <span className="font-['Inter',_sans-serif] text-xs text-white whitespace-nowrap">
                   {bookingType === 'little' && (
                     <>
-                      Little{' '}
-                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">小量</span>
+                      {t('Little', '小量')}
                     </>
                   )}
                   {bookingType === 'mass-personal' && (
                     <>
-                      Mass (Personal){' '}
-                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">大量（個人）</span>
+                      {t('Mass (Personal)', '大量（個人）')}
                     </>
                   )}
                   {bookingType === 'mass-group' && (
                     <>
-                      Mass (Group){' '}
-                      <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">大量（團體）</span>
+                      {t('Mass (Group)', '大量（團體）')}
                     </>
                   )}
                 </span>
@@ -121,8 +117,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             {/* 右側：顯示原始日期 */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-[#cccccc]">
-                <span className="font-['Inter',_sans-serif]">Original Date</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">原始時段</span>
+                <span>{t('Original Date', '原始時段')}</span>
               </span>
               <span className="text-xs text-white font-['Inter',_sans-serif]">
                 {(() => {
@@ -140,7 +135,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             startDate={startDate}
             endDate={endDate}
             onDateSelect={handleDateSelect}
-            bookingType={bookingType === 'mass-group' ? 'group' : 'personal'}
+            minSelectableDate={minStartDate(category ?? 'equipment', bookingType)}
             maxDays={category === 'space' ? spaceMaxDays : 30}
             variant="dialog"
             originalStartDate={currentStartDate}
@@ -152,20 +147,10 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
         <div className="px-6 pb-4">
           <div className="p-4 bg-[#2b2b2b] border border-[#545454] rounded-lg flex justify-between items-center gap-8">
             <div className="shrink-0">
-              <p className="text-xs text-[#cccccc] font-['Inter',_sans-serif]">
-                New Date
-              </p>
-              <p className="text-xs text-[#cccccc] font-['Inter','Noto_Sans_TC',_sans-serif]">
-                新的時段
-              </p>
+              <p className="text-xs text-[#cccccc]">{t('New Date', '新的時段')}</p>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#ffff00] font-['Inter',_sans-serif]">
-                After updating the date, items may become out of stock. We'll mark them for you.
-              </p>
-              <p className="text-xs text-[#ffff00] font-['Inter','Noto_Sans_TC',_sans-serif]">
-                更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。
-              </p>
+              <p className="text-xs text-[#ffff00]">{t('After updating the date, items may become out of stock. We\'ll mark them for you.', '更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。')}</p>
             </div>
             <div className="shrink-0 text-xl text-white font-['Inter',_sans-serif]">
               {(() => {
@@ -188,8 +173,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             onClick={onCancel}
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
-            <span className="font-['Inter',_sans-serif] text-xs">Cancel</span>{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs">取消</span>
+            <span className="text-xs">{t('Cancel', '取消')}</span>
           </button>
           <button
             onClick={handleConfirm}
@@ -200,8 +184,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
                 : 'text-white hover:opacity-70'
             }`}
           >
-            <span className="font-['Inter',_sans-serif] text-xs">Confirm</span>{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs">確認</span>
+            <span className="text-xs">{t('Confirm', '確認')}</span>
           </button>
         </div>
       </div>

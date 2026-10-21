@@ -25,7 +25,7 @@
 
 **前置：先逐項定案 [order-lifecycle.md](./order-lifecycle.md) 的訂單生命週期情境**（沒繳押金、逾期、
 取消、部分歸還等——情境沒定案，後台沒得做），再用桌面版把整套流程跑過一遍確認無誤，才進後台與手機版。
-測試工具：三個測試帳號（阿志/小美/大明）開不同瀏覽器互相搶。候選衝突場景（開工時再補齊）：
+測試工具：測試帳號（阿志／小美，大明已改為 sccdsa admin）開不同瀏覽器互相搶。候選衝突場景（開工時再補齊）：
 
 - [ ] 兩人同時搶同一格空間／最後一件設備（一成一敗、敗方訊息清楚、購物車保留可重送）
 - [ ] 訂單送出後改日期重送（Exist Cart 過期時段就地修復 → 新時段的佔用計算正確）
@@ -70,8 +70,9 @@
 - [x] 值班可靠性（2026-10-02）：訂單／總覽／空間地圖自動更新（`useAutoRefresh`：每 60 秒＋切回分頁即更新，
       背景失敗不蓋畫面；訂單工具列「更新於 hh:mm」＋手動重新整理）；後台全部頁面
       載入失敗改顯示原因＋重試（`LoadError`，不再誤顯示成「沒有資料」）；所有寫入操作成功皆有 Toast
-- [ ] 手動建單（電話／現場預約，admin 代下）——**2026-10-02 Bernard 評估中：要不要提供，或一律學生自己下單**
-- [ ] 畢業生帳號自動停用（方向定案 2026-10-02：有東西沒歸還者除外；判定時點與「停用」定義待定，見 rental-rules 帳號身分）
+- ~~手動建單~~——**2026-10-04 定案不做**：學會不能代學生下單；可代改借用資訊（原因／班級／老師），品項有錯請學生重新下單
+- [x] 畢業生帳號停用（2026-10-04）：會員管理手動標記「已畢業」→ 不能登入（有未歸還訂單者例外）、
+      `submit_orders` 擋新單（members.sql＋重貼 orders-rpc.sql，已執行 2026-10-04）
 - [x] **後台改版：側欄分兩段**（2026-09-30 定案）——「值班 Daily」（總覽／訂單／空間地圖）
       與「設定 Settings」（設備管理／空間管理／會員管理／營業時間）分開，防誤觸：
       查看與寫入不同頁、設定段寫入一律確認 dialog、下架＝軟性停用不刪資料（`AdminLayout` 分組）
@@ -90,7 +91,7 @@
 - [x] 收罰款／欠繳擋新單（情境 13）：歸還時「已當場繳清」勾選、欠繳單顯示「收罰款」鈕
       （`penalty_paid`／`penalty_collected_by`＋`admin_collect_penalty`＋`submit_orders` 擋單，
       SQL 在 supabase/penalty-and-grades.sql，已執行）
-- [x] 營業時間通知（2026-10-02，`AdminHoursPage`）：公休日分類（學會辦活動／大總評／其他，`closed_dates.kind`，**需執行 supabase/closed-date-kinds.sql**），新增時自動發全站公告 template（不另設手寫公告頁；網頁版進通知鈴鐺標「公告」，一人一列寫 notifications type `announcement`，日後做 App 可在 insert 掛 webhook 推播）；法定假日進後台時自動匯入（`autoImportHolidays`，今年＋明年各一次，刪除＝照常營業不補回），與寒暑假封鎖同列「假期」。另：新增公休日／寒暑假封鎖時自動通知受影響訂單（`notifyClosedDateAffected`／`notifyBlackoutAffected`）。
+- [x] 營業時間通知（2026-10-02，`AdminHoursPage`）：公休日分類（學會辦活動／大總評／其他，`closed_dates.kind`，supabase/closed-date-kinds.sql 已執行），新增時自動發全站公告 template（不另設手寫公告頁；網頁版進通知鈴鐺標「公告」，一人一列寫 notifications type `announcement`，日後做 App 可在 insert 掛 webhook 推播）；法定假日進後台時自動匯入（`autoImportHolidays`，今年＋明年各一次，刪除＝照常營業不補回），與寒暑假封鎖同列「假期」。另：新增公休日／寒暑假封鎖時自動通知受影響訂單（`notifyClosedDateAffected`／`notifyBlackoutAffected`）。
 - **公告兩邊同步**（2026-10-02 定案）：Facebook 與系統全站通知**同一則公告兩邊都發**，不是互相取代
   （2026-07 原定「公告只走 Facebook、系統不做」已改）。計算面不變：系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
 - [x] **助教直借（`staff` 角色）** server 端（情境 10）：`submit_orders` 對 staff 免押金、送出即 in-progress；
@@ -121,18 +122,29 @@
 - [x] 同類型限一單（2026-09-30 新規則，2026-10-02 實作兩層）：小量設備／大量設備／個人空間／團體空間四格——
       購物車同類別一張（`useCart` 擋類型＋時段、舊購物車結帳擋、日期列點衝突類型當下提示）；
       **server 端 `submit_orders` 擋同類型未歸還單**（僅 student；orders-rpc.sql 已重貼 2026-10-03）
+- [ ] **與學會討論待定規則**（清單見 [sa-discussion.md](./sa-discussion.md)）：大量取件細節、遠期單範圍、
+      同類型一單的算法、公休公告措辭、一時段一間教室、四年級／碩士天數上限、團體空間免押金、以老師名義押證件（後台標示押金／證件／兩者）。開會後依決議改程式＋rental-rules
 - [ ] 遠期單阻擋（方向定案 2026-09-30）：起租日最遠可選範圍**待 Bernard 與學會討論定細則**
       （rental-rules 待確認 #4）——定案後改日曆可選範圍＋server 端擋
 - [x] Order 頁使用說明補「現金交易不找零」（2026-10-03，畫面＋PDF 收據兩處）
+- [x] **訪客瀏覽**（2026-10-20）：登入頁「訪客登入」→ 型錄；UI 全保留、可選日期看可借數量，
+      加入清單時才擋（`useCart.addToCart` 回「請先登入才能加入清單」，空間區塊選取先擋不清空）
 
 ## 階段 4：品質（可並行）
 
-- [x] 測試基礎：vitest 已建置（`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
+- [x] 測試基礎：vitest 已建置（`timeUtils`／`gradeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
 - [x] **安全修正（2026-10-03）**：`user_role()` 未登入回傳 NULL，後台 RPC 的 `<> 'admin'` 檢查被跳過
       （只帶 anon key 即可呼叫收押金／歸還／取消等 9 支）→ 改回傳 `'anon'`（supabase/user-role-fix.sql，已執行並驗證擋下）
 - [ ] Tech debt：拆 700 行大檔（`CartList`、`OrderPage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
 - [x] 設備圖片（2026-10-03）：前台清單／購物車原本寫死延長線圖，改讀設備 `image_url`（`equipmentService.imageSrc`，
       未上傳才用預設圖）——圖片之後由後台設備管理上傳即生效
+- [x] 清理一輪（2026-10-04）：刪死碼（舊 equipment-data.json、localStorage 通知 key、未用的 RPC 包裝與 SQL `extend_my_order`／`admin_mark_returned`）；
+      修 bug：購物車日期格式混用（ISO／YYYY-MM-DD，續訂後加購被誤擋）、改日期對話框大量設備／團體空間最早起租日顛倒、
+      教室押金寫死 5,000、公休日快取不失效、購物車可調數量／缺貨判斷未扣他人訂單（改同型錄可借數量，`useCartReserved`）；**submit_orders 補 server 端檢查**：押金單價改讀資料表（原信任前端傳值）、
+      下架／未開放擋單、類型配對、數量（小量 ≤ 9、大量／團體 ≥ 10、正整數、不重複）、日期與天數上限、大量設備 3 天前（orders-rpc.sql 需重貼）
+- [ ] 清理待辦（2026-10-04 審查）：
+      登入後年級是快照（9/1 升級或後台改了要重登）；押金 cap 5,000／9 件／10 件／14・30 天等常數散在多處；
+      種類／狀態標籤 7 份副本（做雙語時一併收斂）；舊多單購物車相容碼；~~使用說明 GuideDialog 與規則不符~~（2026-10-04 依新版使用說明修正兩處：3 天前限大量設備、押金上限空間／設備各 5,000）
 - [ ] `ProfilePage` 狀態圓點（`ProfilePage.tsx:642`）——等 Bernard 定 Profile 樣式再做
 
 ## 階段 5：手機版（純前端；等階段 1.5 桌面版驗收確認後再執行）
@@ -145,12 +157,13 @@ RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：
 - [ ] Order 訂單頁手機版（含 PDF 輸出的手機行為）
 - [ ] Profile 頁手機版檢查（無 `md:` 斷點，需逐一驗證）
 - [ ] Footer 手機版（目前 `hidden md:flex`）
-- [ ] 對話框（DateEditDialog、GuideDialog 等 max-w 較大的）在小螢幕的呈現
+- [ ] 對話框（DateEditDialog、InfoDialog 等 max-w 較大的）在小螢幕的呈現
 
 ## 階段 6：部署上線
 
 - [ ] Hosting：**維持 Vercel**（`vercel.json` 已設好）＋環境變數管理（Supabase URL／anon key）
 - [ ] 正式資料填入：真實學號名單、設備清單與庫存、空間資料
+- [ ] 自訂 SMTP（Supabase Auth → SMTP Settings）：內建寄信只寄得到專案團隊成員信箱且每小時限量，學生收不到忘記密碼信；Redirect URLs 加正式網域 `/reset-password`
 - [ ] 上線前驗收：照 [rental-rules.md](./rental-rules.md) 逐條走一遍真實流程
 
 ## 遠期構想（未排程）

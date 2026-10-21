@@ -20,6 +20,7 @@ import { classLabel } from '../utils/gradeUtils'
 import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
 import { slotLabel, pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
 import { useSuspension } from '../hooks/useSuspension'
+import { useT } from '../stores/langStore'
 
 type ProfileSection = 'history' | 'profile'
 
@@ -70,6 +71,7 @@ const toModifyLines = (r: Receipt): ModifyLine[] => {
 }
 
 const ProfilePage: React.FC = () => {
+  const t = useT()
   const { currentUser } = useAuth()
   const [currentSection, setCurrentSection] = useState<ProfileSection>('history')
   const [greeting, setGreeting] = useState('')
@@ -106,7 +108,7 @@ const ProfilePage: React.FC = () => {
           {/* 上半部：問候區塊（問候語小、放名字上方；名字靠左） */}
           <div className="mb-12 flex-shrink-0">
             <p className="font-['Inter',_sans-serif] text-white text-sm mb-2">
-              {greeting} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{greetingZh}</span>
+              {t(greeting, greetingZh)}
             </p>
             <p className="font-['Inter',_sans-serif] text-white text-xl">
               {currentUser?.studentId || 'A1234567'}
@@ -129,8 +131,7 @@ const ProfilePage: React.FC = () => {
                         : 'text-gray-scale2 hover:!text-white'
                     }`}
                   >
-                    <span className="font-['Inter',_sans-serif] block">{item.en}</span>
-                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif] block">{item.zh}</span>
+                    <span className="block">{t(item.en, item.zh)}</span>
                   </button>
                 ))}
               </nav>
@@ -157,6 +158,7 @@ const ProfilePage: React.FC = () => {
 
 // 租借歷史區塊
 const RentalHistorySection: React.FC = () => {
+  const t = useT()
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -370,7 +372,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-sm" style={{ color: 'var(--color-cyan-blue)' }}>
-            Pickup <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取件</span> {pickupText}
+            {t('Pickup', '取件')} {pickupText}
           </span>
         </div>
       )
@@ -389,7 +391,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-sm text-yellow">
-            Expires in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離繳交押金</span> {hoursRemaining} hrs
+            {t('Expires in', '距離繳交押金')} {hoursRemaining} hrs
             {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
           </span>
           {receipt.depositDate && receipt.depositSlot && (
@@ -425,7 +427,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-sm text-blue">
-            Due in <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">距離逾期</span> {timeText}
+            {t('Due in', '距離逾期')} {timeText}
           </span>
           {addMs > 0 && (
             <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs mt-1" style={{ color: 'var(--color-yellow)' }}>
@@ -445,7 +447,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-['Inter',_sans-serif] text-sm text-error2">
-            Penalty <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">累計罰款</span> NT$ {penalty.toLocaleString()}
+            {t('Penalty', '累計罰款')} NT$ {penalty.toLocaleString()}
           </span>
         </div>
       )
@@ -490,7 +492,7 @@ const RentalHistorySection: React.FC = () => {
                 className="px-3 py-1 flex items-center justify-center bg-gray-scale4 rounded-lg border border-transparent"
               >
                 <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap text-white">
-                  {bookingTypeLabel.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{bookingTypeLabel.zh}</span>
+                  {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
                 </span>
               </div>
             </div>
@@ -524,7 +526,7 @@ const RentalHistorySection: React.FC = () => {
                 }`}
               >
                 <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">
-                  Extend <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期</span>
+                  {t('Extend', '延期')}
                 </span>
               </button>
 
@@ -543,7 +545,7 @@ const RentalHistorySection: React.FC = () => {
                   }`}
                 >
                   <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">
-                    Edit <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">修改</span>
+                    {t('Edit', '修改')}
                   </span>
                 </button>
               )}
@@ -557,7 +559,7 @@ const RentalHistorySection: React.FC = () => {
                   className="font-['Inter',_sans-serif] text-xs whitespace-nowrap"
                   style={{ color: statusInfo.textColor }}
                 >
-                  {statusInfo.en} <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{statusInfo.zh}</span>
+                  {t(statusInfo.en, statusInfo.zh)}
                 </span>
               </div>
             </div>
@@ -622,6 +624,7 @@ const maskEmail = (e: string): string => {
 
 // 個人資料區塊
 const ProfileDataSection: React.FC = () => {
+  const t = useT()
   const { currentUser } = useAuth()
   const [phone, setPhone] = useState(currentUser?.phone || '')
   const [editMode, setEditMode] = useState<'password' | 'phone' | null>(null)
@@ -672,58 +675,48 @@ const ProfileDataSection: React.FC = () => {
         {isSuspended ? (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-md">
-                Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span>
-              </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-md">
-                您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span>
+              <p className="text-white text-md">
+                {t(
+                  <>Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span></>,
+                  <>您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span></>
+                )}
               </p>
             </div>
             <div>
-              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
-                An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.
-              </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">
-                有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜
-              </p>
+              <p className="text-gray-scale2 text-xs">{t('An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.', '有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜')}</p>
             </div>
           </>
         ) : worstOverdueDays > 0 ? (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-md">
-                Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span>
-              </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-md">
-                帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span>
+              <p className="text-white text-md">
+                {t(
+                  <>Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span></>,
+                  <>帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span></>
+                )}
               </p>
             </div>
             <div>
-              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
-                You have an order overdue for {worstOverdueDays} business day{worstOverdueDays > 1 ? 's' : ''}. At 6 days your account will be suspended — please return it as soon as possible.
-              </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">
-                您有訂單已逾期 {worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還
+              <p className="text-gray-scale2 text-xs">
+                {t(
+                  `You have an order overdue for ${worstOverdueDays} business day${worstOverdueDays > 1 ? 's' : ''}. At 6 days your account will be suspended — please return it as soon as possible.`,
+                  `您有訂單已逾期 ${worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還`
+                )}
               </p>
             </div>
           </>
         ) : (
           <>
             <div className="mb-6">
-              <p className="font-['Inter',_sans-serif] text-white text-md">
-                You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span>
-              </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-md">
-                您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span>
+              <p className="text-white text-md">
+                {t(
+                  <>You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span></>,
+                  <>您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span></>
+                )}
               </p>
             </div>
             <div>
-              <p className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
-                You return your rentals right on time, with no overdue records.
-              </p>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-xs">
-                您非常準時地歸還租借，沒有任何逾期記錄
-              </p>
+              <p className="text-gray-scale2 text-xs">{t('You return your rentals right on time, with no overdue records.', '您非常準時地歸還租借，沒有任何逾期記錄')}</p>
             </div>
           </>
         )}
@@ -738,11 +731,11 @@ const ProfileDataSection: React.FC = () => {
         {/* 第一行：姓名和班級 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Name</span> <span className="font-chinese">姓名</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2">{t('Name', '姓名')}</label>
             <p className="font-chinese text-white text-sm">{currentUser?.name || '阿志'}</p>
           </div>
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Class</span> <span className="font-chinese">班級</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2">{t('Class', '班級')}</label>
             <p className="font-chinese text-white text-sm">
               {/* 班級以名單資料為準（grade＋class_name，同後台會員管理），不從學號推 */}
               {classLabel(currentUser?.year, currentUser?.className) || '—'}
@@ -753,11 +746,11 @@ const ProfileDataSection: React.FC = () => {
         {/* 第二行：帳號和密碼 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Student ID</span> <span className="font-chinese">學號</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2">{t('Student ID', '學號')}</label>
             <p className="font-english text-white text-sm">{currentUser?.studentId || 'A111144001'}</p>
           </div>
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Password</span> <span className="font-chinese">密碼</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2">{t('Password', '密碼')}</label>
             <div className="flex items-center gap-3">
               {/* 密碼僅存雜湊，無法顯示明文；此處固定遮罩，變更走右側編輯 */}
               <span className="font-english text-white text-sm flex-1">••••••••</span>
@@ -776,7 +769,7 @@ const ProfileDataSection: React.FC = () => {
         {/* 第三行：手機號碼和Email */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Phone</span> <span className="font-chinese">手機號碼</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2">{t('Phone', '手機號碼')}</label>
             <div className="flex items-center gap-3">
               <p className="font-english text-white text-sm flex-1">
                 {phone ? maskPhone(phone) : '未設定'}
@@ -792,7 +785,7 @@ const ProfileDataSection: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2"><span className="font-english">Email</span> <span className="font-chinese">電子郵件</span></label>
+            <label className="text-gray-scale2 text-xs block mb-2">{t('Email', '電子郵件')}</label>
             <p className="font-english text-white text-sm">
               {maskEmail((currentUser?.email || `${currentUser?.studentId}@gm2.usc.edu.tw`).toLowerCase())}
             </p>

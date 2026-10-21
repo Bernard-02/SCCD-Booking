@@ -113,7 +113,7 @@ const OrderActionDialog: React.FC<Props> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] max-w-lg w-full mx-4 rounded-lg"
+        className="bg-[#151515] border border-[#545454] max-w-lg w-full mx-4 rounded-2xl"
         onClick={e => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >

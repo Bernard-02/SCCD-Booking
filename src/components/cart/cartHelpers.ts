@@ -26,13 +26,8 @@ export const formatYmd = (date: Date): string => {
   return `${y}/${m}/${d}`
 }
 
-/** Date → 'YYYY-MM-DD'（補零，用作日期 key） */
-export const toDateKey = (date: Date): string => {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+/** Date → 'YYYY-MM-DD'（同 timeUtils） */
+export { toDateKey } from '../../utils/timeUtils'
 
 export const AREA_NAME_MAP: Record<string, string> = {
   'square': '中庭',

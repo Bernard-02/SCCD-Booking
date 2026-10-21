@@ -4,9 +4,9 @@
  * 模組層快取：整個 SPA 生命週期只抓一次，所有 hook 共用同一份。
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import type { Equipment, EquipmentData } from '../types/equipment'
+import type { CartItem, Equipment, EquipmentData } from '../types/equipment'
 
 interface EquipmentRow {
   id: string
@@ -122,6 +122,37 @@ export async function fetchEquipmentReserved(
       row.item_id,
       { reserved: Number(row.reserved), onHold: Number(row.on_hold) }
     ])
+  )
+}
+
+/**
+ * 購物車設備在各自時段已被生效訂單佔用的量（含待繳押金 On Hold）。
+ * 先送先贏：購物車不佔庫存，別人先送出，我車裡超過剩餘量的就要調整（同購物平台）。切回分頁時重抓。
+ */
+export const useCartReserved = (cart: CartItem[]): ((item: CartItem) => number) => {
+  const periods = [...new Set(cart.filter(i => i.category === 'equipment').map(i => `${i.startDate}_${i.endDate}`))]
+    .sort().join('|')
+  const [map, setMap] = useState<Record<string, Record<string, ReservedInfo>>>({})
+
+  useEffect(() => {
+    if (!periods) { setMap({}); return }
+    let alive = true
+    const load = () => {
+      Promise.all(periods.split('|').map(p => {
+        const [s, e] = p.split('_')
+        return fetchEquipmentReserved(s, e).then(r => [p, r] as const)
+      }))
+        .then(entries => { if (alive) setMap(Object.fromEntries(entries)) })
+        .catch(err => console.error('讀取設備佔用失敗:', err))
+    }
+    load()
+    window.addEventListener('focus', load)
+    return () => { alive = false; window.removeEventListener('focus', load) }
+  }, [periods])
+
+  return useCallback(
+    (item: CartItem) => map[`${item.startDate}_${item.endDate}`]?.[item.id]?.reserved ?? 0,
+    [map]
   )
 }
 

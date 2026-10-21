@@ -8,6 +8,10 @@ import { cartGroupKey } from '../types/equipment'
 import type { CartItem, Equipment } from '../types/equipment'
 import { useEquipmentData } from '../services/equipmentService'
 import { useSuspension } from './useSuspension'
+import { useAuth } from '../contexts/AuthContext'
+
+// 訪客可逛型錄、選日期，加入清單才要求登入
+export const LOGIN_REQUIRED_MSG = '請先登入才能加入清單'
 
 const CART_STORAGE_KEY = 'sccd-rental-cart'
 
@@ -17,6 +21,7 @@ export const useCart = () => {
   const equipmentData = useEquipmentData()
   // 停權帳號連加入購物車都擋（情境 7；送單端 RPC 仍是最終防線）
   const isSuspended = useSuspension()
+  const { isAuthenticated } = useAuth()
 
   // 從 localStorage 載入購物車
   const loadCart = useCallback(() => {
@@ -73,16 +78,6 @@ export const useCart = () => {
         .reduce((sum, item) => sum + item.quantity, 0)
     },
     [cart]
-  )
-
-  // 動態計算可用數量
-  const getAvailableQuantity = useCallback(
-    (equipmentId: string): number => {
-      const originalQty = getOriginalQuantity(equipmentId)
-      const cartQty = getCartQuantity(equipmentId)
-      return Math.max(0, originalQty - cartQty)
-    },
-    [getOriginalQuantity, getCartQuantity]
   )
 
   // 檢查添加項目後是否超過時段押金上限
@@ -226,6 +221,10 @@ export const useCart = () => {
   // 回傳 { ok, reason }，由呼叫端以 toast 呈現，不再用原生 alert
   const addToCart = useCallback(
     (item: CartItem): { ok: boolean; reason?: string } => {
+      if (!isAuthenticated) {
+        return { ok: false, reason: LOGIN_REQUIRED_MSG }
+      }
+
       // 停權檢查
       if (isSuspended) {
         return { ok: false, reason: '帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會' }
@@ -267,7 +266,7 @@ export const useCart = () => {
       }
       return { ok: true }
     },
-    [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit, isSuspended]
+    [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit, isSuspended, isAuthenticated]
   )
 
   // 更新設備數量
@@ -350,7 +349,6 @@ export const useCart = () => {
     isSuspended,
     getOriginalQuantity,
     getCartQuantity,
-    getAvailableQuantity,
     addToCart,
     updateEquipmentQuantity,
     removeFromCart,

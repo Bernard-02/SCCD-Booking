@@ -10,8 +10,11 @@
 @theme {
   --font-weight-bold: 600;
 
-  /* 字級系統：7 級，text-sm（1rem）為基準。xs/sm/lg/xl/2xl/3xl 覆寫 Tailwind 預設值（md 為新增）。
-     舊的 text-base/4xl 與 css/typography.css 的 text-* class 屬遷移期過渡，逐頁換成這 7 級 */
+  /* 字級系統：8 級，text-sm（1rem）為基準。xs/sm/lg/xl/2xl/3xl 覆寫 Tailwind 預設值（2xs、md 為新增）。
+     內文三階對齊 Material 3 Body L/M/S：sm 16＝主要內文、xs 14＝次要內文、2xs 12＝錯誤訊息／輔助說明／徽章（不放長段落）。
+     舊的 text-base/4xl 與 css/typography.css 的 text-* class 屬遷移期過渡，逐頁換成這 8 級 */
+  --text-2xs: 0.75rem;
+  --text-2xs--line-height: 1.4;
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.4;
   --text-sm: 1rem;

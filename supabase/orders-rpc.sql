@@ -25,6 +25,10 @@ declare
   v_sophomore_up boolean; -- 大二以上（含碩士）；grade 未填從嚴視為大一
   v_is_equip boolean;     -- 本單為設備單（分單後一張單全設備或全空間）
   v_open text;            -- 同類型未歸還單的單號（同類型限一單）
+  v_today date := (now() at time zone 'Asia/Taipei')::date;
+  v_total int;            -- 本單件數（設備算數量、空間每格 1）
+  v_dep int;              -- 單價（從資料表讀，不信任前端）
+  v_active boolean;
 begin
   if v_uid is null then
     raise exception '未登入';
@@ -36,6 +40,10 @@ begin
   -- 休學擋單（2026-10-01，後台會員管理標記；欄位見 members.sql）：同停權，只擋新借
   if (select on_leave from public.students where id = v_uid) then
     raise exception '帳號目前標記為休學，暫停租借；復學後請洽系學會恢復';
+  end if;
+  -- 已畢業（2026-10-04，後台手動標記；欄位見 members.sql）：不能再借。有東西沒還的仍可登入處理歸還
+  if (select graduated from public.students where id = v_uid) then
+    raise exception '帳號已停用（已畢業），無法送出預約';
   end if;
   -- 罰款欠繳擋單（情境 13，2026-09-26）：有未繳清的逾期罰款者不可再下單（僅擋 student）
   if public.user_role() = 'student' and exists (
@@ -69,6 +77,41 @@ begin
       raise exception '設備與空間須分開成兩張訂單';
     end if;
     v_is_equip := (v_order -> 'items' -> 0 ->> 'item_type') = 'equipment';
+
+    -- 基本規則（2026-10-04 補 server 端，原僅前端）：類型配對、數量、日期、天數上限
+    if v_order ->> 'booking_type' not in ('little', case when v_is_equip then 'mass-personal' else 'mass-group' end) then
+      raise exception '訂單類型不符';
+    end if;
+    if exists (select 1 from jsonb_array_elements(v_order -> 'items') i
+               where coalesce((i ->> 'quantity')::int, 0) < 1
+                  or (i ->> 'item_type' <> 'equipment' and (i ->> 'quantity')::int <> 1)) then
+      raise exception '數量需為正整數';
+    end if;
+    if (select count(distinct i ->> 'item_id') from jsonb_array_elements(v_order -> 'items') i)
+       <> jsonb_array_length(v_order -> 'items') then
+      raise exception '品項重複';
+    end if;
+    select sum((i ->> 'quantity')::int) into v_total from jsonb_array_elements(v_order -> 'items') i;
+    if v_is_equip and v_order ->> 'booking_type' = 'little' and v_total > 9 then
+      raise exception '小量訂單最多 9 件（目前 % 件）', v_total;
+    end if;
+    if v_order ->> 'booking_type' <> 'little' and v_total < 10 then
+      raise exception '大量／團體訂單需滿 10 件（目前 % 件）', v_total;
+    end if;
+    if (v_order ->> 'start_date')::date < v_today
+       or (v_order ->> 'end_date')::date < (v_order ->> 'start_date')::date then
+      raise exception '租借日期不正確，請重新選擇';
+    end if;
+    if v_is_equip and v_order ->> 'booking_type' = 'mass-personal'
+       and (v_order ->> 'start_date')::date < v_today + 3 then
+      raise exception '大量設備需於 3 天前預約';
+    end if;
+    -- 天數上限同前端 Calendar（迄日－起日）：設備 30、空間 14（大四／碩士 30，同 gradeUtils.isSeniorOrGraduate）
+    if (v_order ->> 'end_date')::date - (v_order ->> 'start_date')::date >
+       case when v_is_equip or coalesce(v_grade, '') ~ '^4$' or coalesce(v_grade, '') ~ '(大四|碩)'
+            then 30 else 14 end then
+      raise exception '租借天數超過上限';
+    end if;
 
     -- 重複下單檢查（rental-rules §6，原僅前端）：同一時段同類別（設備／空間）僅能有一張小量訂單
     if v_order ->> 'booking_type' = 'little' and exists (
@@ -124,15 +167,22 @@ begin
 
     -- 庫存檢查：鎖定設備列（for update），避免兩人同時搶最後一件。
     -- 佔用 = 生效訂單（pending / in-progress / overdue）中與本時段重疊的數量
+    -- 押金於伺服器端計算：單價一律讀資料表（不信任前端傳值），設備／空間各 cap 5,000
+    v_equip_dep := 0;
+    v_space_dep := 0;
     for v_item in select * from jsonb_array_elements(v_order -> 'items') loop
       if v_item ->> 'item_type' = 'equipment' then
-        select stock_quantity into v_stock
+        select stock_quantity, deposit, is_active into v_stock, v_dep, v_active
           from public.equipment
           where id = v_item ->> 'item_id'
           for update;
         if not found then
           raise exception '設備不存在：%', v_item ->> 'name';
         end if;
+        if not v_active then
+          raise exception '「%」已下架，請從購物車移除', v_item ->> 'name';
+        end if;
+        v_equip_dep := v_equip_dep + v_dep * (v_item ->> 'quantity')::int;
 
         select coalesce(sum(oi.quantity), 0) into v_reserved
           from public.order_items oi
@@ -155,12 +205,16 @@ begin
         end if;
 
         -- 空間衝突檢查：鎖定該格（序列化同格併發），時段重疊即擋
-        perform 1 from public.space
+        select deposit, is_active into v_dep, v_active from public.space
           where id = v_item ->> 'item_id'
           for update;
         if not found then
           raise exception '空間不存在：%', v_item ->> 'name';
         end if;
+        if not v_active then
+          raise exception '「%」目前未開放，請從購物車移除', v_item ->> 'name';
+        end if;
+        v_space_dep := v_space_dep + v_dep;
 
         if exists (
           select 1
@@ -174,18 +228,11 @@ begin
         ) then
           raise exception '「%」該時段已被預約', v_item ->> 'name';
         end if;
+      else
+        raise exception '品項類型不正確';
       end if;
     end loop;
 
-    -- 押金於伺服器端計算：設備／空間各 cap 5,000（不信任前端傳值）
-    select coalesce(sum((i ->> 'deposit')::int * (i ->> 'quantity')::int), 0)
-      into v_equip_dep
-      from jsonb_array_elements(v_order -> 'items') i
-      where i ->> 'item_type' = 'equipment';
-    select coalesce(sum((i ->> 'deposit')::int * (i ->> 'quantity')::int), 0)
-      into v_space_dep
-      from jsonb_array_elements(v_order -> 'items') i
-      where i ->> 'item_type' in ('space-block', 'classroom');
     v_equip_dep := least(v_equip_dep, 5000);
     v_space_dep := least(v_space_dep, 5000);
 
@@ -221,7 +268,9 @@ begin
            i ->> 'item_id',
            i ->> 'name',
            (i ->> 'quantity')::int,
-           (i ->> 'deposit')::int
+           case when i ->> 'item_type' = 'equipment'
+             then (select e.deposit from public.equipment e where e.id = i ->> 'item_id')
+             else (select s.deposit from public.space s where s.id = i ->> 'item_id') end
     from jsonb_array_elements(v_order -> 'items') i;
 
     insert into public.notifications (student_id, type, title, message, link)
@@ -294,43 +343,9 @@ begin
 end;
 $$;
 
--- 後台：整單歸還（in-progress / overdue → returned）。僅 admin（情境 6）。
--- p_penalty = 系學會確認的最終罰款（逾期單填試算金額、可調；準時歸還填 0），寫入 penalty_total。
--- 部分歸還走拆單（另一支 RPC，之後做）；此支只處理整單歸還。歸還後佔用自動釋放（returned 不佔用）。
--- p_handler = 值班經手幹部姓名（快照寫入 orders.returned_by，供追溯）。
-drop function if exists public.admin_mark_returned(text, integer); -- 舊簽名（未帶經手人）
-create or replace function public.admin_mark_returned(p_rental_number text, p_penalty int default 0, p_handler text default null)
-returns void
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  v_student uuid;
-begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
-  if p_penalty < 0 then
-    raise exception '罰款金額不可為負';
-  end if;
-
-  update public.orders
-    set status = 'returned',
-        penalty_total = p_penalty,
-        returned_by = p_handler
-    where rental_number = p_rental_number and status in ('in-progress', 'overdue')
-    returning student_id into v_student;
-
-  if not found then
-    raise exception '訂單不存在或非可歸還狀態（僅租借中／逾期可歸還）';
-  end if;
-
-  insert into public.notifications (student_id, type, title, message, link)
-  values (v_student, 'success', '已歸還',
-          '訂單 ' || p_rental_number || ' 已完成歸還'
-          || case when p_penalty > 0 then '，罰款 NT$ ' || p_penalty else '' end || '。', '/profile');
-end;
-$$;
+-- 後台整單歸還已改走 admin_mark_returned_partial（partial-extend.sql，全勾＝整單），舊版移除（2026-10-04）
+drop function if exists public.admin_mark_returned(text, integer);
+drop function if exists public.admin_mark_returned(text, integer, text);
 
 -- 查詢設備在指定時段的佔用量（給型錄顯示可借數量；只回傳統計，不含個資）
 -- reserved = pending + in-progress + overdue 的重疊訂單數量；on_hold = 其中押金還沒繳的部分
@@ -373,109 +388,5 @@ as $$
     and o.end_date >= p_start;
 $$;
 
--- 延期自己的訂單：僅限租借中（in-progress）、未延期過、1-7 天。
--- 撞期檢查（情境 8 定案 2026-07-14）：逐品項檢查延長區間有無被其他訂單佔用，
--- 全部品項都能延才放行，並列出撞期品項；部分延期＝拆子單（2026-09-26 定案前台開放，待實作）。
--- 封鎖檢查（情境 11-a 補完 2026-09-26）：student 延長區間不得跨入寒暑假封鎖；admin／staff 不受限。
-create or replace function public.extend_my_order(p_rental_number text, p_days int)
-returns void
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-  v_order public.orders%rowtype;
-  v_new_end date;
-  v_item record;
-  v_stock int;
-  v_reserved int;
-  v_conflicts text[] := '{}';
-begin
-  if v_uid is null then
-    raise exception '未登入';
-  end if;
-  if p_days < 1 or p_days > 7 then
-    raise exception '延期天數需為 1-7 天';
-  end if;
-
-  select * into v_order
-    from public.orders
-    where rental_number = p_rental_number and student_id = v_uid
-    for update;
-
-  if not found then
-    raise exception '查無此訂單';
-  end if;
-  if v_order.status <> 'in-progress' then
-    raise exception '僅租借中的訂單可延期';
-  end if;
-  if v_order.has_extended then
-    raise exception '此訂單已延期過（僅可延期乙次）';
-  end if;
-  -- 需在原歸還日前三天（含）提出（rental-rules §11，官方原文，2026-07-14 改為程式強制）：
-  -- 申請當日須 ≤ 歸還日 − 3 天，過期即不可延、訂單照常結束（仍想借請重新下單走先來後到）。
-  if (now() at time zone 'Asia/Taipei')::date > v_order.end_date - 3 then
-    raise exception '延期須在原歸還日前三天提出，已逾期限無法延期';
-  end if;
-
-  -- 延長區間 = [原歸還日+1, 新歸還日]，逐品項檢查與其他生效訂單的衝突
-  v_new_end := v_order.end_date + p_days;
-
-  -- 寒暑假封鎖：延長區間不得跨入封鎖期（最後歸還日＝放假前一日）；admin／staff 不受限
-  if public.user_role() = 'student' and exists (
-    select 1 from public.rental_blackouts b
-    where b.start_date <= v_new_end
-      and b.end_date >= v_order.end_date + 1
-  ) then
-    raise exception '無法延期：延長期間適逢寒暑假封鎖，最後歸還日為放假前一日';
-  end if;
-  for v_item in
-    select item_type, item_id, name, quantity
-    from public.order_items where order_id = v_order.id
-  loop
-    if v_item.item_type = 'equipment' then
-      select stock_quantity into v_stock
-        from public.equipment where id = v_item.item_id for update;
-
-      select coalesce(sum(oi.quantity), 0) into v_reserved
-        from public.order_items oi
-        join public.orders o on o.id = oi.order_id
-        where oi.item_type = 'equipment'
-          and oi.item_id = v_item.item_id
-          and o.id <> v_order.id
-          and o.status in ('pending', 'in-progress', 'overdue')
-          and o.start_date <= v_new_end
-          and o.end_date >= v_order.end_date + 1;
-
-      if v_item.quantity > coalesce(v_stock, 0) - v_reserved then
-        v_conflicts := v_conflicts || v_item.name;
-      end if;
-
-    else -- space-block / classroom
-      if exists (
-        select 1
-        from public.order_items oi
-        join public.orders o on o.id = oi.order_id
-        where oi.item_type in ('space-block', 'classroom')
-          and oi.item_id = v_item.item_id
-          and o.id <> v_order.id
-          and o.status in ('pending', 'in-progress', 'overdue')
-          and o.start_date <= v_new_end
-          and o.end_date >= v_order.end_date + 1
-      ) then
-        v_conflicts := v_conflicts || v_item.name;
-      end if;
-    end if;
-  end loop;
-
-  if array_length(v_conflicts, 1) > 0 then
-    raise exception '無法延期：「%」於延長期間已被其他訂單預約。如需延期其餘品項，請聯絡系學會協助處理',
-      array_to_string(v_conflicts, '」、「');
-  end if;
-
-  update public.orders
-    set end_date = v_new_end,
-        has_extended = true
-    where id = v_order.id;
-end;
-$$;
+-- 學生延期已改走 extend_my_order_partial（partial-extend.sql，全勾＝整單延，含撞期／封鎖檢查），舊版移除（2026-10-04）
+drop function if exists public.extend_my_order(text, integer);

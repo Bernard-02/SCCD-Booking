@@ -18,6 +18,14 @@ export const toDateKey = (d: Date): string => {
   return `${d.getFullYear()}-${m}-${dd}`
 }
 
+/** 最早可選起租日：大量設備今天＋3 天，其餘今天（rental-rules §2；server 端 submit_orders 同檢查） */
+export const minStartDate = (category: 'equipment' | 'space', bookingType: string): Date => {
+  const now = new Date()
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (category === 'equipment' && bookingType === 'mass-personal') d.setDate(d.getDate() + 3)
+  return d
+}
+
 /** 是否為公休日（週六日或臨時公休） */
 export const isOffDay = (date: Date, closedDates: ReadonlySet<string>): boolean => {
   const day = date.getDay()
@@ -146,7 +154,7 @@ export const overdueBusinessDays = (
 
 /**
  * 延期須在原歸還日前三天（含）提出（rental-rules §11）：今天 ≤ 歸還日 − 3 天。
- * 過期限即不可延；伺服器端 extend_my_order 亦有同一道防線，前端此判斷是 UX。
+ * 過期限即不可延；伺服器端 extend_my_order_partial 亦有同一道防線，前端此判斷是 UX。
  */
 export const isWithinExtendWindow = (endDate: string, now: Date = new Date()): boolean => {
   const today = new Date(now)

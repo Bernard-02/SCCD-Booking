@@ -80,6 +80,20 @@ describe('設備缺貨', () => {
     const { stockAvailabilityValidation } = run([a, b], {}, { tripod: 3 })
     expect(stockAvailabilityValidation.valid).toBe(false)
   })
+
+  it('別人先送出（含待繳押金）佔掉的量要扣 → 購物車超過剩餘量即缺貨', () => {
+    const cart = [item({ quantity: 3 })]
+    const { stockAvailabilityValidation } = renderHook(() =>
+      useCartValidation({
+        cart,
+        bookingDetails: {},
+        getOriginalQuantity: () => 5,
+        getCartQuantity: () => 3,
+        getReserved: () => 3
+      })
+    ).result.current
+    expect(stockAvailabilityValidation.valid).toBe(false)
+  })
 })
 
 describe('借用資訊', () => {

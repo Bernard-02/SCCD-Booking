@@ -14,7 +14,6 @@ interface CalendarProps {
   onDateSelect: (startDate: Date | null, endDate: Date | null) => void
   isMobile?: boolean
   minSelectableDate?: Date
-  bookingType?: 'personal' | 'group'
   maxDays?: number
   variant?: 'default' | 'dialog'
   originalStartDate?: string
@@ -49,7 +48,6 @@ const Calendar: React.FC<CalendarProps> = ({
   onDateSelect,
   isMobile = false,
   minSelectableDate,
-  bookingType = 'personal',
   maxDays = 30,
   variant = 'default',
   originalStartDate,
@@ -88,11 +86,6 @@ const Calendar: React.FC<CalendarProps> = ({
   const getMinAllowedDate = () => {
     const base = minSelectableDate ? new Date(minSelectableDate) : new Date(today)
     base.setHours(0, 0, 0, 0)
-
-    // 大量模式：最小可選日期是今天+3天
-    if (!minSelectableDate && bookingType === 'group') {
-      base.setDate(base.getDate() + 3)
-    }
     return base
   }
 

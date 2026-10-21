@@ -19,7 +19,6 @@ const RentalListPage = lazy(() => import('./pages/RentalListPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
 const OrderPage = lazy(() => import('./pages/OrderPage'))
-const AboutPage = lazy(() => import('./pages/AboutPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
 const AdminHomePage = lazy(() => import('./pages/AdminHomePage'))
@@ -89,9 +88,6 @@ function App() {
                   <Route path="spaces" element={<AdminSpacesPage />} />
                   <Route path="space-map" element={<AdminSpaceMapPage />} />
                 </Route>
-
-                {/* 關於 */}
-                <Route path="/about" element={<AboutPage />} />
 
                 {/* 404 重定向到首頁 */}
                 <Route path="*" element={<Navigate to="/" replace />} />

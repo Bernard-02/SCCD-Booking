@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCart } from './useCart'
+import { useCart, LOGIN_REQUIRED_MSG } from './useCart'
 import { useSuspension } from './useSuspension'
 import type { CartItem } from '../types/equipment'
 
@@ -16,6 +16,8 @@ vi.mock('../services/equipmentService', () => ({
 vi.mock('./useSuspension', () => ({
   useSuspension: vi.fn(() => false)
 }))
+const auth = vi.hoisted(() => ({ isAuthenticated: true }))
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => auth }))
 
 const item = (overrides: Partial<CartItem> = {}): CartItem => ({
   id: 'tripod',
@@ -33,6 +35,7 @@ const item = (overrides: Partial<CartItem> = {}): CartItem => ({
 beforeEach(() => {
   localStorage.clear()
   vi.mocked(useSuspension).mockReturnValue(false)
+  auth.isAuthenticated = true
 })
 
 describe('addToCart', () => {
@@ -140,6 +143,16 @@ describe('addToCart', () => {
     act(() => { res = result.current.addToCart(item()) })
     expect(res!.ok).toBe(false)
     expect(res!.reason).toContain('停權')
+    expect(result.current.cart).toHaveLength(0)
+  })
+
+  it('訪客（未登入）被擋且購物車不變', () => {
+    auth.isAuthenticated = false
+    const { result } = renderHook(() => useCart())
+    let res: { ok: boolean; reason?: string }
+    act(() => { res = result.current.addToCart(item()) })
+    expect(res!.ok).toBe(false)
+    expect(res!.reason).toBe(LOGIN_REQUIRED_MSG)
     expect(result.current.cart).toHaveLength(0)
   })
 })

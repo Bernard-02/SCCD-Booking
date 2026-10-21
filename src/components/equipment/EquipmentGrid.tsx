@@ -13,6 +13,7 @@ import { useEquipmentData, fetchEquipmentReserved } from '../../services/equipme
 import type { ReservedInfo } from '../../services/equipmentService'
 import { toDateKey } from '../cart/cartHelpers'
 import Toast from '../common/Toast'
+import { useT } from '../../stores/langStore'
 
 interface EquipmentGridProps {
   selectedCategory: string
@@ -20,6 +21,7 @@ interface EquipmentGridProps {
 }
 
 const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusFilters }) => {
+  const t = useT()
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([])
   // 數量允許暫存空字串：使用者可先清空再輸入，失焦時若無有效值會回到 1
@@ -229,8 +231,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       deposit: item.deposit,
       image: item.mainImage,
       quantity: quantity,
-      startDate: equipmentDates.startDate!.toISOString(),
-      endDate: equipmentDates.endDate!.toISOString(),
+      startDate: toDateKey(equipmentDates.startDate!),
+      endDate: toDateKey(equipmentDates.endDate!),
       bookingType: equipmentDates.bookingType
     })
 
@@ -315,23 +317,19 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         <div></div>
 
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-left">
-          <div className="font-['Inter',_sans-serif]">Favorites</div>
-          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">收藏</div>
+          <div>{t('Favorites', '收藏')}</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          <div className="font-['Inter',_sans-serif]">Total Qty</div>
-          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">總數量</div>
+          <div>{t('Total Qty', '總數量')}</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          <div className="font-['Inter',_sans-serif]">Available</div>
-          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">可借數量</div>
+          <div>{t('Available', '可借數量')}</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
-            <div className="font-['Inter',_sans-serif]">On Hold</div>
-            <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">待繳押金</div>
+            <div>{t('On Hold', '待繳押金')}</div>
           </div>
           <div className="relative group">
             <span className="material-symbols-outlined text-gray-scale2 cursor-help" style={{ fontSize: '20px' }}>
@@ -346,12 +344,10 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
           </div>
         </div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          <div className="font-['Inter',_sans-serif]">Deposit</div>
-          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">押金/個</div>
+          <div>{t('Deposit', '押金/個')}</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
-          <div className="font-['Inter',_sans-serif]">Quantity</div>
-          <div className="font-['Inter','Noto_Sans_TC',_sans-serif]">數量</div>
+          <div>{t('Quantity', '數量')}</div>
         </div>
         <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center"></div>
       </div>
@@ -375,8 +371,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                 deposit: item.deposit,
                 image: item.mainImage,
                 quantity: quantity,
-                startDate: equipmentDates.startDate?.toISOString() || '',
-                endDate: equipmentDates.endDate?.toISOString() || '',
+                startDate: equipmentDates.startDate ? toDateKey(equipmentDates.startDate) : '',
+                endDate: equipmentDates.endDate ? toDateKey(equipmentDates.endDate) : '',
                 bookingType: equipmentDates.bookingType
               }).allowed === false
 
@@ -529,8 +525,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="font-['Inter',_sans-serif] text-gray-scale2 text-sm">No Equipment Found</p>
-          <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale2 text-sm">找不到符合條件的設備</p>
+          <p className="text-gray-scale2 text-sm">{t('No Equipment Found', '找不到符合條件的設備')}</p>
         </div>
       )}
     </div>

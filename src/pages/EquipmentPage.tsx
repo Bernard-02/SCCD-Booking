@@ -12,8 +12,10 @@ import DatePickerBar from '../components/DatePickerBar'
 import { EQUIPMENT_CATEGORIES } from '../types/equipment'
 import type { BookingType } from '../types/equipment'
 import { useDateSelection } from '../contexts/DateSelectionContext'
+import { useT } from '../stores/langStore'
 
 const EquipmentPage: React.FC = () => {
+  const t = useT()
   const location = useLocation()
   const navigate = useNavigate()
   const { setEquipmentDates } = useDateSelection()
@@ -29,8 +31,11 @@ const EquipmentPage: React.FC = () => {
     const bookingTypeStr = searchParams.get('bookingType')
 
     if (startDateStr && endDateStr) {
+      // 'YYYY-MM-DD' 會被當 UTC 解析（台灣早上 8 點），歸零成本地午夜
       const start = new Date(startDateStr)
       const end = new Date(endDateStr)
+      start.setHours(0, 0, 0, 0)
+      end.setHours(0, 0, 0, 0)
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
         setEquipmentDates(start, end, (bookingTypeStr as BookingType) || 'little')
       }
@@ -89,17 +94,17 @@ const EquipmentPage: React.FC = () => {
               <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-xs cursor-pointer">
                 {fromCart ? (
                   <>
-                    <span className="font-['Inter',_sans-serif]">Cart</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">購物車</span>
+                    {t('Cart', '購物車')}
                   </>
                 ) : (
                   <>
-                    <span className="font-['Inter',_sans-serif]">Category</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">類別</span>
+                    {t('Category', '類別')}
                   </>
                 )}
               </a>
               <span className="breadcrumb-separator text-xs">/</span>
               <span className="breadcrumb-item text-xs">
-                <span className="font-['Inter',_sans-serif]">Equipment</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">設備</span>
+                {t('Equipment', '設備')}
               </span>
             </nav>
           </div>
@@ -110,12 +115,7 @@ const EquipmentPage: React.FC = () => {
           <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden">
             {/* 標題 - 加上 padding-top 避免被麵包屑遮擋 */}
             <div className="flex-shrink-0">
-              <h1 className="font-['Inter',_sans-serif] text-white text-xl pt-12">
-                Equipment
-              </h1>
-              <h1 className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xl mb-6">
-                設備
-              </h1>
+              <h1 className="text-white text-xl mb-6">{t('Equipment', '設備')}</h1>
             </div>
 
             {/* 下方區塊：分類 Filter + Legend */}
@@ -136,7 +136,7 @@ const EquipmentPage: React.FC = () => {
                         {category.icon}
                       </span>
                       <span>
-                        <span className="font-['Inter',_sans-serif]">{category.en}</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{category.zh}</span>
+                        {t(category.en, category.zh)}
                       </span>
                     </button>
                   </div>
@@ -157,7 +157,7 @@ const EquipmentPage: React.FC = () => {
                     <span className={`text-xs transition-colors ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">全時段借用</span>
+                      {t('Available', '全時段借用')}
                     </span>
                   </button>
 
@@ -169,7 +169,7 @@ const EquipmentPage: React.FC = () => {
                     <span className={`text-xs transition-colors ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Unavailable</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">不可借用</span>
+                      {t('Unavailable', '不可借用')}
                     </span>
                   </button>
 
@@ -181,7 +181,7 @@ const EquipmentPage: React.FC = () => {
                     <span className={`text-xs transition-colors ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
-                      <span className="font-['Inter',_sans-serif]">Partially Available</span> <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">部分時段借用</span>
+                      {t('Partially Available', '部分時段借用')}
                     </span>
                   </button>
                 </div>

@@ -21,6 +21,7 @@ interface StudentRow {
   overdue_days: number
   phone: string | null
   class_name: string | null
+  graduated?: boolean // members.sql；SQL 執行前不存在
   created_at: string
 }
 
@@ -63,6 +64,21 @@ export async function supabaseLogin(studentId: string, password: string): Promis
 
   if (profileError || !profile) {
     return { success: false, message: '讀取學生資料失敗，請聯繫系學會' }
+  }
+
+  // 4. 畢業生停用（2026-10-04 Bernard 定；後台會員管理手動標記，不依年級自動判定）：
+  //    不能登入——除非還有東西沒歸還（待繳押金／租借中／逾期），歸還結案後就登不進來。
+  //    ponytail: App 層擋（Auth 帳號仍在）；RLS 只給讀自己的資料、新單由 submit_orders 擋，夠用
+  if ((profile as StudentRow).graduated) {
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('student_id', data.user.id)
+      .in('status', ['pending', 'in-progress', 'overdue'])
+    if (!count) {
+      await supabase.auth.signOut()
+      return { success: false, error: 'account_locked', message: '帳號已停用（已畢業），如有疑問請聯繫系學會' }
+    }
   }
 
   return {

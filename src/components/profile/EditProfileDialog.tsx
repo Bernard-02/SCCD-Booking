@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useT } from '../../stores/langStore'
 
 type EditMode = 'password' | 'phone'
 
@@ -42,6 +43,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   onConfirm,
   onCancel
 }) => {
+  const t = useT()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -114,17 +116,14 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-lg"
+        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
         {/* 標題 */}
         <div className="px-6 pt-6">
           <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
-            {isPassword ? 'Change Password ' : 'Change Phone '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">
-              {isPassword ? '修改密碼' : '修改手機號碼'}
-            </span>
+            {isPassword ? t('Change Password', '修改密碼') : t('Change Phone', '修改手機號碼')}
           </h2>
         </div>
 
@@ -134,8 +133,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             <>
               <div>
                 <label className={labelClass}>
-                  <span className="font-['Inter',_sans-serif]">Current Password </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">目前密碼</span>
+                  <span>{t('Current Password', '目前密碼')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -148,8 +146,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               </div>
               <div>
                 <label className={labelClass}>
-                  <span className="font-['Inter',_sans-serif]">New Password </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">新密碼</span>
+                  <span>{t('New Password', '新密碼')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -162,8 +159,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               </div>
               <div>
                 <label className={labelClass}>
-                  <span className="font-['Inter',_sans-serif]">Confirm New Password </span>
-                  <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">確認新密碼</span>
+                  <span>{t('Confirm New Password', '確認新密碼')}</span>
                   <span className="text-[#ff8698] ml-1">*</span>
                 </label>
                 <input
@@ -178,8 +174,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           ) : (
             <div>
               <label className={labelClass}>
-                <span className="font-['Inter',_sans-serif]">Phone Number </span>
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">手機號碼</span>
+                <span>{t('Phone Number', '手機號碼')}</span>
                 <span className="text-[#ff8698] ml-1">*</span>
               </label>
               <input
@@ -194,8 +189,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
 
           {error && (
             <p className="text-xs text-[#ff8698]">
-              <span className="font-english">{error.en}</span>{' '}
-              <span className="font-chinese">{error.zh}</span>
+              {t(error.en, error.zh)}
             </p>
           )}
 
@@ -213,7 +207,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
           >
             <span className="font-['Inter',_sans-serif] text-xs">
-              Cancel <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
+              {t('Cancel', '取消')}
             </span>
           </button>
           <button
@@ -222,7 +216,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             className={`transition-opacity ${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
           >
             <span className="font-['Inter',_sans-serif] text-xs">
-              Save <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">儲存</span>
+              {t('Save', '儲存')}
             </span>
           </button>
         </div>

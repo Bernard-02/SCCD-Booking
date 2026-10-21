@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchBlackouts, checkExtendItems, type ExtendCheckItem } from '../../services/ordersService'
 import { useAuth } from '../../contexts/AuthContext'
+import { useT } from '../../stores/langStore'
 
 interface ExtendDialogProps {
   isOpen: boolean
@@ -23,6 +24,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
   onConfirm,
   onCancel
 }) => {
+  const t = useT()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [selectedDays, setSelectedDays] = useState(0)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -235,15 +237,14 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] rounded-lg max-w-[800px] w-[90%] mx-4"
+        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-[800px] w-[90%] mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 標題和關閉按鈕 */}
         <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
           <div className="flex items-start justify-between mb-4">
             <h2 className="text-sm text-white">
-              <span className="font-['Inter',_sans-serif]">Extend</span>{' '}
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期規則</span>
+              <span>{t('Extend', '延期規則')}</span>
             </h2>
             <button
               onClick={onCancel}
@@ -256,8 +257,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
           {/* 訂單號碼 */}
           <div className="text-xs text-gray-scale2">
-            <span className="font-['Inter',_sans-serif]">Order</span>{' '}
-            <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">訂單號碼</span>:{' '}
+            <span>{t('Order', '訂單號碼')}</span>:{' '}
             <span className="font-['Inter',_sans-serif] text-white">{orderNumber}</span>
           </div>
         </div>
@@ -268,20 +268,16 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
           <div className="mb-6">
             <div className="text-white text-xs space-y-1">
               <p>
-                <span className="font-['Inter',_sans-serif]">1. Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。</span>
+                <span>{t('1. Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.', '延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。')}</span>
               </p>
               <p>
-                <span className="font-['Inter',_sans-serif]">2. If all spaces/equipment in the order cannot be extended together, the request cannot be submitted.</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">若訂單內的所有空間/設備無法同時延期，則無法提出申請。</span>
+                <span>{t('2. If all spaces/equipment in the order cannot be extended together, the request cannot be submitted.', '若訂單內的所有空間/設備無法同時延期，則無法提出申請。')}</span>
               </p>
               <p>
-                <span className="font-['Inter',_sans-serif]">3. Extension days are counted from the original return date, up to a maximum of 7 days.</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">延期天數是原歸還日往後開始計算，可最多延期7天。</span>
+                <span>{t('3. Extension days are counted from the original return date, up to a maximum of 7 days.', '延期天數是原歸還日往後開始計算，可最多延期7天。')}</span>
               </p>
               <p className="text-gray-scale2 mt-2">
-                <span className="font-['Inter',_sans-serif]">e.g. If the original return date is 1/20, you must apply by 1/17 (inclusive). You may extend up to 7 days; extending 7 days changes the new return date to 1/27.</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">例：假設訂單的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。</span>
+                <span>{t('e.g. If the original return date is 1/20, you must apply by 1/17 (inclusive). You may extend up to 7 days; extending 7 days changes the new return date to 1/27.', '例：假設訂單的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。')}</span>
               </p>
             </div>
           </div>
@@ -322,8 +318,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
           {selectedDays > 0 && extendItems && (
             <div className="mb-6">
               <p className="text-xs text-gray-scale2 mb-2">
-                <span className="font-['Inter',_sans-serif]">Items to extend</span>{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">勾選要延期的品項</span>
+                <span>{t('Items to extend', '勾選要延期的品項')}</span>
               </p>
               <div className="flex flex-col gap-2">
                 {extendItems.map(item => (
@@ -375,8 +370,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
             >
               <span className="font-['Inter',_sans-serif] text-xs">
-                Cancel{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">取消</span>
+                {t('Cancel', '取消')}
               </span>
             </button>
 
@@ -391,8 +385,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               }`}
             >
               <span className="font-['Inter',_sans-serif] text-xs">
-                Send{' '}
-                <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">送出</span>
+                {t('Send', '送出')}
               </span>
             </button>
           </div>
