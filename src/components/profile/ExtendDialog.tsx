@@ -248,7 +248,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             </h2>
             <button
               onClick={onCancel}
-              className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1"
+              className="text-white hover:opacity-70 cursor-pointer -mt-1"
               aria-label="Close"
             >
               <span className="material-icons text-lg">close</span>
@@ -341,7 +341,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                         className="font-['Inter','Noto_Sans_TC',_sans-serif]"
                         style={{ color: 'var(--color-error2)' }}
                       >
-                        延長期間已被預約
+                        {t('Booked by someone else during the extension', '延長期間已被預約')}
                       </span>
                     )}
                   </label>
@@ -367,7 +367,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             {/* 取消按鈕 */}
             <button
               onClick={onCancel}
-              className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
+              className="text-[#cccccc] hover:text-white cursor-pointer"
             >
               <span className="font-['Inter',_sans-serif] text-xs">
                 {t('Cancel', '取消')}
@@ -378,7 +378,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             <button
               onClick={handleConfirm}
               disabled={!canSend}
-              className={`transition-opacity ${
+              className={`${
                 canSend
                   ? 'text-white hover:opacity-70 cursor-pointer'
                   : 'text-gray-scale3 cursor-not-allowed'

@@ -10,6 +10,9 @@ import { useMemo } from 'react'
 import { cartGroupKey } from '../types/equipment'
 import { slotEnd } from '../utils/timeUtils'
 import type { CartItem } from '../types/equipment'
+import { calcBundles, type Bundle } from '../utils/bundleUtils'
+
+const NO_BUNDLES: Bundle[] = []
 
 interface BookingDetailsData {
   reason: string
@@ -41,6 +44,8 @@ interface UseCartValidationArgs {
   getCartQuantity: (id: string) => number
   /** 該品項時段已被他人訂單佔用的量（含 On Hold）；未給視為 0 */
   getReserved?: (item: CartItem) => number
+  /** 設備組合（湊滿一組算 1 件）；未給＝照單件計 */
+  bundles?: Bundle[]
 }
 
 interface UseCartValidationResult {
@@ -49,6 +54,7 @@ interface UseCartValidationResult {
   stockAvailabilityValidation: StockResult
   bookingDetailsValidation: BaseResult
   singleOrderValidation: BaseResult
+  littleLimitValidation: BaseResult
 }
 
 // 過期以時段為單位（CartList／RentalListPage 用 `${start}_${end}` 比對）；
@@ -70,9 +76,12 @@ export const useCartValidation = ({
   bookingDetails,
   getOriginalQuantity,
   getCartQuantity,
-  getReserved = () => 0
+  getReserved = () => 0,
+  bundles = NO_BUNDLES
 }: UseCartValidationArgs): UseCartValidationResult => {
   return useMemo(() => {
+    const equipmentUnits = (items: CartItem[]) => calcBundles(items, bundles).units
+
     // 大量租借（Mass）需至少 10 件
     const cartValidation: BaseResult = (() => {
       const groups = groupByOrder(cart)
@@ -80,9 +89,7 @@ export const useCartValidation = ({
         if (items.length === 0) continue
         const bookingType = items[0].bookingType || 'little'
         if (bookingType === 'mass-personal' || bookingType === 'mass-group') {
-          const totalQuantity = items.reduce((sum, item) => {
-            return sum + (item.category === 'equipment' ? item.quantity : 1)
-          }, 0)
+          const totalQuantity = items[0].category === 'equipment' ? equipmentUnits(items) : items.length
           if (totalQuantity < 10) {
             return {
               valid: false,
@@ -115,8 +122,8 @@ export const useCartValidation = ({
       if (expiredKeys.length > 0) {
         return {
           valid: false,
-          message: '部分訂單日期已過期，請點擊 Edit 編輯日期',
-          detail: 'Some orders have expired dates, please click Edit to update',
+          message: '部分訂單日期已過期，請點鉛筆修改日期',
+          detail: 'Some orders have expired dates, tap the pencil to update',
           expiredKeys
         }
       }
@@ -178,6 +185,16 @@ export const useCartValidation = ({
       return { valid: true, message: '', detail: '' }
     })()
 
+    // 小量設備 9 件：加入時已擋，但減少數量可能拆散組合讓件數變多（整組算 1 件），送單前再攔一次
+    const littleLimitValidation: BaseResult = (() => {
+      const over = Object.values(groupByOrder(cart)).some(items =>
+        items[0].category === 'equipment' && (items[0].bookingType || 'little') === 'little' && equipmentUnits(items) > 9
+      )
+      return over
+        ? { valid: false, message: '小量設備最多 9 件（整組算 1 件），請調整數量', detail: 'Light booking allows up to 9 items (a full set counts as 1)' }
+        : { valid: true, message: '', detail: '' }
+    })()
+
     // 同類別一次一張訂單（新規則 7）：加入時已擋，這裡攔規則上線前就存在的舊購物車
     const singleOrderValidation: BaseResult = (() => {
       const orders = Object.keys(groupByOrder(cart))
@@ -197,7 +214,8 @@ export const useCartValidation = ({
       expiredOrdersValidation,
       stockAvailabilityValidation,
       bookingDetailsValidation,
-      singleOrderValidation
+      singleOrderValidation,
+      littleLimitValidation
     }
-  }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved])
+  }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved, bundles])
 }

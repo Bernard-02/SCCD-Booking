@@ -4,8 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import Header from '../components/layouts/Header'
+import BackButton from '../components/common/BackButton'
+import { navItemCls } from '../components/common/navItem'
 import Footer from '../components/layouts/Footer'
 import EquipmentGrid from '../components/equipment/EquipmentGrid'
 import DatePickerBar from '../components/DatePickerBar'
@@ -17,11 +19,7 @@ import { useT } from '../stores/langStore'
 const EquipmentPage: React.FC = () => {
   const t = useT()
   const location = useLocation()
-  const navigate = useNavigate()
   const { setEquipmentDates } = useDateSelection()
-
-  // 判斷是否從購物車過來 (用於顯示 Back to Cart)
-  const fromCart = location.state?.from === 'cart'
 
   // 初始化：如果 URL 有帶日期參數，則預先填入 (僅執行一次)
   useEffect(() => {
@@ -41,18 +39,6 @@ const EquipmentPage: React.FC = () => {
       }
     }
   }, []) // 空依賴陣列確保只在組件掛載時執行一次
-
-  // 處理麵包屑返回
-  const handleBreadcrumbBack = (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (fromCart) {
-      // 鎖定模式：直接返回購物車
-      navigate('/cart')
-    } else {
-      // 正常模式：返回上一頁
-      navigate(-1)
-    }
-  }
 
   const [selectedCategory, setSelectedCategory] = useState<string>('全部')
   const [statusFilters, setStatusFilters] = useState<Set<'available' | 'unavailable' | 'partial'>>(
@@ -83,65 +69,32 @@ const EquipmentPage: React.FC = () => {
       <Header />
 
       <main className="flex-1 pt-20 flex flex-col overflow-hidden relative">
-        {/* 麵包屑 - Fixed 在畫面上 */}
-        <div className="container hidden md:block fixed top-20 left-0 right-0 z-10">
-          <div className="text-left" style={{ paddingBottom: '1.08rem' }}>
-            <nav className="breadcrumb-inline whitespace-nowrap">
-              <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-xs cursor-pointer">
-                &lt;
-              </a>
-              <span> </span>
-              <a onClick={handleBreadcrumbBack} className="breadcrumb-item text-xs cursor-pointer">
-                {fromCart ? (
-                  <>
-                    {t('Cart', '購物車')}
-                  </>
-                ) : (
-                  <>
-                    {t('Category', '類別')}
-                  </>
-                )}
-              </a>
-              <span className="breadcrumb-separator text-xs">/</span>
-              <span className="breadcrumb-item text-xs">
-                {t('Equipment', '設備')}
-              </span>
-            </nav>
-          </div>
-        </div>
-
         <div className="container hidden md:flex flex-1 gap-6 overflow-hidden items-stretch pb-20">
           {/* 左側欄位：20% */}
           <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden">
-            {/* 標題 - 加上 padding-top 避免被麵包屑遮擋 */}
+            {/* 返回上一頁＋標題在箭頭下方 */}
             <div className="flex-shrink-0">
+              <BackButton />
               <h1 className="text-white text-xl mb-6">{t('Equipment', '設備')}</h1>
             </div>
 
             {/* 下方區塊：分類 Filter + Legend */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* 分類 Filter - 頂部 */}
-              <div className="flex flex-col gap-4 flex-shrink-0">
+              {/* 分類 Filter - 頂部：膠囊選單（同空間頁／Profile），inline-flex＝各項同寬 */}
+              <nav className="inline-flex flex-col gap-1 flex-shrink-0 self-start">
                 {categories.map((category) => (
-                  <div key={category.en} className="text-left">
-                    <button
-                      onClick={() => setSelectedCategory(category.zh)}
-                      className={`text-sm font-bold transition-colors cursor-pointer inline-flex items-center gap-2 ${
-                        selectedCategory === category.zh
-                          ? 'text-white'
-                          : 'text-gray-scale2 hover:!text-white'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px' }}>
-                        {category.icon}
-                      </span>
-                      <span>
-                        {t(category.en, category.zh)}
-                      </span>
-                    </button>
-                  </div>
+                  <button
+                    key={category.en}
+                    onClick={() => setSelectedCategory(category.zh)}
+                    className={navItemCls(selectedCategory === category.zh)}
+                  >
+                    <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '20px' }}>
+                      {category.icon}
+                    </span>
+                    <span>{t(category.en, category.zh)}</span>
+                  </button>
                 ))}
-              </div>
+              </nav>
 
               {/* 中間空白區域 - 自動填充 */}
               <div className="flex-1"></div>
@@ -154,7 +107,7 @@ const EquipmentPage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#00ff80]"></div>
-                    <span className={`text-xs transition-colors ${
+                    <span className={`text-xs ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       {t('Available', '全時段借用')}
@@ -166,7 +119,7 @@ const EquipmentPage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ff448a]"></div>
-                    <span className={`text-xs transition-colors ${
+                    <span className={`text-xs ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       {t('Unavailable', '不可借用')}
@@ -178,7 +131,7 @@ const EquipmentPage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ffa500]"></div>
-                    <span className={`text-xs transition-colors ${
+                    <span className={`text-xs ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       {t('Partially Available', '部分時段借用')}

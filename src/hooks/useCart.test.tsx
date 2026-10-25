@@ -5,13 +5,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCart, LOGIN_REQUIRED_MSG } from './useCart'
+import { useCart, loginRequiredMsg } from './useCart'
 import { useSuspension } from './useSuspension'
 import type { CartItem } from '../types/equipment'
 
 // 設備資料與停權狀態都走 mock，不打 Supabase
+// 組合：桌板 1＋腳 4＋支架 8 一組押金 500（同一個陣列參照，避免每次 render 換新）
+const BUNDLES = vi.hoisted(() => [{
+  id: 'b1', name: '木桌組', deposit: 500,
+  items: [{ equipmentId: 'board', quantity: 1 }, { equipmentId: 'leg', quantity: 4 }, { equipmentId: 'bracket', quantity: 8 }]
+}])
 vi.mock('../services/equipmentService', () => ({
-  useEquipmentData: () => ({})
+  useEquipmentData: () => ({}),
+  useBundles: () => BUNDLES
 }))
 vi.mock('./useSuspension', () => ({
   useSuspension: vi.fn(() => false)
@@ -32,10 +38,32 @@ const item = (overrides: Partial<CartItem> = {}): CartItem => ({
   ...overrides
 })
 
+// 購物車依學號分開存（cartHelpers.cartKey 讀登入資料的學號）
+const loginAs = (studentId: string) =>
+  localStorage.setItem('sccd_login_data', JSON.stringify({ student: { studentId } }))
+
 beforeEach(() => {
   localStorage.clear()
+  loginAs('s1')
   vi.mocked(useSuspension).mockReturnValue(false)
   auth.isAuthenticated = true
+})
+
+describe('購物車依使用者分開', () => {
+  it('換人登入看不到前一位的購物車；訪客沒有購物車', () => {
+    const first = renderHook(() => useCart())
+    act(() => { first.result.current.addToCart(item()) })
+    expect(first.result.current.cart).toHaveLength(1)
+
+    loginAs('s2')
+    expect(renderHook(() => useCart()).result.current.cart).toHaveLength(0)
+
+    localStorage.removeItem('sccd_login_data') // 訪客
+    expect(renderHook(() => useCart()).result.current.cart).toHaveLength(0)
+
+    loginAs('s1')
+    expect(renderHook(() => useCart()).result.current.cart).toHaveLength(1)
+  })
 })
 
 describe('addToCart', () => {
@@ -62,6 +90,22 @@ describe('addToCart', () => {
     act(() => { res = result.current.addToCart(item({ id: 'light', name: '燈', quantity: 1 })) })
     expect(res!.ok).toBe(false)
     expect(res!.reason).toContain('9 件')
+  })
+
+  it('整組一次加入：13 個零件算 1 件、押金一組，之後還能再加 8 件', () => {
+    const { result } = renderHook(() => useCart())
+    let res: { ok: boolean; reason?: string }
+    act(() => {
+      res = result.current.addToCart([
+        item({ id: 'board', quantity: 1 }), item({ id: 'leg', quantity: 4 }), item({ id: 'bracket', quantity: 8 })
+      ])
+    })
+    expect(res!.ok).toBe(true)
+    expect(result.current.cart).toHaveLength(3)
+    act(() => { res = result.current.addToCart(item({ quantity: 8 })) })
+    expect(res!.ok).toBe(true)
+    act(() => { res = result.current.addToCart(item({ id: 'light', name: '燈' })) })
+    expect(res!.ok).toBe(false)
   })
 
   it('小量設備押金超過 5000 被擋', () => {
@@ -152,7 +196,7 @@ describe('addToCart', () => {
     let res: { ok: boolean; reason?: string }
     act(() => { res = result.current.addToCart(item()) })
     expect(res!.ok).toBe(false)
-    expect(res!.reason).toBe(LOGIN_REQUIRED_MSG)
+    expect(res!.reason).toBe(loginRequiredMsg())
     expect(result.current.cart).toHaveLength(0)
   })
 })

@@ -5,7 +5,7 @@
  */
 
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
 import { fetchMyNotifications, markAllNotificationsRead } from '../../services/notificationsService'
@@ -19,7 +19,6 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
-  const location = useLocation()
   const t = useT()
   const { cart } = useCart()
   const { isAuthenticated, currentUser } = useAuth()
@@ -100,7 +99,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     return `${year}/${month}/${day} ${hours}:${minutes}${ampm}`
   }
 
-  // 格式化時間差距：Just Now, 3 Mins Ago, 3 Hours Ago, 3 Days Ago
+  // 格式化時間差距：英文 Just Now／3 Mins Ago…；中文 剛剛／3分鐘前／3小時前／3天前
   const formatTimeAgo = (timestamp: number) => {
     const now = Date.now()
     const diff = now - timestamp
@@ -108,17 +107,17 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     const hourMs = 3600000
     const dayMs = 86400000
 
-    if (diff < minuteMs) return 'Just Now'
+    if (diff < minuteMs) return t('Just Now', '剛剛')
     if (diff < hourMs) {
       const mins = Math.floor(diff / minuteMs)
-      return `${mins} Min${mins > 1 ? 's' : ''} Ago`
+      return t(`${mins} Min${mins > 1 ? 's' : ''} Ago`, `${mins}分鐘前`)
     }
     if (diff < dayMs) {
       const hours = Math.floor(diff / hourMs)
-      return `${hours} Hour${hours > 1 ? 's' : ''} Ago`
+      return t(`${hours} Hour${hours > 1 ? 's' : ''} Ago`, `${hours}小時前`)
     }
     const days = Math.floor(diff / dayMs)
-    return `${days} Day${days > 1 ? 's' : ''} Ago`
+    return t(`${days} Day${days > 1 ? 's' : ''} Ago`, `${days}天前`)
   }
 
   // 計算購物車項目總數
@@ -157,7 +156,6 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 {/* Cart：右上角數量徽章 */}
                 <Link
                   to="/cart"
-                  state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
                   className="relative flex items-center text-white"
                   aria-label={`${t('Cart', '清單')} (${cartCount})`}
                 >
@@ -200,7 +198,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                         <button
                           type="button"
                           onClick={closeNotificationMenu}
-                          className="text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center"
+                          className="text-white hover:opacity-70 cursor-pointer flex items-center"
                           aria-label="Close"
                         >
                           <span className="material-icons text-lg">close</span>
@@ -218,7 +216,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                         ) : (
                           notifications.map((n, index) => (
                             <React.Fragment key={n.id}>
-                              <div className="p-4 transition-colors hover:bg-white/5">
+                              <div className="p-4 hover:bg-white/5">
                                 {/* 內容＋右側未讀紅點 */}
                                 <div className="flex gap-3 mb-2">
                                   <p className="flex-1 text-white text-xs leading-relaxed">
@@ -259,8 +257,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <nav className="flex items-center mobile-nav mobile-nav-gap">
                 <Link
                   to="/cart"
-                  state={{ from: location.pathname === '/equipment' ? 'equipment' : location.pathname === '/space' ? 'space' : undefined }}
-                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white flex items-center"
+                  className="font-['Inter',_sans-serif] font-bold uppercase text-white flex items-center"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">
@@ -274,7 +271,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   id="mobile-menu-btn"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white flex items-center"
+                  className="font-['Inter',_sans-serif] font-bold uppercase text-white flex items-center"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(MENU)</span>
@@ -295,7 +292,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-1">
                 <Link
                   to="/catalog"
-                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -309,7 +306,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-2">
                 <Link
                   to="/login"
-                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -325,7 +322,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   href="https://sccd.usc.edu.tw/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(TO SCCD)</span>
@@ -338,7 +335,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-4">
                 <button
                   type="button"
-                  className="font-['Inter',_sans-serif] font-bold uppercase transition-colors text-white text-h3"
+                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
                   onClick={() => { setMobileMenuOpen(false); setInfoTab('about') }}
                 >
                   <div className="menu-item-wrapper">

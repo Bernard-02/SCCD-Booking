@@ -3,9 +3,12 @@
  * RLS：學生只讀得到自己的訂單。
  */
 
-import { supabase } from './supabase'
+import { useEffect, useState } from 'react'
+import { supabase, fetchAllRows } from './supabase'
 import type { BookingType } from '../types/equipment'
-import type { DutySlot } from '../utils/timeUtils'
+import { dutyHoursText, type DutySlot } from '../utils/timeUtils'
+import { calcBundles, type Bundle } from '../utils/bundleUtils'
+import { serverErrorText } from '../utils/serverErrors'
 
 export type OrderStatus = 'pending' | 'in-progress' | 'overdue' | 'returned' | 'canceled'
 
@@ -70,12 +73,14 @@ export interface AdminOrderRow extends OrderRow {
  * 僅 admin 讀得到全部（RLS `orders: admin all`）；非 admin 只會拿到自己的。
  */
 export async function fetchAllOrders(): Promise<AdminOrderRow[]> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*, order_items(*), students(student_id, name)')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data ?? []) as AdminOrderRow[]
+  return fetchAllRows<AdminOrderRow>((from, to) =>
+    supabase
+      .from('orders')
+      .select('*, order_items(*), students(student_id, name)')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to)
+  )
 }
 
 /**
@@ -107,6 +112,21 @@ export async function fetchDutySlots(): Promise<DutySlot[]> {
     return []
   }
   return (data ?? []) as DutySlot[]
+}
+
+/**
+ * 前台營業時間文字（Info 視窗的工作時間／聯絡方式）：讀後台排的值班時段。
+ * undefined＝載入中、null＝尚未排班。模組層快取，開關視窗不重抓；後台改了學生端重新整理生效。
+ */
+let dutySlotsOnce: Promise<DutySlot[]> | null = null
+export function useDutyHours() {
+  const [text, setText] = useState<ReturnType<typeof dutyHoursText> | undefined>(undefined)
+  useEffect(() => {
+    let alive = true
+    void (dutySlotsOnce ??= fetchDutySlots()).then(s => { if (alive) setText(dutyHoursText(s)) })
+    return () => { alive = false }
+  }, [])
+  return text
 }
 
 /**
@@ -272,7 +292,7 @@ export async function extendMyOrderPartial(
     p_days: days,
     p_item_ids: itemIds
   })
-  if (error) return { ok: false, message: error.message }
+  if (error) return { ok: false, message: serverErrorText(error.message) }
   return { ok: true, resultNumber: data as string }
 }
 
@@ -288,7 +308,7 @@ export async function modifyMyOrder(
     p_rental_number: rentalNumber,
     p_items: items
   })
-  if (error) return { ok: false, message: error.message }
+  if (error) return { ok: false, message: serverErrorText(error.message) }
   return { ok: true }
 }
 
@@ -307,6 +327,9 @@ export async function adminHandoverItems(
   return { ok: true }
 }
 
-/** 押金建議值：品項小計（單價×數量）cap 5,000，同 submit_orders；學會現場計算時預填用 */
-export const suggestedDeposit = (items: Pick<OrderItemRow, 'deposit' | 'quantity'>[]): number =>
-  Math.min(items.reduce((s, i) => s + i.deposit * i.quantity, 0), 5000)
+/** 押金建議值：品項小計（單價×數量，設備套用組合）cap 5,000，同 submit_orders；學會現場計算時預填用 */
+export const suggestedDeposit = (
+  items: Pick<OrderItemRow, 'item_id' | 'deposit' | 'quantity'>[],
+  bundles: Bundle[]
+): number =>
+  Math.min(calcBundles(items.map(i => ({ id: i.item_id, quantity: i.quantity, deposit: i.deposit })), bundles).deposit, 5000)

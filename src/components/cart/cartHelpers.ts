@@ -3,19 +3,30 @@
  */
 
 import type { CartItem } from '../../types/equipment'
+import { getCurrentStudentId } from '../../utils/authStorage'
 
-/** 購物車 localStorage key（連字號，非底線） */
+/** 購物車 localStorage key 前綴（連字號，非底線） */
 export const CART_STORAGE_KEY = 'sccd-rental-cart'
 
-/** 讀取購物車（無資料回傳空陣列） */
-export const readCart = (): CartItem[] =>
-  JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]') as CartItem[]
+/** 購物車依學號分開存（sccd-rental-cart_{學號}），換人登入各看各的；訪客（未登入）沒有購物車＝null */
+export const cartKey = (): string | null => {
+  const id = getCurrentStudentId()
+  return id ? `${CART_STORAGE_KEY}_${id}` : null
+}
 
-/** 寫入購物車並廣播 storage 事件（跨頁/跨分頁同步） */
+/** 讀取購物車（無資料或訪客回傳空陣列） */
+export const readCart = (): CartItem[] => {
+  const key = cartKey()
+  return key ? JSON.parse(localStorage.getItem(key) || '[]') as CartItem[] : []
+}
+
+/** 寫入購物車並廣播 storage 事件（跨頁/跨分頁同步）；訪客不寫（加入清單本來就擋） */
 export const writeCart = (items: CartItem[]): void => {
+  const key = cartKey()
+  if (!key) return
   const json = JSON.stringify(items)
-  localStorage.setItem(CART_STORAGE_KEY, json)
-  window.dispatchEvent(new StorageEvent('storage', { key: CART_STORAGE_KEY, newValue: json }))
+  localStorage.setItem(key, json)
+  window.dispatchEvent(new StorageEvent('storage', { key, newValue: json }))
 }
 
 /** Date → 'YYYY/MM/DD'（補零） */
@@ -38,16 +49,15 @@ export const AREA_NAME_MAP: Record<string, string> = {
   'pillar': '柱子'
 }
 
+// 區域示意圖（public/Images 實際有的檔）；前／後陽台沒有圖，退回 FALLBACK_BLOCK_IMAGE（後台清單則顯示 placeholder icon）
 export const AREA_IMAGE_MAP: Record<string, string> = {
   'square': '/Images/Square.webp',
   'corridor': '/Images/Corridor.webp',
-  'front-terrace': '/Images/Front Terrace.webp',
-  'back-terrace': '/Images/Back Terrace.webp',
   'glass-wall': '/Images/Glass Wall.webp',
   'pillar': '/Images/Pillar.webp'
 }
 
-const FALLBACK_BLOCK_IMAGE = '/Images/Glass Wall.webp'
+export const FALLBACK_BLOCK_IMAGE = '/Images/A5F Numbered Area.webp'
 
 /** 格式化日期為 YYYY/MM/DD */
 export const formatDate = (dateString: string): string => {
@@ -61,11 +71,11 @@ export const formatDate = (dateString: string): string => {
 
 /**
  * 由格子代號推導所屬區域（純函式，與 SVG 的地理配置綁定）
- * 規則：A-F=中庭、G/H/J=專案許可區、K=前陽台、L=後陽台、
+ * 規則：A-E=中庭（沒有 F 區）、G/H/J=專案許可區、K=前陽台、L=後陽台、
  *       Y=玻璃牆（Y4-Y7 例外屬專案許可區）、Z=柱子、A5xx=教室
  */
 const PREFIX_AREA_MAP: Record<string, string> = {
-  A: 'square', B: 'square', C: 'square', D: 'square', E: 'square', F: 'square',
+  A: 'square', B: 'square', C: 'square', D: 'square', E: 'square',
   G: 'corridor', H: 'corridor', J: 'corridor',
   K: 'front-terrace', L: 'back-terrace', Y: 'glass-wall', Z: 'pillar'
 }

@@ -1,10 +1,12 @@
 ﻿/**
  * 空間地圖組件
- * 載入 A5F 平面圖 SVG 並支援區域縮放與區塊選擇
+ * 載入 A5F 平面圖 SVG 並支援區域縮放與區塊選擇。
+ * 未開放（後台關閉）的格子：可檢視、可放大，但畫停用色、cursor not-allowed、不能點；整區都關閉時說明框顯示「此區域目前不開放租借」。
+ * 已被借走的格子放大後同樣 not-allowed；縮小狀態整區（含已借走）都是 pointer——點了是放大該區。
  */
 
 import React, { useEffect, useRef, useState } from 'react'
-import { useSpaceBlocks } from '../../services/spaceService'
+import { useSpaceBlocks, useClosedSpaceIds } from '../../services/spaceService'
 import { useT } from '../../stores/langStore'
 
 // --- CONSTANTS ---
@@ -58,6 +60,7 @@ interface TooltipInfo {
   name: string;
   english: string;
   deposit: number;
+  closed: boolean; // 整區未開放
 }
 
 interface SpaceAreaMapProps {
@@ -82,12 +85,13 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
   const t = useT()
   // 區塊定義（id → 區域）來自 Supabase space_blocks；佔用狀態由 rentedBlocks prop 傳入
   const blocksData = useSpaceBlocks();
+  const closedIds = useClosedSpaceIds();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
   const [tooltip, setTooltip] = useState<TooltipInfo>({
-    visible: false, x: 0, y: 0, name: '', english: '', deposit: 0
+    visible: false, x: 0, y: 0, name: '', english: '', deposit: 0, closed: false
   });
   const eventListenersRef = useRef<Array<{ element: Element; type: string; handler: (e: Event) => void }>>([]);
 
@@ -123,6 +127,8 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
       svg.id = 'area-booking-svg';
       svg.style.transition = 'transform 0.5s ease-in-out';
       svg.style.transformOrigin = 'center center';
+      // 格子編號是疊在格子上面的獨立 path：讓滑鼠事件穿透，hover 到編號也算 hover 到格子（游標與點擊才準）
+      svg.querySelectorAll<SVGElement>('path.cls-2, path.cls-3').forEach(l => { l.style.pointerEvents = 'none'; });
       setSvgElement(svg);
     }
   }, [svgContent]);
@@ -144,12 +150,27 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
 
     const blockElements = svgElement.querySelectorAll('g[id], path[id], rect[id], polygon[id], circle[id]');
     blockElements.forEach(el => {
-      el.classList.remove('area-block', 'is-available', 'is-selected', 'is-rented', 'is-interactive', 'is-disabled');
+      el.classList.remove('area-block', 'is-available', 'is-selected', 'is-rented', 'is-interactive', 'is-disabled', 'is-closed');
       (el as HTMLElement).style.opacity = '1';
+      (el as HTMLElement).style.cursor = ''; // 外層設的區域 pointer 不能帶進放大狀態
     });
+
+    const shapesOf = (el: Element) =>
+      el.tagName.toLowerCase() === 'g' ? Array.from(el.querySelectorAll('path, rect, polygon, circle')) : [el];
+    // 未開放的格子：停用色＋not-allowed（放大、縮小都畫）
+    closedIds.forEach(id => {
+      const el = svgElement.querySelector(`#${id}`);
+      if (!el) return;
+      shapesOf(el).forEach(s => s.classList.add('area-block', 'is-closed'));
+      if (el.tagName.toLowerCase() === 'g') (el as HTMLElement).style.cursor = 'not-allowed';
+    });
+    // 整區都沒有開放中的格子（例：後陽台未開放）；資料載入前不判定
+    const openAreas = new Set(Object.values(blocksData).map(b => b.area));
+    const isAreaClosed = (key: string) => Object.keys(blocksData).length > 0 && !openAreas.has(key);
 
 
     // --- 2. Apply Logic based on Zoom State ---
+    svgElement.classList.toggle('is-zoomed', !!selectedSubCategory); // CSS 依此切換已借走格子的游標
     if (selectedSubCategory) {
       // ===== ZOOMED-IN STATE =====
 
@@ -164,7 +185,10 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
       Object.entries(areaMapping).forEach(([areaId, areaData]) => {
         const group = svgElement.querySelector(`#${areaId}`);
         if (group) {
-          (group as HTMLElement).style.opacity = areaData.subCategoryId === selectedSubCategory ? '1' : '0.2';
+          const isCurrent = areaData.subCategoryId === selectedSubCategory;
+          (group as HTMLElement).style.opacity = isCurrent ? '1' : '0.2';
+          // 放大到整區未開放的區域：整區（含格子上的文字）都是 not-allowed
+          if (isCurrent && isAreaClosed(areaData.key)) (group as HTMLElement).style.cursor = 'not-allowed';
         }
       });
       
@@ -208,13 +232,10 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
             }
           });
 
-          // 設置 <g> 元素的 cursor（如果是 group）
+          // 設置 <g> 元素的 cursor（如果是 group）：可選 pointer、已借走 not-allowed、其他區域 default
           if (isGroupElement) {
-            if (isInCurrentArea && !isRented) {
-              (blockElement as HTMLElement).style.cursor = 'pointer';
-            } else {
-              (blockElement as HTMLElement).style.cursor = 'default';
-            }
+            (blockElement as HTMLElement).style.cursor =
+              !isInCurrentArea ? 'default' : isRented ? 'not-allowed' : 'pointer';
           }
 
           // 只有在當前區域內、未租出的區塊才能被選擇（包含已在購物車中的，點擊可移除）
@@ -277,7 +298,8 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
 
           // 押金以 DB 為準（後台整區改）：取該區任一格，查無才用上面的預設值
           const deposit = Object.values(blocksData).find(b => b.area === areaData.key)?.deposit ?? areaData.deposit;
-          const mouseEnterHandler = (e: MouseEvent) => setTooltip({ visible: true, x: e.clientX, y: e.clientY, ...areaData, deposit });
+          const closed = isAreaClosed(areaData.key);
+          const mouseEnterHandler = (e: MouseEvent) => setTooltip({ visible: true, x: e.clientX, y: e.clientY, ...areaData, deposit, closed });
           const mouseMoveHandler = (e: MouseEvent) => setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
           const mouseLeaveHandler = () => setTooltip(prev => ({ ...prev, visible: false }));
 
@@ -287,7 +309,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
         }
       });
     }
-  }, [svgElement, selectedSubCategory, onAreaClick, onBlockSelect, selectedBlocks, rentedBlocks, cartBlocks, blocksData]);
+  }, [svgElement, selectedSubCategory, onAreaClick, onBlockSelect, selectedBlocks, rentedBlocks, cartBlocks, blocksData, closedIds]);
 
 
   return (
@@ -307,7 +329,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
 
       {tooltip.visible && !selectedSubCategory && (
         <div
-          className="fixed pointer-events-none z-50 bg-black/80 px-4 py-3 min-w-[200px]"
+          className="fixed pointer-events-none z-50 bg-black/80 rounded-xl px-4 py-3 min-w-[200px]"
           style={{ left: tooltip.x + 16, top: tooltip.y + 16 }}
         >
           <p className="text-white text-sm font-normal mb-2">
@@ -319,7 +341,9 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           </div>
           <div className="border-t border-gray-scale3 my-3"></div>
           <div>
-            <p className="text-white text-xs">{t('Click to Book', '點擊區塊以開始租借')}</p>
+            <p className="text-white text-xs">
+              {tooltip.closed ? t('This area is currently not open for booking', '此區域目前不開放租借') : t('Click to Book', '點擊區塊以開始租借')}
+            </p>
           </div>
         </div>
       )}

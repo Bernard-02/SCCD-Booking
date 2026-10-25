@@ -1,28 +1,26 @@
 /**
- * 後台 · 訂單全覽（搜尋 + 狀態／種類篩選 + 全欄排序 + 收押金／歸還）
+ * 後台 · 訂單全覽（搜尋 + 租借時間／狀態／種類篩選 + 全欄排序 + 收押金／歸還）
  * 樣式沿用前台 Profile：狀態標籤語彙與顏色同 getStatusInfo、按鈕同 Extend 樣式。
- * 收押金／歸還走 OrderActionDialog，必選值班經手人（寫入 paid_by / returned_by 供追溯）。
- * 支援 ?status= 進頁預設篩選（總覽 dashboard 點擊統計跳轉用）。
+ * 「收押金」「歸還」兩欄＝每張單都會走的兩步（2026-10-26）：還沒做是按鈕、做完顯示經手人，一眼看出走到哪、誰經手；
+ * 其餘動作（點交／延期／取消訂單）在最右「操作」欄。所有動作都走 OrderActionDialog，必選值班經手人
+ * （寫入 paid_by / picked_up_by / returned_by 供追溯）。
+ * 搜尋列下方四個分類按鈕（2026-10-24）：全部／待繳押金／待取件／待歸還，各附筆數；點了切換下方表格內容。
+ * 待歸還＝使用中＋未完成歸還（都是要收回來的）；已歸還／已取消只在「全部」裡看（搜尋得到）。
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
-import type { AdminOrderRow, OrderStatus, OrderInfo } from '../services/ordersService'
+import type { AdminOrderRow, OrderInfo } from '../services/ordersService'
 import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
-import { overduePenalty, isOnDuty, slotLabel, toDateKey } from '../utils/timeUtils'
-import { ADMIN_HANDLER_KEY, ADMIN_ORDER_COLS_KEY } from '../utils/storageKeys'
-import { STATUS_META, STATUS_ORDER, ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, inputCls, PageTitle, itemsSummary, usePager, Pager, EditIconBtn, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
+import { overduePenalty, overdueBusinessDays, pendingMsRemaining, isOnDuty, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
+import { ADMIN_HANDLER_KEY } from '../utils/storageKeys'
+import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, iconBtn, textBtn, SearchBox, CountTabs, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
 import OrderActionDialog, { type AdminActionMode } from '../components/admin/OrderActionDialog'
 import OrderInfoDialog from '../components/admin/OrderInfoDialog'
 import { useToast } from '../hooks/useToast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
-
-const FILTERS: { key: 'all' | OrderStatus; en: string; zh: string }[] = [
-  { key: 'all', en: 'All', zh: '全部' },
-  ...STATUS_ORDER.map(s => ({ key: s, en: STATUS_META[s].en, zh: STATUS_META[s].zh }))
-]
 
 const fmtDate = (d: string) => d?.slice(5).replace('-', '/') // 'YYYY-MM-DD' → 'MM/DD'
 const fmtDateTime = (iso: string) => {
@@ -33,7 +31,7 @@ const fmtDateTime = (iso: string) => {
 // 可排序欄位（Notion 式：每一欄都能點表頭排序）
 type SortField =
   | 'rental_number' | 'name' | 'student_id' | 'booking_type' | 'start_date'
-  | 'deposit_total' | 'status' | 'items' | 'reason' | 'paid_by'
+  | 'deposit_total' | 'status' | 'items' | 'reason' | 'paid_by' | 'returned_by'
 const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
   switch (f) {
     case 'name': return o.students?.name ?? ''
@@ -42,40 +40,80 @@ const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
     case 'items': return itemsSummary(o)
     case 'reason': return o.reason ?? ''
     case 'paid_by': return o.paid_by ?? ''
+    case 'returned_by': return o.returned_by ?? ''
     case 'booking_type': return orderKind(o)
     default: return (o[f] ?? '') as string
   }
 }
 
-const COLUMNS: { field: SortField; en: string; zh: string }[] = [
-  { field: 'rental_number', en: 'No.', zh: '單號' },
-  { field: 'name', en: 'Name', zh: '姓名' },
-  { field: 'student_id', en: 'ID', zh: '學號' },
-  { field: 'booking_type', en: 'Type', zh: '種類' },
-  { field: 'start_date', en: 'Dates', zh: '起訖' },
-  { field: 'deposit_total', en: 'Deposit', zh: '押金' },
-  { field: 'status', en: 'Status', zh: '狀態' },
-  { field: 'items', en: 'Items', zh: '品項' },
-  { field: 'reason', en: 'Reason', zh: '借用原因' },
-  { field: 'paid_by', en: 'Handler', zh: '經手' }
+// w＝欄寬：表格 w-full＋自動排版下，有寬度的欄固定（內容更長才撐開，不會溢出），只有品項不給寬度、吃掉全部剩餘空間，
+// 切換篩選／排序時表頭就不跳。狀態／原因／操作內容較長時換行，不要為此放大欄寬（螢幕約 1400px 時品項才有 200px 以上）
+const COLUMNS: { field: SortField; zh: string; w?: string }[] = [
+  { field: 'rental_number', zh: '單號', w: 'w-24' },
+  { field: 'items', zh: '品項' },
+  { field: 'start_date', zh: '時間', w: 'w-28' },
+  { field: 'name', zh: '姓名', w: 'w-20' },
+  { field: 'student_id', zh: '學號', w: 'w-24' },
+  { field: 'booking_type', zh: '種類', w: 'w-20' },
+  { field: 'status', zh: '狀態', w: 'w-32' },
+  { field: 'deposit_total', zh: '押金', w: 'w-28' },
+  { field: 'reason', zh: '原因', w: 'w-40' },
+  { field: 'paid_by', zh: '收押金', w: 'w-28' },
+  { field: 'returned_by', zh: '歸還', w: 'w-28' }
 ]
 
-// 表頭固定在表格捲動區頂端；border-collapse 下 sticky 的格線不跟著走，底線改用 inset shadow 畫
-const th = 'px-3 py-2 font-normal whitespace-nowrap sticky top-0 z-10 bg-black shadow-[inset_0_-1px_0_var(--color-gray-scale4)]'
-const td = 'px-3 py-3 whitespace-nowrap'
+// 搜尋列下方的分類按鈕：篩選條件＋筆數。待繳押金＝pending 未繳；待取件＝大量設備已繳待取（isAwaitingPickup）；
+// 待歸還＝使用中＋未完成歸還
+type TabKey = 'all' | 'deposit' | 'pickup' | 'return'
+const TABS: { key: TabKey; zh: string; match: (o: AdminOrderRow) => boolean }[] = [
+  { key: 'all', zh: '全部', match: () => true },
+  { key: 'deposit', zh: '待繳押金', match: o => o.status === 'pending' && !o.deposit_paid_at },
+  { key: 'pickup', zh: '待取件', match: isAwaitingPickup },
+  { key: 'return', zh: '待歸還', match: o => o.status === 'in-progress' || o.status === 'overdue' }
+]
 
-// 每欄的儲存格渲染：依 colOrder 查表，讓表頭拖曳換位時列內容跟著換
-const CELL: Record<SortField, (o: AdminOrderRow) => React.ReactNode> = {
+// 表頭／儲存格樣式共用 adminUi 的 tableTh／tableTd（表頭 sticky、底線畫在儲存格上）
+const th = tableTh
+const td = tableTd
+
+// 每欄的儲存格渲染：依 COLUMNS 順序查表（closed＝公休日，倒數／逾期天數用；act＝開操作對話框、busy＝處理中的單號）
+type CellCtx = {
+  closed: ReadonlySet<string>
+  editInfo: (o: AdminOrderRow) => void
+  act: (o: AdminOrderRow, mode: AdminActionMode) => void
+  busy: string | null
+}
+// 收押金／歸還欄裡的動作鈕；該單處理中時改顯示文字（操作欄此時不顯示，免得兩格都寫處理中）
+const actBtn = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, zh: string) =>
+  ctx.busy === o.rental_number
+    ? <span className="text-gray-scale2">處理中…</span>
+    : <button onClick={() => ctx.act(o, mode)} className={actionBtn(true)}>{zh}</button>
+const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNode> = {
   rental_number: o => <td key="rental_number" className={`${td} font-english`}>{o.rental_number}</td>,
   name: o => <td key="name" className={`${td} font-chinese`}>{o.students?.name ?? '—'}</td>,
   student_id: o => <td key="student_id" className={`${td} text-gray-scale2 font-english`}>{o.students?.student_id ?? ''}</td>,
   booking_type: o => <td key="booking_type" className={`${td} font-chinese`}>{orderKindMeta(o).zh}</td>,
   start_date: o => <td key="start_date" className={`${td} font-english`}>{fmtDate(o.start_date)}–{fmtDate(o.end_date)}</td>,
   deposit_total: o => <td key="deposit_total" className={`${td} font-english`}>NT$ {o.deposit_total.toLocaleString()}</td>,
-  // 大量設備預選時段：待繳押金時列出預約的繳押金／取件時段；已繳待取件逾起租日 → 紅字提醒（學會手動處理）
-  status: o => (
-    <td key="status" className={td}>
+  // 大量設備預選時段：待繳押金時列出預約的繳押金／取件時段；已繳待取件逾起租日 → 紅字提醒（學會手動處理）。
+  // 待繳押金另顯示 24 工作時倒數、逾期顯示逾期營業日（原總覽頁的提醒）
+  status: (o, { closed }) => (
+    <td key="status" className={`px-3 py-3 ${rowLine}`}>
       <StatusChip status={o.status} awaitingPickup={isAwaitingPickup(o)} />
+      {o.status === 'pending' && !o.deposit_paid_at && (() => {
+        const ms = pendingMsRemaining(o.created_at, new Date(), closed)
+        return ms > 0
+          ? <div className="mt-1 font-chinese" style={{ color: 'var(--color-yellow)' }}>剩 {Math.ceil(ms / 3_600_000)} 小時</div>
+          : <div className="mt-1 font-chinese text-gray-scale3">已逾時，將自動取消</div>
+      })()}
+      {o.status === 'overdue' && (() => {
+        const days = overdueBusinessDays(o.end_date, closed)
+        return (
+          <div className="mt-1 font-chinese" style={{ color: 'var(--color-error2)' }}>
+            逾期 {days} 營業日{days >= SUSPENSION_OVERDUE_DAYS ? '（達停權門檻）' : ''}
+          </div>
+        )
+      })()}
       {o.status === 'pending' && o.pickup_slot && (
         <div className="mt-1 font-chinese text-gray-scale2 leading-5">
           {!o.deposit_paid_at && o.deposit_date && o.deposit_slot && (
@@ -91,7 +129,7 @@ const CELL: Record<SortField, (o: AdminOrderRow) => React.ReactNode> = {
   ),
   // 品項與原因較長，允許換行；一項一行。學生改單（情境 3）：取件後新增＝待點交、送單後改過＝已更動
   items: o => (
-    <td key="items" className="px-3 py-3 font-chinese min-w-[10rem] max-w-[18rem]">
+    <td key="items" className={`px-3 py-3 font-chinese ${rowLine}`}>
       {o.order_items.map(i => (
         <div key={i.id}>
           {i.name}{i.item_type === 'equipment' && <span className="font-english"> ×{i.quantity}</span>}
@@ -105,43 +143,68 @@ const CELL: Record<SortField, (o: AdminOrderRow) => React.ReactNode> = {
       )}
     </td>
   ),
-  reason: o => <td key="reason" className="px-3 py-3 font-chinese text-gray-scale2 min-w-[8rem] max-w-[16rem]">{o.reason || '—'}</td>,
-  paid_by: o => (
-    <td key="paid_by" className={td}>
-      {o.paid_by || o.returned_by ? (
-        <div className="font-chinese leading-5">
-          {o.paid_by && <div><span className="text-gray-scale2">收</span> {o.paid_by}</div>}
-          {/* 大量設備先繳後取：取件經手人不同時另列 */}
-          {o.picked_up_by && o.picked_up_by !== o.paid_by && <div><span className="text-gray-scale2">取</span> {o.picked_up_by}</div>}
-          {o.returned_by && <div><span className="text-gray-scale2">還</span> {o.returned_by}</div>}
-        </div>
-      ) : (
-        <span className="text-gray-scale3">—</span>
-      )}
+  // 借用資訊（原因／班級／老師）任何狀態都可代改，修學生打錯字：文字在左，鉛筆推到欄位最右（各列對齊）
+  reason: (o, { editInfo }) => (
+    <td key="reason" className={`px-3 py-3 font-chinese text-gray-scale2 ${rowLine}`}>
+      <div className="flex items-start justify-between gap-3">
+        <span>{o.reason || '—'}</span>
+        <button
+          onClick={() => editInfo(o)}
+          title="修改借用資訊"
+          aria-label="修改借用資訊"
+          className="shrink-0 flex text-gray-scale2 hover:!text-white cursor-pointer"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>edit</span>
+        </button>
+      </div>
+    </td>
+  ),
+  // 收押金：待繳＝「收押金」鈕；收完顯示經手人。大量設備先繳後取：收完接「取件」鈕（情境 2），取完經手人不同時多一行「取 某人」
+  paid_by: (o, ctx) => (
+    <td key="paid_by" className={`${td} font-chinese`}>
+      {o.status === 'pending' && !o.deposit_paid_at ? actBtn(o, ctx, 'paid', '收押金')
+        : !o.paid_by ? <span className="text-gray-scale3">—</span>
+        : (
+          <div className="leading-5">
+            <div>{o.paid_by}</div>
+            {o.picked_up_by && o.picked_up_by !== o.paid_by && <div><span className="text-gray-scale2">取</span> {o.picked_up_by}</div>}
+            {isAwaitingPickup(o) && <div className="mt-1">{actBtn(o, ctx, 'pickup', '取件')}</div>}
+          </div>
+        )}
+    </td>
+  ),
+  // 歸還：借用中／逾期＝「歸還」鈕（逾期含罰款確認）；還完顯示經手人，欠繳罰款再接「收罰款」鈕（收清才解除擋單）
+  returned_by: (o, ctx) => (
+    <td key="returned_by" className={`${td} font-chinese`}>
+      {o.status === 'in-progress' || o.status === 'overdue' ? actBtn(o, ctx, 'return', '歸還')
+        : !o.returned_by ? <span className="text-gray-scale3">—</span>
+        : (
+          <div className="leading-5">
+            <div>{o.returned_by}</div>
+            {o.status === 'returned' && (o.penalty_total ?? 0) > 0 && o.penalty_paid === false && (
+              <div className="mt-1">{actBtn(o, ctx, 'penalty', '收罰款')}</div>
+            )}
+          </div>
+        )}
     </td>
   )
 }
 
-// 工具列 icon 按鈕（active = 展開中或有生效的篩選）
-const iconBtn = (active: boolean) =>
-  `w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
-    active ? 'text-white bg-white/10' : 'text-gray-scale2 hover:!text-white hover:bg-white/10'
-  }`
 
 const AdminOrdersPage: React.FC = () => {
   const { showToast, toastElement } = useToast()
-  const [searchParams] = useSearchParams()
-  const urlStatus = searchParams.get('status')
   const [orders, setOrders] = useState<AdminOrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | OrderStatus>(
-    urlStatus && urlStatus in STATUS_META ? (urlStatus as OrderStatus) : 'all'
-  )
+  const [tab, setTab] = useState<TabKey>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  // 會員頁「總租借」帶學號過來（/admin/orders?student=學號）＝該帳號的租借歷史：是篩選不是搜尋，搜尋列旁顯示學生 chip、點 ✕ 清除
+  const [searchParams, setSearchParams] = useSearchParams()
+  const studentFilter = searchParams.get('student') ?? ''
   const [search, setSearch] = useState('')
-  const [showSearch, setShowSearch] = useState(false)
-  const [showFilters, setShowFilters] = useState(urlStatus !== null) // 從 dashboard 帶篩選進來時展開
+  // 租借時間區間（與起訖重疊即符合；空字串＝不限）
+  const [range, setRange] = useState({ from: '', to: '' })
+  const [showRange, setShowRange] = useState(false)
   const [showSort, setShowSort] = useState(false)
   // 排序規則拖曳：改用 Pointer Events（原生 HTML5 DnD 在整列塞滿 <select> 時會被表單控制吃掉
   // mousedown、拖曳根本不啟動）。dragIndex 只用於畫面淡化；dragRef 同步追蹤即時位置避免 setState 時序問題。
@@ -239,7 +302,10 @@ const AdminOrdersPage: React.FC = () => {
   const base = useMemo(() => {
     const q = search.trim().toLowerCase()
     return orders.filter(o => {
+      if (studentFilter && (o.students?.student_id ?? '') !== studentFilter) return false
       if (typeFilter !== 'all' && orderKind(o) !== typeFilter) return false
+      if (range.from && o.end_date < range.from) return false
+      if (range.to && o.start_date > range.to) return false
       if (!q) return true
       return [
         o.rental_number,
@@ -251,16 +317,17 @@ const AdminOrdersPage: React.FC = () => {
         o.returned_by ?? ''
       ].some(v => v.toLowerCase().includes(q))
     })
-  }, [orders, search, typeFilter])
+  }, [orders, search, typeFilter, range, studentFilter])
+  const studentName = studentFilter ? orders.find(o => o.students?.student_id === studentFilter)?.students?.name ?? '' : ''
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: base.length }
-    for (const o of base) c[o.status] = (c[o.status] ?? 0) + 1
-    return c
-  }, [base])
+  // 各籤筆數跟著搜尋／時間／種類篩選變（同 Notion：filter 後再分籤）
+  const counts = useMemo(
+    () => Object.fromEntries(TABS.map(t => [t.key, base.filter(t.match).length])) as Record<TabKey, number>,
+    [base]
+  )
 
   const visible = useMemo(() => {
-    const rows = filter === 'all' ? base : base.filter(o => o.status === filter)
+    const rows = base.filter(TABS.find(t => t.key === tab)!.match)
     if (sorts.length === 0) return rows // 無排序規則＝維持建立時間新→舊（fetch 預設）
     return [...rows].sort((a, b) => {
       for (const s of sorts) {
@@ -271,9 +338,9 @@ const AdminOrdersPage: React.FC = () => {
       }
       return 0
     })
-  }, [base, filter, sorts])
+  }, [base, tab, sorts])
 
-  const { pageRows, pager } = usePager(visible, [search, filter, typeFilter, sorts])
+  const { pageRows, pager } = usePager(visible, [search, tab, typeFilter, range, sorts])
 
   // 表頭點擊＝快速單一排序：同欄再點切換升降冪，換欄則重設為該欄升冪
   const toggleSort = (f: SortField) => {
@@ -320,89 +387,80 @@ const AdminOrdersPage: React.FC = () => {
   }
   const onGripUp = () => { dragRef.current = null; setDragIndex(null) }
 
-  // 欄位順序（拖曳表頭換位；Action 欄固定在最後）。原生 HTML5 DnD：
-  // 拖進別的表頭（dragEnter）就即時換位，WYSIWYG，不需 drop。順序記在 localStorage，
-  // 載入時過濾掉已不存在的欄位、補上新增的欄位（COLUMNS 日後增減也不會壞）。
-  const [colOrder, setColOrder] = useState<SortField[]>(() => {
-    const all = COLUMNS.map(c => c.field)
-    try {
-      const saved: SortField[] = JSON.parse(localStorage.getItem(ADMIN_ORDER_COLS_KEY) ?? '')
-      return [...saved.filter(f => all.includes(f)), ...all.filter(f => !saved.includes(f))]
-    } catch { return all }
-  })
-  useEffect(() => {
-    localStorage.setItem(ADMIN_ORDER_COLS_KEY, JSON.stringify(colOrder))
-  }, [colOrder])
-  const dragColRef = useRef<SortField | null>(null)
-  const moveCol = (target: SortField) => {
-    const from = dragColRef.current
-    if (!from || from === target) return
-    setColOrder(prev => {
-      const next = prev.filter(f => f !== from)
-      next.splice(prev.indexOf(target) > prev.indexOf(from) ? next.indexOf(target) + 1 : next.indexOf(target), 0, from)
-      return next
-    })
-  }
-
-  const hasFilter = filter !== 'all' || typeFilter !== 'all'
+  const hasRange = !!(range.from || range.to)
+  const cellCtx: CellCtx = { closed: closedDates, editInfo: setInfoOrder, act: (order, mode) => setAction({ order, mode }), busy }
 
   return (
-    // 撐滿視窗（扣 AdminLayout main 的 py-10 上下各 2.5rem）：標題／工具列／分頁固定，只有表格區捲動
-    <div className="h-[calc(100vh-5rem)] flex flex-col">
-      <PageTitle en="Orders" zh="訂單全覽" />
-
-      {/* 工具列（Notion 式 compact）：左筆數、右搜尋／篩選 icon */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs text-gray-scale2 font-chinese mr-auto">
-          {visible.length} 筆
-          {updatedAt && (
-            <span className="text-gray-scale3 ml-3">
-              更新於 {updatedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}
-            </span>
-          )}
-        </span>
+    // 撐滿內容區（AdminLayout main 固定 h-screen）：標題／工具列／分頁固定，只有表格區捲動
+    <div className="h-full flex flex-col">
+      {/* 標題右邊：資料更新時間＋重新整理（每分鐘自動更新，時間停住＝資料可能過時） */}
+      <PageTitle zh="訂單全覽">
+        {updatedAt && (
+          <span className="text-xs text-gray-scale3 font-chinese">
+            更新於 <span className="font-english">{updatedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+          </span>
+        )}
         <button
           onClick={() => refresh(true)}
           disabled={refreshing}
-          className={iconBtn(false)}
-          title="重新整理 Refresh（每分鐘自動更新）"
+          className="w-7 h-7 -ml-1.5 flex items-center justify-center rounded-lg cursor-pointer text-gray-scale2 hover:!text-white hover:bg-white/10"
+          title="重新整理（每分鐘自動更新）"
           aria-label="重新整理"
         >
-          <span className={`material-symbols-outlined ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '20px' }}>refresh</span>
+          <span className={`material-symbols-outlined ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '18px' }}>refresh</span>
         </button>
-        {showSearch ? (
-          <input
-            type="search"
-            autoFocus
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); setShowSearch(false) } }}
-            onBlur={() => { if (!search.trim()) setShowSearch(false) }}
-            placeholder="搜尋單號／姓名／學號／品項／原因／經手人"
-            className={`${inputCls} font-chinese w-80`}
-          />
-        ) : (
-          <button onClick={() => setShowSearch(true)} className={iconBtn(false)} title="搜尋 Search" aria-label="搜尋">
-            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>search</span>
-          </button>
-        )}
+      </PageTitle>
+
+      {/* 工具列：左搜尋框（常駐）；右＝租借時間、狀態、種類、進階排序 */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mr-auto">
+          <SearchBox value={search} onChange={setSearch} className="w-72" />
+          {studentFilter && (
+            <button
+              onClick={() => setSearchParams({})}
+              title="清除學生篩選"
+              className={`${toolBtn(true)} inline-flex items-center pl-2 pr-1.5 gap-1.5 font-chinese`}
+            >
+              <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">person</span>
+              {studentName && <span>{studentName}</span>}
+              <span className="font-english opacity-70">{studentFilter}</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }} aria-hidden="true">close</span>
+            </button>
+          )}
+        </div>
+        <button onClick={() => setShowRange(v => !v)} className={textBtn(showRange || hasRange)} aria-expanded={showRange}>
+          <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">date_range</span>
+          租借時間
+        </button>
+        <Select
+          value={typeFilter}
+          onChange={setTypeFilter}
+          options={[{ value: 'all', label: '全部種類' }, ...Object.entries(ORDER_KIND_META).map(([key, meta]) => ({ value: key, label: meta.zh }))]}
+          icon="category"
+          filled
+          className="font-chinese"
+        />
+        {/* 篩選都已在工具列上，這顆展開的是多重排序面板（swap_vert＝排序；filter_list／sort 三條線會被看成篩選） */}
         <button
           onClick={() => setShowSort(v => !v)}
           className={iconBtn(showSort || sorts.length > 1)}
-          title="排序 Sort"
+          title="排序"
           aria-label="排序"
         >
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>swap_vert</span>
         </button>
-        <button
-          onClick={() => setShowFilters(v => !v)}
-          className={iconBtn(showFilters || hasFilter)}
-          title="篩選 Filter"
-          aria-label="篩選"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>filter_list</span>
-        </button>
       </div>
+
+      {/* 分類分頁（搜尋列下方） */}
+      <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={counts} />
+
+      {/* 租借時間區間（date range icon 展開）：與訂單起訖有重疊即列出 */}
+      {showRange && (
+        <div className="flex items-center gap-2 mb-6 text-xs text-gray-scale2 font-chinese">
+          <span className="mr-1">租借時間</span>
+          <DateRangePicker from={range.from} to={range.to} onChange={setRange} />
+        </div>
+      )}
 
       {/* 排序面板（Notion 式多重排序：由上而下依序比較） */}
       {showSort && (
@@ -425,26 +483,21 @@ const AdminOrdersPage: React.FC = () => {
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>drag_indicator</span>
               </span>
-              <select
+              <Select<SortField>
                 value={s.field}
-                onChange={e => updateSort(i, { field: e.target.value as SortField })}
-                className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
-              >
-                {COLUMNS.filter(c => c.field === s.field || !sorts.some(x => x.field === c.field)).map(c => (
-                  <option key={c.field} value={c.field}>{c.en} {c.zh}</option>
-                ))}
-              </select>
-              <select
+                onChange={field => updateSort(i, { field })}
+                options={COLUMNS.filter(c => c.field === s.field || !sorts.some(x => x.field === c.field)).map(c => ({ value: c.field, label: c.zh }))}
+                className="font-chinese"
+              />
+              <Select<'asc' | 'desc'>
                 value={s.dir}
-                onChange={e => updateSort(i, { dir: e.target.value as 'asc' | 'desc' })}
-                className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
-              >
-                <option value="asc">Ascending 升冪</option>
-                <option value="desc">Descending 降冪</option>
-              </select>
+                onChange={dir => updateSort(i, { dir })}
+                options={[{ value: 'asc', label: '升冪' }, { value: 'desc', label: '降冪' }]}
+                className="font-chinese"
+              />
               <button
                 onClick={() => removeSort(i)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-scale2 hover:!text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-scale2 hover:!text-white hover:bg-white/10 cursor-pointer"
                 aria-label="移除排序"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
@@ -454,39 +507,11 @@ const AdminOrdersPage: React.FC = () => {
           {sorts.length < COLUMNS.length && (
             <button
               onClick={addSort}
-              className="text-xs text-gray-scale2 hover:!text-white transition-colors cursor-pointer"
+              className="text-xs text-gray-scale2 hover:!text-white cursor-pointer"
             >
-              ＋ <span className="font-english">Add sort</span> <span className="font-chinese">新增排序</span>
+              ＋ 新增排序
             </button>
           )}
-        </div>
-      )}
-
-      {/* 篩選列（filter icon 展開）：狀態＋種類 */}
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`text-xs whitespace-nowrap transition-colors cursor-pointer ${
-                filter === f.key ? 'text-white font-bold' : 'text-gray-scale2 hover:!text-white'
-              }`}
-            >
-              <span className="font-english">{f.en}</span> <span className="font-chinese">{f.zh}</span>
-              <span className="font-english ml-1 opacity-60">{counts[f.key] ?? 0}</span>
-            </button>
-          ))}
-          <select
-            value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value)}
-            className="bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer"
-          >
-            <option value="all">全部種類</option>
-            {Object.entries(ORDER_KIND_META).map(([key, meta]) => (
-              <option key={key} value={key}>{meta.zh}</option>
-            ))}
-          </select>
         </div>
       )}
 
@@ -494,76 +519,68 @@ const AdminOrdersPage: React.FC = () => {
       {!loading && error && <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />}
 
       {!loading && !error && (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <table className="min-w-full text-xs border-collapse">
+        <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
+          {/* min-w＝固定欄總和（1248px）＋品項至少 170px：塞不下時橫向捲動，不然 Chrome 會按比例壓縮所有欄、表頭又會跳 */}
+          <table className="w-full min-w-[1420px] text-xs border-separate border-spacing-0">
             <thead>
               <tr className="text-left text-gray-scale2">
-                {colOrder.map(f => COLUMNS.find(c => c.field === f)!).map(col => (
+                {COLUMNS.map(col => (
                   <th
                     key={col.field}
-                    draggable
-                    onDragStart={() => { dragColRef.current = col.field }}
-                    onDragEnter={() => moveCol(col.field)}
-                    onDragOver={e => e.preventDefault()}
-                    onDragEnd={() => { dragColRef.current = null }}
                     onClick={() => toggleSort(col.field)}
-                    className={`${th} cursor-pointer select-none hover:text-white`}
+                    className={`${th} ${col.w ?? ''} cursor-pointer select-none hover:text-white`}
                   >
-                    <span className="font-english">{col.en}</span> <span className="font-chinese">{col.zh}</span>
-                    {/* 固定寬度佔位：箭頭出現／移動時欄寬不變；多重排序時附優先順序 */}
-                    <span className="inline-block w-4 ml-0.5 text-[10px] opacity-70 whitespace-nowrap">
+                    {col.zh}
+                    {/* 固定寬度佔位：icon 出現／移動時欄寬不變。上下 chevron 疊成一顆（±3px），排序方向那半亮、另一半暗；多重排序時附優先順序 */}
+                    <span className="inline-flex items-center w-5 ml-0.5 align-middle">
                       {(() => {
                         const i = sorts.findIndex(s => s.field === col.field)
-                        if (i === -1) return ''
-                        return `${sorts[i].dir === 'asc' ? '↑' : '↓'}${sorts.length > 1 ? i + 1 : ''}`
+                        if (i === -1) return null
+                        const asc = sorts[i].dir === 'asc'
+                        return (
+                          <>
+                            <span className="relative inline-block w-4 h-4">
+                              <span className={`material-symbols-outlined absolute left-0 -top-[3px] ${asc ? '' : 'opacity-30'}`} style={{ fontSize: '16px' }}>expand_less</span>
+                              <span className={`material-symbols-outlined absolute left-0 top-[3px] ${asc ? 'opacity-30' : ''}`} style={{ fontSize: '16px' }}>expand_more</span>
+                            </span>
+                            {sorts.length > 1 && <span className="text-[10px] opacity-70">{i + 1}</span>}
+                          </>
+                        )
                       })()}
                     </span>
                   </th>
                 ))}
-                <th className={th}><span className="font-english">Action</span> <span className="font-chinese">操作</span></th>
+                <th className={`${th} w-40`}>操作</th>
               </tr>
             </thead>
             <tbody>
               {pageRows.map(o => (
-                <tr key={o.id} className="border-b border-gray-scale4 hover:bg-white/5">
-                  {colOrder.map(f => CELL[f](o))}
+                <tr key={o.id} className="hover:bg-white/5">
+                  {COLUMNS.map(c => CELL[c.field](o, cellCtx))}
                   <td className={td}>
                     {(() => {
-                      // 各狀態可用的後台動作（情境 2／9／13）；學生取件後新增設備 → 前面多一個「點交」
-                      const handover: { mode: AdminActionMode; en: string; zh: string }[] =
-                        o.order_items.some(i => i.pickup_pending) ? [{ mode: 'handover', en: 'Handover', zh: '點交' }] : []
-                      const acts: { mode: AdminActionMode; en: string; zh: string }[] =
+                      // 收押金／取件／歸還／收罰款在各自的欄；這裡是其餘動作（情境 9／13）：
+                      // 學生取件後新增設備 → 前面多一個「點交」；處理中由收押金／歸還欄顯示，這裡留白
+                      const handover: { mode: AdminActionMode; zh: string }[] =
+                        o.order_items.some(i => i.pickup_pending) ? [{ mode: 'handover', zh: '點交' }] : []
+                      const acts: { mode: AdminActionMode; zh: string }[] =
                         o.status === 'pending'
-                          ? [
-                              isAwaitingPickup(o)
-                                ? { mode: 'pickup', en: 'Pick up', zh: '取件' } // 大量設備已預繳押金
-                                : { mode: 'paid', en: 'Deposit', zh: '收押金' },
-                              { mode: 'cancel', en: 'Cancel', zh: '取消' }
-                            ]
+                          ? [{ mode: 'cancel', zh: '取消訂單' }]
                           : o.status === 'in-progress'
-                            ? [
-                                ...handover,
-                                { mode: 'return', en: 'Return', zh: '歸還' },
-                                { mode: 'extend', en: 'Extend', zh: '延期' },
-                                { mode: 'cancel', en: 'Cancel', zh: '取消' }
-                              ]
+                            ? [...handover, { mode: 'extend', zh: '延期' }, { mode: 'cancel', zh: '取消訂單' }]
                             : o.status === 'overdue'
-                              ? [...handover, { mode: 'return', en: 'Return', zh: '歸還' }, { mode: 'extend', en: 'Extend', zh: '延期' }]
-                              : o.status === 'returned' && (o.penalty_total ?? 0) > 0 && o.penalty_paid === false
-                                ? [{ mode: 'penalty', en: 'Penalty', zh: '收罰款' }] // 欠繳罰款：收清才解除擋單
-                                : []
-                      if (busy === o.rental_number) return <span className="font-chinese text-gray-scale2">處理中…</span>
+                              ? [...handover, { mode: 'extend', zh: '延期' }]
+                              : []
+                      if (busy === o.rental_number) return null
                       return (
-                        <div className="flex items-center gap-3">
-                          {/* 借用資訊（原因／班級／老師）任何狀態都可代改，修學生打錯字 */}
-                          <EditIconBtn onClick={() => setInfoOrder(o)} label="修改借用資訊 Edit Info" />
+                        <div className="flex flex-wrap items-center gap-3">
                           {acts.map(a => (
                             <button
                               key={a.mode}
                               onClick={() => setAction({ order: o, mode: a.mode })}
                               className={actionBtn(true)}
                             >
-                              <span className="font-english">{a.en} <span className="font-chinese">{a.zh}</span></span>
+                              {a.zh}
                             </button>
                           ))}
                         </div>

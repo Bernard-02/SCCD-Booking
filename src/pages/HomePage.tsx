@@ -1,6 +1,8 @@
 /**
  * 首頁 - 登入畫面
  * 單欄直排（標題→登入→訪客→工作室連結），無 Header／Footer；手機置中、桌機靠右
+ * 學生用學校 Google 帳號登入（google-login.sql）；學號＋密碼表單給後台帳號（sccdsa）與有密碼的帳號，兩種表單可互切。
+ * Google Cloud／Supabase 尚未設定完成，目前預設顯示學號密碼表單（PASSWORD_MODE_DEFAULT）。
  */
 
 import React, { useState, useEffect } from 'react'
@@ -15,13 +17,31 @@ const STUDIO_LINKS = [
   { en: 'Film Studio', zh: '專業攝影棚', icon: 'photo_camera', href: 'https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link' },
 ]
 
+// LINE／IG／FB 內建瀏覽器：Google 不給在 App 內嵌網頁登入（disallowed_useragent）
+const IN_APP = /Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
+
+// Google 標誌（品牌規範：登入鈕要放原色 G）
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+  </svg>
+)
+
+// ponytail: Google 登入設定完成後改回 false（預設 Google、密碼表單退為次要）
+const PASSWORD_MODE_DEFAULT = true
+
 const HomePage = () => {
   const navigate = useNavigate()
-  const { login, isAuthenticated, currentUser } = useAuth()
+  const { login, loginWithGoogle, finishGoogleLogin, isAuthenticated, currentUser } = useAuth()
   const t = useT()
+  const [passwordMode, setPasswordMode] = useState(PASSWORD_MODE_DEFAULT) // 學號＋密碼表單
+  const [googleError, setGoogleError] = useState('')
 
   // 登入後導向：admin 進後台，其餘進型錄
-  const landingPath = (role?: string) => (role === 'admin' ? '/admin' : '/catalog')
+  const landingPath = (role?: string) => (role === 'admin' ? '/admin/orders' : '/catalog')
   const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -44,7 +64,7 @@ const HomePage = () => {
     if (result.ok && result.maskedEmail) {
       setResetSent(result.maskedEmail)
     } else {
-      setResetError(result.message || '寄送失敗')
+      setResetError(result.message || t('Failed to send. Please try again later.', '寄送失敗'))
     }
   }
 
@@ -63,11 +83,40 @@ const HomePage = () => {
     }
   }, [isAuthenticated, currentUser, navigate])
 
+  // 從 Google 跳回首頁：完成登入或顯示原因，並清掉網址上的 token／error
+  useEffect(() => {
+    finishGoogleLogin().then(result => {
+      if (!result) return
+      window.history.replaceState(null, '', window.location.pathname)
+      if (result.success) navigate(landingPath(result.student?.role), { replace: true })
+      else if (result.message) setGoogleError(result.message)
+    })
+  }, [])
+
+  const handleGoogle = async () => {
+    setGoogleError('')
+    if (IN_APP) {
+      // LINE 認 openExternalBrowser=1，會改用手機預設瀏覽器開；IG／FB 只能請學生自己開
+      if (/Line\//i.test(navigator.userAgent)) {
+        window.location.href = `${window.location.origin}/?openExternalBrowser=1`
+        return
+      }
+      setGoogleError(t(
+        'Google sign-in doesn’t work in in-app browsers. Please open this page in Safari or Chrome.',
+        'App 內建瀏覽器無法使用 Google 登入，請改用 Safari 或 Chrome 開啟本頁'
+      ))
+      return
+    }
+    if (!(await loginWithGoogle(rememberMe))) {
+      setGoogleError(t('Couldn’t connect to Google. Please try again later.', '無法連線到 Google，請稍後再試'))
+    }
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     // 空白欄位先擋，不打 API
-    const idError = studentId.trim() ? '' : '請輸入學號'
-    const pwError = password ? '' : '請輸入密碼'
+    const idError = studentId.trim() ? '' : t('Please enter your student ID', '請輸入學號')
+    const pwError = password ? '' : t('Please enter your password', '請輸入密碼')
     setStudentIdError(idError)
     setPasswordError(pwError)
     if (idError || pwError) return
@@ -95,7 +144,39 @@ const HomePage = () => {
           <div className="float-up flex flex-col">
             <h1 className="text-lg text-center mb-16">SCCDSA Booking</h1>
 
-            {/* 錯誤訊息固定在輸入框下方的預留槽（h-9），出現時版面不跳動 */}
+            {!passwordMode ? (
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  className="h-14 rounded-2xl bg-white text-black text-sm hover:opacity-70 cursor-pointer flex items-center justify-center gap-3"
+                >
+                  <GoogleIcon />
+                  {t('Continue with School Google Account', '使用學校 Google 帳號登入')}
+                </button>
+                {/* 錯誤預留槽（同密碼表單）；原因可能兩行，用 min-h */}
+                <p className="min-h-9 pt-2 px-2 text-2xs text-error2" aria-live="polite">{googleError}</p>
+                <div className="flex justify-between items-center px-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="custom-checkbox"
+                    />
+                    <span className="text-sm text-gray-scale2">{t('Remember Me', '記住我')}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setPasswordMode(true); setGoogleError('') }}
+                    className="text-sm text-white hover:opacity-70 cursor-pointer"
+                  >
+                    {t('Sign in with Student ID', '學號密碼登入')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+            /* 錯誤訊息固定在輸入框下方的預留槽（h-9），出現時版面不跳動 */
             <form onSubmit={handleLogin} className="flex flex-col">
               {/* 學號 */}
               <div>
@@ -128,7 +209,7 @@ const HomePage = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 inset-y-0 px-5 flex items-center text-white hover:opacity-70 transition-opacity cursor-pointer"
+                    className="absolute right-0 inset-y-0 px-5 flex items-center text-white hover:opacity-70 cursor-pointer"
                     aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
                     tabIndex={-1}
                   >
@@ -143,22 +224,19 @@ const HomePage = () => {
               {/* 記住我／忘記密碼 */}
               <div className="flex justify-between items-center px-1">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  {/* 原生 checkbox 藏起來保留鍵盤／讀屏，外觀用 Material Symbol */}
+                  {/* 全站共用圓形 checkbox（css/common.css .custom-checkbox） */}
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="sr-only peer"
+                    className="custom-checkbox"
                   />
-                  <span className="material-symbols-outlined text-white rounded-full peer-focus-visible:outline peer-focus-visible:outline-1" style={{ fontSize: '20px' }}>
-                    {rememberMe ? 'check_circle' : 'circle'}
-                  </span>
                   <span className="text-sm text-gray-scale2">{t('Remember Me', '記住我')}</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowForgotPasswordModal(true)}
-                  className="text-sm text-white hover:opacity-70 transition-opacity cursor-pointer"
+                  className="text-sm text-white hover:opacity-70 cursor-pointer"
                 >
                   {t('Forgot Password?', '忘記密碼？')}
                 </button>
@@ -166,18 +244,29 @@ const HomePage = () => {
 
               <button
                 type="submit"
-                className="mt-5 h-14 rounded-2xl bg-white text-black text-sm hover:opacity-70 transition-opacity cursor-pointer"
+                className="mt-5 h-14 rounded-2xl bg-white text-black text-sm hover:opacity-70 cursor-pointer"
               >
                 {t('Login', '登入')}
               </button>
             </form>
+            )}
 
+            {/* 密碼表單模式：可切回 Google 登入 */}
+            {passwordMode && (
+              <button
+                type="button"
+                onClick={() => setPasswordMode(false)}
+                className="mt-5 self-center text-sm text-gray-scale2 underline underline-offset-4 hover:!text-white cursor-pointer"
+              >
+                {t('Sign in with School Google Account', '使用學校 Google 帳號登入')}
+              </button>
+            )}
             {/* 訪客：可逛型錄、選日期；加入清單時才要求登入（useCart 把關） */}
             <Link
               to="/catalog"
-              className="mt-5 self-center text-sm text-gray-scale2 underline underline-offset-4 hover:!text-white transition-colors"
+              className={`${passwordMode ? 'mt-3' : 'mt-5'} self-center text-sm text-gray-scale2 underline underline-offset-4 hover:!text-white`}
             >
-              訪客登入
+              {t('Browse as Guest', '訪客登入')}
             </Link>
 
             {/* 工作室／攝影棚外部連結 */}
@@ -188,7 +277,7 @@ const HomePage = () => {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-16 px-6 rounded-2xl border border-white/80 flex items-center gap-5 text-white hover:bg-white hover:text-black transition-colors no-underline"
+                  className="h-16 px-6 rounded-2xl border border-white/80 flex items-center gap-5 text-white hover:bg-white hover:text-black no-underline"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
                   <span className="flex-1 text-sm">{t(en, zh)}</span>
@@ -204,11 +293,16 @@ const HomePage = () => {
       <ConfirmDialog
         isOpen={showForgotPasswordModal}
         title={resetSent ? '重設信已寄出' : '忘記密碼'}
-        titleEn={resetSent ? undefined : 'Forgot Password'}
+        titleEn={resetSent ? 'Reset Email Sent' : 'Forgot Password'}
         message={
           resetSent
             ? `重設密碼信已寄至 ${resetSent}，請至信箱點擊連結設定新密碼。`
             : '輸入學號，系統會寄送重設密碼連結到你的學校信箱。'
+        }
+        messageEn={
+          resetSent
+            ? `A password reset email has been sent to ${resetSent}. Open the link in it to set a new password.`
+            : 'Enter your student ID and we’ll send a password reset link to your school email.'
         }
         confirmText={resetSent ? 'Confirm' : 'Send'}
         confirmTextZh={resetSent ? '確認' : '寄送'}

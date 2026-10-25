@@ -73,7 +73,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             {/* 關閉按鈕 */}
             <button
               onClick={onCancel}
-              className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1"
+              className="text-white hover:opacity-70 cursor-pointer -mt-1"
               aria-label="Close"
             >
               <span className="material-icons text-lg">close</span>
@@ -171,14 +171,14 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
         <div className="px-6 py-4 flex justify-end gap-6">
           <button
             onClick={onCancel}
-            className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
+            className="text-[#cccccc] hover:text-white cursor-pointer"
           >
             <span className="text-xs">{t('Cancel', '取消')}</span>
           </button>
           <button
             onClick={handleConfirm}
             disabled={isConfirmDisabled}
-            className={`transition-opacity cursor-pointer ${
+            className={`cursor-pointer ${
               isConfirmDisabled
                 ? 'text-gray-scale3 cursor-not-allowed'
                 : 'text-white hover:opacity-70'

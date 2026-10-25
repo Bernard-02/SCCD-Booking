@@ -37,17 +37,17 @@ const ResetPasswordPage = () => {
     setError('')
 
     if (password.length < 8) {
-      setError('密碼至少 8 碼')
+      setError(t('Password must be at least 8 characters.', '密碼至少 8 碼'))
       return
     }
     if (password !== confirm) {
-      setError('兩次輸入的密碼不一致')
+      setError(t('The two passwords don’t match.', '兩次輸入的密碼不一致'))
       return
     }
 
     const result = await updatePassword(password)
     if (!result.ok) {
-      setError(result.message || '設定失敗，請重新從信中連結進入')
+      setError(result.message || t('Couldn’t set the password. Please open the link in the email again.', '設定失敗，請重新從信中連結進入'))
       return
     }
 
@@ -97,7 +97,7 @@ const ResetPasswordPage = () => {
               <button
                 type="submit"
                 disabled={!password || !confirm}
-                className={`w-full py-3 rounded-lg text-md font-normal transition ${
+                className={`w-full py-3 rounded-lg text-md font-normal ${
                   password && confirm
                     ? 'bg-white text-black hover:opacity-70 cursor-pointer'
                     : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'

@@ -18,10 +18,8 @@ const SpacePage = lazy(() => import('./pages/SpacePage'))
 const RentalListPage = lazy(() => import('./pages/RentalListPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
-const OrderPage = lazy(() => import('./pages/OrderPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
-const AdminHomePage = lazy(() => import('./pages/AdminHomePage'))
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
 const AdminHoursPage = lazy(() => import('./pages/AdminHoursPage'))
 const AdminMembersPage = lazy(() => import('./pages/AdminMembersPage'))
@@ -68,9 +66,6 @@ function App() {
                   }
                 />
 
-                {/* 訂單詳情 */}
-                <Route path="/order" element={<OrderPage />} />
-
                 {/* 後台（僅 admin）：側欄外框 + 各分區 */}
                 <Route
                   path="/admin"
@@ -80,7 +75,8 @@ function App() {
                     </AdminRoute>
                   }
                 >
-                  <Route index element={<AdminHomePage />} />
+                  {/* 總覽已拿掉（2026-10-24），/admin 直接進訂單 */}
+                  <Route index element={<Navigate to="orders" replace />} />
                   <Route path="orders" element={<AdminOrdersPage />} />
                   <Route path="hours" element={<AdminHoursPage />} />
                   <Route path="members" element={<AdminMembersPage />} />

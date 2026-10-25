@@ -7,6 +7,7 @@
 import React from 'react'
 import { CONTACTS, WEBSITE_CONTACT } from '../../data/contactInfo'
 import ContactList from './ContactList'
+import { Section, NumberedList } from './GuideContent'
 import { useT } from '../../stores/langStore'
 
 // 學會簡介
@@ -26,43 +27,21 @@ const SERVICES: { en: string; zh: string; descEn: string; descZh: string }[] = [
 // 聯絡方式（沿用 Guide 同一份，額外加上官網）
 const SA_CONTACTS = [...CONTACTS, WEBSITE_CONTACT]
 
-// 區塊標題（左欄）；在該段範圍內 sticky（top-16＝InfoDialog 標題高度）
-const SectionTitle: React.FC<{ en: string; zh: string }> = ({ en, zh }) => {
-  const t = useT()
-  return <div className="sticky top-16 self-start text-xs text-[#cccccc]">{t(en, zh)}</div>
-}
-
 const SaContent: React.FC = () => {
   const t = useT()
   return (
     <div className="space-y-10">
-      {/* 1. 學會簡介 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="About" zh="學會簡介" />
+      <Section en="About" zh="一、學會簡介">
         <p className="text-xs text-white leading-relaxed">{t(ABOUT.en, ABOUT.zh)}</p>
-      </section>
+      </Section>
 
-      {/* 2. 服務項目 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Services" zh="服務項目" />
-        <ul className="space-y-3">
-          {SERVICES.map((s, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="flex-shrink-0 text-[#cccccc] text-xs">・</span>
-              <div>
-                <p className="text-white text-xs">{t(s.en, s.zh)}</p>
-                <p className="text-xs text-[#cccccc] leading-relaxed mt-1">{t(s.descEn, s.descZh)}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Section en="Services" zh="二、服務項目">
+        <NumberedList items={SERVICES} />
+      </Section>
 
-      {/* 3. 聯絡方式 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Contact" zh="聯絡方式" />
+      <Section en="Contact" zh="三、聯絡方式">
         <ContactList contacts={SA_CONTACTS} />
-      </section>
+      </Section>
     </div>
   )
 }

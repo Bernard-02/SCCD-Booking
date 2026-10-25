@@ -8,7 +8,9 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { suggestedDeposit, type AdminOrderRow } from '../../services/ordersService'
+import { useBundles } from '../../services/equipmentService'
 import { slotLabel, toDateKey } from '../../utils/timeUtils'
+import { Select } from './adminUi'
 
 export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'penalty' | 'cancel' | 'extend' | 'handover'
 // pickup = 已預繳者取件；penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期；
@@ -67,9 +69,12 @@ const OrderActionDialog: React.FC<Props> = ({
     mode === 'handover' ||
     (mode === 'pickup' && !!order.items_updated_at && !!order.deposit_paid_at &&
       new Date(order.items_updated_at) > new Date(order.deposit_paid_at))
-  // 建議值＝最新品項小計 cap 5,000；助教直借（押金 0）維持 0
-  const suggested = order.deposit_total === 0 ? 0 : suggestedDeposit(order.order_items)
+  // 建議值＝最新品項小計（套用設備組合）cap 5,000；助教直借（押金 0）維持 0
+  const bundles = useBundles()
+  const suggested = order.deposit_total === 0 ? 0 : suggestedDeposit(order.order_items, bundles)
   const [deposit, setDeposit] = useState(String(suggested))
+  // 組合非同步載入：載到後更新預填值（通常在學會開始輸入前）
+  useEffect(() => { setDeposit(String(suggested)) }, [suggested])
   const depositNum = parseInt(deposit, 10)
   const depositValid = !needDeposit || (!Number.isNaN(depositNum) && depositNum >= 0)
 
@@ -88,13 +93,13 @@ const OrderActionDialog: React.FC<Props> = ({
     handler !== '' && penaltyValid && daysValid && depositValid && (mode !== 'return' || returnIds.size > 0)
 
   const title =
-    mode === 'paid' ? { en: 'Deposit', zh: '確認收押金' }
-    : mode === 'pickup' ? { en: 'Pick up', zh: '確認取件' }
-    : mode === 'penalty' ? { en: 'Penalty', zh: '收罰款' }
-    : mode === 'cancel' ? { en: 'Cancel Order', zh: '代取消訂單' }
-    : mode === 'extend' ? { en: 'Extend', zh: '代客延期' }
-    : mode === 'handover' ? { en: 'Handover', zh: '點交新增設備' }
-    : { en: 'Return', zh: '確認歸還' }
+    mode === 'paid' ? '確認收押金'
+    : mode === 'pickup' ? '確認取件'
+    : mode === 'penalty' ? '收罰款'
+    : mode === 'cancel' ? '代取消訂單'
+    : mode === 'extend' ? '代客延期'
+    : mode === 'handover' ? '點交新增設備'
+    : '確認歸還'
 
   // 代客延期的新歸還日預覽
   const newEndDate = (() => {
@@ -119,9 +124,7 @@ const OrderActionDialog: React.FC<Props> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-english text-sm text-white font-normal">
-            {title.en} <span className="font-chinese">{title.zh}</span>
-          </h2>
+          <h2 className="text-sm text-white font-normal">{title}</h2>
           <p className="font-english text-xs text-gray-scale2 mt-1">
             {order.rental_number} · <span className="font-chinese">{order.students?.name ?? '—'}</span>
             {' '}· NT$ {order.deposit_total.toLocaleString()}
@@ -143,7 +146,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {mode === 'extend' && (
             <div>
               <label className="text-gray-scale2 text-tiny block mb-2">
-                <span className="font-english">Days</span> <span className="font-chinese">延期天數（1-7，更長分次延）</span>
+                延期天數（1-7，更長分次延）
               </label>
               <input
                 type="number"
@@ -203,7 +206,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {needDeposit && (
             <div>
               <label className="text-gray-scale2 text-xs block mb-2">
-                <span className="font-english">Deposit</span> <span className="font-chinese">押金總額（現場計算後填入）</span>
+                押金總額（現場計算後填入）
               </label>
               <input
                 type="number"
@@ -234,33 +237,24 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 值班經手人 */}
           <div>
             <label className="text-gray-scale2 text-xs block mb-2">
-              <span className="font-english">Handled by</span> <span className="font-chinese">值班經手人</span>
+              值班經手人
             </label>
             {staff.length === 0 ? (
               <p className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>
                 尚無系學會成員，請先到「會員管理 Members」把幹部的身分設為系學會
               </p>
             ) : (
-              <select
+              // 值班中的幹部排前面並分組標示；沒人值班時就是一般清單（代班都選得到）
+              <Select
                 value={handler}
-                onChange={e => setHandler(e.target.value)}
-                className={`${field} font-chinese cursor-pointer`}
-              >
-                <option value="" disabled>請選擇</option>
-                {/* 值班中的幹部排前面並分組標示；沒人值班時就是一般清單（代班都選得到） */}
-                {staff.some(s => s.onDuty) ? (
-                  <>
-                    <optgroup label="值班中 On duty">
-                      {staff.filter(s => s.onDuty).map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-                    </optgroup>
-                    <optgroup label="其他 Others">
-                      {staff.filter(s => !s.onDuty).map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-                    </optgroup>
-                  </>
-                ) : (
-                  staff.map(s => <option key={s.name} value={s.name}>{s.name}</option>)
-                )}
-              </select>
+                onChange={setHandler}
+                options={staff.map(s => ({
+                  value: s.name,
+                  label: s.name,
+                  group: staff.some(x => x.onDuty) ? (s.onDuty ? '值班中' : '其他') : undefined
+                }))}
+                className="font-chinese w-full"
+              />
             )}
           </div>
 
@@ -268,8 +262,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {mode === 'return' && (
             <div>
               <label className="text-gray-scale2 text-xs block mb-2">
-                <span className="font-english">Returned items</span>{' '}
-                <span className="font-chinese">已歸還品項（未勾選者拆為子單繼續租借）</span>
+                已歸還品項（未勾選者拆為子單繼續租借）
               </label>
               <div className="flex flex-col gap-2">
                 {order.order_items.map(item => (
@@ -297,16 +290,17 @@ const OrderActionDialog: React.FC<Props> = ({
           {isOverdue && (
             <div>
               <label className="text-gray-scale2 text-xs block mb-2">
-                <span className="font-english">Return type</span> <span className="font-chinese">歸還認定</span>
+                歸還認定
               </label>
-              <select
+              <Select<'late' | 'ontime'>
                 value={returnKind}
-                onChange={e => setReturnKind(e.target.value as 'late' | 'ontime')}
-                className={`${field} font-chinese cursor-pointer`}
-              >
-                <option value="late">逾期歸還（計罰款）</option>
-                <option value="ontime">準時歸還（免罰，19:00 前已交還）</option>
-              </select>
+                onChange={setReturnKind}
+                options={[
+                  { value: 'late', label: '逾期歸還（計罰款）' },
+                  { value: 'ontime', label: '準時歸還（免罰，19:00 前已交還）' }
+                ]}
+                className="font-chinese w-full"
+              />
             </div>
           )}
 
@@ -314,7 +308,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {chargePenalty && (
             <div>
               <label className="text-gray-scale2 text-xs block mb-2">
-                <span className="font-english">Penalty</span> <span className="font-chinese">罰款金額</span>
+                罰款金額
                 <span className="font-chinese ml-2">
                   （系統試算 NT$ {estPenalty.toLocaleString()}，可修改）
                 </span>
@@ -352,10 +346,8 @@ const OrderActionDialog: React.FC<Props> = ({
 
         {/* 按鈕區 */}
         <div className="px-6 py-4 flex justify-end gap-6">
-          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white transition-colors cursor-pointer">
-            <span className="font-english text-xs">
-              Cancel <span className="font-chinese">取消</span>
-            </span>
+          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white cursor-pointer">
+            <span className="text-xs">取消</span>
           </button>
           <button
             onClick={() =>
@@ -371,13 +363,11 @@ const OrderActionDialog: React.FC<Props> = ({
               )
             }
             disabled={!canConfirm}
-            className={`transition-opacity ${
+            className={`${
               canConfirm ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
             }`}
           >
-            <span className="font-english text-xs">
-              Confirm <span className="font-chinese">確認</span>
-            </span>
+            <span className="text-xs">確認</span>
           </button>
         </div>
       </div>

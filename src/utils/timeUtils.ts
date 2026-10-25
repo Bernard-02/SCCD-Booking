@@ -215,6 +215,38 @@ export const slotLabel = ({ date, slot }: DatedSlot) => {
   return `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${slot.replace('-', '–')}`
 }
 
+/**
+ * 前台顯示的營業時間＝系學會值班時段（後台「營業時間」頁排班）：同一天重疊或相接的時段合併，
+ * 時段完全相同的星期併成一組，週一到週五全同 →「平日」。沒有排班回 null（顯示端退回「請見 Facebook」）
+ */
+const WD_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+export const dutyHoursText = (slots: readonly DutySlot[]): { zh: string; en: string } | null => {
+  const groups: { days: number[]; ranges: string[] }[] = []
+  for (const w of [1, 2, 3, 4, 5, 6, 0]) {
+    const merged: [string, string][] = []
+    slots
+      .filter(s => s.weekday === w)
+      .map(s => [s.start_time.slice(0, 5), s.end_time.slice(0, 5)] as [string, string])
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([start, end]) => {
+        const last = merged[merged.length - 1]
+        if (last && start <= last[1]) { if (end > last[1]) last[1] = end }
+        else merged.push([start, end])
+      })
+    if (merged.length === 0) continue
+    const ranges = merged.map(([a, b]) => `${a}–${b}`)
+    const same = groups.find(g => g.ranges.join() === ranges.join())
+    if (same) same.days.push(w)
+    else groups.push({ days: [w], ranges })
+  }
+  if (groups.length === 0) return null
+  const weekdays = (days: number[]) => days.join() === '1,2,3,4,5'
+  return {
+    zh: groups.map(g => `${weekdays(g.days) ? '平日' : g.days.map(d => `週${WD[d]}`).join('、')} ${g.ranges.join('、')}`).join('；'),
+    en: groups.map(g => `${weekdays(g.days) ? 'Weekdays' : g.days.map(d => WD_EN[d]).join(', ')} ${g.ranges.join(', ')}`).join('; ')
+  }
+}
+
 /** 時段開始／結束的 Date（date＝'YYYY-MM-DD'、slot＝'HH:MM-HH:MM'） */
 export const slotStart = (date: string, slot: string) => new Date(`${date}T${slot.slice(0, 5)}`)
 export const slotEnd = (date: string, slot: string) => new Date(`${date}T${slot.slice(6, 11)}`)

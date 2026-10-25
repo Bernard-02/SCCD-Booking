@@ -11,6 +11,8 @@ import { supabase } from '../services/supabase'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import { cartGroupKey } from '../types/equipment'
 import type { CartItem } from '../types/equipment'
+import { tr } from '../stores/langStore'
+import { serverErrorText } from '../utils/serverErrors'
 
 interface UseOrderSubmissionArgs {
   cart: CartItem[]
@@ -42,11 +44,11 @@ const toDateOnly = (s: string): string => {
  */
 export const submitErrorMessage = (error: { code?: string; message?: string } | null): string => {
   const msg = error?.message ?? ''
-  if (error?.code === 'P0001' && msg) return msg
-  if (error?.code === '23505') return '同一時間有其他人送單，訂單編號衝突，請再按一次送出'
-  if (msg.includes('JWT')) return '登入已過期，請重新登入後再送出（購物車會保留）'
-  if (msg.includes('fetch')) return '網路連線失敗，請檢查網路後再送出'
-  return `送出失敗（${msg || '未知錯誤'}），請再試一次`
+  if (error?.code === 'P0001' && msg) return serverErrorText(msg)
+  if (error?.code === '23505') return tr('Someone else submitted at the same moment and the order number clashed. Please press Submit again.', '同一時間有其他人送單，訂單編號衝突，請再按一次送出')
+  if (msg.includes('JWT')) return tr('Your login has expired. Please log in again and resubmit (your cart is kept).', '登入已過期，請重新登入後再送出（購物車會保留）')
+  if (msg.includes('fetch')) return tr('Network error. Please check your connection and submit again.', '網路連線失敗，請檢查網路後再送出')
+  return tr(`Submission failed (${msg || 'unknown error'}). Please try again.`, `送出失敗（${msg || '未知錯誤'}），請再試一次`)
 }
 
 export const useOrderSubmission = ({ cart, clearCart, bookingDetails = {} }: UseOrderSubmissionArgs) => {
@@ -54,7 +56,7 @@ export const useOrderSubmission = ({ cart, clearCart, bookingDetails = {} }: Use
   const { clearAllDates } = useDateSelection()
 
   return useCallback(async (): Promise<SubmitResult> => {
-    if (cart.length === 0) return { ok: false, reason: '購物車是空的' }
+    if (cart.length === 0) return { ok: false, reason: tr('Your cart is empty.', '購物車是空的') }
 
     // 按「設備／空間 × 時段」分組（一組＝一張訂單；同時段設備與空間各自成單）
     const dateGroups: Record<string, CartItem[]> = {}

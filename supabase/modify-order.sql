@@ -67,9 +67,10 @@ begin
   if (select count(distinct i ->> 'item_id') from jsonb_array_elements(p_items) i) <> jsonb_array_length(p_items) then
     raise exception '品項重複';
   end if;
-  select coalesce(sum((i ->> 'quantity')::int), 0) into v_total from jsonb_array_elements(p_items) i;
+  -- 湊滿的組合算 1 件（equipment-bundles.sql）
+  select o_units into v_total from public.equipment_bundle_calc(p_items);
   if v_order.booking_type = 'little' and v_total > 9 then
-    raise exception '小量訂單最多 9 件（目前 % 件）', v_total;
+    raise exception '小量訂單最多 9 件（目前 % 件，整組算 1 件）', v_total;
   end if;
   if v_order.booking_type = 'mass-personal' and v_total < 10 then
     raise exception '大量訂單需滿 10 件（目前 % 件）', v_total;
@@ -152,13 +153,13 @@ begin
       and (not v_picked or oi.pickup_pending)
       and not exists (select 1 from jsonb_array_elements(p_items) i where i ->> 'item_id' = oi.item_id);
 
-  -- 尚未繳押金：依最新品項重算（同 submit_orders：cap 5,000、staff 免押金）；已繳的差額由學會現場處理
+  -- 尚未繳押金：依最新品項重算（同 submit_orders：套用組合、cap 5,000、staff 免押金）；已繳的差額由學會現場處理
   update public.orders
     set items_updated_at = now(),
         deposit_total = case
           when status = 'pending' and deposit_paid_at is null then
             case when public.user_role() = 'staff' then 0
-                 else least((select coalesce(sum(deposit * quantity), 0) from public.order_items where order_id = v_order.id), 5000)
+                 else least((select o_deposit from public.equipment_bundle_calc(p_items)), 5000)
             end
           else deposit_total
         end

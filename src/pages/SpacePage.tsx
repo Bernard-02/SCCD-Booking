@@ -3,21 +3,27 @@
  */
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import Header from '../components/layouts/Header'
+import BackButton from '../components/common/BackButton'
 import Footer from '../components/layouts/Footer'
 import DatePickerBar from '../components/DatePickerBar'
 import SpaceAreaMap from '../components/space/SpaceAreaMap'
 import ClassroomList from '../components/space/ClassroomList'
 import { useSpaceBlocks, fetchOccupiedSpaces } from '../services/spaceService'
 import { toDateKey } from '../components/cart/cartHelpers'
-import { useCart, LOGIN_REQUIRED_MSG } from '../hooks/useCart'
+import { useCart, loginRequiredMsg } from '../hooks/useCart'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
 import { isSophomoreOrAbove } from '../utils/gradeUtils'
 import { sortBlockIds } from '../components/cart/cartHelpers'
 import { useT } from '../stores/langStore'
+import Collapse from '../components/common/Collapse'
+import { navItemCls } from '../components/common/navItem'
+
+// 子分類項目（主分類用共用的 navItemCls）：icon 那側 padding 少 4px，一般字重
+const SUB_ITEM = 'flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg text-sm cursor-pointer text-left'
 
 // 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
 const AREA_MAPPING: Record<string, string[]> = {
@@ -183,13 +189,13 @@ const SpacePage: React.FC = () => {
     // 如果該區塊已在購物車中，則移除
     if (cartBlockIds.includes(blockId)) {
       removeFromCart(blockId)
-      showToast(`已從清單移除 ${blockId}`)
+      showToast(t(`Removed ${blockId} from your list`, `已從清單移除 ${blockId}`))
       return
     }
 
     // 尚未選日期前不開放選格子（格子的可借狀態取決於日期區間）
     if (!hasSelectedDates) {
-      showToast('請先選擇租借日期', 'error')
+      showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error')
       return
     }
 
@@ -213,7 +219,7 @@ const SpacePage: React.FC = () => {
       const selectedDeposit = selectedBlocks.reduce((sum, id) => sum + getBlockDeposit(id), 0)
 
       if (cartSpaceDeposit + selectedDeposit + getBlockDeposit(blockId) > 5000) {
-        showToast('個人租借每時段空間押金上限 NT$ 5,000，無法再選取更多區塊', 'error')
+        showToast(t('Personal bookings have a NT$ 5,000 space deposit limit per period, so you can’t select more blocks.', '個人租借每時段空間押金上限 NT$ 5,000，無法再選取更多區塊'), 'error')
         return
       }
     }
@@ -257,6 +263,13 @@ const SpacePage: React.FC = () => {
       .map(([id]) => id)
   }, [selectedSubCategory, cartBlockIds, spaceBlocks, occupiedIds])
 
+  // 選中的區域整區都沒有開放中的格子（後台關閉，例：後陽台）→ 可檢視、不開放租借；資料載入前不判定
+  const selectedAreaClosed = useMemo(() => {
+    const targetAreas = selectedSubCategory ? AREA_MAPPING[selectedSubCategory] : undefined
+    return !!targetAreas && Object.keys(spaceBlocks).length > 0 &&
+      !Object.values(spaceBlocks).some(b => targetAreas.includes(b.area))
+  }, [selectedSubCategory, spaceBlocks])
+
   // 可選區塊已全數選取（或根本無可選區塊）→ Select All 無事可做
   const allAvailableSelected = availableBlockIds.every(id => selectedBlocks.includes(id))
 
@@ -264,12 +277,12 @@ const SpacePage: React.FC = () => {
   // 且格子位置應由使用者自選，不代選「前 N 格」）
   const handleSelectAll = () => {
     if (!hasSelectedDates) {
-      showToast('請先選擇租借日期', 'error')
+      showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error')
       return
     }
 
     if (isPersonalBooking) {
-      showToast('個人租借每時段空間押金上限 NT$ 5,000，無法全選，請手動選取或改用大量-團體', 'error')
+      showToast(t('Personal bookings have a NT$ 5,000 space deposit limit per period, so you can’t select all. Pick blocks yourself or switch to a group booking.', '個人租借每時段空間押金上限 NT$ 5,000，無法全選，請手動選取或改用大量-團體'), 'error')
       return
     }
 
@@ -281,53 +294,55 @@ const SpacePage: React.FC = () => {
   const handleAddBlocks = () => {
     // 檢查是否已選擇日期
     if (!hasSelectedDates) {
-      showToast('請先選擇租借日期', 'error')
+      showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error')
       return
     }
 
     if (selectedBlocks.length === 0) {
-      showToast('請先選擇區塊', 'error')
+      showToast(t('Please select blocks first.', '請先選擇區塊'), 'error')
       return
     }
 
     if (hasCasePermitBlocks && !hasProjectPermission) {
-      showToast('請先勾選專案許可確認', 'error')
+      showToast(t('Please tick the project permission confirmation first.', '請先勾選專案許可確認'), 'error')
       return
     }
 
     // 訪客／停權早退：在清空選取前擋下，保留使用者已選的區塊
     if (!isAuthenticated) {
-      showToast(LOGIN_REQUIRED_MSG, 'error')
+      showToast(loginRequiredMsg(), 'error')
       return
     }
     if (isSuspended) {
-      showToast('帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會', 'error')
+      showToast(t('Your account is suspended (clean return not completed), so you can’t add items. Please contact the SA.', '帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會'), 'error')
       return
     }
 
     // 複製一份要加入的區塊 ID，避免狀態清除後拿不到
     const blocksToAdd = [...selectedBlocks]
 
-    // 清空選取狀態
-    setSelectedBlocks([])
-
     // 使用遞迴方式依序加入，確保 React 狀態更新週期完成
     // 解決 forEach + setTimeout 可能因間隔太短導致的狀態覆蓋問題
     // Toast 移到全部加入完成後才顯示，並回報加入失敗的原因
     const addNext = (index: number, added: string[], failReason?: string) => {
       if (index >= blocksToAdd.length) {
+        // 全部加完才清空選取：先清的話區塊會先變回可借用色、再逐格（每 100ms）變綠，像重跑一次 highlight
+        setSelectedBlocks([])
         const failedCount = blocksToAdd.length - added.length
         const displayIds = added.slice(0, 3).join('、')
         if (added.length > 0 && failedCount > 0) {
           // 部分成功：同時回報加入數量與未加入的原因，避免使用者以為全部都加進去了
           showToast(
-            `已加入 ${displayIds}${added.length > 3 ? ' 等' : ''} ${added.length} 件，其餘 ${failedCount} 件未加入：${failReason || '無法加入'}`,
+            t(
+              `Added ${displayIds}${added.length > 3 ? ' etc.' : ''} (${added.length}); ${failedCount} not added: ${failReason || 'could not be added'}`,
+              `已加入 ${displayIds}${added.length > 3 ? ' 等' : ''} ${added.length} 件，其餘 ${failedCount} 件未加入：${failReason || '無法加入'}`
+            ),
             'error'
           )
         } else if (added.length > 0) {
           showToast(added.length > 3
-            ? `已成功加入${displayIds}等編號到清單！`
-            : `已成功加入${displayIds}到清單！`)
+            ? t(`Added ${displayIds} and more to your list`, `已成功加入${displayIds}等編號到清單`)
+            : t(`Added ${displayIds} to your list`, `已成功加入${displayIds}到清單`))
         } else if (failReason) {
           showToast(failReason, 'error')
         }
@@ -361,30 +376,30 @@ const SpacePage: React.FC = () => {
 
   // A5F 編號區子分類
   const numberedAreaCategories = [
-    { id: 'Square', en: 'Square', zh: '中庭' },
-    { id: 'FrontTerrace', en: 'Front Terrace', zh: '前陽台' },
-    { id: 'BackTerrace', en: 'Back Terrace', zh: '後陽台' },
-    { id: 'GlassWall', en: 'Glass Wall', zh: '玻璃牆' },
-    { id: 'CasePermitArea', en: 'Case Permit Area', zh: '專案許可區' }
+    { id: 'Square', en: 'Square', zh: '中庭', icon: 'yard' },
+    { id: 'FrontTerrace', en: 'Front Terrace', zh: '前陽台', icon: 'balcony' },
+    { id: 'BackTerrace', en: 'Back Terrace', zh: '後陽台', icon: 'balcony' },
+    { id: 'GlassWall', en: 'Glass Wall', zh: '玻璃牆', icon: 'window' },
+    { id: 'CasePermitArea', en: 'Case Permit Area', zh: '專案許可區', icon: 'verified' }
   ]
 
   // 處理教室加入
   const handleClassroomAdd = (id: string) => {
     // 檢查是否已選擇日期
     if (!hasSelectedDates) {
-      showToast('請先選擇租借日期', 'error')
+      showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error')
       return
     }
 
     // A508 限大二以上（submit_orders 亦擋，此處為 UX 提前提示）
     if (id === 'A508' && !isSophomoreOrAbove(currentUser?.year)) {
-      showToast('A508 教室僅限大二以上（含碩士）借用', 'error')
+      showToast(t('Classroom A508 is only available to second-year students and above (including master’s students).', 'A508 教室僅限大二以上（含碩士）借用'), 'error')
       return
     }
 
     // 教室該時段已被其他訂單佔用
     if (occupiedIds.includes(id)) {
-      showToast('該教室於此時段已被預約', 'error')
+      showToast(t('This classroom is already booked for these dates.', '該教室於此時段已被預約'), 'error')
       return
     }
 
@@ -402,9 +417,9 @@ const SpacePage: React.FC = () => {
         bookingType: spaceDates.bookingType
       })
       if (result.ok) {
-        showToast(`已成功加入 ${classroom.name} 到清單！`)
+        showToast(t(`Added ${classroom.enName} to your list`, `已成功加入 ${classroom.name} 到清單`))
       } else {
-        showToast(result.reason || '無法加入清單', 'error')
+        showToast(result.reason || t('Couldn’t add to your list.', '無法加入清單'), 'error')
       }
     }
   }
@@ -433,99 +448,68 @@ const SpacePage: React.FC = () => {
       <Header />
 
       <main className="flex-1 pt-20 flex flex-col overflow-hidden relative">
-        {/* 麵包屑 - Fixed 在畫面上 */}
-        <div className="container hidden md:block fixed top-20 left-0 right-0 z-10">
-          <div className="text-left" style={{ paddingBottom: '1.08rem' }}>
-            <nav className="breadcrumb-inline whitespace-nowrap">
-              <Link to="/catalog" className="breadcrumb-item text-xs">
-                &lt;
-              </Link>
-              <span> </span>
-              <Link to="/catalog" className="breadcrumb-item text-xs">
-                {t('Category', '類別')}
-              </Link>
-              <span className="breadcrumb-separator text-xs">/</span>
-              <span className="breadcrumb-item text-xs">
-                {t('Space', '空間')}
-              </span>
-            </nav>
-          </div>
-        </div>
-
         <div className="container hidden md:flex flex-1 gap-6 overflow-hidden items-stretch pb-20">
           {/* 左側欄位：20% */}
           <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden relative">
-            {/* 標題 - 加上 padding-top 避免被麵包屑遮擋 */}
+            {/* 返回上一頁＋標題在箭頭下方 */}
             <div className="flex-shrink-0">
+              <BackButton />
               <h1 className="text-white text-xl mb-6">{t('Space', '空間')}</h1>
             </div>
 
-            {/* 中間區域：A5F 和 Classroom 選項 - 使用 flex-1 自動填充 */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* A5F 編號區 - 主分類 */}
-              <div className="flex-shrink-0 mt-8">
+            {/* 側欄：主分類（icon＋膠囊，選中白底黑字，同 Profile 選單）；
+                子分類在主分類 icon 正下方拉一條直線縮排，選中為淡色膠囊。
+                inline-flex＝主分類與子分類區塊同寬（以最寬的為準） */}
+            <div className="flex-1 overflow-hidden">
+              <nav className="mt-8 inline-flex flex-col">
                 <button
                   onClick={() => {
                     setSelectedMainCategory('NumberedArea')
                     // 點擊 A5F 編號區時，回到外層並清空未送出的選擇
                     handleBackToNumberedArea()
                   }}
-                  className={`text-sm font-bold transition-colors cursor-pointer text-left ${
-                    isNumberedAreaSelected
-                      ? 'text-white'
-                      : 'text-gray-scale2 hover:!text-white'
-                  }`}
+                  className={navItemCls(isNumberedAreaSelected)}
                 >
-                  <span className="block">{t('A5F Numbered Area', 'A5F編號區')}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>grid_view</span>
+                  <span>{t('A5F Numbered Area', 'A5F編號區')}</span>
                 </button>
 
-                {/* 編號區子分類 - 只在編號區被選中時顯示 */}
-                {isNumberedAreaSelected && (
-                  <div className="flex flex-col gap-4 pl-4 mt-4">
+                {/* 編號區子分類：只在編號區被選中時展開；直線＝主分類 icon 中心（pl-3 12px＋icon 半寬 10px） */}
+                <Collapse open={isNumberedAreaSelected}>
+                  <div className="mt-2 ml-[22px] pl-3 border-l border-[#545454] flex flex-col gap-1 py-1">
                     {numberedAreaCategories.map((category) => {
-                      // 專案許可區使用黃色
+                      // 專案許可區使用黃色（選中＝淡黃底＋黃字，其餘子分類為淡白底）
                       const isCasePermit = category.id === 'CasePermitArea'
                       const isSelected = selectedSubCategory === category.id
-                      const activeColor = isCasePermit ? 'text-yellow' : 'text-white'
-                      const hoverColor = isCasePermit ? 'permit-hover' : 'hover:!text-white'
-
                       return (
-                        <div key={category.id} className="text-left">
-                          <button
-                            onClick={() => handleSubCategoryChange(
-                              selectedSubCategory === category.id ? null : category.id
-                            )}
-                            className={`text-sm font-bold transition-colors cursor-pointer text-left ${
-                              isSelected
-                                ? activeColor
-                                : `text-gray-scale2 ${hoverColor}`
-                            }`}
-                          >
-                            <span className="block">{t(category.en, category.zh)}</span>
-                          </button>
-                        </div>
+                        <button
+                          key={category.id}
+                          onClick={() => handleSubCategoryChange(isSelected ? null : category.id)}
+                          className={`${SUB_ITEM} ${
+                            isSelected
+                              ? (isCasePermit ? 'bg-[color-mix(in_srgb,var(--color-yellow)_18%,transparent)] text-yellow' : 'bg-white/15 text-white')
+                              : `text-gray-scale2 ${isCasePermit ? 'permit-hover' : 'hover:!text-white'}`
+                          }`}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{category.icon}</span>
+                          <span>{t(category.en, category.zh)}</span>
+                        </button>
                       )
                     })}
                   </div>
-                )}
-              </div>
+                </Collapse>
 
-              {/* 教室 - 主分類，使用 mt-auto 推到底部 */}
-              <div className="mt-4 flex-shrink-0">
                 <button
                   onClick={() => {
                     setSelectedMainCategory('Classroom')
                     setSelectedBlocks([])
                   }}
-                  className={`text-sm font-bold transition-colors cursor-pointer text-left ${
-                    selectedMainCategory === 'Classroom'
-                      ? 'text-white'
-                      : 'text-gray-scale2 hover:!text-white'
-                  }`}
+                  className={`mt-2 ${navItemCls(selectedMainCategory === 'Classroom')}`}
                 >
-                  <span className="block">{t('Classroom', '教室')}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>meeting_room</span>
+                  <span>{t('Classroom', '教室')}</span>
                 </button>
-              </div>
+              </nav>
             </div>
 
             {/* 狀態篩選 Legend - 絕對定位在底部，只在 Classroom 選中時顯示 */}
@@ -537,7 +521,7 @@ const SpacePage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#00ff80]"></div>
-                    <span className={`text-xs transition-colors ${
+                    <span className={`text-xs ${
                       statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       {t('Available', '全時段借用')}
@@ -549,7 +533,7 @@ const SpacePage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ff448a]"></div>
-                    <span className={`text-xs transition-colors ${
+                    <span className={`text-xs ${
                       statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       {t('Unavailable', '不可借用')}
@@ -561,7 +545,7 @@ const SpacePage: React.FC = () => {
                     className="flex items-center gap-2 cursor-pointer group"
                   >
                     <div className="w-3 h-3 bg-[#ffa500]"></div>
-                    <span className={`text-xs transition-colors ${
+                    <span className={`text-xs ${
                       statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                     }`}>
                       {t('Partially Available', '部分時段借用')}
@@ -574,11 +558,18 @@ const SpacePage: React.FC = () => {
 
           {/* 右側欄位：80% */}
           <div className="w-[80%] min-w-0 flex-1 flex gap-12">
-            {/* 編號區內容 */}
-            {isNumberedAreaSelected && (
-              <>
+            {/* 編號區內容：常駐不卸載，只切 display（contents＝不影響原本 flex 版面）。
+                卸載會讓每次切回都重抓／重注入 SVG、重綁所有格子事件，卡住側欄展開動畫 */}
+            <div className={isNumberedAreaSelected ? 'contents' : 'hidden'}>
                 {/* 左側：70% - 地圖區域 */}
-                <div className="w-[70%] h-full flex items-center justify-center overflow-hidden">
+                <div className="relative w-[70%] h-full flex items-center justify-center overflow-hidden">
+                  {/* 未開放區域提示：覆蓋在地圖上方置中；pointer-events-none 不擋地圖檢視 */}
+                  {selectedAreaClosed && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center gap-2 rounded-xl bg-black/80 pl-3 pr-4 py-3 text-sm text-white whitespace-nowrap">
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>block</span>
+                      <span>{t('This area is currently not open for booking', '此區域目前不開放租借')}</span>
+                    </div>
+                  )}
                   <SpaceAreaMap
                     selectedSubCategory={selectedSubCategory}
                     onAreaClick={(subCategoryId) => handleSubCategoryChange(subCategoryId)}
@@ -591,7 +582,7 @@ const SpacePage: React.FC = () => {
 
                 {/* 右側：30% - 借用資訊面板 */}
                 <div className="w-[30%] h-full flex flex-col">
-                  {/* 狀態篩選 Legend - 可點擊，提高 z-index 確保在麵包屑上方 */}
+                  {/* 狀態篩選 Legend - 可點擊 */}
                   {/* 顏色與 numbered-area.css 的 SVG 格子顏色一致 */}
                   <div className="mb-6 flex flex-col gap-3 relative z-20">
                     <button
@@ -600,7 +591,7 @@ const SpacePage: React.FC = () => {
                     >
                       {/* Available: 不透明淺綠色 rgb(0, 128, 64) */}
                       <div className="w-3 h-3 bg-[rgb(0,128,64)]"></div>
-                      <span className={`text-xs transition-colors ${
+                      <span className={`text-xs ${
                         statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
                         {t('Available', '可借用')}
@@ -613,7 +604,7 @@ const SpacePage: React.FC = () => {
                     >
                       {/* Unavailable: #ff448a - 與 SVG is-rented 一致 */}
                       <div className="w-3 h-3 bg-[#ff448a]"></div>
-                      <span className={`text-xs transition-colors ${
+                      <span className={`text-xs ${
                         statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
                         {t('Unavailable', '不可借用')}
@@ -626,7 +617,7 @@ const SpacePage: React.FC = () => {
                     >
                       {/* Partial: #ffa500 橘色警告色 */}
                       <div className="w-3 h-3 bg-[#ffa500]"></div>
-                      <span className={`text-xs transition-colors ${
+                      <span className={`text-xs ${
                         statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
                       }`}>
                         {t('Partially Available', '部分時段可借用')}
@@ -655,106 +646,77 @@ const SpacePage: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* 全選和清除按鈕 - 靠左對齊 */}
+                      {/* 全選和清除按鈕（icon＋文字）- 靠左對齊 */}
                       <div className="flex gap-8">
                         {/* 可選區塊全數選完時 disable；未選日期／個人租借時保持可點，點擊 toast 說明原因 */}
                         <button
                           onClick={handleSelectAll}
                           disabled={!selectedSubCategory || allAvailableSelected}
-                          className={`text-sm font-['Inter',_sans-serif] font-normal transition-colors ${
+                          className={`flex items-center gap-1 text-sm font-['Inter',_sans-serif] font-normal ${
                             !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
+                          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>select_all</span>
                           {t('Select All', '全選')}
                         </button>
                         <button
                           onClick={() => setSelectedBlocks([])}
                           disabled={!selectedSubCategory || selectedBlocks.length === 0}
-                          className={`text-sm font-['Inter',_sans-serif] font-normal transition-colors ${
+                          className={`flex items-center gap-1 text-sm font-['Inter',_sans-serif] font-normal ${
                             !selectedSubCategory || selectedBlocks.length === 0 ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
+                          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                           {t('Clear', '清除')}
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* 底部區塊：押金 + 專案許可區 + Add 按鈕 - 靠底部對齊 */}
+                  {/* 底部區塊：專案許可區 + Add 按鈕（含押金）- 靠底部對齊 */}
                   <div className="mt-auto">
-                    {/* 押金金額 */}
-                    <div className="mb-6">
-                      <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-xs text-gray-scale2">{t('Deposit', '押金')}</span>
-                      </div>
-                      <span className="text-2xl font-['Inter',_sans-serif] font-normal">
-                        NT$ {calculateTotalDeposit(selectedBlocks).toLocaleString()}
-                      </span>
-                    </div>
-
                     {/* 專案許可區確認 Checkbox */}
                     {hasCasePermitBlocks && (
                       <div className="mb-6">
                         <label className="flex items-start gap-3 cursor-pointer group">
-                          <div className="relative flex items-center mt-0.5">
-                            <input
-                              type="checkbox"
-                              checked={hasProjectPermission}
-                              onChange={(e) => setHasProjectPermission(e.target.checked)}
-                              className="peer h-4 w-4 shrink-0 cursor-pointer appearance-none border border-gray-scale2 bg-transparent checked:border-white checked:bg-white transition-all"
-                            />
-                            <svg
-                              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity"
-                              width="10"
-                              height="8"
-                              viewBox="0 0 10 8"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M1 4L3.5 6.5L9 1"
-                                stroke="black"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </div>
-                          <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 transition-colors leading-tight">
+                          <input
+                            type="checkbox"
+                            checked={hasProjectPermission}
+                            onChange={(e) => setHasProjectPermission(e.target.checked)}
+                            className="custom-checkbox"
+                          />
+                          <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 leading-tight">
                             已與老師討論，確認老師知情並允許於此專案借用
                           </span>
                         </label>
                       </div>
                     )}
 
-                    {/* Add 按鈕 - 白底黑字框；被阻擋時仍可點擊，點擊會 toast 提示缺什麼 */}
-                    <div className="flex">
-                      <button
-                        onClick={handleAddBlocks}
-                        aria-disabled={isAddBlocked}
-                        className={`px-6 py-3 rounded-lg text-sm font-['Inter',_sans-serif] font-normal transition ${
-                          isAddBlocked
-                            ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
-                            : 'bg-white text-black hover:opacity-70 cursor-pointer'
-                        }`}
-                      >
-                        {t('Add', '加入清單')}
-                      </button>
-                    </div>
+                    {/* 加入清單：整條寬、押金收在按鈕右側（省掉上方押金區）；被阻擋時 50% 透明但仍可點（toast 提示缺什麼） */}
+                    <button
+                      onClick={handleAddBlocks}
+                      aria-disabled={isAddBlocked}
+                      className={`w-full h-11 pl-3 pr-4 rounded-lg bg-white text-black flex items-center gap-2 ${
+                        isAddBlocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_shopping_cart</span>
+                      <span className="text-sm">{t('Add', '加入清單')}</span>
+                      <span className="ml-auto text-sm font-['Inter',_sans-serif]">
+                        NT$ {calculateTotalDeposit(selectedBlocks).toLocaleString()}
+                      </span>
+                    </button>
                   </div>
                 </div>
-              </>
-            )}
+            </div>
 
-            {/* 教室內容 */}
-            {selectedMainCategory === 'Classroom' && (
-              <div className="w-full h-full flex flex-col">
-                <ClassroomList
-                  classrooms={filteredClassrooms}
-                  onAdd={handleClassroomAdd}
-                />
-              </div>
-            )}
+            {/* 教室內容：同樣常駐，只切 display */}
+            <div className={`w-full h-full flex-col ${selectedMainCategory === 'Classroom' ? 'flex' : 'hidden'}`}>
+              <ClassroomList
+                classrooms={filteredClassrooms}
+                onAdd={handleClassroomAdd}
+              />
+            </div>
           </div>
         </div>
 

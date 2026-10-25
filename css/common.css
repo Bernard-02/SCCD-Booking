@@ -18,32 +18,33 @@
 }
 
 /* 自定義checkbox樣式 */
+/* 全站 checkbox 一律圓形（2026-10-23）：未勾＝空心圓，勾選＝白底黑勾。
+   保留原生 input（鍵盤、讀屏、label 點擊都照常），只換外觀 */
 .custom-checkbox {
   appearance: none;
-  width: 1rem;
-  height: 1rem;
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
   border: 1px solid white;
+  border-radius: 50%;
   background-color: transparent;
   cursor: pointer;
-  position: relative;
-  border-radius: 0; /* 無圓角 */
+  transition: background-color 0.15s ease;
 }
 
 .custom-checkbox:checked {
-  background-color: white;
-  border-color: white;
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8' fill='none'%3E%3Cpath d='M1 4L3.5 6.5L9 1' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 55% no-repeat;
 }
 
-.custom-checkbox:checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: black; /* 黑色勾勾 */
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
+.custom-checkbox:focus-visible {
+  outline: 1px solid white;
+  outline-offset: 2px;
+}
+
+/* 不能勾的一律 not-allowed（全站 disabled 游標規則） */
+.custom-checkbox:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* ===== Toast 通用樣式 ===== */
@@ -54,14 +55,14 @@
   background-color: var(--color-bg-toast);
   color: var(--color-primary);
   padding: 0.75rem 1rem; /* 上下 0.75 / 左右 1 */
-  border-radius: 0.5rem; /* lg 圓角 */
+  border-radius: 0.75rem; /* 12px（xl）：單行提示，介於按鈕 8px 與彈窗 16px 之間 */
   z-index: 2000; /* 提高層級確保在最上層 (高於 Header 的 1000) */
   opacity: 0;
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   width: fit-content; /* 寬度根據內容調整 */
-  max-width: 600px; /* 設定最大寬度 */
-  white-space: nowrap; /* 防止文字換行 */
+  max-width: min(600px, calc(100vw - 4rem)); /* 超過就換行（左右各留 2rem，手機也不會超出畫面） */
+  overflow-wrap: anywhere; /* 長日期／英文字串也能斷 */
 }
 
 /* notification 專用的 padding 樣式 */
@@ -73,7 +74,7 @@
   font-size: 0.875rem; /* text-tiny 大小 */
   font-family: 'Inter', 'Noto Sans TC', sans-serif;
   line-height: 1.4; /* 與 text-tiny 保持一致 */
-  text-align: center;
+  text-align: left; /* 換行時靠左比較好讀；單行時寬度貼齊文字，看起來一樣 */
   margin: 0;
 }
 
@@ -206,7 +207,7 @@
     left: auto !important;
     bottom: auto !important;
     width: fit-content !important; /* 手機版也使用 fit-content */
-    max-width: 280px !important; /* 手機版最大寬度 */
+    max-width: calc(100vw - 2rem) !important; /* 手機版：左右各留 1rem，超過就換行 */
     transform: none !important;
     padding: 0.75rem 1rem !important; /* 手機版：上下 0.75 / 左右 1 */
   }
@@ -222,9 +223,6 @@
   .toast p, #notification p {
     font-size: 0.75rem !important; /* 手機版更小的字體 */
     line-height: 1.25 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
   }
 
   /* 手機版返回按鈕調整 */

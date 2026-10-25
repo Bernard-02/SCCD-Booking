@@ -1,10 +1,10 @@
 /**
  * Footer 組件（桌機）
- * 左 Profile icon（在 /profile 再點 → 登出選單）、中 Copyright（Easter Egg）、右 語言切換＋link icon（工作室／攝影棚／官網）
+ * 左 Profile icon＋學號姓名（登出在 Profile 頁側欄底部）、中 Copyright（Easter Egg）、右 語言切換＋link icon（工作室／攝影棚／官網）
  */
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLangStore, useT } from '../../stores/langStore'
 
@@ -15,12 +15,9 @@ const EXTERNAL_LINKS = [
 ]
 
 const Footer: React.FC = () => {
-  const { pathname } = useLocation()
-  const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { currentUser } = useAuth()
   const t = useT()
   const toggleLang = useLangStore((s) => s.toggleLang)
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [linksMenuOpen, setLinksMenuOpen] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
   const [easterEggText, setEasterEggText] = useState('')
@@ -131,50 +128,27 @@ const Footer: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      if (!target.closest('.profile-dropdown-container')) setProfileMenuOpen(false)
       if (!target.closest('.links-dropdown-container')) setLinksMenuOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleLogout = async () => {
-    await logout()
-    setProfileMenuOpen(false)
-    navigate('/login', { replace: true })
-  }
-
   return (
     <footer className="bg-transparent footer-main">
       <div className="container">
         {/* 桌面版 Footer */}
         <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-end">
-          {/* 左：Profile（在 /profile 再點一次 → 往上開登出選單） */}
-          <div className="profile-dropdown-container relative justify-self-start">
+          {/* 左：Profile（登出放在 Profile 頁側欄底部，就在這個頭像上方） */}
+          <div className="justify-self-start">
             <Link
               to="/profile"
-              onClick={(e) => {
-                if (pathname === '/profile') {
-                  e.preventDefault()
-                  setProfileMenuOpen(!profileMenuOpen)
-                }
-              }}
-              className="flex items-center text-white"
+              className="flex items-center gap-2 text-white"
               aria-label={t('Profile', '我的')}
             >
               <span className="material-symbols-outlined">account_circle</span>
+              {currentUser && <span className="text-xs">{currentUser.studentId} {currentUser.name}</span>}
             </Link>
-
-            {profileMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-4 bg-[#151515] border border-[#545454] rounded-2xl py-3 px-4" style={{ zIndex: 1000 }}>
-                <button
-                  onClick={handleLogout}
-                  className="text-white hover:opacity-70 transition-opacity cursor-pointer whitespace-nowrap text-xs"
-                >
-                  {t('Log out', '登出')}
-                </button>
-              </div>
-            )}
           </div>
 
           {/* 中：Copyright（hover 彩蛋） */}

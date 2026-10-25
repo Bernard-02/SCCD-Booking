@@ -4,7 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import type { Equipment } from '../../types/equipment'
+import { cartGroupKey, type CartItem, type Equipment } from '../../types/equipment'
+import { calcBundles, type Bundle } from '../../utils/bundleUtils'
+import ConfirmDialog from '../common/ConfirmDialog'
 import { useBookmarkStore } from '../../stores/bookmarkStore'
 import { useCart } from '../../hooks/useCart'
 import { useDateSelection } from '../../contexts/DateSelectionContext'
@@ -48,7 +50,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     addToCart,
     getCartQuantity,
     checkLittleBookingLimit,
-    isSuspended
+    isSuspended,
+    bundles
   } = useCart()
 
   // 使用日期選擇 hook
@@ -146,7 +149,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const toggleBookmark = (id: string, itemName: string) => {
     // 使用 AuthContext 檢查登入狀態
     if (!isAuthenticated) {
-      showToast('請先登入以使用收藏功能', 'error')
+      showToast(t('Please log in to use bookmarks.', '請先登入以使用收藏功能'), 'error')
       return
     }
 
@@ -156,15 +159,15 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
     // 顯示通知
     if (!wasBookmarked) {
-      showToast(`${itemName} 已加入收藏`)
+      showToast(t(`Bookmarked ${itemName}`, `${itemName} 已加入收藏`))
     } else {
-      showToast(`${itemName} 已移除收藏`)
+      showToast(t(`Removed ${itemName} from bookmarks`, `${itemName} 已移除收藏`))
     }
   }
 
   // 增加數量
   const incrementQuantity = (id: string) => {
-    const availableQty = getAvailableQuantity(id)
+    const availableQty = getMaxQuantity(id)
     setQuantities(prev => ({
       ...prev,
       [id]: Math.min((prev[id] || 1) + 1, availableQty)
@@ -181,7 +184,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
   // 直接輸入數量
   const handleQuantityChange = (id: string, value: string) => {
-    const availableQty = getAvailableQuantity(id)
+    const availableQty = getMaxQuantity(id)
     const numValue = parseInt(value, 10)
     if (!isNaN(numValue) && numValue >= 1 && numValue <= availableQty) {
       setQuantities(prev => ({
@@ -206,50 +209,162 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     })
   }
 
+  // 以目前選的日期與類型組成購物車項目
+  const toCartItem = (eq: Equipment, quantity: number): CartItem => ({
+    id: eq.id,
+    name: eq.name,
+    category: 'equipment',
+    deposit: eq.deposit,
+    image: eq.mainImage,
+    quantity,
+    startDate: toDateKey(equipmentDates.startDate!),
+    endDate: toDateKey(equipmentDates.endDate!),
+    bookingType: equipmentDates.bookingType
+  })
+
+  // ---- 設備組合 ----
+  // 每列可選「單個」或「整組」（modes：設備 id → 組合 id；沒有＝單個）。整組時數量＝要再加幾組，系統自動配好零件
+  const [modes, setModes] = useState<Record<string, string>>({})
+  // 單個加入組合內的設備、加入後還湊不成組時，彈窗問要不要整組借
+  const [bundleOffer, setBundleOffer] = useState<{ item: Equipment; quantity: number; bundle: Bundle; sets: number; maxSets: number } | null>(null)
+
+  // 本張設備單（同時段）的購物車品項
+  const groupItems = (): CartItem[] => {
+    if (!hasSelectedDates) return []
+    const key = cartGroupKey({ category: 'equipment', startDate: toDateKey(equipmentDates.startDate!), endDate: toDateKey(equipmentDates.endDate!) })
+    return cart.filter(i => cartGroupKey(i) === key)
+  }
+  const inGroup = (id: string): number => groupItems().filter(i => i.id === id).reduce((s, i) => s + i.quantity, 0)
+
+  // 某組合：清單已湊成幾組（current）、還能再加幾組（extra）。
+  // 可用零件＝單件（沒被湊進任何組合）＋本組合已用的＋還可借；被其他組合用掉的不算——
+  // 卡在共用零件時回傳 blockedBy（例：腳架已用在木桌組 → 大桌組只能二選一）
+  const bundleRoom = (bundle: Bundle) => {
+    const calc = calcBundles(groupItems(), bundles)
+    const current = calc.sets.find(s => s.bundle.id === bundle.id)?.count ?? 0
+    const free = (id: string, q: number) => (calc.left[id] ?? 0) + current * q + getAvailableQuantity(id)
+    const fits = (c: Bundle['items'][number]) => (equipmentData[c.equipmentId] ? Math.floor(free(c.equipmentId, c.quantity) / c.quantity) : 0)
+    const extra = Math.max(0, Math.min(...bundle.items.map(fits)) - current)
+    const blockedBy = extra > 0 ? [] : bundle.items.flatMap(c => {
+      const others = calc.sets.filter(s => s.bundle.id !== bundle.id && s.bundle.items.some(x => x.equipmentId === c.equipmentId))
+      // 只看庫存其實夠（含其他組合用掉的），是被其他組合佔走才不夠
+      const enoughIgnoringOthers = Math.floor((inGroup(c.equipmentId) + getAvailableQuantity(c.equipmentId)) / c.quantity) > current
+      return others.length > 0 && fits(c) <= current && enoughIgnoringOthers
+        ? [{ part: equipmentData[c.equipmentId].name, others: others.map(s => s.bundle.name) }]
+        : []
+    })
+    return { current, extra, blockedBy }
+  }
+
+  // 補到 target 組：每個零件補到 target × 一組數量（本組合已用的＋單件可湊的不重複加）
+  const topUpItems = (bundle: Bundle, target: number): CartItem[] => {
+    const calc = calcBundles(groupItems(), bundles)
+    const current = calc.sets.find(s => s.bundle.id === bundle.id)?.count ?? 0
+    return bundle.items
+      .map(c => toCartItem(equipmentData[c.equipmentId], target * c.quantity - current * c.quantity - (calc.left[c.equipmentId] ?? 0)))
+      .filter(i => i.quantity > 0)
+  }
+
+  // 整組加不進去的原因（二選一或單純庫存不足）
+  const bundleShortReason = (bundle: Bundle, room: ReturnType<typeof bundleRoom>) =>
+    room.blockedBy.length > 0
+      ? t(
+          `"${room.blockedBy[0].part}" is already used by "${room.blockedBy[0].others.join('", "')}" in your list, and there isn’t enough stock for "${bundle.name}" too. Please choose one of the two sets.`,
+          `「${room.blockedBy[0].part}」已用在清單裡的「${room.blockedBy[0].others.join('、')}」，庫存不夠再借「${bundle.name}」，只能二選一`
+        )
+      : t(
+          `Not enough stock — you can add up to ${room.extra} more "${bundle.name}" set(s).`,
+          `庫存不足，「${bundle.name}」目前最多還能加 ${room.extra} 組`
+        )
+
+  // 該設備可選的組合（零件都在架上才列）
+  const bundlesOf = (id: string) =>
+    bundles.filter(b => b.items.some(c => c.equipmentId === id) && b.items.every(c => equipmentData[c.equipmentId]))
+  const modeBundle = (id: string) => bundles.find(b => b.id === modes[id])
+
+  // 數量上限：單個＝可借數量；整組＝還能加幾組
+  const getMaxQuantity = (id: string): number => {
+    const b = modeBundle(id)
+    return b ? bundleRoom(b).extra : getAvailableQuantity(id)
+  }
+
+  const findBundleOffer = (item: Equipment, quantity: number) => {
+    const group = [...groupItems(), toCartItem(item, quantity)]
+    // 加入後這個設備已經全部湊進組合（例：補上最後幾個支架）就不用問
+    const left = calcBundles(group, bundles).left[item.id] ?? 0
+    if (left === 0) return null
+    for (const bundle of bundlesOf(item.id)) {
+      const part = bundle.items.find(c => c.equipmentId === item.id)!
+      const room = bundleRoom(bundle)
+      if (room.extra <= 0) continue
+      const sets = Math.min(room.extra, Math.max(1, Math.ceil(left / part.quantity)))
+      return { item, quantity, bundle, sets, maxSets: room.extra }
+    }
+    return null
+  }
+
+  // 實際加入（單件或整組），成功後重置該設備的數量為 1
+  const commitAdd = (items: CartItem[], label: string, resetId: string) => {
+    const result = addToCart(items)
+    if (!result.ok) {
+      // 加入失敗（停權／押金上限／類型衝突／9 件上限），顯示原因而非假的成功訊息
+      showToast(result.reason || t('Couldn’t add to your list.', '無法加入清單'), 'error')
+      return
+    }
+    showToast(t(`Added ${label} to your list`, `已成功加入 ${label} 到清單`))
+    setQuantities(prev => ({ ...prev, [resetId]: 1 }))
+  }
+
+  // 整組加入：在清單已湊成的組數之上再加 sets 組（單件可湊的零件先用，不重複加）
+  const addSets = (bundle: Bundle, sets: number, resetId: string) => {
+    const room = bundleRoom(bundle)
+    if (sets > room.extra) {
+      showToast(bundleShortReason(bundle, room), 'error')
+      return
+    }
+    commitAdd(topUpItems(bundle, room.current + sets), `${bundle.name} ×${sets}`, resetId)
+  }
+
+  const addBundle = () => {
+    if (!bundleOffer) return
+    const { bundle, sets, item } = bundleOffer
+    setBundleOffer(null)
+    addSets(bundle, sets, item.id)
+  }
+
   // 加入購物車
   const handleAddToCart = (item: Equipment) => {
     // 檢查是否已選擇日期
     if (!hasSelectedDates) {
-      showToast('請先選擇租借日期', 'error')
+      showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error')
       return
     }
 
     const quantity = quantities[item.id] || 1
+
+    // 下拉選了整組：數量＝組數，直接配好零件
+    const setMode = modeBundle(item.id)
+    if (setMode) {
+      addSets(setMode, quantity, item.id)
+      return
+    }
+
     const availableQty = getAvailableQuantity(item.id)
 
     // 檢查庫存
     if (quantity > availableQty) {
-      showToast(`庫存不足！${item.name} 剩餘可借數量：${availableQty}`, 'error')
+      showToast(t(`Not enough stock — only ${availableQty} ${item.name} available.`, `庫存不足，${item.name} 剩餘可借數量：${availableQty}`), 'error')
       return
     }
 
-    // 加入購物車（包含日期資訊）
-    const result = addToCart({
-      id: item.id,
-      name: item.name,
-      category: 'equipment',
-      deposit: item.deposit,
-      image: item.mainImage,
-      quantity: quantity,
-      startDate: toDateKey(equipmentDates.startDate!),
-      endDate: toDateKey(equipmentDates.endDate!),
-      bookingType: equipmentDates.bookingType
-    })
-
-    if (!result.ok) {
-      // 加入失敗（停權／押金上限／類型衝突／9 件上限），顯示原因而非假的成功訊息
-      showToast(result.reason || '無法加入清單', 'error')
+    // 單個加入組合內的設備 → 先問要不要整組借
+    const offer = isAuthenticated ? findBundleOffer(item, quantity) : null
+    if (offer) {
+      setBundleOffer(offer)
       return
     }
 
-    // 顯示成功訊息
-    showToast(`已成功加入 ${item.name} x${quantity} 到清單！`)
-
-    // 重置該設備的數量為 1
-    setQuantities(prev => ({
-      ...prev,
-      [item.id]: 1
-    }))
+    commitAdd([toCartItem(item, quantity)], `${item.name} x${quantity}`, item.id)
   }
 
   // 處理圖片點擊 - 全螢幕顯示
@@ -286,6 +401,56 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
       )}
 
+      {/* 整組借的提示：確認＝整組加入（自動補齊零件）、文字鈕＝只加這件、取消＝都不加 */}
+      {bundleOffer && (() => {
+        const { item, quantity, bundle, sets, maxSets } = bundleOffer
+        const step = (d: number) => setBundleOffer({ ...bundleOffer, sets: Math.min(maxSets, Math.max(1, sets + d)) })
+        const stepCls = (enabled: boolean) =>
+          `w-7 h-7 flex items-center justify-center border rounded-lg text-xs ${
+            enabled ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer' : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
+          }`
+        return (
+          <ConfirmDialog
+            isOpen
+            title="要整組借嗎？"
+            titleEn="Borrow as a set?"
+            message={`「${item.name}」屬於「${bundle.name}」。整組借押金只算一組 NT$ ${bundle.deposit.toLocaleString()}，也只佔 1 件額度；系統會自動配好其他零件。`}
+            messageEn={`"${item.name}" is part of "${bundle.name}". A full set costs one deposit of NT$ ${bundle.deposit.toLocaleString()} and counts as 1 item; we'll add the other parts for you.`}
+            confirmText="Add set"
+            confirmTextZh="整組加入"
+            onConfirm={addBundle}
+            onCancel={() => setBundleOffer(null)}
+          >
+            <div className="mt-4 space-y-4 text-xs text-white">
+              <ul className="space-y-1">
+                {bundle.items.map(c => (
+                  <li key={c.equipmentId} className="flex justify-between">
+                    <span>{equipmentData[c.equipmentId]?.name}</span>
+                    <span className="font-['Inter',_sans-serif]">×{c.quantity * sets}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-2">
+                <span className="mr-auto">{t('Sets', '組數')}</span>
+                <button type="button" className={stepCls(sets > 1)} disabled={sets <= 1} onClick={() => step(-1)} aria-label={t('Fewer', '減少')}>−</button>
+                <span className="w-8 text-center font-['Inter',_sans-serif]">{sets}</span>
+                <button type="button" className={stepCls(sets < maxSets)} disabled={sets >= maxSets} onClick={() => step(1)} aria-label={t('More', '增加')}>+</button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBundleOffer(null)
+                  commitAdd([toCartItem(item, quantity)], `${item.name} x${quantity}`, item.id)
+                }}
+                className="text-gray-scale2 underline underline-offset-4 hover:!text-white cursor-pointer"
+              >
+                {t(`Just add ${item.name} ×${quantity}`, `只加入「${item.name}」×${quantity}`)}
+              </button>
+            </div>
+          </ConfirmDialog>
+        )
+      })()}
+
       {/* 全螢幕圖片檢視 */}
       {fullscreenImage && (
         <div
@@ -295,7 +460,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
           {/* 關閉按鈕 */}
           <button
             onClick={closeFullscreenImage}
-            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 cursor-pointer z-10"
             aria-label="關閉"
           >
             ×
@@ -312,7 +477,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       )}
 
       {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="min-w-[1000px] grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
+      <div className="min-w-[1000px] grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] items-center gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
         {/* 狀態指示器列 - 空白表頭 */}
         <div></div>
 
@@ -331,12 +496,12 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
           <div>
             <div>{t('On Hold', '待繳押金')}</div>
           </div>
-          <div className="relative group">
+          <div className="relative group flex">
             <span className="material-symbols-outlined text-gray-scale2 cursor-help" style={{ fontSize: '20px' }}>
               info
             </span>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none z-50">
               已送出但未繳押金的設備
               {/* 小三角形 */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-scale4"></div>
@@ -363,23 +528,33 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
               const status = getEquipmentStatus(item.id)
               const statusColor = getStatusColor(status)
 
-              // 檢查是否達到 Light 9件限制
-              const wouldExceedLightLimit = checkLittleBookingLimit({
-                id: item.id,
-                name: item.name,
-                category: 'equipment',
-                deposit: item.deposit,
-                image: item.mainImage,
-                quantity: quantity,
-                startDate: equipmentDates.startDate ? toDateKey(equipmentDates.startDate) : '',
-                endDate: equipmentDates.endDate ? toDateKey(equipmentDates.endDate) : '',
-                bookingType: equipmentDates.bookingType
-              }).allowed === false
+              // 組合：可選的組合與目前模式（整組時數量＝組數、上限＝還能加幾組）
+              const rowBundles = bundlesOf(item.id)
+              const setBundle = modeBundle(item.id)
+              const room = setBundle ? bundleRoom(setBundle) : null
+              const maxQty = room ? room.extra : availableQty
+              const canAdd = room ? room.extra > 0 : isAvailable
+              const setItems = setBundle && room && hasSelectedDates ? topUpItems(setBundle, room.current + quantity) : []
+
+              // 檢查是否達到 Light 9件限制（整組看補齊後的件數，整組算 1 件）
+              const wouldExceedLightLimit = setBundle
+                ? setItems.length > 0 && checkLittleBookingLimit(setItems).allowed === false
+                : checkLittleBookingLimit({
+                    id: item.id,
+                    name: item.name,
+                    category: 'equipment',
+                    deposit: item.deposit,
+                    image: item.mainImage,
+                    quantity: quantity,
+                    startDate: equipmentDates.startDate ? toDateKey(equipmentDates.startDate) : '',
+                    endDate: equipmentDates.endDate ? toDateKey(equipmentDates.endDate) : '',
+                    bookingType: equipmentDates.bookingType
+                  }).allowed === false
 
               return (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-colors"
+                  className="grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-6 py-3 border-b border-[#7c7c7c] items-center"
                 >
                   {/* 狀態指示器 - 獨立的 grid 列 */}
                   <div
@@ -418,11 +593,30 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     />
                   </div>
 
-                  {/* 設備名稱 */}
-                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-sm ${
+                  {/* 設備名稱＋（屬於組合時）單個／整組下拉 */}
+                  <div className={`font-['Inter','Noto_Sans_TC',_sans-serif] text-sm flex flex-col items-start gap-1 ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.name}
+                    {rowBundles.length > 0 && (
+                      <select
+                        value={modes[item.id] ?? ''}
+                        onChange={e => {
+                          const v = e.target.value
+                          setModes(prev => ({ ...prev, [item.id]: v }))
+                          setQuantities(prev => ({ ...prev, [item.id]: 1 }))
+                        }}
+                        aria-label={t('Single or set', '單個或整組')}
+                        className="bg-black border border-gray-scale4 rounded-lg px-2 py-1 text-2xs text-white focus:border-white outline-none cursor-pointer"
+                      >
+                        <option value="">{t('Single', '單個')}</option>
+                        {rowBundles.map(b => (
+                          <option key={b.id} value={b.id}>
+                            {t(`Set: ${b.name} (NT$ ${b.deposit.toLocaleString()} / set)`, `整組：${b.name}（押金 NT$ ${b.deposit.toLocaleString()}/組）`)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   {/* 總數量 */}
@@ -450,7 +644,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   <div className={`font-['Inter',_sans-serif] text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
-                    NT$ {item.deposit}
+                    NT$ {setBundle ? setBundle.deposit : item.deposit}
+                    {setBundle && <span className="text-2xs text-gray-scale2">/{t('set', '組')}</span>}
                   </div>
 
                   {/* 數量調整 - + (純文字按鈕，中間可輸入) */}
@@ -460,9 +655,9 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         e.stopPropagation()
                         decrementQuantity(item.id)
                       }}
-                      disabled={!isAvailable || quantity <= 1}
+                      disabled={!canAdd || quantity <= 1}
                       className={`font-['Inter',_sans-serif] text-sm ${
-                        !isAvailable || quantity <= 1
+                        !canAdd || quantity <= 1
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
                       }`}
@@ -472,14 +667,14 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     <input
                       type="number"
                       min="1"
-                      max={availableQty}
+                      max={maxQty}
                       value={quantities[item.id] ?? 1}
                       onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                       onBlur={() => handleQuantityBlur(item.id)}
                       onClick={(e) => e.stopPropagation()}
-                      disabled={!isAvailable}
+                      disabled={!canAdd}
                       className={`font-['Inter',_sans-serif] text-sm w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                        !isAvailable ? 'text-[#545454] cursor-not-allowed' : 'text-white'
+                        !canAdd ? 'text-[#545454] cursor-not-allowed' : 'text-white'
                       }`}
                       style={{
                         MozAppearance: 'textfield',
@@ -491,9 +686,9 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         e.stopPropagation()
                         incrementQuantity(item.id)
                       }}
-                      disabled={!isAvailable || quantity >= availableQty}
+                      disabled={!canAdd || quantity >= maxQty}
                       className={`font-['Inter',_sans-serif] text-sm ${
-                        !isAvailable || quantity >= availableQty
+                        !canAdd || quantity >= maxQty
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
                       }`}
@@ -502,21 +697,22 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     </button>
                   </div>
 
-                  {/* Add 按鈕 (純文字) */}
+                  {/* 加入清單：白底圓角購物車 icon；不可加時 50% 透明但仍可點（toast 說明原因） */}
                   <div className="flex justify-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleAddToCart(item)
                       }}
-                      aria-disabled={!isAvailable || !hasSelectedDates || wouldExceedLightLimit || isSuspended}
-                      className={`font-['Inter',_sans-serif] text-sm ${
-                        isAvailable && hasSelectedDates && !wouldExceedLightLimit && !isSuspended
-                          ? 'text-white hover:text-gray-scale1 cursor-pointer'
-                          : 'text-[#545454] cursor-not-allowed'
+                      aria-disabled={!canAdd || !hasSelectedDates || wouldExceedLightLimit || isSuspended}
+                      aria-label={t('Add', '加入清單')}
+                      className={`w-9 h-9 rounded-lg bg-white text-black flex items-center justify-center ${
+                        canAdd && hasSelectedDates && !wouldExceedLightLimit && !isSuspended
+                          ? 'cursor-pointer'
+                          : 'opacity-50 cursor-not-allowed'
                       }`}
                     >
-                      Add
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_shopping_cart</span>
                     </button>
                   </div>
                 </div>

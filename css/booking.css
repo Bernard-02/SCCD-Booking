@@ -119,24 +119,25 @@
     padding: 0.5rem 0;
 }
 
-/* 過去的日期 - 灰色且不可互動 */
-.text-gray-500 {
+/* 不可選的日期（過去／超出天數／封鎖期）- 灰色且不可互動
+   （原名 .text-gray-500，與 Tailwind 同名會蓋掉 Tailwind，已改名） */
+.disabled-date {
     color: #777777 !important;
-    cursor: default !important;
+    cursor: not-allowed !important;
 }
 
-.text-gray-500:hover {
+.disabled-date:hover {
     transform: none !important;
 }
 
-.text-gray-500 .date-number-text,
-.text-gray-500 .date-number-hidden {
+.disabled-date .date-number-text,
+.disabled-date .date-number-hidden {
     color: #777777 !important;
 }
 
 /* 過期日期範圍 - 黃色且不可互動 */
 .expired-date {
-    cursor: default !important;
+    cursor: not-allowed !important;
 }
 
 .expired-date:hover {
@@ -262,25 +263,8 @@
     color: #00FF80 !important;
 }
 
-/* ===== 按鈕狀態樣式 ===== */
-
-/* 按鈕禁用狀態 */
-.opacity-30 {
-    opacity: 0.3;
-}
-
-.opacity-100 {
-    opacity: 1;
-}
-
-/* 游標樣式 */
-.cursor-not-allowed {
-    cursor: not-allowed;
-}
-
-.cursor-pointer {
-    cursor: pointer;
-}
+/* 按鈕狀態（opacity-30／100、cursor-pointer／not-allowed）改用 Tailwind 內建：
+   這裡未分層的同名 class 會蓋過 disabled:／hover: 變體（停用按鈕仍顯示 pointer） */
 
 /* ===== 延期對話框專用樣式 ===== */
 

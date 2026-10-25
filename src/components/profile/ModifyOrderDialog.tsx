@@ -6,7 +6,8 @@
 
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useEquipmentData, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
+import { useEquipmentData, useBundles, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
+import { calcBundles } from '../../utils/bundleUtils'
 import { EQUIPMENT_CATEGORIES } from '../../types/equipment'
 import { useT } from '../../stores/langStore'
 
@@ -39,6 +40,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
 }) => {
   const t = useT()
   const equipmentData = useEquipmentData()
+  const bundles = useBundles()
   const [reserved, setReserved] = useState<Record<string, ReservedInfo>>({})
   const [rows, setRows] = useState<ModifyLine[]>(lines)
   const [busy, setBusy] = useState(false)
@@ -69,12 +71,14 @@ const ModifyOrderDialog: React.FC<Props> = ({
     setRows(prev => [...prev, { id, name: eq.name, deposit: eq.deposit, quantity: 1, held: 0 }])
   }
 
-  const total = rows.reduce((s, r) => s + r.quantity, 0)
+  // 件數與押金套用組合（湊滿一組算 1 件、押金只收一組），同 server 端 modify_my_order
+  const calc = calcBundles(rows, bundles)
+  const total = calc.units
   const changed =
     rows.length !== lines.length || rows.some(r => r.quantity !== original(r.id))
   const limitError = !isMass && total > LITTLE_MAX
-    ? `小量訂單最多 ${LITTLE_MAX} 件`
-    : isMass && total < MASS_MIN ? `大量訂單需滿 ${MASS_MIN} 件` : null
+    ? t(`Light orders allow up to ${LITTLE_MAX} items`, `小量訂單最多 ${LITTLE_MAX} 件`)
+    : isMass && total < MASS_MIN ? t(`Mass orders need at least ${MASS_MIN} items`, `大量訂單需滿 ${MASS_MIN} 件`) : null
   const canSave = changed && rows.length > 0 && !limitError && !busy
 
   const handleSave = async () => {
@@ -93,10 +97,13 @@ const ModifyOrderDialog: React.FC<Props> = ({
     ...new Set(addable.map(e => e.category).filter(c => !EQUIPMENT_CATEGORIES.some(k => k.zh === c)))
   ]
 
+  // − ＋ 純文字鈕（無外框，同型錄數量調整）；點擊區保留 28px
   const stepBtn = (enabled: boolean) =>
-    `w-7 h-7 flex items-center justify-center border rounded-lg text-xs transition-colors ${
-      enabled ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer' : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
+    `w-7 h-7 flex items-center justify-center text-sm font-['Inter',_sans-serif] ${
+      enabled ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
     }`
+  // 品項表格欄位：設備／可借／數量（表頭與每列共用；可借、數量置中）
+  const cols = 'grid grid-cols-[1fr_64px_104px] gap-4 items-center'
 
   return createPortal(
     <div
@@ -109,18 +116,16 @@ const ModifyOrderDialog: React.FC<Props> = ({
         onClick={e => e.stopPropagation()}
       >
         {/* 標題 */}
+        {/* 標題：修改訂單＋單號（單號不另起一行） */}
         <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between">
             <h2 className="text-sm text-white">
               <span>{t('Edit Order', '修改訂單')}</span>
+              <span className="ml-3 text-gray-scale2 font-['Inter',_sans-serif]">{rentalNumber}</span>
             </h2>
-            <button onClick={onCancel} className="text-white hover:opacity-70 transition-opacity cursor-pointer -mt-1" aria-label="Close">
+            <button onClick={onCancel} className="text-white hover:opacity-70 cursor-pointer -mt-1" aria-label="Close">
               <span className="material-icons text-lg">close</span>
             </button>
-          </div>
-          <div className="text-xs text-gray-scale2">
-            <span>{t('Order', '訂單號碼')}</span>:{' '}
-            <span className="font-['Inter',_sans-serif] text-white">{rentalNumber}</span>
           </div>
         </div>
 
@@ -138,14 +143,19 @@ const ModifyOrderDialog: React.FC<Props> = ({
             <p>{picked ? 3 : 2}. {isMass ? `大量訂單需滿 ${MASS_MIN} 件。` : `小量訂單最多 ${LITTLE_MAX} 件。`}</p>
           </div>
 
-          {/* 品項 */}
+          {/* 品項：表頭寫欄位名稱，下面只放數字 */}
           <div className="flex flex-col">
+            <div className={`${cols} pb-2 border-b border-[#545454] text-2xs text-gray-scale2`}>
+              <span>{t('Equipment', '設備')}</span>
+              <span className="text-center">{t('Available', '可借')}</span>
+              <span className="text-center">{t('Quantity', '數量')}</span>
+            </div>
             {rows.map(r => {
               const max = available(r.id)
               const canDec = r.quantity > minQty(r) // 減到 0＝移除（取件後已點交的不可）
               return (
-                <div key={r.id} className="flex items-center gap-4 py-3 border-b border-[#545454]">
-                  <span className="flex-1 text-xs text-white font-['Inter','Noto_Sans_TC',_sans-serif]">
+                <div key={r.id} className={`${cols} py-3 border-b border-[#545454]`}>
+                  <span className="text-xs text-white font-['Inter','Noto_Sans_TC',_sans-serif]">
                     {r.name}
                     {picked && r.held > 0 && (
                       <span className="text-gray-scale2 ml-2">已取 {r.held}</span>
@@ -154,8 +164,8 @@ const ModifyOrderDialog: React.FC<Props> = ({
                       <span className="ml-2" style={{ color: 'var(--color-yellow)' }}>新增 {r.quantity - r.held} 待點交</span>
                     )}
                   </span>
-                  <span className="text-xs text-gray-scale2 font-['Inter',_sans-serif] w-20 text-right">可借 {max}</span>
-                  <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-scale2 font-['Inter',_sans-serif] text-center">{max}</span>
+                  <div className="flex items-center justify-center">
                     <button
                       className={stepBtn(canDec)}
                       disabled={!canDec}
@@ -203,12 +213,14 @@ const ModifyOrderDialog: React.FC<Props> = ({
           {/* 小計 */}
           <div className="mt-6 text-xs font-['Inter','Noto_Sans_TC',_sans-serif] flex justify-between">
             <span className={limitError ? '' : 'text-white'} style={limitError ? { color: 'var(--color-error2)' } : undefined}>
-              共 <span className="font-['Inter',_sans-serif]">{total}</span> 件{limitError && `（${limitError}）`}
+              共 <span className="font-['Inter',_sans-serif]">{total}</span> 件
+              {calc.sets.length > 0 && `（含 ${calc.sets.map(s => `${s.bundle.name} ×${s.count}`).join('、')}，整組算 1 件）`}
+              {limitError && `（${limitError}）`}
             </span>
             <span className="text-gray-scale2">
               {depositPaid
                 ? '押金差額由系學會現場計算'
-                : <>押金 <span className="font-['Inter',_sans-serif]">NT$ {Math.min(rows.reduce((s, r) => s + r.deposit * r.quantity, 0), 5000).toLocaleString()}</span></>}
+                : <>押金 <span className="font-['Inter',_sans-serif]">NT$ {Math.min(calc.deposit, 5000).toLocaleString()}</span></>}
             </span>
           </div>
 
@@ -219,7 +231,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
           <div className="border-t border-[#545454] my-4"></div>
 
           <div className="flex justify-end gap-6">
-            <button onClick={onCancel} className="text-[#cccccc] hover:text-white transition-colors cursor-pointer">
+            <button onClick={onCancel} className="text-[#cccccc] hover:text-white cursor-pointer">
               <span className="font-['Inter',_sans-serif] text-xs">
                 {t('Cancel', '取消')}
               </span>
@@ -227,7 +239,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
             <button
               onClick={handleSave}
               disabled={!canSave}
-              className={`transition-opacity ${canSave ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'}`}
+              className={`${canSave ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'}`}
             >
               <span className="font-['Inter',_sans-serif] text-xs">
                 {t(busy ? 'Saving…' : 'Save', '儲存')}

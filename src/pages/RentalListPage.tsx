@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useLocation, Link } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import type { CartItem } from '../types/equipment'
+import { cartGroupKey, type CartItem } from '../types/equipment'
+import { calcBundles } from '../utils/bundleUtils'
 import Header from '../components/layouts/Header'
+import BackButton from '../components/common/BackButton'
 import Footer from '../components/layouts/Footer'
 import CartList from '../components/cart/CartList'
 import { useCart } from '../hooks/useCart'
@@ -18,6 +19,7 @@ import { useSuspension } from '../hooks/useSuspension'
 import { useToast } from '../hooks/useToast'
 import { useCartReserved } from '../services/equipmentService'
 import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
+import { getCurrentStudentId } from '../utils/authStorage'
 import { useT } from '../stores/langStore'
 
 interface BookingDetailsData {
@@ -26,7 +28,11 @@ interface BookingDetailsData {
   teacher?: string
 }
 
-const STORAGE_KEY = 'sccd_booking_details'
+// 借用資訊同購物車依學號分開存（sccd_booking_details_{學號}）；訪客不存
+const detailsKey = () => {
+  const id = getCurrentStudentId()
+  return id ? `sccd_booking_details_${id}` : null
+}
 
 // 解析 groupKey（格式："equipment_<start>_<end>" 或 "space_<start>_<end>"）
 // 日期僅含連字號不含底線，故第一個底線後即為 start，最後一個底線後即為 end
@@ -38,36 +44,41 @@ const parseGroupKey = (key: string): { category: string; startDate: string; endD
 
 const RentalListPage = () => {
   const t = useT()
-  const location = useLocation()
   const {
     cart,
     updateEquipmentQuantity,
     clearCart,
     getOriginalQuantity,
-    getCartQuantity
+    getCartQuantity,
+    bundles
   } = useCart()
   const getReserved = useCartReserved(cart)
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast: showErrorToast, toastElement } = useToast()
 
   const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const [previousPage, setPreviousPage] = useState<'equipment' | 'space' | null>(null)
   const [depositBreakdownExpanded, setDepositBreakdownExpanded] = useState(false)
   // Toast 狀態
   const [showToast, setShowToast] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
   const [deletedItems, setDeletedItems] = useState<CartItem[]>([])
   const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
-  const [toastMessage, setToastMessage] = useState('已刪除選中的訂單')
+  const [toastMessage, setToastMessage] = useState('')
   // Booking Details 狀態
   const [bookingDetails, setBookingDetails] = useState<Record<string, BookingDetailsData>>({})
-  // 選中的訂單組
+  // 選取模式＋選中的訂單組（只用來清除）
+  const [selectMode, setSelectMode] = useState(false)
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelectedGroups(new Set())
+  }
 
   // 從 localStorage 載入 booking details
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const key = detailsKey()
+      const saved = key && localStorage.getItem(key)
       if (saved) {
         setBookingDetails(JSON.parse(saved))
       }
@@ -83,7 +94,8 @@ const RentalListPage = () => {
       [groupKey]: data
     }
     setBookingDetails(updated)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+    const key = detailsKey()
+    if (key) localStorage.setItem(key, JSON.stringify(updated))
   }
 
   // 彙整購物車驗證規則
@@ -92,8 +104,9 @@ const RentalListPage = () => {
     expiredOrdersValidation,
     stockAvailabilityValidation,
     bookingDetailsValidation,
-    singleOrderValidation
-  } = useCartValidation({ cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved })
+    singleOrderValidation,
+    littleLimitValidation
+  } = useCartValidation({ cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved, bundles })
 
   // 計算不同類型的項目數量
   // 設備：累加所有設備的數量 (A設備3個 + B設備2個 = 5)
@@ -106,68 +119,29 @@ const RentalListPage = () => {
   const classroomItems = cart.filter(item => item.category === 'classroom').length
   const totalUniqueItems = equipmentItems + spaceBlockItems + classroomItems
 
-  // 計算總押金（只計算選中的訂單組,排除過期訂單）
-  const totalDeposit = (() => {
-    // 如果沒有選中任何組，返回 0
-    if (selectedGroups.size === 0) {
-      return 0
-    }
-
-    const dateGroups: Record<string, { equipment: number; space: number }> = {}
-
+  // 各訂單押金（設備／空間分單，各自 5000 上限；設備套用組合），排除過期時段。
+  // 送出是整車送，總押金不看選取（選取只用來清除）
+  const depositGroups = (() => {
+    const groups: Record<string, CartItem[]> = {}
     cart.forEach(item => {
-      const key = `${item.startDate}_${item.endDate}`
-      if (!dateGroups[key]) {
-        dateGroups[key] = { equipment: 0, space: 0 }
-      }
-
-      if (item.category === 'equipment') {
-        dateGroups[key].equipment += item.deposit * item.quantity
-      } else if (item.category === 'space-block' || item.category === 'classroom') {
-        dateGroups[key].space += item.deposit
-      }
+      if (expiredOrdersValidation.expiredKeys.includes(`${item.startDate}_${item.endDate}`)) return
+      if (!['equipment', 'space-block', 'classroom'].includes(item.category)) return
+      ;(groups[cartGroupKey(item)] ??= []).push(item)
     })
-
-    // 只計算選中組的押金,排除過期訂單
-    let total = 0
-    selectedGroups.forEach(groupKey => {
-      // groupKey 格式: "equipment_2026-01-20_2026-01-25" 或 "space_2026-01-20_2026-01-25"
-      const parsed = parseGroupKey(groupKey)
-      if (parsed) {
-        const { category, startDate, endDate } = parsed
-        const dateKey = `${startDate}_${endDate}` // "2026-01-20_2026-01-25"
-
-        // 檢查該訂單是否過期,過期的不計入押金
-        if (expiredOrdersValidation.expiredKeys.includes(dateKey)) {
-          return // 跳過過期訂單
-        }
-
-        if (dateGroups[dateKey]) {
-          if (category === 'equipment') {
-            total += Math.min(dateGroups[dateKey].equipment, 5000)
-          } else if (category === 'space') {
-            total += Math.min(dateGroups[dateKey].space, 5000)
-          }
-        }
-      }
-    })
-
-    return total
+    return Object.values(groups)
+      .map(items => ({
+        startDate: items[0].startDate,
+        endDate: items[0].endDate,
+        deposit: Math.min(
+          items[0].category === 'equipment'
+            ? calcBundles(items, bundles).deposit
+            : items.reduce((s, i) => s + i.deposit, 0),
+          5000
+        )
+      }))
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
   })()
-
-  // 從 location state 或 localStorage 獲取上一頁資訊
-  useEffect(() => {
-    const state = location.state as { from?: string } | null
-    if (state?.from) {
-      setPreviousPage(state.from as 'equipment' | 'space')
-      localStorage.setItem('cart_previous_page', state.from)
-    } else {
-      const stored = localStorage.getItem('cart_previous_page')
-      if (stored === 'equipment' || stored === 'space') {
-        setPreviousPage(stored)
-      }
-    }
-  }, [location])
+  const totalDeposit = depositGroups.reduce((sum, g) => sum + g.deposit, 0)
 
   // 顯示可 undo 的 toast（清除訂單組與單項刪除共用）
   // ponytail: toast 開啟期間的多次刪除會累加進 deletedItems，Undo 一次全復原（涵蓋多區塊區域一次刪除）
@@ -198,7 +172,7 @@ const RentalListPage = () => {
     const removed = current.filter(isMatch)
     if (removed.length === 0) return
     writeCart(current.filter(item => !isMatch(item)))
-    showUndoToast(removed, `已刪除「${removed[0].name}」`)
+    showUndoToast(removed, t(`Removed "${removed[0].name}"`, `已刪除「${removed[0].name}」`))
   }
 
   // 處理清除選中的訂單組
@@ -238,15 +212,15 @@ const RentalListPage = () => {
       title: '確認清除選中訂單',
       titleEn: 'Confirm Clear Selected Orders',
       message: `確定要清除選中的租借項目嗎？共 ${totalCount} 件將被移除。`,
-      messageEn: `Are you sure you want to clear selected rental items? ${totalCount} item(s) will be removed.`,
+      messageEn: `Clear the selected orders? ${totalCount} item(s) will be removed.`,
       confirmText: 'Clear',
       confirmTextZh: '清除',
       variant: 'danger'
     })
 
     if (confirmed) {
-      // 立即清空選中狀態（在刪除之前）
-      setSelectedGroups(new Set())
+      // 立即清空選中狀態並退出選取模式（在刪除之前）
+      exitSelectMode()
 
       // 過濾掉要刪除的項目後寫回 localStorage
       const itemsToDeleteSet = new Set(
@@ -255,7 +229,7 @@ const RentalListPage = () => {
       writeCart(cart.filter(item => !itemsToDeleteSet.has(`${item.id}_${item.startDate}_${item.endDate}`)))
 
       // 顯示可 undo 的 toast
-      showUndoToast(itemsToDelete, '已刪除選中的訂單')
+      showUndoToast(itemsToDelete, t('Removed the selected orders', '已刪除選中的訂單'))
     }
   }
 
@@ -295,17 +269,17 @@ const RentalListPage = () => {
 
   const handleCheckout = async () => {
     if (!agreedToTerms) {
-      alert('請先同意使用規則與條款')
+      alert(t('Please agree to the terms and conditions first.', '請先同意使用規則與條款'))
       return
     }
     if (cart.length === 0) {
-      alert('購物車是空的')
+      alert(t('Your cart is empty.', '購物車是空的'))
       return
     }
     // 失敗時購物車保留原樣，提示重送即可
     const result = await submitOrder()
     if (!result.ok) {
-      showErrorToast(result.reason || '送出失敗，請再試一次')
+      showErrorToast(result.reason || t('Submission failed. Please try again.', '送出失敗，請再試一次'))
     }
   }
 
@@ -314,66 +288,47 @@ const RentalListPage = () => {
       <Header />
 
       {/* 主要內容區塊 */}
-      <main className="flex-1 pt-20 overflow-hidden">
-        {/* 麵包屑 */}
+      <main className="flex-1 pt-20 overflow-hidden flex flex-col">
+        {/* 返回上一頁 */}
         <div className="container hidden md:block">
-          <div className="text-left pb-4">
-            <nav className="breadcrumb-inline whitespace-nowrap">
-              <Link to="/catalog" className="breadcrumb-item text-xs">
-                &lt;
-              </Link>
-              <span> </span>
-              <Link to="/catalog" className="breadcrumb-item text-xs">
-                {t('Category', '類別')}
-              </Link>
-              {previousPage && (
-                <>
-                  <span className="breadcrumb-separator text-xs">/</span>
-                  <Link
-                    to={previousPage === 'equipment' ? '/equipment' : '/space'}
-                    className="breadcrumb-item text-xs"
-                  >
-                    {previousPage === 'equipment' ? (
-                      <>
-                        {t('Equipment', '設備')}
-                      </>
-                    ) : (
-                      <>
-                        {t('Space', '空間')}
-                      </>
-                    )}
-                  </Link>
-                </>
-              )}
-              <span className="breadcrumb-separator text-xs">/</span>
-              <span className="breadcrumb-item text-xs">
-                {t('Cart', '清單')}
-              </span>
-            </nav>
-          </div>
+          <BackButton />
         </div>
 
-        <div className="container h-full flex flex-col overflow-hidden">
+        {/* flex-1 而非 h-full：扣掉返回鈕高度，底部送出鈕才不會被裁掉 */}
+        <div className="container flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* 左右分欄佈局 */}
           <div className="flex gap-16 flex-1 overflow-hidden">
-            {/* 左邊：租借清單 (75%) */}
-            <div className="w-3/4 flex flex-col overflow-hidden">
+            {/* 左邊：租借清單（剩餘寬度） */}
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
               {/* 頁面標題 */}
               <div className="mb-6 flex justify-between items-center flex-shrink-0">
                 <h1 className="font-['Inter',_sans-serif] text-white text-xl">
                   {t('Cart', '清單')} ({totalUniqueItems})
                 </h1>
-                <button
-                  onClick={handleClearAll}
-                  disabled={selectedGroups.size === 0}
-                  className={`text-sm font-normal whitespace-nowrap ${
-                    selectedGroups.size === 0
-                      ? 'text-gray-scale4 cursor-not-allowed'
-                      : 'text-white hover:opacity-70 transition-opacity cursor-pointer'
-                  }`}
-                >
-                  {t('Clear', '清除')}
-                </button>
+                {/* 選取 → 進入選取模式（各組左側出現圓圈），按鈕變清除；取消退出 */}
+                <div className="flex items-center gap-4">
+                  {selectMode && (
+                    <button
+                      onClick={exitSelectMode}
+                      className="flex items-center gap-1 text-sm font-normal whitespace-nowrap text-gray-scale2 hover:!text-white cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>undo</span>
+                      {t('Cancel', '取消')}
+                    </button>
+                  )}
+                  <button
+                    onClick={selectMode ? handleClearAll : () => setSelectMode(true)}
+                    disabled={selectMode ? selectedGroups.size === 0 : cart.length === 0}
+                    className={`flex items-center gap-1 text-sm font-normal whitespace-nowrap ${
+                      (selectMode ? selectedGroups.size === 0 : cart.length === 0)
+                        ? 'text-gray-scale4 cursor-not-allowed'
+                        : 'text-white hover:opacity-70 cursor-pointer'
+                    }`}
+                  >
+                    {selectMode && <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>}
+                    {selectMode ? t('Clear', '清除') : t('Select', '選取')}
+                  </button>
+                </div>
               </div>
 
               {/* 設備列表 */}
@@ -387,15 +342,16 @@ const RentalListPage = () => {
                   expiredDateKeys={expiredOrdersValidation.expiredKeys}
                   selectedGroups={selectedGroups}
                   onSelectedGroupsChange={setSelectedGroups}
+                  selectMode={selectMode}
                   getReserved={getReserved}
                 />
               </div>
             </div>
 
-            {/* 右邊：租借摘要 (25%) */}
-            <div className="w-1/4 pr-4">
+            {/* 右邊：租借摘要 (20%)：押金／提醒／檢查清單可捲動，同意條款＋送出固定在底部 */}
+            <div className="w-1/5 flex-shrink-0 pr-4 pb-8 flex flex-col">
               {/* 租借摘要內容 */}
-              <div>
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 {/* 押金標籤 */}
                 <div className="mb-2">
                   <div className="text-xs text-gray-scale2">
@@ -406,13 +362,13 @@ const RentalListPage = () => {
                 {/* 總押金展開按鈕 */}
                 <button
                   onClick={() => setDepositBreakdownExpanded(!depositBreakdownExpanded)}
-                  disabled={selectedGroups.size === 0}
-                  className={`w-full flex items-center justify-between mb-4 ${selectedGroups.size === 0 ? 'cursor-default' : 'cursor-pointer'}`}
+                  disabled={depositGroups.length === 0}
+                  className={`w-full flex items-center justify-between mb-4 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
                     NT$ {totalDeposit.toLocaleString()}
                   </div>
-                  {selectedGroups.size > 0 && (
+                  {depositGroups.length > 0 && (
                     <svg
                       className={`w-4 h-4 text-white transition-transform ${depositBreakdownExpanded ? 'rotate-180' : ''}`}
                       fill="none"
@@ -424,97 +380,23 @@ const RentalListPage = () => {
                   )}
                 </button>
 
-                {/* 時段押金明細 - 展開時顯示 */}
-                {depositBreakdownExpanded && selectedGroups.size > 0 && (
+                {/* 各訂單押金明細 - 展開時顯示 */}
+                {depositBreakdownExpanded && depositGroups.length > 0 && (
                   <div className="mb-6">
-                    {(() => {
-                      // 按日期分組計算每個時段的押金（設備和空間分開計算）
-                      const dateGroups: Record<string, { startDate: string; endDate: string; equipment: number; space: number; equipmentSelected: boolean; spaceSelected: boolean }> = {}
-
-                      cart.forEach(item => {
-                        const key = `${item.startDate}_${item.endDate}`
-                        if (!dateGroups[key]) {
-                          dateGroups[key] = {
-                            startDate: item.startDate,
-                            endDate: item.endDate,
-                            equipment: 0,
-                            space: 0,
-                            equipmentSelected: false,
-                            spaceSelected: false
-                          }
-                        }
-
-                        if (item.category === 'equipment') {
-                          dateGroups[key].equipment += item.deposit * item.quantity
-                        } else if (item.category === 'space-block' || item.category === 'classroom') {
-                          dateGroups[key].space += item.deposit
-                        }
-                      })
-
-                      // 標記哪些組被選中
-                      selectedGroups.forEach(groupKey => {
-                        const parsed = parseGroupKey(groupKey)
-                        if (parsed) {
-                          const { category, startDate, endDate } = parsed
-                          const dateKey = `${startDate}_${endDate}`
-                          if (dateGroups[dateKey]) {
-                            if (category === 'equipment') {
-                              dateGroups[dateKey].equipmentSelected = true
-                            } else if (category === 'space') {
-                              dateGroups[dateKey].spaceSelected = true
-                            }
-                          }
-                        }
-                      })
-
-                      const sortedGroups = Object.values(dateGroups).sort((a, b) =>
-                        new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-                      )
-
-                      // 只顯示被選中的組,排除過期訂單
-                      const selectedGroupsList: { startDate: string; endDate: string; deposit: number }[] = []
-                      sortedGroups.forEach(group => {
-                        const dateKey = `${group.startDate}_${group.endDate}`
-
-                        // 檢查該訂單是否過期,過期的不顯示在明細中
-                        if (expiredOrdersValidation.expiredKeys.includes(dateKey)) {
-                          return // 跳過過期訂單
-                        }
-
-                        if (group.equipmentSelected) {
-                          selectedGroupsList.push({
-                            startDate: group.startDate,
-                            endDate: group.endDate,
-                            deposit: Math.min(group.equipment, 5000)
-                          })
-                        }
-                        if (group.spaceSelected) {
-                          selectedGroupsList.push({
-                            startDate: group.startDate,
-                            endDate: group.endDate,
-                            deposit: Math.min(group.space, 5000)
-                          })
-                        }
-                      })
-
-                      return selectedGroupsList.map((group, index) => {
-                        // 格式化日期為 2026/01/20 格式
-                        return (
-                          <div key={index} className="flex items-center gap-3 text-xs text-white mb-3">
-                            {/* 數字符號：自製圓圈＋數字（像 Guide，無數量上限；固定寬度讓後面日期對齊） */}
-                            <span className="flex-shrink-0 w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[10px] font-['Inter',_sans-serif] leading-none">
-                              {index + 1}
-                            </span>
-                            <span className="font-['Inter',_sans-serif]">
-                              {formatYmd(new Date(group.startDate))} - {formatYmd(new Date(group.endDate))}
-                            </span>
-                            <span className="font-['Inter',_sans-serif]">
-                              NT$ {group.deposit.toLocaleString()}
-                            </span>
-                          </div>
-                        )
-                      })
-                    })()}
+                    {depositGroups.map((group, index) => (
+                      <div key={index} className="flex items-center gap-3 text-xs text-white mb-3">
+                        {/* 數字符號：自製圓圈＋數字（像 Guide，無數量上限；固定寬度讓後面日期對齊） */}
+                        <span className="flex-shrink-0 w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[10px] font-['Inter',_sans-serif] leading-none">
+                          {index + 1}
+                        </span>
+                        <span className="font-['Inter',_sans-serif]">
+                          {formatYmd(new Date(group.startDate))} - {formatYmd(new Date(group.endDate))}
+                        </span>
+                        <span className="font-['Inter',_sans-serif]">
+                          NT$ {group.deposit.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -523,48 +405,6 @@ const RentalListPage = () => {
                 <div className="mb-6">
                   <div className="text-shrink-container pr-4">
                     <p className="text-xs text-white text-shrink-content">{t('Please visit the SA to pay the deposit and complete your reservation within 24 hrs of checkout.', '結帳後會保留24小時的繳押金時間，請在時間內至系學會完成預約程序')}</p>
-                  </div>
-                </div>
-
-                {/* 同意條款 */}
-                <div className="mb-12">
-                  <div className="flex items-start gap-3">
-                    <div className="relative flex items-center mt-0.5">
-                      <input
-                        type="checkbox"
-                        id="terms-checkbox"
-                        checked={agreedToTerms}
-                        onChange={(e) => setAgreedToTerms(e.target.checked)}
-                        className="peer h-4 w-4 shrink-0 cursor-pointer appearance-none border border-gray-scale2 bg-transparent checked:border-white checked:bg-white transition-all"
-                      />
-                      <svg
-                        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity"
-                        width="10"
-                        height="8"
-                        viewBox="0 0 10 8"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M1 4L3.5 6.5L9 1"
-                          stroke="black"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-white leading-tight">
-                      <span>{t('I have read and agree to the department&apos;s equipment &amp; space rental', '我已閱讀並同意系上租借設備與空間的')}</span>
-                      <a
-                        href="https://docs.google.com/document/d/1m4i89PruGw1ih7NehOEbR_vdNx7KKpTT1svbM1aOIvQ/edit?usp=sharing"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline cursor-pointer hover:text-zinc-300 transition-colors"
-                      >
-                        <span>{t('Terms &amp; Conditions', '使用規則與條款')}</span>
-                      </a>
-                    </span>
                   </div>
                 </div>
 
@@ -600,6 +440,20 @@ const RentalListPage = () => {
                         <div className="flex-1">
                           <span className={`text-xs text-[#ffff00]`}>
                             <span>{t(stockAvailabilityValidation.detail, stockAvailabilityValidation.message)}</span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 條件 0.55: 小量設備超過 9 件（減少數量拆散組合時）- 僅違規時顯示 */}
+                    {!littleLimitValidation.valid && (
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-xs" style={{ color: '#ffff00', marginTop: '2px' }}>
+                          info
+                        </span>
+                        <div className="flex-1">
+                          <span className="text-xs text-[#ffff00]">
+                            <span>{t(littleLimitValidation.detail, littleLimitValidation.message)}</span>
                           </span>
                         </div>
                       </div>
@@ -671,29 +525,51 @@ const RentalListPage = () => {
                     </div>
                   </div>
                 )}
+              </div>
 
-                {/* 租借按鈕（停權帳號鎖定） */}
-                <div>
-                  {isSuspended && (
-                    <div className="flex items-start gap-2 mb-3 text-error2">
-                      <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px', marginTop: '1px' }}>warning</span>
-                      <div className="text-xs">
-                        <p>{t('Account suspended — bookings are disabled.', '帳號已停權，無法送出預約，請聯絡系學會')}</p>
-                      </div>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleCheckout}
-                    disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid}
-                    className={`px-8 py-2 rounded-lg text-sm font-normal whitespace-nowrap transition ${
-                      isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid
-                        ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
-                        : 'bg-white text-black hover:opacity-70 cursor-pointer'
-                    }`}
-                  >
-                    {t('Book', '送出')}
-                  </button>
+              {/* 底部：同意條款＋送出（停權帳號鎖定） */}
+              <div className="flex-shrink-0 pt-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="custom-checkbox"
+                  />
+                  <span className="text-xs text-white leading-tight">
+                    <span>{t('I have read and agree to the department&apos;s equipment &amp; space rental', '我已閱讀並同意系上租借設備與空間的')}</span>
+                    <a
+                      href="https://docs.google.com/document/d/1m4i89PruGw1ih7NehOEbR_vdNx7KKpTT1svbM1aOIvQ/edit?usp=sharing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline cursor-pointer hover:text-zinc-300"
+                    >
+                      <span>{t('Terms &amp; Conditions', '使用規則與條款')}</span>
+                    </a>
+                  </span>
                 </div>
+
+                {isSuspended && (
+                  <div className="flex items-start gap-2 mb-3 text-error2">
+                    <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px', marginTop: '1px' }}>warning</span>
+                    <div className="text-xs">
+                      <p>{t('Account suspended — bookings are disabled.', '帳號已停權，無法送出預約，請聯絡系學會')}</p>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleCheckout}
+                  disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid || !littleLimitValidation.valid}
+                  className={`w-full h-12 flex items-center justify-center gap-1 pl-4 pr-3 rounded-lg text-sm font-normal whitespace-nowrap ${
+                    isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid || !littleLimitValidation.valid
+                      ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
+                      : 'bg-white text-black hover:opacity-70 cursor-pointer'
+                  }`}
+                >
+                  {t('Book', '送出')}
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chevron_right</span>
+                </button>
               </div>
             </div>
           </div>
@@ -717,9 +593,11 @@ const RentalListPage = () => {
           </span>
           <button
             onClick={handleUndo}
-            className="font-['Inter',_sans-serif] text-xs text-black hover:opacity-50 transition-opacity cursor-pointer underline-offset-2"
+            aria-label={t('Undo', '復原')}
+            title={t('Undo', '復原')}
+            className="flex items-center text-black hover:opacity-50 cursor-pointer"
           >
-            Undo
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>undo</span>
           </button>
         </div>,
         document.body

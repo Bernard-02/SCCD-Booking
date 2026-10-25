@@ -1,14 +1,17 @@
 /**
  * Supabase 認證服務
- * 登入流程：學號 → email（RPC email_for_student）→ Supabase Auth 驗證 → 撈 students profile。
+ * 登入流程：學生＝學校 Google 帳號（signInWithGoogle → 跳回 → finishGoogleLogin）；
+ * 密碼帳號（admin sccdsa，以及 Google 設定完成前仍開放的有密碼學生帳號）＝學號 → email（RPC email_for_student）→ Supabase Auth 驗證。兩者最後都撈 students profile。
  * 取代已移除的 mock 登入（原 utils/testAuthData）。
  */
 
 import { supabase } from './supabase'
 import type { Student, LoginResult } from '../utils/authTypes'
+import { tr } from '../stores/langStore'
 
-// 沿用原本 app 的 7 天登入效期（app 自己的 storage 週期，與 Supabase session 無關）
-const EXPIRES_IN = 7 * 24 * 60 * 60 * 1000
+// app 登入資料的閒置效期：30 天沒開 app 才過期（AuthContext 每次開啟把 loginTime 續成現在）；
+// Supabase 憑證由 refresh token 自動續期，過期時兩者一起登出
+const EXPIRES_IN = 30 * 24 * 60 * 60 * 1000
 
 interface StudentRow {
   id: string
@@ -46,24 +49,53 @@ export async function supabaseLogin(studentId: string, password: string): Promis
   // 1. 學號 → email
   const { data: email, error: lookupError } = await supabase.rpc('email_for_student', { sid: studentId })
   if (lookupError || !email) {
-    return { success: false, error: 'user_not_found', message: '查無此學號' }
+    return { success: false, error: 'user_not_found', message: tr('Student ID not found', '查無此學號') }
   }
 
   // 2. 密碼驗證（Supabase 內建 bcrypt 與 rate limiting）
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error || !data.session || !data.user) {
-    return { success: false, error: 'invalid_password', message: '密碼錯誤' }
+    return { success: false, error: 'invalid_password', message: tr('Incorrect password', '密碼錯誤') }
   }
+  return loadProfile(data.user.id, data.session.access_token, 'email')
+}
 
+/**
+ * 學校 Google 帳號登入（google-login.sql）：導去 Google，選完帳號跳回首頁，再由 finishGoogleLogin 接手。
+ * 本系規則（網域、學號班級代碼、例外名單）在 DB trigger 把關，不符的帳號根本建不起來。
+ */
+export async function signInWithGoogle(): Promise<boolean> {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/`, queryParams: { prompt: 'select_account' } }
+  })
+  return !error
+}
+
+/** Google 跳回來後：supabase-js 已從網址取出 session，這裡撈 profile（同密碼登入的 3、4 步） */
+export async function finishGoogleLogin(): Promise<LoginResult> {
+  const { data } = await supabase.auth.getSession()
+  if (!data.session) return { success: false, message: googleRejectMessage() }
+  return loadProfile(data.session.user.id, data.session.access_token, 'google')
+}
+
+/** trigger 擋下時 Supabase 只回「Database error saving new user」，原因統一這樣講 */
+export const googleRejectMessage = () =>
+  tr(
+    'Please sign in with your school Google account (@gm, gm1 or gm2.usc.edu.tw). Only accounts registered by the SA can sign in — contact the SA if you are not registered yet.',
+    '請使用學校 Google 帳號（@gm／gm1／gm2.usc.edu.tw）登入；只有系學會登記過的帳號能登入，尚未登記請聯繫系學會'
+  )
+
+async function loadProfile(userId: string, token: string, provider: 'email' | 'google'): Promise<LoginResult> {
   // 3. 撈 profile（RLS：本人可讀自己）
   const { data: profile, error: profileError } = await supabase
     .from('students')
     .select('*')
-    .eq('id', data.user.id)
+    .eq('id', userId)
     .single()
 
   if (profileError || !profile) {
-    return { success: false, message: '讀取學生資料失敗，請聯繫系學會' }
+    return { success: false, message: tr('Couldn’t load your student profile. Please contact the SA.', '讀取學生資料失敗，請聯繫系學會') }
   }
 
   // 4. 畢業生停用（2026-10-04 Bernard 定；後台會員管理手動標記，不依年級自動判定）：
@@ -73,18 +105,18 @@ export async function supabaseLogin(studentId: string, password: string): Promis
     const { count } = await supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
-      .eq('student_id', data.user.id)
+      .eq('student_id', userId)
       .in('status', ['pending', 'in-progress', 'overdue'])
     if (!count) {
       await supabase.auth.signOut()
-      return { success: false, error: 'account_locked', message: '帳號已停用（已畢業），如有疑問請聯繫系學會' }
+      return { success: false, error: 'account_locked', message: tr('This account has been deactivated (graduated). Please contact the SA if you have questions.', '帳號已停用（已畢業），如有疑問請聯繫系學會') }
     }
   }
 
   return {
     success: true,
-    student: toStudent(profile as StudentRow),
-    token: data.session.access_token,
+    student: { ...toStudent(profile as StudentRow), provider },
+    token,
     expiresIn: EXPIRES_IN
   }
 }
@@ -115,12 +147,12 @@ export async function requestPasswordReset(
   studentId: string
 ): Promise<{ ok: boolean; maskedEmail?: string; message?: string }> {
   const { data: email } = await supabase.rpc('email_for_student', { sid: studentId })
-  if (!email) return { ok: false, message: '查無此學號' }
+  if (!email) return { ok: false, message: tr('Student ID not found', '查無此學號') }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password`
   })
-  if (error) return { ok: false, message: '寄送失敗，請稍後再試' }
+  if (error) return { ok: false, message: tr('Failed to send. Please try again later.', '寄送失敗，請稍後再試') }
 
   const [local, domain] = String(email).split('@')
   return { ok: true, maskedEmail: `${local.slice(0, 3)}***@${domain}` }

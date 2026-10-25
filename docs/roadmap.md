@@ -39,7 +39,8 @@
 ## 階段 2：管理後台（進行中）
 
 後台是**自己寫的 `/admin` 頁面**（同 repo、同部署、同視覺），不是資料庫平台的 GUI；
-側欄分區架構（`AdminLayout`）：值班（總覽／訂單／空間地圖）＋設定（設備管理／空間管理／會員管理／營業時間）。admin 登入自動導向 `/admin`。
+側欄分區架構（`AdminLayout`）：值班（訂單／空間地圖）＋設定（設備管理／空間管理／會員管理／營業時間）。admin 登入自動導向 `/admin/orders`。
+2026-10-23：側欄改小字組名＋icon 膠囊（同前台 Profile）、後台全面拿掉英文；值班時間編輯從會員管理搬到營業時間頁；後台大表（訂單、會員、公告收件人）改分段抓（`fetchAllRows`，破 Supabase 1000 筆上限）。
 視覺沿用前台 Profile 的設計語彙（`components/admin/adminUi.tsx`：狀態標籤、按鈕、輸入框、頁標題共用）。
 權限真正防線在 Supabase RLS，前端的 `AdminRoute` 只是 UX。
 **編輯政策**（見 order-lifecycle 情境 9）：軟性欄位（原因／班級／老師）可就地改，硬性資料（日期／品項／狀態／押金）一律走專用動作按鈕。
@@ -47,8 +48,9 @@
 - [x] 訂單全覽：姓名／學號／種類／起訖／品項／原因／押金／狀態＋搜尋＋狀態／種類篩選＋全欄排序（`AdminOrdersPage`）
 - [x] 確認收押金（`admin_mark_paid`：pending → in-progress）
 - [x] 整單歸還＋逾期罰款確認（`admin_mark_returned`：in-progress/overdue → returned，寫 `penalty_total`，前端預填試算）
-- [x] 總覽 dashboard：訂單概況統計、教室／空間使用中、待繳押金倒數、違規帳號（停權＋逾期）
-- [x] 值班經手人追溯：收押金／歸還必選經手幹部（`orders.paid_by`／`returned_by` 姓名快照）；系學會名單每年換屆維護（2026-10-01 起併入會員管理 `AdminMembersPage`：身分選「系學會」＝加入 `staff_members`，見 supabase/staff-members.sql）
+- [x] ~~總覽 dashboard~~（2026-10-24 拿掉）：各狀態數量移到訂單頁上方、待繳押金倒數與逾期營業日進訂單狀態欄、
+      解除停權移到會員管理（展開停權帳號）、教室／空間使用中看空間地圖
+- [x] 值班經手人追溯：收押金／歸還必選經手幹部（`orders.paid_by`／`returned_by` 姓名快照）；訂單頁「收押金」「歸還」兩欄＝沒做是按鈕、做完顯示經手人（2026-10-26，取件／收罰款也在這兩欄，操作欄剩點交／延期／取消訂單）；系學會名單每年換屆維護（2026-10-01 起併入會員管理 `AdminMembersPage`：身分選「系學會」＝加入 `staff_members`，見 supabase/staff-members.sql）
 - [x] 公休日／寒暑假封鎖維護（2026-10-01 合併為「營業時間管理」`AdminHoursPage`，`/admin/hours`；直接 CRUD，RLS 把關）
 - [x] 會員管理（2026-10-01，`AdminMembersPage`，`/admin/members`）：全體帳號搜尋＋身分／違規篩選、展開租借歷史、
       改年級／身分（助教・系秘、休學擋新借、轉學生）。supabase/members.sql＋重貼 orders-rpc.sql（已執行 2026-10-01）
@@ -65,7 +67,7 @@
       （必填規則同前台：原因必填、大量／團體需班級＋老師），`adminUpdateOrderInfo` 直接 update（RLS `orders: admin all`）。
       學生端不可改：無 update 權限、前台無介面；另移除學生直接 insert 訂單的權限（可繞過 RPC 檢查），
       supabase/orders-lockdown.sql（已執行 2026-10-01）
-- [x] 解除停權（總覽違規名單「Unsuspend」鈕，`admin_unsuspend_student`：account_level 5→0＋通知；
+- [x] 解除停權（原在總覽違規名單，2026-10-24 移到會員管理展開列，`admin_unsuspend_student`：account_level 5→0＋通知；
       以上三支 RPC 在 supabase/admin-actions.sql，已執行）
 - [x] 值班可靠性（2026-10-02）：訂單／總覽／空間地圖自動更新（`useAutoRefresh`：每 60 秒＋切回分頁即更新，
       背景失敗不蓋畫面；訂單工具列「更新於 hh:mm」＋手動重新整理）；後台全部頁面
@@ -78,12 +80,12 @@
       查看與寫入不同頁、設定段寫入一律確認 dialog、下架＝軟性停用不刪資料（`AdminLayout` 分組）
   - [x] 設備管理（新增／編輯／軟性下架，`AdminEquipmentPage`＋`adminService`；前台快取政策同公休日：學生端重整生效）。
         分類為固定下拉（2026-10-01）：前台篩選與後台共用 `types/equipment.ts` 的 `EQUIPMENT_CATEGORIES`
-  - [x] 空間管理（開放 toggle，`AdminSpacesPage`；教室清單改吃 space 表 `is_active`——`SpacePage.isClassroomOpen`；
+  - [x] 空間管理（開放 toggle，`AdminSpacesPage`；編號區依區收合成群組列、群組列一鍵開關整區＋整區押金（2026-10-25）；教室清單改吃 space 表 `is_active`——`SpacePage.isClassroomOpen`；
         A508／後陽台預設關閉 SQL 在 supabase/close-a508-backterrace.sql，已執行）
   - [x] 空間／圖片編輯（2026-10-01）：教室改名稱／押金／圖片、編號區押金整區改（`updateAreaDeposit`）；
         設備與教室點縮圖換圖（Storage bucket `images`，`uploadImage`）。前台 `SpacePage` 教室與地圖 tooltip 押金
         改吃 space 表。supabase/space-edit-images.sql（已執行）（space.image_url＋bucket＋admin 寫入 policy）
-  - [x] 空間地圖（唯讀：SVG 區塊依日期上色＋點擊看借用人／單號，教室另列，`AdminSpaceMapPage`
+  - [x] 空間地圖（唯讀：SVG 區塊依日期上色＋點擊看借用人／單號，教室不列〔2026-10-24〕，`AdminSpaceMapPage`
         ＋`fetchSpaceOccupancy`；2026-09-29 新規則 #6）
 - [x] 歸還視窗「準時／逾期歸還」下拉（情境 6：準時免罰、逾期才展開罰款欄，`OrderActionDialog`）
 - [x] 學年升級（情境 12）：pg_cron 每年 9/1 自動全體 +1（`promote_grades_core`，大四／碩二不動，
@@ -135,7 +137,7 @@
 - [x] 測試基礎：vitest 已建置（`timeUtils`／`gradeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
 - [x] **安全修正（2026-10-03）**：`user_role()` 未登入回傳 NULL，後台 RPC 的 `<> 'admin'` 檢查被跳過
       （只帶 anon key 即可呼叫收押金／歸還／取消等 9 支）→ 改回傳 `'anon'`（supabase/user-role-fix.sql，已執行並驗證擋下）
-- [ ] Tech debt：拆 700 行大檔（`CartList`、`OrderPage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
+- [ ] Tech debt：拆 700 行大檔（`CartList`、`ProfilePage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
 - [x] 設備圖片（2026-10-03）：前台清單／購物車原本寫死延長線圖，改讀設備 `image_url`（`equipmentService.imageSrc`，
       未上傳才用預設圖）——圖片之後由後台設備管理上傳即生效
 - [x] 清理一輪（2026-10-04）：刪死碼（舊 equipment-data.json、localStorage 通知 key、未用的 RPC 包裝與 SQL `extend_my_order`／`admin_mark_returned`）；
@@ -154,7 +156,7 @@ RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：
 - [ ] Equipment 設備頁手機版（目前 `hidden md:block`，手機無內容）
 - [ ] Space 空間頁手機版（同上；區域地圖 SVG 的觸控操作要特別設計）
 - [ ] RentalList 清單頁手機版
-- [ ] Order 訂單頁手機版（含 PDF 輸出的手機行為）
+- [ ] Profile 訂單 accordion 手機版（含 PDF 輸出的手機行為；原 /order 詳情頁已併入 Profile）
 - [ ] Profile 頁手機版檢查（無 `md:` 斷點，需逐一驗證）
 - [ ] Footer 手機版（目前 `hidden md:flex`）
 - [ ] 對話框（DateEditDialog、InfoDialog 等 max-w 較大的）在小螢幕的呈現

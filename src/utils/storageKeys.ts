@@ -4,4 +4,3 @@
 export const ADMIN_HANDLER_KEY = 'sccd_admin_handler'
 
 /** 後台：訂單表格欄位順序（拖曳表頭換位後記住） */
-export const ADMIN_ORDER_COLS_KEY = 'sccd_admin_order_cols'

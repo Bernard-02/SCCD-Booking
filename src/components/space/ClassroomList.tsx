@@ -59,7 +59,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
           {/* 關閉按鈕 */}
           <button
             onClick={closeFullscreenImage}
-            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 transition-colors cursor-pointer z-10"
+            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 cursor-pointer z-10"
             aria-label="關閉"
           >
             ×
@@ -76,7 +76,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
       )}
 
       {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="min-w-[900px] grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
+      <div className="min-w-[900px] grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] items-center gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
         {/* 狀態指示器列 */}
         <div></div>
 
@@ -101,12 +101,12 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
           <div>
             {t('On Hold', '待繳押金')}
           </div>
-          <div className="relative group">
+          <div className="relative group flex">
             <span className="material-symbols-outlined text-gray-scale2 cursor-help" style={{ fontSize: '20px' }}>
               info
             </span>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none z-50">
               已送出但未繳押金的設備
               {/* 小三角形 */}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-scale4"></div>
@@ -133,7 +133,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
             return (
               <div
                 key={classroom.id}
-                className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-colors"
+                className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 py-3 border-b border-[#7c7c7c] items-center"
               >
                 {/* 狀態指示器 - 獨立的 grid 列 */}
                 <div
@@ -188,7 +188,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                   NT$ {classroom.price.toLocaleString()}
                 </div>
 
-                {/* Add 按鈕 */}
+                {/* 加入清單：白底圓角購物車 icon；不可加時 50% 透明 */}
                 <div className="flex justify-center">
                   <button
                     onClick={(e) => {
@@ -196,13 +196,14 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                       onAdd(classroom.id)
                     }}
                     disabled={!isAvailable || !hasSelectedDates}
-                    className={`font-['Inter',_sans-serif] text-sm ${
+                    aria-label={t('Add', '加入清單')}
+                    className={`w-9 h-9 rounded-lg bg-white text-black flex items-center justify-center ${
                       isAvailable && hasSelectedDates && !isSuspended
-                        ? 'text-white hover:text-gray-scale1 cursor-pointer'
-                        : 'text-[#545454] cursor-not-allowed'
+                        ? 'cursor-pointer'
+                        : 'opacity-50 cursor-not-allowed'
                     }`}
                   >
-                    Add
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_shopping_cart</span>
                   </button>
                 </div>
               </div>

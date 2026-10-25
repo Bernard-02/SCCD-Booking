@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react'
 import { toDateKey } from './cart/cartHelpers'
 import { fetchBlackouts } from '../services/ordersService'
 import { useAuth } from '../contexts/AuthContext'
+import { useT } from '../stores/langStore'
 
 interface CalendarProps {
   startDate: Date | null
@@ -15,23 +16,32 @@ interface CalendarProps {
   isMobile?: boolean
   minSelectableDate?: Date
   maxDays?: number
-  variant?: 'default' | 'dialog'
+  variant?: 'default' | 'dialog' | 'compact' // compact＝後台篩選的下拉月曆：小字、單月（搭配 isMobile）、翻月不受今天限制
   originalStartDate?: string
   originalEndDate?: string
 }
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+const MONTH_NAMES_ZH = [
+  '一月', '二月', '三月', '四月', '五月', '六月',
+  '七月', '八月', '九月', '十月', '十一月', '十二月'
+]
 
 // 日期區固定顯示的行數；6 是任何月份可能的最大行數，固定成 6 讓 month title 永遠不位移
 const MIN_CALENDAR_ROWS = 6
 
 // 用不可見的佔位格補滿到指定行數，讓每個月的日期區高度一致（佔位格高度與真實日期格相同）
-const padToRows = (cells: JSX.Element[], rows: number, cellSize: string): JSX.Element[] => {
+const padToRows = (cells: JSX.Element[], rows: number, cellCls: string): JSX.Element[] => {
   const padded = [...cells]
   for (let i = padded.length; i < rows * 7; i++) {
     padded.push(
       <div
         key={`pad-${i}`}
         aria-hidden
-        className={`text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+        className={cellCls}
       >
         <div className="date-number-wrapper">
           <span className="date-number-text invisible">0</span>
@@ -53,8 +63,12 @@ const Calendar: React.FC<CalendarProps> = ({
   originalStartDate,
   originalEndDate
 }) => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const t = useT()
+  // compact 從已選的起日那個月開始顯示（後台篩過去的區間）；前台維持從本月開始
+  const [currentDate, setCurrentDate] = useState<Date>(() => (variant === 'compact' && startDate) || new Date())
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null)
+  // compact：點標題切到「選年月」畫面
+  const [picker, setPicker] = useState<{ year: number } | null>(null)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -91,6 +105,10 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const minAllowedDate = getMinAllowedDate()
 
+  // 日期格字級：前台整頁 3.5rem、對話框 3rem、後台下拉 compact 1rem；compact 置中（欄等寬、左右對稱），其餘靠左
+  const cellSize = variant === 'compact' ? 'text-sm' : variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
+  const cellCls = `${variant === 'compact' ? 'text-center' : 'text-left'} text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
+
   // 比較兩個日期是否相同
   const isSameDay = (date1: Date | null, date2: Date | null): boolean => {
     if (!date1 || !date2) return false
@@ -122,7 +140,6 @@ const Calendar: React.FC<CalendarProps> = ({
 
   // 生成月曆
   const generateMonthCalendar = (displayDate: Date) => {
-    const cellSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
     const month = displayDate.getMonth()
     const year = displayDate.getFullYear()
     const firstDay = new Date(year, month, 1)
@@ -133,15 +150,6 @@ const Calendar: React.FC<CalendarProps> = ({
 
     const startDateOfCalendar = new Date(firstDay)
     startDateOfCalendar.setDate(startDateOfCalendar.getDate() - firstDayOfWeek)
-
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ]
-    const monthNamesChinese = [
-      '一月', '二月', '三月', '四月', '五月', '六月',
-      '七月', '八月', '九月', '十月', '十一月', '十二月'
-    ]
 
     const totalNeededCells = firstDayOfWeek + daysInMonth
     const rowsNeeded = Math.ceil(totalNeededCells / 7)
@@ -154,7 +162,7 @@ const Calendar: React.FC<CalendarProps> = ({
       weekdayCells.push(
         <div
           key={`weekday-${index}`}
-          className={`text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+          className={cellCls}
         >
           {day}
         </div>
@@ -220,13 +228,13 @@ const Calendar: React.FC<CalendarProps> = ({
             currentDateOnly >= startDate && currentDateOnly <= hoveredDate &&
             hoveredDate >= startDate
 
-          let dateClasses = `text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
+          let dateClasses = cellCls
 
           if (isExpiredRange) {
             // 過期範圍：黃色，不可選擇
             dateClasses += ' expired-date'
           } else if (isPastDate || isOutOfRange || isBlocked) {
-            dateClasses += ' text-gray-500'
+            dateClasses += ' disabled-date'
           } else {
             dateClasses += ' cursor-pointer'
             // 有效範圍（綠色標記）
@@ -267,7 +275,7 @@ const Calendar: React.FC<CalendarProps> = ({
           dateCells.push(
             <div
               key={`empty-${i}`}
-              className={`text-left text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`}
+              className={cellCls}
             />
           )
         }
@@ -276,15 +284,17 @@ const Calendar: React.FC<CalendarProps> = ({
     }
 
     return {
-      title: `${year} ${monthNames[month]} ${monthNamesChinese[month]}`,
+      title: `${year} ${t(MONTH_NAMES[month], MONTH_NAMES_ZH[month])}`,
       weekdayCells,
       dateCells,
       rowsNeeded
     }
   }
 
-  // 導航按鈕狀態
+  // 導航按鈕狀態（compact：往前到 minAllowedDate 那個月為止、往後不限）
+  const monthIndex = (d: Date) => d.getFullYear() * 12 + d.getMonth()
   const canGoPrev = () => {
+    if (variant === 'compact') return monthIndex(currentDate) > monthIndex(minAllowedDate)
     const currentMonth = today.getMonth()
     const currentYear = today.getFullYear()
     return (
@@ -293,7 +303,9 @@ const Calendar: React.FC<CalendarProps> = ({
     )
   }
 
+  const maxMonthIndex = monthIndex(today) + 2
   const canGoNext = () => {
+    if (variant === 'compact') return monthIndex(currentDate) < maxMonthIndex
     const currentMonth = today.getMonth()
     const currentYear = today.getFullYear()
     return (
@@ -325,10 +337,9 @@ const Calendar: React.FC<CalendarProps> = ({
     const secondMonth = generateMonthCalendar(nextMonthDate)
 
     // 兩個月取較大行數，且至少 MIN_CALENDAR_ROWS 行，讓日期區高度恆定、month title 不位移
-    const cellSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
     const displayRows = Math.max(firstMonth.rowsNeeded, secondMonth.rowsNeeded, MIN_CALENDAR_ROWS)
-    const firstCells = padToRows(firstMonth.dateCells, displayRows, cellSize)
-    const secondCells = padToRows(secondMonth.dateCells, displayRows, cellSize)
+    const firstCells = padToRows(firstMonth.dateCells, displayRows, cellCls)
+    const secondCells = padToRows(secondMonth.dateCells, displayRows, cellCls)
 
     const prevButtonClasses = `nav-arrow prev text-white text-xl select-none ${
       canGoPrev() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
@@ -414,11 +425,81 @@ const Calendar: React.FC<CalendarProps> = ({
     )
   }
 
-  // 手機版：單月顯示
+  // 手機版／compact：單月顯示（compact 不補滿 6 行，該月幾行就幾行）
   const monthCalendar = generateMonthCalendar(currentDate)
-  const mobileCellSize = variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
-  const mobileRows = Math.max(monthCalendar.rowsNeeded, MIN_CALENDAR_ROWS)
-  const mobileCells = padToRows(monthCalendar.dateCells, mobileRows, mobileCellSize)
+  const mobileRows = variant === 'compact' ? monthCalendar.rowsNeeded : Math.max(monthCalendar.rowsNeeded, MIN_CALENDAR_ROWS)
+  const mobileCells = padToRows(monthCalendar.dateCells, mobileRows, cellCls)
+
+  if (variant === 'compact') {
+    const minIdx = monthIndex(minAllowedDate)
+    const minYear = minAllowedDate.getFullYear()
+    const maxYear = Math.floor(maxMonthIndex / 12)
+    const arrowCls = (ok: boolean) => `text-white text-md select-none ${ok ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`
+    const yearPrevOk = !!picker && picker.year > minYear
+    const yearNextOk = !!picker && picker.year < maxYear
+    return (
+      <div className="w-full">
+        {/* 同前台桌機版：箭頭靠左、標題靠右；選年月時箭頭換年、標題顯示年份 */}
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-4">
+            <button
+              className={arrowCls(picker ? yearPrevOk : canGoPrev())}
+              onClick={() => picker ? yearPrevOk && setPicker({ year: picker.year - 1 }) : handlePrevMonth()}
+              disabled={picker ? !yearPrevOk : !canGoPrev()}
+              aria-label={picker ? '上一年' : '上個月'}
+            >
+              &lt;
+            </button>
+            <button
+              className={arrowCls(picker ? yearNextOk : canGoNext())}
+              onClick={() => picker ? yearNextOk && setPicker({ year: picker.year + 1 }) : handleNextMonth()}
+              disabled={picker ? !yearNextOk : !canGoNext()}
+              aria-label={picker ? '下一年' : '下個月'}
+            >
+              &gt;
+            </button>
+          </div>
+          <button
+            onClick={() => setPicker(picker ? null : { year: currentDate.getFullYear() })}
+            aria-expanded={!!picker}
+            className="text-white text-sm font-['Inter',_sans-serif] hover:opacity-70 cursor-pointer"
+          >
+            {picker ? picker.year : monthCalendar.title}
+          </button>
+        </div>
+        {picker ? (
+          <div className="grid grid-cols-3 gap-1">
+            {MONTH_NAMES_ZH.map((zh, m) => {
+              const idx = picker.year * 12 + m
+              const ok = idx >= minIdx && idx <= maxMonthIndex
+              const current = idx === monthIndex(currentDate)
+              return (
+                <button
+                  key={m}
+                  disabled={!ok}
+                  onClick={() => { setCurrentDate(new Date(picker.year, m, 1)); setPicker(null) }}
+                  className={`h-9 rounded-lg text-xs ${
+                    !ok ? 'text-gray-scale4 cursor-not-allowed' : current ? 'bg-white text-black cursor-pointer' : 'text-white hover:bg-white/10 cursor-pointer'
+                  }`}
+                >
+                  {t(MONTH_NAMES[m], zh)}
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-7 gap-1">
+              {monthCalendar.weekdayCells}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {mobileCells}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="w-full">

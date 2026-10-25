@@ -3,7 +3,7 @@
  * 方便地使用 ConfirmDialog 組件
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 
 interface ConfirmOptions {
@@ -47,7 +47,8 @@ export const useConfirmDialog = () => {
     resolver?.resolve(false)
   }, [resolver])
 
-  const ConfirmDialogComponent = () => (
+  // useMemo：元件型別固定，父層因其他 state 重 render 時對話框不會被卸載重掛（fadeIn 重跑、看起來跳兩次）
+  const ConfirmDialogComponent = useMemo(() => () => (
     <ConfirmDialog
       isOpen={isOpen}
       title={options.title}
@@ -62,7 +63,7 @@ export const useConfirmDialog = () => {
       onConfirm={handleConfirm}
       onCancel={handleCancel}
     />
-  )
+  ), [isOpen, options, handleConfirm, handleCancel])
 
   return {
     confirm,

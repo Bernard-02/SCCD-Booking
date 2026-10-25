@@ -3,6 +3,7 @@
  * 顯示設備和空間兩個選項
  */
 
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
@@ -10,6 +11,12 @@ import { useT } from '../stores/langStore'
 
 const BookingResourcesPage = () => {
   const t = useT()
+  // 卡片進場動畫（css/animations.css slideIn）跑完前不能點，避免還在滑動就被點進去
+  const [ready, setReady] = useState<Set<string>>(new Set())
+  const slideIn = (key: string, className: string) => ({
+    className: `${className} ${ready.has(key) ? '' : 'pointer-events-none'}`,
+    onAnimationEnd: () => setReady(prev => new Set(prev).add(key))
+  })
   return (
     <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
       <Header />
@@ -27,11 +34,11 @@ const BookingResourcesPage = () => {
             {/* 空間卡片 */}
             <Link
               to="/space"
-              className="border border-white relative overflow-hidden rounded-2xl group cursor-pointer block card-slide-in h-full"
+              {...slideIn('space', 'border border-white relative overflow-hidden rounded-2xl group cursor-pointer block card-slide-in h-full')}
               style={{ padding: '2rem', aspectRatio: '4/5' }}
             >
               {/* 背景圖片 */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100">
                 <img
                   src="/Images/Space Image.webp"
                   alt="Space"
@@ -40,7 +47,7 @@ const BookingResourcesPage = () => {
               </div>
               {/* Gradient overlay */}
               <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                className="absolute inset-0 opacity-0 group-hover:opacity-100"
                 style={{
                   background:
                     'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%)',
@@ -55,11 +62,11 @@ const BookingResourcesPage = () => {
             {/* 設備卡片 */}
             <Link
               to="/equipment"
-              className="border border-white relative overflow-hidden rounded-2xl group cursor-pointer block card-slide-in h-full"
+              {...slideIn('equipment', 'border border-white relative overflow-hidden rounded-2xl group cursor-pointer block card-slide-in h-full')}
               style={{ padding: '2rem', aspectRatio: '4/5' }}
             >
               {/* 背景圖片 */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100">
                 <img
                   src="/Images/Extension Cord.webp"
                   alt="Equipment"
@@ -68,7 +75,7 @@ const BookingResourcesPage = () => {
               </div>
               {/* Gradient overlay */}
               <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                className="absolute inset-0 opacity-0 group-hover:opacity-100"
                 style={{
                   background:
                     'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%)',
@@ -85,7 +92,7 @@ const BookingResourcesPage = () => {
         {/* 手機版：兩個卡片垂直排列 */}
         <div className="md:hidden flex flex-col gap-6 w-full container">
             {/* 空間卡片 */}
-            <Link to="/space" className="relative overflow-hidden rounded-2xl block mobile-card mobile-card-slide-in">
+            <Link to="/space" {...slideIn('m-space', 'relative overflow-hidden rounded-2xl block mobile-card mobile-card-slide-in')}>
               <div className="absolute inset-0">
                 <img
                   src="/Images/Space Image.webp"
@@ -108,7 +115,7 @@ const BookingResourcesPage = () => {
             {/* 設備卡片 */}
             <Link
               to="/equipment"
-              className="relative overflow-hidden rounded-2xl block mobile-card mobile-card-slide-in"
+              {...slideIn('m-equipment', 'relative overflow-hidden rounded-2xl block mobile-card mobile-card-slide-in')}
             >
               <div className="absolute inset-0">
                 <img

@@ -36,9 +36,9 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
   const canSave =
     !busy && reason.trim() !== '' && (!isMass || (className.trim() !== '' && teacher.trim() !== ''))
 
-  const label = (en: string, zh: string, required: boolean) => (
+  const label = (zh: string, required: boolean) => (
     <span className="text-xs text-gray-scale2">
-      <span className="font-english">{en}</span> <span className="font-chinese">{zh}</span>
+      {zh}
       {required && <span className="ml-1" style={{ color: 'var(--color-error2)' }}>*</span>}
     </span>
   )
@@ -55,29 +55,26 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
         <div className="px-6 pt-6">
-          <h2 className="font-english text-sm text-white font-normal">
-            Booking Info <span className="font-chinese">修改借用資訊</span>
-          </h2>
+          <h2 className="text-sm text-white font-normal">修改借用資訊</h2>
           <p className="font-english text-xs text-gray-scale2 mt-1">
             {order.rental_number} · <span className="font-chinese">{order.students?.name ?? '—'}</span>
-            {' '}· {orderKindMeta(order).en}{' '}
-            <span className="font-chinese">{orderKindMeta(order).zh}</span>
+            {' '}· <span className="font-chinese">{orderKindMeta(order).zh}</span>
           </p>
         </div>
 
         <div className="px-6 py-5 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
-            {label('Reason', '使用原因', true)}
+            {label('使用原因', true)}
             <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} className={`${field} resize-none`} />
           </label>
           {isMass && (
             <>
               <label className="flex flex-col gap-1.5">
-                {label('Class', '使用班級', true)}
+                {label('使用班級', true)}
                 <input type="text" value={className} onChange={e => setClassName(e.target.value)} className={field} />
               </label>
               <label className="flex flex-col gap-1.5">
-                {label('Teacher', '負責老師', true)}
+                {label('負責老師', true)}
                 <input type="text" value={teacher} onChange={e => setTeacher(e.target.value)} className={field} />
               </label>
             </>
@@ -89,8 +86,8 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
         </div>
 
         <div className="px-6 py-4 flex justify-end gap-6">
-          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white transition-colors cursor-pointer">
-            <span className="font-english text-xs">Cancel <span className="font-chinese">取消</span></span>
+          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white cursor-pointer">
+            <span className="text-xs">取消</span>
           </button>
           <button
             onClick={() =>
@@ -102,13 +99,11 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
               )
             }
             disabled={!canSave}
-            className={`transition-opacity ${
+            className={`${
               canSave ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
             }`}
           >
-            <span className="font-english text-xs">
-              {busy ? <span className="font-chinese">儲存中…</span> : <>Save <span className="font-chinese">儲存</span></>}
-            </span>
+            <span className="text-xs">{busy ? '儲存中…' : '儲存'}</span>
           </button>
         </div>
       </div>

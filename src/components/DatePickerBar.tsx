@@ -15,8 +15,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { fetchMyOrders } from '../services/ordersService'
 import { isSeniorOrGraduate } from '../utils/gradeUtils'
-import type { BookingType } from '../types/equipment'
+import type { BookingType, CartItem } from '../types/equipment'
 import { useT } from '../stores/langStore'
+import { useBundles } from '../services/equipmentService'
+import { calcBundles } from '../utils/bundleUtils'
 
 interface DatePickerBarProps {
   type: 'equipment' | 'space'
@@ -27,6 +29,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const { confirm, ConfirmDialog } = useConfirmDialog()
+  const bundles = useBundles()
   // 空間上限：一般生 14 天，大四／碩士放寬 30 天（rental-rules「年級限制」）
   const spaceMaxDays = isSeniorOrGraduate(currentUser?.year) ? 30 : 14
   const [isExpanded, setIsExpanded] = useState(false)
@@ -91,6 +94,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   const typeLabel = (bt: BookingType) =>
     !isMassType(bt) ? (type === 'space' ? '個人' : '小量') : (type === 'space' ? '團體' : '大量')
   const what = type === 'space' ? '空間' : '設備'
+  // 英文版（confirm 的 messageEn 用）
+  const typeLabelEn = (bt: BookingType) =>
+    !isMassType(bt) ? (type === 'space' ? 'personal' : 'light') : (type === 'space' ? 'group' : 'mass')
+  const whatEn = type === 'space' ? 'space' : 'equipment'
   const periodText = (s: string, e: string) => `${formatDateFull(s)} – ${formatDateFull(e)}`
 
   // 未歸還的訂單（待繳押金／租借中／逾期）：同類型要等上一張歸還才能再借。只擋學生（系秘／助教直借不限）；
@@ -130,6 +137,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         title: '已有一張訂單', titleEn: 'Existing Order',
         message: `您已有一張${typeLabel(bt)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
           `學會規定同類型一次一張。要加設備請直接修改這張訂單。`,
+        messageEn: `You already have a ${typeLabelEn(bt)} ${whatEn} order (${o.rentalNumber}, ${periodText(o.startDate, o.endDate)}). ` +
+          `The SA allows one order of each type at a time — to add equipment, edit that order instead.`,
         confirmText: 'Edit Order', confirmTextZh: '修改訂單'
       })
       if (edit) navigate('/profile', { state: { editOrder: o.rentalNumber } })
@@ -139,6 +148,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
       title: '尚有未歸還的訂單', titleEn: 'Unreturned Order',
       message: `您有一張未歸還的${typeLabel(bt)}${what}訂單（${o.rentalNumber}，${periodText(o.startDate, o.endDate)}），` +
         `學會規定上一張歸還後才能再借同類型，目前無法選擇日期。`,
+      messageEn: `You have an unreturned ${typeLabelEn(bt)} ${whatEn} order (${o.rentalNumber}, ${periodText(o.startDate, o.endDate)}). ` +
+        `The SA requires it to be returned before you book the same type again, so you can’t pick dates yet.`,
       confirmText: 'View Orders', confirmTextZh: '查看訂單'
     })
     if (ok) navigate('/profile')
@@ -172,6 +183,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         title: '訂單需要重新選擇日期', titleEn: 'Renew Required',
         message: `購物車內的${typeLabel(c.bookingType)}${what}訂單（${period}）已過期，需要重新選擇日期（Renew）才能送出。\n` +
           `${what}一次只能有一張訂單，請先處理這張訂單。`,
+        messageEn: `The ${typeLabelEn(c.bookingType)} ${whatEn} order in your cart (${period}) has expired. Please pick new dates (Renew) before submitting.\n` +
+          `You can only have one ${whatEn} order at a time, so please deal with this one first.`,
         confirmText: 'Renew', confirmTextZh: '重新選擇日期'
       })
       if (ok) setEditingExpired({ startDate: c.startDate, endDate: c.endDate, bookingType: c.bookingType })
@@ -180,6 +193,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         title: '已達訂單上限', titleEn: 'Order Limit Reached',
         message: `購物車已有一張${typeLabel(c.bookingType)}${what}訂單（${period}），${what}一次只能有一張訂單，` +
           `無法再新增${typeLabel(newType)}${what}訂單。\n請先送出或清除購物車內的訂單。`,
+        messageEn: `Your cart already has a ${typeLabelEn(c.bookingType)} ${whatEn} order (${period}). You can only have one ${whatEn} order at a time, ` +
+          `so you can’t add a ${typeLabelEn(newType)} ${whatEn} order.\nPlease submit or clear the order in your cart first.`,
         confirmText: 'Go to Cart', confirmTextZh: '前往購物車'
       })
       if (ok) navigate('/cart')
@@ -188,6 +203,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         title: '購物車已有訂單', titleEn: 'Order in Cart',
         message: `購物車已有一張${typeLabel(c.bookingType)}${what}訂單（${period}），${what}一次只能有一張訂單，無法另選日期。\n` +
           `要沿用這張訂單的日期繼續加入嗎？（要換日期請到購物車修改）`,
+        messageEn: `Your cart already has a ${typeLabelEn(c.bookingType)} ${whatEn} order (${period}). You can only have one ${whatEn} order at a time, so you can’t pick other dates.\n` +
+          `Keep adding with this order’s dates? (To change dates, edit them in the cart.)`,
         confirmText: 'Use These Dates', confirmTextZh: '沿用此日期'
       })
       if (ok) handleSelectExistingDate(c.startDate, c.endDate, c.bookingType)
@@ -257,7 +274,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     const open = openOrderFor(bookingType)
     if (open) { void promptOpenOrder(open, bookingType); return }
     const cartOrder = findCartOrder()
-    if (cartOrder) { void promptCartOrder(cartOrder); return }
+    // 目前選的就是購物車那張訂單的日期（例：從已選日期點進來）→ 不用再問，直接開日曆
+    const isSameAsCart = !!cartOrder && !cartOrder.isExpired && cartOrder.bookingType === bookingType &&
+      !!startDate && !!endDate && toDateKey(startDate) === cartOrder.startDate && toDateKey(endDate) === cartOrder.endDate
+    if (cartOrder && !isSameAsCart) { void promptCartOrder(cartOrder); return }
 
     // 展開日曆，並保存當前日期狀態
     const datesToSave = type === 'equipment' ? getCurrentEquipmentDates() : getCurrentSpaceDates()
@@ -311,8 +331,8 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      // 先計算每個時段的小量設備總數，用於檢查 9 件限制（僅計設備；空間由押金 cap 限量）
-      const periodTotals = new Map<string, number>()
+      // 先計算每個時段的小量設備件數，用於檢查 9 件限制（僅計設備、整組算 1 件；空間由押金 cap 限量）
+      const periodItems = new Map<string, CartItem[]>()
 
       cart.forEach(item => {
         // 檢查是否過期
@@ -322,9 +342,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
         if (item.category === 'equipment' && (item.bookingType || 'little') === 'little') {
           const periodKey = `${item.startDate}_${item.endDate}`
-          periodTotals.set(periodKey, (periodTotals.get(periodKey) || 0) + item.quantity)
+          periodItems.set(periodKey, [...(periodItems.get(periodKey) || []), item])
         }
       })
+      const periodTotals = new Map([...periodItems].map(([k, items]) => [k, calcBundles(items, bundles).units]))
 
       // 按 category 過濾並去重（過期時段保留，以 isExpired 標記，點擊改為編輯日期）
       const filteredCart = cart.filter(item => {
@@ -382,7 +403,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
     } catch {
       return []
     }
-  }, [type, cartVersion])
+  }, [type, cartVersion, bundles])
 
   // 處理選擇已有日期
   const handleSelectExistingDate = (startDate: string, endDate: string, selectedBookingType: BookingType) => {
@@ -455,7 +476,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           <div className="absolute top-0 left-0 right-0 container flex justify-end pt-28">
             <button
               onClick={handleCancel}
-              className="text-xl font-normal text-white hover:opacity-70 transition-opacity cursor-pointer leading-none"
+              className="text-xl font-normal text-white hover:opacity-70 cursor-pointer leading-none"
               aria-label="關閉"
             >
               ×
@@ -509,7 +530,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     )}
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className={`text-xs transition-colors leading-tight ${littleStyles.text}`}>{t(type === 'space' ? 'Personal' : 'Light', type === 'space' ? '個人' : '小量')}</span>
+                    <span className={`text-xs leading-tight ${littleStyles.text}`}>{t(type === 'space' ? 'Personal' : 'Light', type === 'space' ? '個人' : '小量')}</span>
                   </div>
                 </button>
 
@@ -523,7 +544,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                     )}
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className={`text-xs transition-colors leading-tight ${massStyles.text}`}>{t(type === 'space' ? 'Group' : 'Mass', type === 'space' ? '團體' : '大量')}</span>
+                    <span className={`text-xs leading-tight ${massStyles.text}`}>{t(type === 'space' ? 'Group' : 'Mass', type === 'space' ? '團體' : '大量')}</span>
                   </div>
                 </button>
               </div>
@@ -533,7 +554,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <div className="flex items-center gap-10 flex-shrink-0 ml-6">
               {/* 起租日 - 可點擊開啟日曆 */}
               <div
-                className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
+                className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-70"
                 onClick={handleStartDateClick}
               >
               <div className="flex flex-col">
@@ -558,34 +579,30 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
           {/* 右邊群組：操作按鈕 - Reset + Exist Cart */}
           <div className="flex items-center gap-8 flex-shrink-0 relative ml-auto @max-[1040px]:flex-col @max-[1040px]:items-end @max-[1040px]:gap-1">
+            {/* 重置：icon 鈕，不可用時 30% 透明 */}
             <button
               disabled={!isResetEnabled}
               onClick={handleReset}
-              className={`text-sm font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
-                isResetEnabled
-                  ? 'text-white hover:opacity-70 transition-opacity cursor-pointer'
-                  : 'text-gray-scale4 cursor-not-allowed'
-              }`}
+              aria-label={t('Reset', '重置')}
+              title={t('Reset', '重置')}
+              className="flex items-center text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              {t('Reset', '重置')}
+              <span className="material-symbols-outlined">restart_alt</span>
             </button>
 
-            {/* Exist Cart 按鈕 */}
+            {/* 已選日期：白底 icon＋文字鈕（icon 側 padding 少 4px），購物車沒有日期時 50% 透明 */}
             <button
               onClick={() => setShowExistingDates(!showExistingDates)}
               disabled={existingCartDates.length === 0}
-              className={`existing-dates-btn text-sm font-['Inter',_sans-serif] font-normal whitespace-nowrap ${
-                existingCartDates.length > 0
-                  ? 'text-white hover:opacity-70 transition-opacity cursor-pointer'
-                  : 'text-gray-scale4 cursor-not-allowed'
-              }`}
+              className="existing-dates-btn flex items-center gap-2 pl-3 pr-4 py-2 rounded-lg bg-white text-black text-sm whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>event_available</span>
               {t('Exist Cart', '已選日期')}
             </button>
 
             {/* 彈出視窗 - 在按鈕上方顯示 */}
             {showExistingDates && existingCartDates.length > 0 && (
-              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-lg min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
+              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-2xl min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
                 <div className="px-4 py-3 border-b border-gray-scale4">
                   <span className="text-sm text-white">{t('Existing Cart Dates', '購物車已選日期')}</span>
@@ -627,7 +644,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                           }
                         }}
                         disabled={dateGroup.isDisabled}
-                        className={`existing-date-item text-left py-3 px-4 transition-all duration-200 ${
+                        className={`existing-date-item text-left py-3 px-4 ${
                           index !== 0 ? 'border-t border-gray-scale4' : ''
                         } ${dateGroup.isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                         style={{

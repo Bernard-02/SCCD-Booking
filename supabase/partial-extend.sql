@@ -1,8 +1,9 @@
 -- SCCD Booking — 拆單機制：部分歸還（後台）＋部分延期（前台）（情境 5＋8，2026-09-26 定案）
--- 使用方式：SQL Editor 貼上執行一次（可重複執行）。前置：schema.sql、orders-rpc.sql、rental-blackouts.sql。
+-- 使用方式：SQL Editor 貼上執行一次（可重複執行）。前置：schema.sql、orders-rpc.sql、rental-blackouts.sql、equipment-bundles.sql。
 -- 規則：延期介面勾選品項——全選＝整單延期不拆單；部分＝拆子單（單號根單號續流水、parent_order_id 指根單）。
 -- 延期用掉整張單的延期權（原單與子單 has_extended 皆 true）；
--- 押金：小單依品項小計拆到子單、大量單押金不拆（全留根單，全數歸還後一次退）。
+-- 押金：小單依品項拆（設備組合整組算，被拆開的組合押金等整組還了才退，見 split_settled_deposit）、
+-- 大量單押金不拆（全留根單，全數歸還後一次退）。
 
 -- ---------- 1. 拆單欄位 ----------
 -- parent_order_id 一律指「根單」；refunded 供部分歸還退押金記錄（後台拆單用，先建欄位）
@@ -130,12 +131,11 @@ begin
   select count(*) + 1 into v_suffix from public.orders where parent_order_id = v_root_id;
   v_child_number := v_root_number || '-' || v_suffix;
 
-  -- 押金：小單依「未還品項」小計拆到子單；大量單不拆
+  -- 押金：小單→已還品項退「湊滿的組合＋單件」，其餘（含被拆開的組合零件）留子單，整組還了才退
+  -- （equipment-bundles.sql split_settled_deposit）；大量單不拆
   if v_order.booking_type = 'little' then
-    select coalesce(sum(deposit * quantity), 0) into v_child_dep
-      from public.order_items
-      where order_id = v_order.id and not (id = any(p_item_ids));
-    v_child_dep := least(v_child_dep, v_order.deposit_total);
+    v_child_dep := v_order.deposit_total
+      - least(public.split_settled_deposit(v_order.id, p_item_ids), v_order.deposit_total);
   end if;
 
   insert into public.orders
@@ -295,11 +295,13 @@ begin
   select count(*) + 1 into v_suffix from public.orders where parent_order_id = v_root_id;
   v_child_number := v_root_number || '-' || v_suffix;
 
-  -- 押金：小單依品項小計拆到子單；大量單押金不拆（全留根單，全數歸還後一次退）
+  -- 押金：小單→原單（照原日歸還的品項）留「湊滿的組合＋單件」，其餘（含被拆開的組合零件）跟延期子單走，
+  -- 整組還了才退（equipment-bundles.sql split_settled_deposit）；大量單押金不拆（全留根單，全數歸還後一次退）
   if v_order.booking_type = 'little' then
-    select coalesce(sum(deposit * quantity), 0) into v_child_dep
-      from public.order_items where id = any(p_item_ids);
-    v_child_dep := least(v_child_dep, v_order.deposit_total);
+    v_child_dep := v_order.deposit_total - least(public.split_settled_deposit(
+      v_order.id,
+      array(select id from public.order_items where order_id = v_order.id and not (id = any(p_item_ids)))
+    ), v_order.deposit_total);
   end if;
 
   insert into public.orders

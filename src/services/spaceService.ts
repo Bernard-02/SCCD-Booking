@@ -17,6 +17,8 @@ export interface SpaceBlock {
 export type SpaceBlocksMap = Record<string, SpaceBlock>
 
 let cache: SpaceBlocksMap | null = null
+// 後台關閉（is_active=false）的空間 id：前台可檢視、不能選（地圖畫停用色）
+let closedIds: ReadonlySet<string> = new Set()
 let inflight: Promise<SpaceBlocksMap> | null = null
 
 export const loadSpaceBlocks = (): Promise<SpaceBlocksMap> => {
@@ -26,17 +28,19 @@ export const loadSpaceBlocks = (): Promise<SpaceBlocksMap> => {
   inflight = (async () => {
     try {
       // select('*')：image_url 欄位的 SQL（space-edit-images.sql）尚未執行時也不會壞
+      // 全部撈（space 為 public read），開放的進 cache、關閉的另存 closedIds
       const { data, error } = await supabase
         .from('space')
         .select('*')
-        .eq('is_active', true)
       if (error) throw error
+      const rows = data as (SpaceBlock & { id: string; is_active: boolean })[]
       cache = Object.fromEntries(
-        (data as (SpaceBlock & { id: string })[]).map(row => [
+        rows.filter(row => row.is_active).map(row => [
           row.id,
           { area: row.area, deposit: row.deposit, name: row.name, image_url: row.image_url }
         ])
       )
+      closedIds = new Set(rows.filter(row => !row.is_active).map(row => row.id))
       return cache
     } finally {
       inflight = null
@@ -46,7 +50,7 @@ export const loadSpaceBlocks = (): Promise<SpaceBlocksMap> => {
   return inflight
 }
 
-/** 取得空間區塊定義（載入完成前為空物件） */
+/** 取得空間區塊定義：只含開放中的（is_active=true；載入完成前為空物件） */
 export const useSpaceBlocks = (): SpaceBlocksMap => {
   const [data, setData] = useState<SpaceBlocksMap>(cache ?? {})
 
@@ -60,6 +64,12 @@ export const useSpaceBlocks = (): SpaceBlocksMap => {
   }, [])
 
   return data
+}
+
+/** 後台關閉的空間 id（與 useSpaceBlocks 同一次載入，載入完成時一起更新） */
+export const useClosedSpaceIds = (): ReadonlySet<string> => {
+  useSpaceBlocks()
+  return closedIds
 }
 
 /** 查詢指定時段被佔用的空間 id（區塊＋教室）。日期格式 YYYY-MM-DD */

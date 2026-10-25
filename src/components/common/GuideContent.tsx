@@ -8,6 +8,7 @@ import React from 'react'
 import { CONTACTS } from '../../data/contactInfo'
 import ContactList from './ContactList'
 import { useT } from '../../stores/langStore'
+import { useDutyHours } from '../../services/ordersService'
 
 // 預約流程步驟
 const STEPS: { en: string; zh: string; descEn: string; descZh: string }[] = [
@@ -45,12 +46,8 @@ const PURPOSE = {
   zh: 'Booking 預約系統可預約或申請使用系學會管理之空間與設備，所有規章條例位於 SCCD Drive。'
 }
 
-// 工作時間
-const WORK_HOURS: { en: string; zh: string }[] = [
-  {
-    en: 'Offline: weekdays 12:00–13:00 and 17:00–19:00 at A502 — knock and state your class and name.',
-    zh: '線下：平日 12:00–13:00、17:00–19:00，至 A502 室，入內請敲門並告知班級、姓名。'
-  },
+// 工作時間：第一條（線下）的時段＝後台排的值班時段，見 workHours()
+const WORK_HOURS_REST: { en: string; zh: string }[] = [
   {
     en: 'Online: weekdays 10:00–19:00 via Messenger — state your class and name.',
     zh: '線上：平日 10:00–19:00，透過 Messenger 傳送訊息並告知班級、姓名。'
@@ -125,97 +122,85 @@ const DEPOSITS: { en: string; zh: string }[] = [
   }
 ]
 
-// 區塊標題（左欄）；在該段範圍內 sticky（top-16＝InfoDialog 標題高度）
-const SectionTitle: React.FC<{ en: string; zh: string }> = ({ en, zh }) => {
-  const t = useT()
-  return <div className="sticky top-16 self-start text-xs text-[#cccccc]">{t(en, zh)}</div>
-}
-
-// 條列（工作時間／注意事項／罰款／押金共用）
-const BulletList: React.FC<{ items: { en: string; zh: string }[] }> = ({ items }) => {
+// 區塊：左欄標題（灰）、右欄內容；標題在該段範圍內 sticky（top-16＝InfoDialog 標題高度）。SA 分頁共用
+export const Section: React.FC<{ en: string; zh: string; children: React.ReactNode }> = ({ en, zh, children }) => {
   const t = useT()
   return (
-    <ul className="space-y-3">
-      {items.map((r, i) => (
-        <li key={i} className="flex gap-2">
-          <span className="flex-shrink-0 text-[#cccccc] text-xs">・</span>
-          <p className="text-xs text-white leading-relaxed">{t(r.en, r.zh)}</p>
-        </li>
-      ))}
-    </ul>
+    <section className="grid grid-cols-[140px_1fr] gap-6">
+      <h3 className="sticky top-16 self-start text-xs text-[#cccccc]">{t(en, zh)}</h3>
+      {children}
+    </section>
   )
 }
 
-const GuideContent: React.FC = () => {
+// 數字條列（工作時間／注意事項／罰款／押金／預約流程、SA 服務項目共用）；有 desc 時第二行灰字說明
+export const NumberedList: React.FC<{ items: { en: string; zh: string; descEn?: string; descZh?: string }[] }> = ({ items }) => {
   const t = useT()
   return (
+    <ol className={items.some(r => r.descZh) ? 'space-y-3' : 'space-y-1'}>
+      {items.map((r, i) => (
+        <li key={i} className="flex gap-2 text-xs text-white leading-normal">
+          <span className="flex-shrink-0 min-w-4 font-['Inter',_sans-serif]">{i + 1}.</span>
+          <div>
+            <p>{t(r.en, r.zh)}</p>
+            {r.descZh && <p className="text-[#cccccc] leading-relaxed mt-1">{t(r.descEn ?? r.descZh, r.descZh)}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+// 預約流程併成「步驟：說明」一行，與其他段同樣用數字條列
+const STEP_ITEMS = STEPS.map(s => ({ en: `${s.en}: ${s.descEn}`, zh: `${s.zh}：${s.descZh}` }))
+
+const GuideContent: React.FC = () => {
+  const t = useT()
+  const hours = useDutyHours() // undefined＝載入中、null＝尚未排班
+  const offline = hours
+    ? { en: `Offline: ${hours.en} at A502 — knock and state your class and name.`, zh: `線下：${hours.zh}，至 A502 室，入內請敲門並告知班級、姓名。` }
+    : { en: `Offline: ${hours === null ? 'hours not announced yet (see Facebook)' : '…'} at A502 — knock and state your class and name.`,
+        zh: `線下：${hours === null ? '時段尚未公布（請見 Facebook）' : '…'}，至 A502 室，入內請敲門並告知班級、姓名。` }
+  return (
     <div className="space-y-10">
-      {/* 1. 宗旨 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Purpose" zh="宗旨" />
-        <p className="text-xs text-white leading-relaxed">{t(PURPOSE.en, PURPOSE.zh)}</p>
-      </section>
+      <Section en="Purpose" zh="一、宗旨">
+        <p className="text-xs text-white leading-normal">{t(PURPOSE.en, PURPOSE.zh)}</p>
+      </Section>
 
-      {/* 2. 工作時間 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Working Hours" zh="工作時間" />
-        <BulletList items={WORK_HOURS} />
-      </section>
+      <Section en="Working Hours" zh="二、工作時間">
+        <NumberedList items={[offline, ...WORK_HOURS_REST]} />
+      </Section>
 
-      {/* 3. 注意事項 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Notes" zh="注意事項" />
-        <BulletList items={NOTES} />
-      </section>
+      <Section en="Notes" zh="三、注意事項">
+        <NumberedList items={NOTES} />
+      </Section>
 
-      {/* 4. 罰款 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Penalties" zh="罰款" />
-        <BulletList items={PENALTIES} />
-      </section>
+      <Section en="Penalties" zh="四、罰款">
+        <NumberedList items={PENALTIES} />
+      </Section>
 
-      {/* 5. 押金 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Deposit" zh="押金" />
-        <BulletList items={DEPOSITS} />
-      </section>
+      <Section en="Deposit" zh="五、押金">
+        <NumberedList items={DEPOSITS} />
+      </Section>
 
-      {/* 6. 預約流程 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Booking Steps" zh="預約流程" />
-        <ol className="space-y-4">
-          {STEPS.map((s, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full border border-[#545454] text-white text-xs flex items-center justify-center font-['Inter',_sans-serif]">
-                {i + 1}
-              </span>
-              <div>
-                <p className="text-white text-xs">{t(s.en, s.zh)}</p>
-                <p className="text-xs text-[#cccccc] leading-relaxed mt-1">{t(s.descEn, s.descZh)}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <Section en="Booking Steps" zh="六、預約流程">
+        <NumberedList items={STEP_ITEMS} />
+      </Section>
 
-      {/* 7. 完整使用說明文件 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Full Guide" zh="完整使用說明" />
+      <Section en="Full Guide" zh="七、完整使用說明">
         <a
           href="https://docs.google.com/document/d/1m4i89PruGw1ih7NehOEbR_vdNx7KKpTT1svbM1aOIvQ/edit?usp=sharing"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-white underline underline-offset-4 hover:opacity-70 transition-opacity self-start"
+          className="text-xs text-white underline underline-offset-4 hover:opacity-70 self-start"
         >
           {t('Booking System Usage Guide', 'Booking 預約系統使用說明（Google 文件）')}
         </a>
-      </section>
+      </Section>
 
-      {/* 8. 聯絡方式 */}
-      <section className="grid grid-cols-[140px_1fr] gap-6">
-        <SectionTitle en="Contact" zh="聯絡方式" />
+      <Section en="Contact" zh="八、聯絡方式">
         <ContactList contacts={CONTACTS} />
-      </section>
+      </Section>
     </div>
   )
 }

@@ -7,7 +7,7 @@
  * 學生端重新整理即取得最新。若日後要即時同步，再加快取失效。
  */
 
-import { supabase } from './supabase'
+import { supabase, fetchAllRows } from './supabase'
 import { closedDayImpact, toDateKey } from '../utils/timeUtils'
 import { invalidateClosedDates } from './ordersService'
 
@@ -19,7 +19,6 @@ export const CLOSED_KIND_ZH: Record<ClosedKind, string> = {
 }
 export interface ClosedDate { day: string; reason: string | null; kind?: ClosedKind } // kind：SQL 執行前不存在
 export interface Blackout { id: number; start_date: string; end_date: string; reason: string | null }
-export interface SuspendedStudent { student_id: string; name: string }
 
 export interface StaffDuty { id: number; weekday: number; start_time: string; end_time: string }
 export interface StaffMember {
@@ -88,8 +87,26 @@ export async function addStaffDuty(
   return { ok: true }
 }
 
-export async function deleteStaffDuty(id: number): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.from('staff_duties').delete().eq('id', id)
+/** 刪除值班（一人一筆或整個時段的所有人） */
+export async function deleteStaffDuties(ids: number[]): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('staff_duties').delete().in('id', ids)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 改整個時段的起訖（同時段所有人一起改） */
+export async function updateStaffDuties(
+  ids: number[], start: string, end: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('staff_duties').update({ start_time: start, end_time: end }).in('id', ids)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 批次移出系學會（會員頁選取模式改身份） */
+export async function deleteStaffMany(ids: number[]): Promise<{ ok: boolean; message?: string }> {
+  if (ids.length === 0) return { ok: true }
+  const { error } = await supabase.from('staff_members').delete().in('id', ids)
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
@@ -119,12 +136,12 @@ export interface Member {
 
 export type MemberFields = Pick<Member, 'grade' | 'class_name' | 'role' | 'on_leave' | 'is_transfer' | 'graduated'>
 
-// ponytail: 一次撈全部（Supabase 預設上限 1000 列，系上規模夠用；破千再改分頁查詢）
+// 畢業生帳號不刪，累積會破千：分段抓（fetchAllRows）
 export async function listMembers(): Promise<Member[]> {
   // select('*')：members.sql 尚未執行時（無 on_leave／is_transfer）也能讀
-  const { data, error } = await supabase.from('students').select('*').order('student_id')
-  if (error) throw error
-  return (data ?? []) as Member[]
+  return fetchAllRows<Member>((from, to) =>
+    supabase.from('students').select('*').order('student_id').range(from, to)
+  )
 }
 
 export async function updateMember(id: string, fields: MemberFields): Promise<{ ok: boolean; message?: string }> {
@@ -133,20 +150,53 @@ export async function updateMember(id: string, fields: MemberFields): Promise<{ 
   return { ok: true }
 }
 
-// ---- 停權帳號（account_level = 5，見 supabase/account-suspension.sql）----
-export async function listSuspendedStudents(): Promise<SuspendedStudent[]> {
-  const { data, error } = await supabase
-    .from('students')
-    .select('student_id, name')
-    .eq('account_level', 5)
-    .order('student_id')
-  if (error) throw error
-  return (data ?? []) as SuspendedStudent[]
+/** 批次更新（會員頁選取模式：休學／恢復在學／設為身份） */
+export async function updateMembersMany(
+  ids: string[],
+  fields: Partial<Pick<Member, 'on_leave' | 'graduated' | 'role' | 'is_transfer'>>
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('students').update(fields).in('id', ids)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
 }
 
+// ---- 停權帳號（account_level = 5，見 supabase/account-suspension.sql；名單在會員管理「違規」篩選）----
 /** 解除停權（account_level 5 → 0；繳清／老師通融，supabase/admin-actions.sql） */
 export async function unsuspendStudent(studentId: string): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_unsuspend_student', { p_student_id: studentId })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+// ---- 預先登記／登入例外名單（login_allowlist，見 supabase/google-login.sql＋members-v2.sql）----
+// 後台「新增會員」寫這裡（帳號要本人第一次 Google 登入才會建）；trigger 在第一次登入時套用登記的姓名／身份。
+// 學號不符「A＋入學年＋141／144」的也要先登記才能登入。只在第一次登入（建帳號）時檢查
+export interface AllowEntry {
+  student_id: string
+  note: string | null
+  name?: string | null
+  email?: string | null
+  role?: 'student' | 'staff' | 'admin'
+  is_transfer?: boolean
+  is_sa?: boolean
+  position?: string | null
+}
+
+export async function listAllowlist(): Promise<AllowEntry[]> {
+  // select('*')：members-v2.sql 尚未執行時（只有 student_id／note）也能讀
+  const { data, error } = await supabase.from('login_allowlist').select('*').order('student_id')
+  if (error) throw error
+  return (data ?? []) as AllowEntry[]
+}
+
+export async function addAllowlist(rows: AllowEntry[]): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('login_allowlist').upsert(rows)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+export async function removeAllowlist(studentId: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('login_allowlist').delete().eq('student_id', studentId)
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
@@ -164,24 +214,32 @@ async function insertNotifications(rows: NewNotification[]): Promise<NotifyResul
   return { ok: true, count: rows.length }
 }
 
-/** 全站通知：發給所有非管理員帳號（type 'announcement'，鈴鐺標「公告」）；目前由公休日 template 觸發
- *  ponytail: 收件人一次撈（Supabase 預設上限 1000 列，同 listMembers），破千再分批 */
+/** 全站通知：發給所有非管理員帳號（type 'announcement'，鈴鐺標「公告」）；目前由公休日 template 觸發。
+ *  收件人分段抓（fetchAllRows），破千也不漏 */
 export async function broadcastNotification(message: string): Promise<NotifyResult> {
-  const { data, error } = await supabase.from('students').select('id').neq('role', 'admin')
-  if (error) return { ok: false, message: error.message, count: 0 }
+  let ids: { id: string }[]
+  try {
+    ids = await fetchAllRows<{ id: string }>((from, to) =>
+      supabase.from('students').select('id').neq('role', 'admin').order('id').range(from, to)
+    )
+  } catch (err) {
+    return { ok: false, message: (err as Error).message, count: 0 }
+  }
   return insertNotifications(
-    (data ?? []).map(s => ({ student_id: s.id, type: 'announcement', title: '系學會公告', message, link: null }))
+    ids.map(s => ({ student_id: s.id, type: 'announcement', title: '系學會公告', message, link: null }))
   )
 }
 
 // 受影響的訂單＝待繳押金／租借中（逾期單的天數本來就跳過公休，不另通知）
 async function fetchActiveOrders() {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('student_id, rental_number, start_date, end_date')
-    .in('status', ['pending', 'in-progress'])
-  if (error) throw error
-  return (data ?? []) as { student_id: string; rental_number: string; start_date: string; end_date: string }[]
+  return fetchAllRows<{ student_id: string; rental_number: string; start_date: string; end_date: string }>((from, to) =>
+    supabase
+      .from('orders')
+      .select('student_id, rental_number, start_date, end_date')
+      .in('status', ['pending', 'in-progress'])
+      .order('id')
+      .range(from, to)
+  )
 }
 
 /** 新增公休日後通知受影響訂單：取件日剛好公休、或歸還期限因此順延（新期限同 effectiveReturnDeadline） */
@@ -353,12 +411,12 @@ export interface EquipmentFields {
 // 兩欄在 seed 全數相等。若日後要記「線下借出不在架上」的差額，再把在庫欄開回來。
 const withStock = (f: EquipmentFields) => ({ ...f, stock_quantity: f.original_quantity })
 
-export async function addEquipment(fields: EquipmentFields): Promise<{ ok: boolean; message?: string }> {
+export async function addEquipment(fields: EquipmentFields): Promise<{ ok: boolean; message?: string; id?: string }> {
   // seed 的 id 是 '{分頁slug}-{名稱hash}'；後台新增用 'custom-' 前綴＋時間戳，不會與 seed 撞號
   const id = `custom-${Date.now().toString(36)}`
   const { error } = await supabase.from('equipment').insert({ id, ...withStock(fields) })
   if (error) return { ok: false, message: error.message }
-  return { ok: true }
+  return { ok: true, id }
 }
 
 export async function updateEquipment(
@@ -374,6 +432,58 @@ export { imageSrc } from './equipmentService'
 
 export async function setEquipmentActive(id: string, active: boolean): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('equipment').update({ is_active: active }).eq('id', id)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 批次上／下架（後台選取模式） */
+export async function setEquipmentActiveMany(ids: string[], active: boolean): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('equipment').update({ is_active: active }).in('id', ids)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+// ---- 設備組合（equipment-bundles.sql）：湊滿一組押金只收一組、算 1 件 ----
+// 前台 loadBundles 有模組快取：改完學生端重新整理生效（同設備管理）
+
+export interface BundleFields {
+  name: string
+  deposit: number
+  items: { equipmentId: string; quantity: number }[]
+}
+
+/** 後台清單用：組合欄位＋id＋圖片（bundle-images.sql；null＝沒圖） */
+export type AdminBundle = BundleFields & { id: string; image_url: string | null }
+
+export async function listBundlesAdmin(): Promise<AdminBundle[]> {
+  const { data, error } = await supabase
+    .from('equipment_bundles')
+    .select('id, name, deposit, image_url, equipment_bundle_items(equipment_id, quantity)')
+    .order('created_at')
+  if (error) throw error
+  return (data ?? []).map(b => ({
+    id: b.id,
+    name: b.name,
+    deposit: b.deposit,
+    image_url: b.image_url ?? null,
+    items: (b.equipment_bundle_items ?? []).map(i => ({ equipmentId: i.equipment_id, quantity: i.quantity }))
+  }))
+}
+
+/** id＝null 新增；組合與品項一次寫完（admin_save_bundle RPC，不會只存一半）。回傳組合 id（新增後上傳圖片用） */
+export async function saveBundle(id: string | null, f: BundleFields): Promise<{ ok: boolean; message?: string; id?: string }> {
+  const { data, error } = await supabase.rpc('admin_save_bundle', {
+    p_id: id,
+    p_name: f.name,
+    p_deposit: f.deposit,
+    p_items: f.items.map(i => ({ equipment_id: i.equipmentId, quantity: i.quantity }))
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true, id: (data as string | null) ?? id ?? undefined }
+}
+
+export async function deleteBundle(id: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('equipment_bundles').delete().eq('id', id)
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
@@ -405,6 +515,13 @@ export async function setSpaceActive(id: string, active: boolean): Promise<{ ok:
   return { ok: true }
 }
 
+/** 批次開放／關閉（後台選取模式） */
+export async function setSpaceActiveMany(ids: string[], active: boolean): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('space').update({ is_active: active }).in('id', ids)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
 /** 教室：名稱＋押金（前台 SpacePage 以 space 表為準） */
 export async function updateSpace(id: string, fields: { name: string; deposit: number }): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('space').update(fields).eq('id', id)
@@ -424,10 +541,11 @@ export async function updateAreaDeposit(area: string, deposit: number): Promise<
  *  避開 CDN／瀏覽器快取到舊圖，也不需 upsert 權限。
  *  ponytail: 舊圖不刪（留孤兒檔）；Storage 空間吃緊再加清理 */
 export async function uploadImage(
-  table: 'equipment' | 'space',
+  table: 'equipment' | 'space' | 'equipment_bundles',
   id: string,
   file: File
 ): Promise<{ ok: boolean; message?: string }> {
+  if (!['image/jpeg', 'image/png'].includes(file.type)) return { ok: false, message: '只接受 JPG／PNG 圖片' }
   if (file.size > 5 * 1024 * 1024) return { ok: false, message: '圖片需小於 5MB' }
   const path = `${table}/${id}-${Date.now().toString(36)}.${file.type.split('/')[1] ?? 'jpg'}`
   const bucket = supabase.storage.from('images')

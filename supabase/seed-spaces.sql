@@ -1,7 +1,7 @@
 ﻿-- SCCD Booking — 空間區塊／教室 seed（由「SCCD Platform alpha ver.」Venues 產生）
 -- id 沿用前端 SVG 的格子代號（A1、L3、Z9、A503），venue_code 為官方編號（#A5NA001）。
 -- 押金依規則文件：後陽台 2,000／磚、教室 5,000／間、其餘 1,000（Venues 表的一律 1000 不採用）。
--- F1–F6 前端地圖無此格，先 is_active=false 待確認。
+-- F1–F6 只在 Venues 表、地圖上沒有（2026-10-24 確認沒有 F 區）：不 seed；既有資料用 remove-f-blocks.sql 刪。
 -- 使用方式：SQL Editor 貼上執行一次。
 
 alter table public.space add column if not exists venue_code text unique;
@@ -62,12 +62,6 @@ values
   ('E9', '#A5NE011', 'E9', 'square', 1000, true),
   ('E10', '#A5NE012', 'E10', 'square', 1000, true),
   ('E11', '#A5NE013', 'E11', 'square', 1000, true),
-  ('F1', '#A5NF001', 'F1', 'unknown', 1000, false),
-  ('F2', '#A5NF002', 'F2', 'unknown', 1000, false),
-  ('F3', '#A5NF003', 'F3', 'unknown', 1000, false),
-  ('F4', '#A5NF004', 'F4', 'unknown', 1000, false),
-  ('F5', '#A5NF005', 'F5', 'unknown', 1000, false),
-  ('F6', '#A5NF006', 'F6', 'unknown', 1000, false),
   ('K1', '#A5NK001', 'K1', 'front-terrace', 1000, true),
   ('K2', '#A5NK002', 'K2', 'front-terrace', 1000, true),
   ('K3', '#A5NK003', 'K3', 'front-terrace', 1000, true),

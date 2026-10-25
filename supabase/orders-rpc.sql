@@ -26,7 +26,7 @@ declare
   v_is_equip boolean;     -- 本單為設備單（分單後一張單全設備或全空間）
   v_open text;            -- 同類型未歸還單的單號（同類型限一單）
   v_today date := (now() at time zone 'Asia/Taipei')::date;
-  v_total int;            -- 本單件數（設備算數量、空間每格 1）
+  v_total int;            -- 本單件數（設備算數量、整組算 1；空間每格 1）
   v_dep int;              -- 單價（從資料表讀，不信任前端）
   v_active boolean;
 begin
@@ -91,9 +91,14 @@ begin
        <> jsonb_array_length(v_order -> 'items') then
       raise exception '品項重複';
     end if;
-    select sum((i ->> 'quantity')::int) into v_total from jsonb_array_elements(v_order -> 'items') i;
+    -- 設備：湊滿的組合算 1 件（equipment-bundles.sql）；空間每格 1
+    if v_is_equip then
+      select o_units into v_total from public.equipment_bundle_calc(v_order -> 'items');
+    else
+      select sum((i ->> 'quantity')::int) into v_total from jsonb_array_elements(v_order -> 'items') i;
+    end if;
     if v_is_equip and v_order ->> 'booking_type' = 'little' and v_total > 9 then
-      raise exception '小量訂單最多 9 件（目前 % 件）', v_total;
+      raise exception '小量訂單最多 9 件（目前 % 件，整組算 1 件）', v_total;
     end if;
     if v_order ->> 'booking_type' <> 'little' and v_total < 10 then
       raise exception '大量／團體訂單需滿 10 件（目前 % 件）', v_total;
@@ -182,8 +187,6 @@ begin
         if not v_active then
           raise exception '「%」已下架，請從購物車移除', v_item ->> 'name';
         end if;
-        v_equip_dep := v_equip_dep + v_dep * (v_item ->> 'quantity')::int;
-
         select coalesce(sum(oi.quantity), 0) into v_reserved
           from public.order_items oi
           join public.orders o on o.id = oi.order_id
@@ -233,6 +236,10 @@ begin
       end if;
     end loop;
 
+    -- 設備押金套用組合（湊滿一組只收一組，equipment-bundles.sql）
+    if v_is_equip then
+      select o_deposit into v_equip_dep from public.equipment_bundle_calc(v_order -> 'items');
+    end if;
     v_equip_dep := least(v_equip_dep, 5000);
     v_space_dep := least(v_space_dep, 5000);
 

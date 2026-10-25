@@ -10,6 +10,7 @@ import GuideContent from './GuideContent'
 import SaContent from './SaContent'
 import AboutContent from './AboutContent'
 import { useT } from '../../stores/langStore'
+import { navItemCls } from './navItem'
 
 export type InfoTab = 'guide' | 'sa' | 'about'
 
@@ -58,37 +59,35 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
     >
       {/* 對話框容器：固定高度，切分頁時不跳動 */}
       <div
-        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-5xl w-full mx-4 h-[85vh] flex flex-col md:flex-row relative overflow-hidden"
+        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-4xl w-full mx-4 h-[85vh] flex flex-col md:flex-row relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
-        {/* 右上角關閉鈕 */}
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 text-white hover:opacity-70 transition-opacity cursor-pointer flex items-center z-10"
-          aria-label="Close"
-        >
-          <span className="material-icons text-lg">close</span>
+        {/* 右上：關閉 X（與右側標題同在距頂 24px；z-20 蓋過 sticky 標題） */}
+        <button type="button" onClick={onClose} aria-label={t('Close', '關閉')} className="absolute top-6 right-6 z-20 flex text-white cursor-pointer">
+          <span className="material-symbols-outlined">close</span>
         </button>
 
-        {/* 左：分頁（p-6，第一個分頁與右側標題同在距頂 24px） */}
-        <nav className="flex md:flex-col gap-4 p-6 md:w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-[#545454]" role="tablist">
-          {TABS.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={item.id === tab}
-              onClick={() => onTabChange(item.id)}
-              className={`text-left text-sm cursor-pointer whitespace-nowrap ${item.id === tab ? 'text-white' : 'text-gray-scale2 hover:!text-white'}`}
-            >
-              {t(item.en, item.zh)}
-            </button>
-          ))}
-        </nav>
+        {/* 左：分頁膠囊（共用 navItemCls，無 icon）；手機版分頁橫排在上，右側留位給 X */}
+        <div className="p-6 pr-16 md:pr-6 md:w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-[#545454]">
+          <nav className="inline-flex md:flex-col gap-1" role="tablist">
+            {TABS.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={item.id === tab}
+                onClick={() => onTabChange(item.id)}
+                className={`${navItemCls(item.id === tab, false)} whitespace-nowrap`}
+              >
+                {t(item.en, item.zh)}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         {/* 右：內容（key＝分頁，切換時捲動回頂端）。
-            標題 sticky 固定 h-16（pt-6 與左側分頁同高）；各段 SectionTitle 以 top-16 黏在它下方——改標題高度要一起改 */}
+            標題 sticky 固定 h-16（pt-6 與右上關閉 X 同高）；各段 Section 標題以 top-16 黏在它下方——改標題高度要一起改 */}
         <div key={tab} className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6" role="tabpanel">
           <h2 className="sticky top-0 z-10 h-16 pt-6 mb-4 bg-[#151515] text-sm text-white font-normal">
             {t(current.en, current.zh)}

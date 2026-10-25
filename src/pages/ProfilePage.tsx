@@ -1,9 +1,10 @@
 /**
  * 個人資料頁面
- * 對應原本的 profile.html
+ * 左：分頁選單（訂單／個人資料）；訂單＝圓角卡片 accordion，展開直接看明細（取代原 /order 詳情頁），
+ * 右上角為使用說明；姓名改顯示在 Footer 的 Profile icon 旁。
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
@@ -11,7 +12,13 @@ import Footer from '../components/layouts/Footer'
 import ExtendDialog from '../components/profile/ExtendDialog'
 import ModifyOrderDialog, { type ModifyLine } from '../components/profile/ModifyOrderDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
+import OrderDetail, { formatDateRange } from '../components/profile/OrderDetail'
+import type { Receipt, OrderStatus } from '../components/profile/OrderDetail'
+import OrderReceipt, { downloadReceiptPdf } from '../components/profile/OrderReceipt'
+import Collapse from '../components/common/Collapse'
+import { navItemCls } from '../components/common/navItem'
 import Toast from '../components/common/Toast'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import { changePassword, updateMyPhone } from '../services/authService'
 import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
@@ -23,40 +30,6 @@ import { useSuspension } from '../hooks/useSuspension'
 import { useT } from '../stores/langStore'
 
 type ProfileSection = 'history' | 'profile'
-
-interface ReceiptItem {
-  id: string
-  name: string
-  category: 'equipment' | 'space-block' | 'classroom'
-  quantity: number
-  deposit: number
-  startDate: string
-  endDate: string
-  image: string
-  bookingType?: 'little' | 'mass-personal' | 'mass-group'
-  changedAt?: string | null  // 送單後改過（修改訂單）
-  pickupPending?: boolean    // 取件後新增、尚未點交
-}
-
-type OrderStatus = 'pending' | 'in-progress' | 'returned' | 'overdue' | 'canceled'
-
-interface Receipt {
-  borrowerName: string
-  rentalDates: string[]
-  rentalNumber: string
-  totalDeposit: number
-  items: ReceiptItem[]
-  createdAt: string
-  status?: OrderStatus // 訂單狀態
-  statusUpdatedAt?: string // 狀態更新時間（用於 in-progress 的倒數）
-  hasExtended?: boolean // 是否已延期
-  // 大量設備預選時段（mass-pickup.sql）；depositPaidAt 有值且仍 pending＝已繳押金待取件
-  depositPaidAt?: string | null
-  depositDate?: string | null
-  depositSlot?: string | null
-  pickupSlot?: string | null
-  itemsUpdatedAt?: string | null // 學生最後一次改品項
-}
 
 /** 修改訂單用：同設備合併（取件後同一設備可能分「已點交」與「待點交」兩列） */
 const toModifyLines = (r: Receipt): ModifyLine[] => {
@@ -72,30 +45,17 @@ const toModifyLines = (r: Receipt): ModifyLine[] => {
 
 const ProfilePage: React.FC = () => {
   const t = useT()
-  const { currentUser } = useAuth()
   const [currentSection, setCurrentSection] = useState<ProfileSection>('history')
-  const [greeting, setGreeting] = useState('')
-  const [greetingZh, setGreetingZh] = useState('')
-
-  // 設置問候語（英文 + 中文）
-  useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour >= 5 && hour < 12) {
-      setGreeting('Good Morning')
-      setGreetingZh('早安!')
-    } else if (hour >= 12 && hour < 18) {
-      setGreeting('Good Afternoon')
-      setGreetingZh('午安!')
-    } else {
-      setGreeting('Good Evening')
-      setGreetingZh('晚安!')
-    }
-  }, [])
-
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
   // 菜單項目
   const menuItems = [
-    { id: 'history' as ProfileSection, en: 'Orders', zh: '訂單' },
-    { id: 'profile' as ProfileSection, en: 'Info', zh: '個人資料' }
+    { id: 'history' as ProfileSection, en: 'Orders', zh: '訂單', icon: 'receipt_long' },
+    { id: 'profile' as ProfileSection, en: 'Info', zh: '個人資料', icon: 'person' }
   ]
 
   return (
@@ -105,36 +65,30 @@ const ProfilePage: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 pt-20 flex flex-col overflow-hidden">
         <div className="container h-full flex flex-col">
-          {/* 上半部：問候區塊（問候語小、放名字上方；名字靠左） */}
-          <div className="mb-12 flex-shrink-0">
-            <p className="font-['Inter',_sans-serif] text-white text-sm mb-2">
-              {t(greeting, greetingZh)}
-            </p>
-            <p className="font-['Inter',_sans-serif] text-white text-xl">
-              {currentUser?.studentId || 'A1234567'}
-              <span className="font-['Inter','Noto_Sans_TC',_sans-serif] ml-4">{currentUser?.name || '阿志'}</span>
-            </p>
-          </div>
-
-          {/* 下半部：左右分割佈局 */}
-          <div className="flex flex-1 overflow-hidden pb-4">
+          {/* 左右分割佈局 */}
+          <div className="flex flex-1 overflow-hidden pt-4 pb-4">
             {/* 左側：功能選單（佔 3） */}
-            <div className="w-[30%] flex-shrink-0 pr-3">
-              <nav className="flex flex-col gap-6">
+            <div className="w-[30%] flex-shrink-0 pr-3 flex flex-col items-start">
+              {/* 選中的分頁＝白底黑字圓角矩形（同訂單卡片展開時的反白）；inline-flex＝各項同寬、以最長的為準；
+                  樣式共用 components/common/navItem.ts */}
+              <nav className="inline-flex flex-col gap-2">
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setCurrentSection(item.id)}
-                    className={`text-sm font-semibold transition-colors cursor-pointer text-left self-start ${
-                      currentSection === item.id
-                        ? 'text-white'
-                        : 'text-gray-scale2 hover:!text-white'
-                    }`}
+                    className={navItemCls(currentSection === item.id)}
                   >
-                    <span className="block">{t(item.en, item.zh)}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{item.icon}</span>
+                    <span>{t(item.en, item.zh)}</span>
                   </button>
                 ))}
               </nav>
+
+              {/* 登出：同上方選單樣式，放在側欄底部、緊貼 Footer 的 Profile 頭像上方 */}
+              <button onClick={handleLogout} className={`mt-auto ${navItemCls(false)}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
+                <span>{t('Log out', '登出')}</span>
+              </button>
             </div>
 
             {/* 右側：內容區域 */}
@@ -154,7 +108,20 @@ const ProfilePage: React.FC = () => {
   )
 }
 
-// 工作時計算與訂單狀態判定統一在 utils/timeUtils.ts（與 OrderPage 共用）
+// 工作時計算與訂單狀態判定統一在 utils/timeUtils.ts
+
+// 狀態 chip：由狀態色推出淺底（25% 色＋白）＋深字（40% 色＋黑），黑底卡片與展開的白底都看得清楚
+const statusChipStyle = (color: string): React.CSSProperties => ({
+  backgroundColor: `color-mix(in srgb, ${color} 25%, white)`,
+  color: `color-mix(in srgb, ${color} 40%, black)`
+})
+
+// 使用說明（訂單頁右上；PDF 收據另有一份中英並列）
+const USER_GUIDE = [
+  { en: 'Please bring this receipt to the SA during business hours to pay the deposit and complete your reservation.', zh: '請在系學會營業時間內携帶此收據繳交押金以完成預約程序。' },
+  { en: 'Cash payments only. No change given.', zh: '僅接受現金交易，恕不找零。' },
+  { en: 'On the return date, please present this receipt at the SA to retrieve your deposit.', zh: '歸還日到期時，憑藉此收據至系學會索取押金。' }
+]
 
 // 租借歷史區塊
 const RentalHistorySection: React.FC = () => {
@@ -168,6 +135,21 @@ const RentalHistorySection: React.FC = () => {
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set()) // 臨時公休日
   const [isExtendDialogOpen, setIsExtendDialogOpen] = useState(false)
   const [extendingReceipt, setExtendingReceipt] = useState<Receipt | null>(null)
+  const [openOrder, setOpenOrder] = useState<string | null>(null) // accordion：一次展開一張
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [printing, setPrinting] = useState<Receipt | null>(null)  // 正在產生 PDF 的收據
+  const receiptRef = useRef<HTMLDivElement>(null)
+
+  // 收據模板渲染到畫面外後再擷取成 PDF
+  useEffect(() => {
+    if (!printing || !receiptRef.current) return
+    downloadReceiptPdf(receiptRef.current, printing.rentalNumber)
+      .catch(err => {
+        console.error('PDF generation failed:', err)
+        alert(t('Couldn’t generate the receipt. Please try again later.', '收據生成失敗，請稍後再試'))
+      })
+      .finally(() => setPrinting(null))
+  }, [printing])
 
   // 從 Supabase 讀取自己的訂單（RLS 只回本人的），組成畫面用的 Receipt 形狀
   const loadOrders = React.useCallback(async () => {
@@ -190,7 +172,7 @@ const RentalHistorySection: React.FC = () => {
         items: order.order_items.map(item => ({
           id: item.item_id,
           name: item.name,
-          category: item.item_type,
+          category: item.item_type as Receipt['items'][number]['category'],
           quantity: item.quantity,
           deposit: item.deposit,
           startDate: order.start_date,
@@ -202,6 +184,7 @@ const RentalHistorySection: React.FC = () => {
         })),
         createdAt: order.created_at,
         status: order.status,
+        reason: order.reason,
         hasExtended: order.has_extended,
         depositPaidAt: order.deposit_paid_at,
         depositDate: order.deposit_date,
@@ -250,28 +233,6 @@ const RentalHistorySection: React.FC = () => {
     return () => clearInterval(timer)
   }, [])
 
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    })
-  }
-
-  // 格式化日期範圍
-  const formatDateRange = (dates: string[]) => {
-    if (dates.length === 0) return ''
-    const sorted = [...dates].sort()
-    return `${formatDate(sorted[0])} - ${formatDate(sorted[sorted.length - 1])}`
-  }
-
-  // 點擊收據項目，導航到訂單頁面
-  const handleReceiptClick = (receipt: Receipt) => {
-    navigate('/order', { state: receipt })
-  }
-
   // 處理延期按鈕點擊
   const handleExtendClick = (receipt: Receipt, status: OrderStatus) => {
     // 只有租借中且未延期過的訂單才能延期；
@@ -294,7 +255,7 @@ const RentalHistorySection: React.FC = () => {
     const result = await extendMyOrderPartial(extendingReceipt.rentalNumber, extendDays, itemIds)
     if (!result.ok) {
       console.error('延期失敗:', result.message)
-      alert(result.message || '延期失敗，請再試一次')
+      alert(result.message || t('Extension failed. Please try again.', '延期失敗，請再試一次'))
       return
     }
 
@@ -316,35 +277,30 @@ const RentalHistorySection: React.FC = () => {
       case 'pending':
         return {
           color: 'var(--color-yellow)',
-          textColor: 'black',
           en: 'Pending',
           zh: '待銷單'
         }
       case 'in-progress':
         return {
           color: 'var(--color-blue)',
-          textColor: 'white',
           en: 'In Progress',
           zh: '使用中'
         }
       case 'returned':
         return {
           color: 'var(--color-success)',
-          textColor: 'white',
           en: 'Returned',
           zh: '已歸還'
         }
       case 'overdue':
         return {
           color: 'var(--color-error2)',
-          textColor: 'white',
           en: 'Overdue',
           zh: '未完成歸還'
         }
       case 'canceled':
         return {
           color: 'var(--color-gray-scale3)',
-          textColor: 'white',
           en: 'Canceled',
           zh: '已取消'
         }
@@ -473,113 +429,139 @@ const RentalHistorySection: React.FC = () => {
       receipt.items[0]?.category === 'equipment' && bookingType !== 'mass-group' &&
       (status === 'pending' || status === 'in-progress')
 
+    const isOpen = openOrder === receipt.rentalNumber
+    const toggle = () => setOpenOrder(isOpen ? null : receipt.rentalNumber)
+    // icon 操作鈕：跟著卡片文字色（反白時變黑），不可用＝30% 透明
+    const iconBtnCls = 'flex items-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
+
     return (
       <div
         key={index}
-        onClick={() => handleReceiptClick(receipt)}
-        className="group py-6 first:pt-0 border-b border-gray-scale4 cursor-pointer hover:opacity-70 transition-opacity"
+        className={`group rounded-2xl border border-[#545454] overflow-hidden ${
+          isOpen ? 'bg-white text-black' : 'text-white hover:bg-white hover:text-black'
+        }`}
       >
-        <div className="flex justify-between">
-          {/* 左側：單號、日期和押金 */}
-          <div className="flex-1">
-            {/* 單號和訂單種類標籤 */}
-            <div className="flex items-center gap-3 mb-2">
-              <span className="font-['Inter',_sans-serif] text-xl text-white">
-                {receipt.rentalNumber}
+        {/* 摘要列：點擊展開／收合；hover 或展開時整張白底黑字 */}
+        <div onClick={toggle} className="flex justify-between gap-6 p-6 cursor-pointer">
+          {/* 左：單號 → 種類＋狀態 → 日期與押金 */}
+          <div>
+            <div className="text-xl">{receipt.rentalNumber}</div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-3 py-1 rounded-lg bg-gray-scale4 text-white text-xs whitespace-nowrap">
+                {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
               </span>
-              {/* 訂單種類標籤 */}
-              <div
-                className="px-3 py-1 flex items-center justify-center bg-gray-scale4 rounded-lg border border-transparent"
+              <span
+                className="px-3 py-1 rounded-lg text-xs whitespace-nowrap"
+                style={statusChipStyle(statusInfo.color)}
               >
-                <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap text-white">
-                  {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
-                </span>
-              </div>
+                {t(statusInfo.en, statusInfo.zh)}
+              </span>
             </div>
-            {/* 日期和押金在同一行，有間距 */}
-            <div className="flex items-center gap-8">
-              <span className="font-['Inter',_sans-serif] text-md text-white">
-                {formatDateRange(receipt.rentalDates)}
-              </span>
-              <span className="font-['Inter',_sans-serif] text-md text-white">
-                NT$ {receipt.totalDeposit.toLocaleString()}
-              </span>
+            <div className="flex items-center gap-8 mt-4 text-md">
+              <span>{formatDateRange(receipt.rentalDates)}</span>
+              <span>NT$ {receipt.totalDeposit.toLocaleString()}</span>
             </div>
           </div>
 
-          {/* 右側：延期按鈕、狀態標籤與倒數計時 */}
+          {/* 右：下載／延期／修改＋展開 chevron；下方倒數（hover 反白時一律轉黑字） */}
           <div className="flex flex-col items-end justify-between">
-            {/* Extend 按鈕和狀態標籤 */}
-            <div className="flex items-center gap-3">
-              {/* Extend 延期按鈕 - 始終顯示，但只在租借中（in-progress）且未延期過時可點擊；
-                  過期／取消／已歸還的訂單已失效，不可延期 */}
+            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
               <button
-                onClick={(e) => {
-                  e.stopPropagation() // 防止觸發訂單點擊事件
-                  handleExtendClick(receipt, status)
-                }}
-                disabled={!canExtend}
-                className={`px-3 py-1 flex items-center justify-center border rounded-lg group-hover:!opacity-100 transition-colors ${
-                  canExtend
-                    ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
-                    : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
-                }`}
+                type="button"
+                onClick={() => setPrinting(receipt)}
+                disabled={printing !== null}
+                aria-label={t('Download receipt', '下載收據')}
+                title={t('Download receipt', '下載收據')}
+                className={iconBtnCls}
               >
-                <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">
-                  {t('Extend', '延期')}
-                </span>
+                <span className="material-symbols-outlined">download</span>
               </button>
-
-              {/* Edit 修改：設備單才顯示（空間單不開放修改） */}
+              {/* 延期：僅租借中、未延期過、且在期限內可點；其餘狀態顯示但停用 */}
+              <button
+                type="button"
+                onClick={() => handleExtendClick(receipt, status)}
+                disabled={!canExtend}
+                aria-label={t('Extend', '延期')}
+                title={t('Extend', '延期')}
+                className={iconBtnCls}
+              >
+                <span className="material-symbols-outlined">more_time</span>
+              </button>
+              {/* 修改：設備單才顯示（空間單不開放修改） */}
               {receipt.items[0]?.category === 'equipment' && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (canModify) setModifying(receipt)
-                  }}
+                  type="button"
+                  onClick={() => canModify && setModifying(receipt)}
                   disabled={!canModify}
-                  className={`px-3 py-1 flex items-center justify-center border rounded-lg group-hover:!opacity-100 transition-colors ${
-                    canModify
-                      ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
-                      : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
-                  }`}
+                  aria-label={t('Edit', '修改')}
+                  title={t('Edit', '修改')}
+                  className={iconBtnCls}
                 >
-                  <span className="font-['Inter',_sans-serif] text-xs whitespace-nowrap">
-                    {t('Edit', '修改')}
-                  </span>
+                  <span className="material-symbols-outlined">edit</span>
                 </button>
               )}
-
-              {/* 狀態標籤 */}
-              <div
-                className="px-3 py-1 flex items-center justify-center rounded-lg border border-transparent"
-                style={{ backgroundColor: statusInfo.color }}
+              <button
+                type="button"
+                onClick={toggle}
+                aria-expanded={isOpen}
+                aria-label={t('Details', '明細')}
+                className="flex items-center cursor-pointer"
               >
-                <span
-                  className="font-['Inter',_sans-serif] text-xs whitespace-nowrap"
-                  style={{ color: statusInfo.textColor }}
-                >
-                  {t(statusInfo.en, statusInfo.zh)}
-                </span>
-              </div>
+                <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
+              </button>
             </div>
-
-            {/* 倒數計時 */}
-            {renderCountdown(receipt, status)}
+            <div className={isOpen ? '[&_*]:!text-black' : 'group-hover:[&_*]:!text-black'}>{renderCountdown(receipt, status)}</div>
           </div>
         </div>
+
+        {/* 展開：訂單明細（往下展開動畫） */}
+        <Collapse open={isOpen}>
+          <div className="mx-6 py-6 border-t border-black/15">
+            <OrderDetail receipt={receipt} />
+          </div>
+        </Collapse>
       </div>
     )
   }
 
   return (
     <div>
+      {/* 使用說明：訂單頁右上的按鈕，點擊開彈窗（同其他確認視窗外觀） */}
+      <div className="flex justify-end mb-6">
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="flex items-center gap-2 text-sm text-white cursor-pointer"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>menu_book</span>
+          {t('User Guide', '使用說明')}
+        </button>
+      </div>
+      <ConfirmDialog
+        isOpen={guideOpen}
+        title="使用說明"
+        titleEn="User Guide"
+        closeOnly
+        onCancel={() => setGuideOpen(false)}
+      >
+        <ol className="list-decimal pl-4 space-y-2 text-xs text-white leading-relaxed">
+          {USER_GUIDE.map(g => <li key={g.zh}>{t(g.en, g.zh)}</li>)}
+        </ol>
+      </ConfirmDialog>
+
       {/* 所有訂單 */}
       {allReceipts.length === 0 ? (
-        <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-gray-scale4 text-md">尚無訂單記錄</p>
+        <p className="text-gray-scale4 text-md">尚無訂單記錄</p>
       ) : (
-        <div>
+        <div className="flex flex-col gap-4">
           {allReceipts.map((receipt, index) => renderReceiptItem(receipt, index))}
+        </div>
+      )}
+
+      {/* PDF 收據模板：只在下載時渲染到畫面外，供 html2canvas 擷取 */}
+      {printing && (
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <OrderReceipt ref={receiptRef} receipt={printing} />
         </div>
       )}
 
@@ -656,12 +638,12 @@ const ProfileDataSection: React.FC = () => {
       if (!result.ok) {
         return { ok: false, wrongCurrent: result.wrongCurrent }
       }
-      setToastMessage('密碼已更新')
+      setToastMessage(t('Password updated', '密碼已更新'))
     } else if (editMode === 'phone') {
       const result = await updateMyPhone(value)
       if (!result.ok) return { ok: false }
       setPhone(value)
-      setToastMessage('手機號碼已更新')
+      setToastMessage(t('Phone number updated', '手機號碼已更新'))
     }
     setEditMode(null)
     return { ok: true }
@@ -737,7 +719,7 @@ const ProfileDataSection: React.FC = () => {
           <div>
             <label className="text-gray-scale2 text-xs block mb-2">{t('Class', '班級')}</label>
             <p className="font-chinese text-white text-sm">
-              {/* 班級以名單資料為準（grade＋class_name，同後台會員管理），不從學號推 */}
+              {/* 班級以學生資料為準（grade＋class_name，同後台會員管理；Google 首次登入由學號給初值） */}
               {classLabel(currentUser?.year, currentUser?.className) || '—'}
             </p>
           </div>
@@ -749,6 +731,13 @@ const ProfileDataSection: React.FC = () => {
             <label className="text-gray-scale2 text-xs block mb-2">{t('Student ID', '學號')}</label>
             <p className="font-english text-white text-sm">{currentUser?.studentId || 'A111144001'}</p>
           </div>
+          {currentUser?.provider === 'google' ? (
+            // Google 帳號沒有密碼：顯示登入方式，不能改
+            <div>
+              <label className="text-gray-scale2 text-xs block mb-2">{t('Sign-in', '登入方式')}</label>
+              <p className="font-english text-white text-sm">Google</p>
+            </div>
+          ) : (
           <div>
             <label className="text-gray-scale2 text-xs block mb-2">{t('Password', '密碼')}</label>
             <div className="flex items-center gap-3">
@@ -756,7 +745,7 @@ const ProfileDataSection: React.FC = () => {
               <span className="font-english text-white text-sm flex-1">••••••••</span>
               <button
                 onClick={() => setEditMode('password')}
-                className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
+                className="text-white hover:text-gray-scale2 cursor-pointer flex items-center"
                 aria-label="修改密碼"
                 title="修改密碼"
               >
@@ -764,6 +753,7 @@ const ProfileDataSection: React.FC = () => {
               </button>
             </div>
           </div>
+          )}
         </div>
 
         {/* 第三行：手機號碼和Email */}
@@ -776,7 +766,7 @@ const ProfileDataSection: React.FC = () => {
               </p>
               <button
                 onClick={() => setEditMode('phone')}
-                className="text-white hover:text-gray-scale2 transition-colors cursor-pointer flex items-center"
+                className="text-white hover:text-gray-scale2 cursor-pointer flex items-center"
                 aria-label={phone ? '修改手機號碼' : '設定手機號碼'}
                 title={phone ? '修改手機號碼' : '設定手機號碼'}
               >

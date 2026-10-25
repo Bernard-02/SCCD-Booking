@@ -14,6 +14,7 @@ import {
   overduePenalty,
   isWithinExtendWindow,
   isOnDuty,
+  dutyHoursText,
   closedDayImpact,
   addBusinessMs,
   dutySlotOptions,
@@ -220,5 +221,32 @@ describe('minStartDate', () => {
     expect(days(minStartDate('equipment', 'mass-personal'))).toBe(3)
     expect(days(minStartDate('equipment', 'little'))).toBe(0)
     expect(days(minStartDate('space', 'mass-group'))).toBe(0)
+  })
+})
+
+describe('dutyHoursText（前台營業時間）', () => {
+  const slot = (weekday: number, start: string, end: string) => ({ weekday, start_time: `${start}:00`, end_time: `${end}:00` })
+  const weekdays = [1, 2, 3, 4, 5].flatMap(w => [slot(w, '17:00', '19:00'), slot(w, '12:00', '13:00')])
+
+  it('週一到週五同時段 → 平日，時段照時間排', () => {
+    expect(dutyHoursText(weekdays)).toEqual({
+      zh: '平日 12:00–13:00、17:00–19:00',
+      en: 'Weekdays 12:00–13:00, 17:00–19:00'
+    })
+  })
+
+  it('不同人重疊／相接的時段合併；時段不同的星期分組', () => {
+    expect(dutyHoursText([
+      slot(1, '12:00', '13:00'), slot(1, '12:30', '14:00'), slot(1, '14:00', '15:00'),
+      slot(3, '12:00', '15:00'),
+      slot(2, '17:00', '19:00')
+    ])).toEqual({
+      zh: '週一、週三 12:00–15:00；週二 17:00–19:00',
+      en: 'Mon, Wed 12:00–15:00; Tue 17:00–19:00'
+    })
+  })
+
+  it('沒有排班 → null', () => {
+    expect(dutyHoursText([])).toBeNull()
   })
 })

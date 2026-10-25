@@ -1,255 +1,351 @@
 /**
  * 後台 · 設備管理（設定段）
- * 新增／編輯（名稱、分類、總量、押金）／軟性下架（is_active，不實刪）。
+ * 版面同訂單頁：標題列右側＝新增設備／新增組合（開對話框）；計數分頁 設備／組合；搜尋列（左搜尋、右選取模式＋分類／狀態篩選）；
+ * 表格（表頭可單欄排序）。選取模式同購物車：出現勾選欄、表頭全選；勾選的列切開關＝套用到所有勾選（批次上／下架）。
+ * 設備新增／修改走同一個對話框（左圖右表單：圖片、名稱、分類、總量、押金）；圖片在對話框裡換（按確定才上傳，取消即丟棄）。
+ * 上架狀態＝開關（下架先確認、上架直接切；軟性，is_active 不實刪）。
  * 只填總量——可借數由訂單佔用即時算，不用手動維護在庫（見 adminService withStock）。
- * 前台只撈 is_active=true：下架即從學生端消失（重新整理生效），歷史訂單不受影響
- * （order_items 冗餘存名稱）。寫入權限由 RLS 把關（admin only）。
+ * 前台只撈 is_active=true：下架即從學生端消失（重新整理生效），歷史訂單不受影響（order_items 冗餘存名稱）。
+ * 圖片只收 JPG／PNG、5MB 內（IMAGE_ACCEPT＋uploadImage 擋）。寫入權限由 RLS 把關（admin only）。
  */
 
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  listEquipmentAdmin, addEquipment, updateEquipment, setEquipmentActive, imageSrc, uploadImage
+  listEquipmentAdmin, listBundlesAdmin, addEquipment, updateEquipment, setEquipmentActive, setEquipmentActiveMany,
+  imageSrc, uploadImage
 } from '../services/adminService'
-import type { AdminEquipment, EquipmentFields } from '../services/adminService'
+import type { AdminEquipment, EquipmentFields, AdminBundle } from '../services/adminService'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
-import { PageTitle, actionBtn, inputCls, listHeadCls, listRowCls, HeadCell, ImagePicker, EditIconBtn, usePager, Pager, LoadError } from '../components/admin/adminUi'
+import {
+  PageTitle, inputCls, textBtn, iconFillBtn, SearchBox, CountTabs, SelectControls, tableTh as th, tableTd as td,
+  SortTh, toggleSort, sortRows, Thumb, ImagePicker, NumberInput, Switch, usePager, Pager, LoadError, Select, FormDialog, Field
+} from '../components/admin/adminUi'
+import type { Sort } from '../components/admin/adminUi'
 import { EQUIPMENT_CATEGORIES } from '../types/equipment'
-
-// 圖片／名稱／分類／總量／押金／狀態／操作
-const cols = 'grid-cols-[40px_1fr_120px_100px_120px_90px_200px]'
-const numCls = `${inputCls} w-20 text-center font-english`
+import BundleManager from '../components/admin/BundleManager'
 
 const EMPTY: EquipmentFields = { name: '', category: '', original_quantity: 0, deposit: 0 }
+const TABS = [{ key: 'equipment', zh: '設備' }, { key: 'bundle', zh: '組合' }] as const
+type Tab = typeof TABS[number]['key']
+type StatusFilter = 'all' | 'active' | 'inactive'
+type SortField = 'name' | 'category' | 'original_quantity' | 'deposit' | 'is_active'
+
+// 對話框狀態：id null＝新增；file／preview＝這次選的新圖（按確定才上傳）
+type Dialog = { id: string | null; f: EquipmentFields; imageUrl: string | null; file?: File; preview?: string }
 
 const AdminEquipmentPage: React.FC = () => {
   const [rows, setRows] = useState<AdminEquipment[]>([])
+  const [bundles, setBundles] = useState<AdminBundle[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>('equipment')
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('all')
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [sort, setSort] = useState<Sort<SortField>>(null)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
-  const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null) // 上／下架處理中的那一列（防連點）
+  const [dialog, setDialog] = useState<Dialog | null>(null)
+  // 新增組合鈕在標題列，用旗標叫 BundleManager 開它的對話框
+  const [addingBundle, setAddingBundle] = useState(false)
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast, toastElement } = useToast()
 
-  // 新增表單
-  const [draft, setDraft] = useState<EquipmentFields>(EMPTY)
-  // 列編輯：一次只開一列
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editDraft, setEditDraft] = useState<EquipmentFields>(EMPTY)
-
-  const load = () => listEquipmentAdmin()
-    .then(r => { setRows(r); setLoadError(null) })
+  const load = () => Promise.all([listEquipmentAdmin(), listBundlesAdmin()])
+    .then(([e, b]) => { setRows(e); setBundles(b); setLoadError(null) })
     .catch(e => setLoadError(e?.message ?? '未知錯誤'))
     .finally(() => setLoading(false))
   useEffect(() => { void load() }, [])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(r => r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
-  }, [rows, search])
-  const { pageRows, pager } = usePager(filtered, [search])
+    return rows.filter(r =>
+      (!q || r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q)) &&
+      (category === 'all' || r.category === category) &&
+      (status === 'all' || r.is_active === (status === 'active'))
+    )
+  }, [rows, search, category, status])
+  const sorted = useMemo(() => (sort ? sortRows(filtered, sort.dir, r => r[sort.field]) : filtered), [filtered, sort])
+  const { pageRows, pager } = usePager(sorted, [search, category, status, sort])
+
+  // 選取模式：切分頁即退出；全選＝目前篩選結果（不只這一頁）
+  const exitSelect = () => { setSelectMode(false); setSelected(new Set()) }
+  useEffect(exitSelect, [tab])
+  const selectedCount = filtered.filter(r => selected.has(r.id)).length
+  const allSelected = filtered.length > 0 && selectedCount === filtered.length
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(filtered.map(r => r.id)))
+  const toggleOne = (id: string) => setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
   const validate = (f: EquipmentFields): string | null => {
-    if (!f.name.trim()) return '請輸入名稱'
+    if (!f.name) return '請輸入名稱'
     if (!f.category) return '請選擇分類'
     if (f.original_quantity < 0 || f.deposit < 0) return '數字不可為負'
     return null
   }
 
-  const handleAdd = async () => {
-    const err = validate(draft)
-    if (err) { showToast(err); return }
-    setBusy(true)
-    const res = await addEquipment({ ...draft, name: draft.name.trim(), category: draft.category.trim() })
-    setBusy(false)
-    if (!res.ok) { showToast(res.message ?? '新增失敗'); return }
-    showToast(`已新增「${draft.name.trim()}」`, 'success')
-    setDraft(EMPTY)
-    await load()
+  const closeDialog = () => {
+    if (dialog?.preview) URL.revokeObjectURL(dialog.preview)
+    setDialog(null)
   }
-
-  const startEdit = (r: AdminEquipment) => {
-    setEditingId(r.id)
-    setEditDraft({
-      name: r.name, category: r.category,
-      original_quantity: r.original_quantity, deposit: r.deposit
-    })
-  }
-
-  const handleSave = async (id: string) => {
-    const err = validate(editDraft)
-    if (err) { showToast(err); return }
-    setBusy(true)
-    const res = await updateEquipment(id, { ...editDraft, name: editDraft.name.trim(), category: editDraft.category.trim() })
-    setBusy(false)
-    if (!res.ok) { showToast(res.message ?? '儲存失敗'); return }
-    showToast(`已更新「${editDraft.name.trim()}」`, 'success')
-    setEditingId(null)
-    await load()
-  }
-
-  const handleToggleActive = async (r: AdminEquipment) => {
-    const ok = await confirm(r.is_active
-      ? {
-          title: '下架設備', titleEn: 'Deactivate',
-          message: `下架「${r.name}」？前台將不再顯示（資料保留，可隨時上架）。`,
-          confirmText: 'Deactivate', confirmTextZh: '下架', variant: 'danger'
-        }
-      : {
-          title: '上架設備', titleEn: 'Activate',
-          message: `重新上架「${r.name}」？前台將恢復顯示。`,
-          confirmText: 'Activate', confirmTextZh: '上架'
-        })
-    if (!ok) return
-    const res = await setEquipmentActive(r.id, !r.is_active)
-    if (!res.ok) { showToast(res.message ?? '操作失敗'); return }
-    showToast(`已${r.is_active ? '下架' : '上架'}「${r.name}」`, 'success')
-    await load()
-  }
-
-  const handleImage = async (id: string, file: File) => {
-    setUploadingId(id)
-    const res = await uploadImage('equipment', id, file)
-    setUploadingId(null)
-    if (!res.ok) { showToast(res.message ?? '上傳失敗'); return }
-    showToast(`已更換「${rows.find(r => r.id === id)?.name ?? id}」的圖片`, 'success')
-    await load()
-  }
-
-  // 數字輸入的共用 onChange（空字串暫記 0）
-  const num = (v: string) => Math.max(0, parseInt(v, 10) || 0)
-
-  const fieldInputs = (f: EquipmentFields, set: (f: EquipmentFields) => void) => ({
-    name: (
-      <input type="text" value={f.name} onChange={e => set({ ...f, name: e.target.value })}
-        placeholder="名稱" className={`${inputCls} font-chinese w-full max-w-[16rem]`} />
-    ),
-    // 分類只能選固定清單（前台篩選靠完全相符）；舊資料若有清單外的值仍列出，避免開編輯就被默默改掉
-    category: (
-      <select value={f.category} onChange={e => set({ ...f, category: e.target.value })}
-        className="bg-black border border-gray-scale4 rounded-lg px-2 py-1.5 text-xs text-white focus:border-white outline-none font-chinese cursor-pointer w-full max-w-[9rem]">
-        <option value="" disabled>選擇分類</option>
-        {EQUIPMENT_CATEGORIES.map(c => <option key={c.zh} value={c.zh}>{c.zh}</option>)}
-        {f.category && !EQUIPMENT_CATEGORIES.some(c => c.zh === f.category) && (
-          <option value={f.category}>{f.category}（清單外）</option>
-        )}
-      </select>
-    ),
-    original: (
-      <input type="number" min={0} value={f.original_quantity}
-        onChange={e => set({ ...f, original_quantity: num(e.target.value) })} className={numCls} />
-    ),
-    deposit: (
-      <input type="number" min={0} step={50} value={f.deposit}
-        onChange={e => set({ ...f, deposit: num(e.target.value) })} className={numCls} />
-    )
+  const openDialog = (r?: AdminEquipment) => setDialog(r
+    ? { id: r.id, f: { name: r.name, category: r.category, original_quantity: r.original_quantity, deposit: r.deposit }, imageUrl: r.image_url }
+    : { id: null, f: EMPTY, imageUrl: null })
+  const setF = (patch: Partial<EquipmentFields>) => setDialog(d => (d ? { ...d, f: { ...d.f, ...patch } } : d))
+  const pickImage = (file: File) => setDialog(d => {
+    if (!d) return d
+    if (d.preview) URL.revokeObjectURL(d.preview)
+    return { ...d, file, preview: URL.createObjectURL(file) }
   })
 
-  const addInputs = fieldInputs(draft, setDraft)
-  const editInputs = fieldInputs(editDraft, setEditDraft)
+  const handleSubmit = async () => {
+    if (!dialog) return
+    const f = { ...dialog.f, name: dialog.f.name.trim(), category: dialog.f.category.trim() }
+    const err = validate(f)
+    if (err) { showToast(err); return }
+    setBusy(true)
+    const res: { ok: boolean; message?: string; id?: string } = dialog.id
+      ? await updateEquipment(dialog.id, f)
+      : await addEquipment(f)
+    if (!res.ok) { setBusy(false); showToast(res.message ?? (dialog.id ? '儲存失敗' : '新增失敗')); return }
+    // 新選的圖片在主檔存好後才上傳（新增時要先有 id）
+    const id = dialog.id ?? res.id
+    const up = dialog.file && id ? await uploadImage('equipment', id, dialog.file) : { ok: true as const }
+    setBusy(false)
+    showToast(up.ok ? `已${dialog.id ? '更新' : '新增'}「${f.name}」` : `資料已存，圖片上傳失敗：${up.message ?? ''}`, up.ok ? 'success' : undefined)
+    closeDialog()
+    await load()
+  }
+
+  // 開關：下架會讓學生端看不到，先確認；上架沒有副作用直接切
+  const handleToggleActive = async (r: AdminEquipment) => {
+    if (r.is_active) {
+      const ok = await confirm({
+        title: '下架設備',
+        message: `下架「${r.name}」？前台將不再顯示（資料保留，可隨時上架）。`,
+        confirmTextZh: '下架', variant: 'danger'
+      })
+      if (!ok) return
+    }
+    setTogglingId(r.id)
+    const res = await setEquipmentActive(r.id, !r.is_active)
+    if (!res.ok) { setTogglingId(null); showToast(res.message ?? '操作失敗'); return }
+    showToast(`已${r.is_active ? '下架' : '上架'}「${r.name}」`, 'success')
+    await load()
+    setTogglingId(null)
+  }
+
+  // 批次上／下架：只動狀態會變的那些；下架一樣先確認
+  const bulkSetActive = async (active: boolean) => {
+    const ids = filtered.filter(r => selected.has(r.id) && r.is_active !== active).map(r => r.id)
+    if (ids.length === 0) { showToast(active ? '選取的設備都已上架' : '選取的設備都已下架'); return }
+    if (!active) {
+      const ok = await confirm({
+        title: '下架設備',
+        message: `下架選取的 ${ids.length} 項設備？前台將不再顯示（資料保留，可隨時上架）。`,
+        confirmTextZh: '下架', variant: 'danger'
+      })
+      if (!ok) return
+    }
+    setBusy(true)
+    const res = await setEquipmentActiveMany(ids, active)
+    setBusy(false)
+    if (!res.ok) { showToast(res.message ?? '操作失敗'); return }
+    showToast(`已${active ? '上架' : '下架'} ${ids.length} 項設備`, 'success')
+    setSelected(new Set())
+    await load()
+  }
+
+  const sortProps = { sort, onSort: (f: SortField) => setSort(s => toggleSort(s, f)) }
 
   return (
-    // 撐滿視窗（扣 AdminLayout main 的 py-10 上下各 2.5rem）：標題／新增列／搜尋固定，只有清單區捲動
-    <div className="h-[calc(100vh-5rem)] flex flex-col">
-      <PageTitle
-        en="Equipment"
-        zh="設備管理"
-        desc="改主檔會影響前台顯示與可借數量；點圖片可更換（jpg／png／webp，5MB 內）；下架＝隱藏不刪除，歷史訂單不受影響。學生端重新整理後生效。"
-      />
-
-      {/* 新增列 */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        {addInputs.name}
-        {addInputs.category}
-        <label className="text-xs text-gray-scale2 font-chinese">總量 {addInputs.original}</label>
-        <label className="text-xs text-gray-scale2 font-chinese">押金 {addInputs.deposit}</label>
-        <button onClick={handleAdd} disabled={busy} className={actionBtn(!busy)}>
-          <span className="font-english">Add <span className="font-chinese">新增</span></span>
+    // 撐滿內容區（AdminLayout main 固定 h-screen）：標題／分頁／搜尋固定，只有表格區捲動
+    <div className="h-full flex flex-col">
+      <PageTitle zh="設備管理">
+        <button
+          onClick={() => (tab === 'equipment' ? openDialog() : setAddingBundle(true))}
+          className={textBtn(false)}
+        >
+          <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">add</span>
+          {tab === 'equipment' ? '新增設備' : '新增組合'}
         </button>
-      </div>
+      </PageTitle>
 
-      {/* 搜尋 */}
-      <div className="mb-6">
-        <input
-          type="text" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="搜尋名稱／分類" className={`${inputCls} font-chinese min-w-[16rem]`}
-        />
-        <span className="ml-3 text-xs text-gray-scale3 font-chinese">{filtered.length} 項</span>
-      </div>
+      <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={{ equipment: rows.length, bundle: bundles.length }} />
 
       {loading ? (
         <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
       ) : loadError ? (
         <LoadError message={loadError} onRetry={() => { setLoading(true); void load() }} />
+      ) : tab === 'bundle' ? (
+        <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
+          <BundleManager
+            equipment={rows}
+            bundles={bundles}
+            reload={load}
+            adding={addingBundle}
+            onAddClose={() => setAddingBundle(false)}
+          />
+        </div>
       ) : (
-        // 清單區自己捲（直向＋視窗過窄時橫向，不壓縮名稱欄）；表頭黏在清單區頂端
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className={`${listHeadCls} ${cols} min-w-[60rem] sticky top-0 z-10 bg-black`}>
-            <HeadCell en="Image" zh="圖片" />
-            <HeadCell en="Name" zh="名稱" />
-            <HeadCell en="Category" zh="分類" />
-            <HeadCell en="Total Qty" zh="總數量" center />
-            <HeadCell en="Deposit" zh="押金/個" center />
-            <HeadCell en="Status" zh="狀態" center />
-            <HeadCell en="Action" zh="操作" center />
+        <>
+          {/* 搜尋列：左搜尋（常駐）；右＝選取模式、分類、狀態篩選 */}
+          <div className="flex items-center gap-2 mb-4">
+            <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
+            <SelectControls
+              mode={selectMode}
+              count={selectedCount}
+              onEnter={() => setSelectMode(true)}
+              onExit={exitSelect}
+              actions={[]}
+            />
+            <Select
+              value={category}
+              onChange={setCategory}
+              options={[{ value: 'all', label: '全部分類' }, ...EQUIPMENT_CATEGORIES.map(c => ({ value: c.zh, label: c.zh }))]}
+              icon="category"
+              filled
+              className="font-chinese"
+            />
+            <Select<StatusFilter>
+              value={status}
+              onChange={setStatus}
+              options={[{ value: 'all', label: '全部狀態' }, { value: 'active', label: '上架中' }, { value: 'inactive', label: '已下架' }]}
+              icon="filter_list"
+              filled
+              className="font-chinese"
+            />
           </div>
 
-          {pageRows.map(r => {
-            const editing = editingId === r.id
-            return (
-              <div key={r.id} className={`${listRowCls} ${cols} min-w-[60rem] text-sm ${!r.is_active ? 'opacity-50' : ''}`}>
-                <ImagePicker src={imageSrc(r.image_url)} alt={r.name} busy={uploadingId === r.id}
-                  onPick={f => handleImage(r.id, f)} />
-                <div className="font-chinese">{editing ? editInputs.name : r.name}</div>
-                <div className="font-chinese">{editing ? editInputs.category : r.category}</div>
-                <div className="font-english text-center">{editing ? editInputs.original : r.original_quantity}</div>
-                <div className="font-english text-center whitespace-nowrap">{editing ? editInputs.deposit : `NT$ ${r.deposit}`}</div>
-                <div className="font-chinese text-center">
-                  {r.is_active
-                    ? <span style={{ color: 'var(--color-success)' }}>上架中</span>
-                    : <span className="text-gray-scale3">已下架</span>}
-                </div>
-                <div className="flex justify-center items-center gap-4 whitespace-nowrap">
-                  {editing ? (
-                    <>
-                      <button onClick={() => handleSave(r.id)} disabled={busy} className={actionBtn(!busy)}>
-                        <span className="font-english">Save <span className="font-chinese">儲存</span></span>
-                      </button>
-                      <button onClick={() => setEditingId(null)}
-                        className="text-gray-scale2 hover:!text-white transition-colors cursor-pointer">
-                        <span className="font-english">Cancel <span className="font-chinese">取消</span></span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <EditIconBtn onClick={() => startEdit(r)} />
-                      <button onClick={() => handleToggleActive(r)}
-                        className="cursor-pointer hover:opacity-70 transition-opacity"
-                        style={{ color: r.is_active ? 'var(--color-error2)' : 'var(--color-success)' }}>
-                        {r.is_active
-                          ? <><span className="font-english">Deactivate</span> <span className="font-chinese">下架</span></>
-                          : <><span className="font-english">Activate</span> <span className="font-chinese">上架</span></>}
-                      </button>
-                    </>
+          <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
+            {/* border-separate：表頭 sticky 時底線才跟著走（collapse 模式的 border 不會）。設備欄不給寬度、吃掉剩餘寬度 */}
+            <table className="w-full text-xs border-separate border-spacing-0">
+              <thead>
+                <tr className="text-left text-gray-scale2">
+                  {selectMode && (
+                    <th className={`${th} w-10`}>
+                      <input type="checkbox" className="custom-checkbox block" checked={allSelected} onChange={toggleAll} aria-label="全選" />
+                    </th>
                   )}
-                </div>
-              </div>
-            )
-          })}
+                  <SortTh zh="設備" field="name" {...sortProps} />
+                  <SortTh zh="分類" field="category" className="w-40" {...sortProps} />
+                  <SortTh zh="總數量" field="original_quantity" className="w-28 text-center" {...sortProps} />
+                  <SortTh zh="押金/個" field="deposit" className="w-32 text-center" {...sortProps} />
+                  <SortTh zh="上架狀態" field="is_active" className="w-36 text-center" {...sortProps} />
+                  <th className={`${th} w-24 text-center`}>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map(r => {
+                  // 已下架：只淡化內容（不是整格），開關、修改鈕與儲存格底線維持原亮度
+                  const dim = r.is_active ? '' : 'opacity-50'
+                  return (
+                    <tr key={r.id} className="hover:bg-white/5">
+                      {selectMode && (
+                        <td className={td}>
+                          <input
+                            type="checkbox" className="custom-checkbox block" checked={selected.has(r.id)}
+                            onChange={() => toggleOne(r.id)} aria-label={`選取 ${r.name}`}
+                          />
+                        </td>
+                      )}
+                      <td className={td}>
+                        <div className={`flex items-center gap-3 ${dim}`}>
+                          {/* 沒上傳過圖＝灰底相機 icon（不沿用前台的預設延長線圖） */}
+                          <Thumb src={r.image_url ? imageSrc(r.image_url) : null} alt={r.name} icon="photo_camera" />
+                          <span className="font-chinese">{r.name}</span>
+                        </div>
+                      </td>
+                      <td className={`${td} font-chinese`}><span className={dim}>{r.category}</span></td>
+                      <td className={`${td} font-english text-center`}><span className={dim}>{r.original_quantity}</span></td>
+                      <td className={`${td} font-english text-center`}><span className={dim}>NT$ {r.deposit.toLocaleString()}</span></td>
+                      <td className={`${td} text-center`}>
+                        {/* iOS 式開關：on＝上架中；下架先確認、上架直接切。選取模式下勾選的列：切一個＝套用到所有勾選 */}
+                        <Switch
+                          checked={r.is_active}
+                          onChange={() => (selectMode && selected.has(r.id) ? bulkSetActive(!r.is_active) : handleToggleActive(r))}
+                          busy={togglingId === r.id}
+                          label={r.is_active ? '下架' : '上架'}
+                        />
+                      </td>
+                      <td className={`${td} text-center`}>
+                        <button onClick={() => openDialog(r)} title="修改" aria-label="修改" className={iconFillBtn}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
 
-          {filtered.length === 0 && (
-            <div className="py-16 text-center text-sm text-gray-scale2">
-              <p className="font-english">No Equipment Found</p>
-              <p className="font-chinese">找不到符合條件的設備</p>
-            </div>
-          )}
-        </div>
+            {filtered.length === 0 && (
+              <div className="py-16 text-center text-xs text-gray-scale2 font-chinese">找不到符合條件的設備</div>
+            )}
+          </div>
+
+          {/* 分頁：放在捲動區外，固定在底部 */}
+          <Pager {...pager} />
+        </>
       )}
 
-      {/* 分頁：放在捲動區外，固定在底部 */}
-      {!loading && !loadError && <Pager {...pager} />}
+      {/* 新增／修改設備：同一個對話框，左圖右表單；新增時預設空白 */}
+      {dialog && (
+        <FormDialog
+          title={dialog.id ? '修改設備' : '新增設備'}
+          confirmZh={dialog.id ? '確定修改' : '新增'}
+          busy={busy}
+          onConfirm={handleSubmit}
+          onCancel={closeDialog}
+          wide
+        >
+          <div className="flex gap-8">
+            <div className="shrink-0">
+              {/* 還沒有圖（新增、或舊資料沒圖）→ 虛線 placeholder */}
+              <ImagePicker
+                src={dialog.preview ?? (dialog.imageUrl ? imageSrc(dialog.imageUrl) : null)}
+                alt={dialog.f.name || '設備圖片'}
+                size={160}
+                caption={dialog.preview || dialog.imageUrl ? '更換圖片' : '選擇圖片'}
+                onPick={pickImage}
+              />
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col gap-4">
+              <Field zh="名稱" required>
+                <input
+                  type="text" value={dialog.f.name} onChange={e => setF({ name: e.target.value })}
+                  className={`${inputCls} w-full font-chinese`} autoFocus
+                />
+              </Field>
+              {/* 分類只能選固定清單（前台篩選靠完全相符）；舊資料若有清單外的值仍列出，避免開修改就被默默改掉 */}
+              <Field zh="分類" required>
+                <Select
+                  value={dialog.f.category}
+                  onChange={category => setF({ category })}
+                  placeholder="選擇分類"
+                  options={[
+                    ...EQUIPMENT_CATEGORIES.map(c => ({ value: c.zh, label: c.zh })),
+                    ...(dialog.f.category && !EQUIPMENT_CATEGORIES.some(c => c.zh === dialog.f.category)
+                      ? [{ value: dialog.f.category, label: `${dialog.f.category}（清單外）` }]
+                      : [])
+                  ]}
+                  className="font-chinese w-full"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field zh="總數量">
+                  <NumberInput value={dialog.f.original_quantity} onChange={n => setF({ original_quantity: n })} />
+                </Field>
+                <Field zh="押金/個">
+                  <NumberInput value={dialog.f.deposit} onChange={n => setF({ deposit: n })} step={50} />
+                </Field>
+              </div>
+            </div>
+          </div>
+        </FormDialog>
+      )}
       <ConfirmDialog />
       {toastElement}
     </div>

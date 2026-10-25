@@ -204,7 +204,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         <div className="px-6 py-4 flex justify-end gap-6">
           <button
             onClick={onCancel}
-            className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
+            className="text-[#cccccc] hover:text-white cursor-pointer"
           >
             <span className="font-['Inter',_sans-serif] text-xs">
               {t('Cancel', '取消')}
@@ -213,7 +213,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className={`transition-opacity ${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
+            className={`${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
           >
             <span className="font-['Inter',_sans-serif] text-xs">
               {t('Save', '儲存')}

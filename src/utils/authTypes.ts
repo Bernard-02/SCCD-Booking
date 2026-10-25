@@ -15,6 +15,7 @@ export interface Student {
   year: string
   role?: 'student' | 'admin' | 'staff' // Supabase students.role；未帶視為 student
   accountLevel?: number // 帳號狀態 0-5（依累計逾期天數）
+  provider?: 'email' | 'google' // 登入方式；Google 帳號沒有密碼（Profile 不顯示改密碼）
   passwordHash: string
   isFirstLogin: boolean
   emailVerified: boolean

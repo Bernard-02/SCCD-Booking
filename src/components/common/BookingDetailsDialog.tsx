@@ -112,17 +112,17 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   const handleSubmit = () => {
     // 驗證必填欄位
     if (!reason.trim()) {
-      alert('請填寫使用原因')
+      alert(t('Please fill in the reason for use.', '請填寫使用原因'))
       return
     }
 
     if (isMassBooking) {
       if (!className.trim()) {
-        alert('請填寫使用班級')
+        alert(t('Please fill in the class.', '請填寫使用班級'))
         return
       }
       if (!teacher.trim()) {
-        alert('請填寫負責老師')
+        alert(t('Please fill in the supervising teacher.', '請填寫負責老師'))
         return
       }
     }
@@ -264,7 +264,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {/* 取消按鈕 */}
           <button
             onClick={onCancel}
-            className="text-[#cccccc] hover:text-white transition-colors cursor-pointer"
+            className="text-[#cccccc] hover:text-white cursor-pointer"
           >
             <span className="font-['Inter',_sans-serif] text-xs">
               {t('Cancel', '取消')}
@@ -275,7 +275,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           <button
             onClick={handleSubmit}
             disabled={!isValid}
-            className={`transition-opacity ${
+            className={`${
               isValid
                 ? 'text-white hover:opacity-70 cursor-pointer'
                 : 'text-gray-scale3 cursor-not-allowed'
