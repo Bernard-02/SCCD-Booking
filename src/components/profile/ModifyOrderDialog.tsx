@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react'
+import CloseButton from '../common/CloseButton'
 import { createPortal } from 'react-dom'
 import { useEquipmentData, useBundles, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
 import { calcBundles } from '../../utils/bundleUtils'
@@ -99,7 +100,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
 
   // − ＋ 純文字鈕（無外框，同型錄數量調整）；點擊區保留 28px
   const stepBtn = (enabled: boolean) =>
-    `w-7 h-7 flex items-center justify-center text-sm font-['Inter',_sans-serif] ${
+    `w-7 h-7 flex items-center justify-center text-sm font-english ${
       enabled ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
     }`
   // 品項表格欄位：設備／可借／數量（表頭與每列共用；可借、數量置中）
@@ -121,11 +122,9 @@ const ModifyOrderDialog: React.FC<Props> = ({
           <div className="flex items-start justify-between">
             <h2 className="text-sm text-white">
               <span>{t('Edit Order', '修改訂單')}</span>
-              <span className="ml-3 text-gray-scale2 font-['Inter',_sans-serif]">{rentalNumber}</span>
+              <span className="ml-3 text-gray-scale2 font-english">{rentalNumber}</span>
             </h2>
-            <button onClick={onCancel} className="text-white hover:opacity-70 cursor-pointer -mt-1" aria-label="Close">
-              <span className="material-icons text-lg">close</span>
-            </button>
+            <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="-mt-1" />
           </div>
         </div>
 
@@ -164,7 +163,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
                       <span className="ml-2" style={{ color: 'var(--color-yellow)' }}>新增 {r.quantity - r.held} 待點交</span>
                     )}
                   </span>
-                  <span className="text-xs text-gray-scale2 font-['Inter',_sans-serif] text-center">{max}</span>
+                  <span className="text-xs text-gray-scale2 font-english text-center">{max}</span>
                   <div className="flex items-center justify-center">
                     <button
                       className={stepBtn(canDec)}
@@ -172,7 +171,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
                       onClick={() => setQty(r.id, r.quantity - 1)}
                       aria-label="減少"
                     >−</button>
-                    <span className="w-8 text-center text-xs text-white font-['Inter',_sans-serif]">{r.quantity}</span>
+                    <span className="w-8 text-center text-xs text-white font-english">{r.quantity}</span>
                     <button
                       className={stepBtn(r.quantity < max)}
                       disabled={r.quantity >= max}
@@ -213,14 +212,14 @@ const ModifyOrderDialog: React.FC<Props> = ({
           {/* 小計 */}
           <div className="mt-6 text-xs font-['Inter','Noto_Sans_TC',_sans-serif] flex justify-between">
             <span className={limitError ? '' : 'text-white'} style={limitError ? { color: 'var(--color-error2)' } : undefined}>
-              共 <span className="font-['Inter',_sans-serif]">{total}</span> 件
+              共 <span className="font-english">{total}</span> 件
               {calc.sets.length > 0 && `（含 ${calc.sets.map(s => `${s.bundle.name} ×${s.count}`).join('、')}，整組算 1 件）`}
               {limitError && `（${limitError}）`}
             </span>
             <span className="text-gray-scale2">
               {depositPaid
                 ? '押金差額由系學會現場計算'
-                : <>押金 <span className="font-['Inter',_sans-serif]">NT$ {Math.min(calc.deposit, 5000).toLocaleString()}</span></>}
+                : <>押金 <span className="font-english">NT$ {Math.min(calc.deposit, 5000).toLocaleString()}</span></>}
             </span>
           </div>
 
@@ -232,7 +231,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
 
           <div className="flex justify-end gap-6">
             <button onClick={onCancel} className="text-[#cccccc] hover:text-white cursor-pointer">
-              <span className="font-['Inter',_sans-serif] text-xs">
+              <span className="font-english text-xs">
                 {t('Cancel', '取消')}
               </span>
             </button>
@@ -241,7 +240,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
               disabled={!canSave}
               className={`${canSave ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'}`}
             >
-              <span className="font-['Inter',_sans-serif] text-xs">
+              <span className="font-english text-xs">
                 {t(busy ? 'Saving…' : 'Save', '儲存')}
               </span>
             </button>

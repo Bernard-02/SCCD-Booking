@@ -327,7 +327,7 @@ const RentalHistorySection: React.FC = () => {
     if (status === 'pending' && receipt.depositPaidAt) {
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-sm" style={{ color: 'var(--color-cyan-blue)' }}>
+          <span className="font-english text-sm" style={{ color: 'var(--color-cyan-blue)' }}>
             {t('Pickup', '取件')} {pickupText}
           </span>
         </div>
@@ -346,7 +346,7 @@ const RentalHistorySection: React.FC = () => {
       
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-sm text-yellow">
+          <span className="font-english text-sm text-yellow">
             {t('Expires in', '距離繳交押金')} {hoursRemaining} hrs
             {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
           </span>
@@ -382,12 +382,12 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-sm text-blue">
+          <span className="font-english text-sm text-blue">
             {t('Due in', '距離逾期')} {timeText}
           </span>
           {addMs > 0 && (
             <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs mt-1" style={{ color: 'var(--color-yellow)' }}>
-              新增設備待點交・剩 <span className="font-['Inter',_sans-serif]">{Math.ceil(addMs / 3_600_000)}</span> hrs
+              新增設備待點交・剩 <span className="font-english">{Math.ceil(addMs / 3_600_000)}</span> hrs
             </div>
           )}
         </div>
@@ -402,7 +402,7 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-['Inter',_sans-serif] text-sm text-error2">
+          <span className="font-english text-sm text-error2">
             {t('Penalty', '累計罰款')} NT$ {penalty.toLocaleString()}
           </span>
         </div>

@@ -18,12 +18,3 @@ footer {
   display: none;
 }
 
-/* 禁用狀態下的 hero-cta 按鈕（BOOK / CLEAR ALL 等共用） */
-button:disabled .hero-cta-wrapper:hover .hero-cta-text,
-button:disabled .hero-cta-wrapper:hover .hero-cta-hidden {
-  transform: none !important;
-}
-
-button:disabled .hero-cta-wrapper {
-  pointer-events: none;
-}

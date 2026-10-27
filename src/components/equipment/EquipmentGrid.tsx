@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { cartGroupKey, type CartItem, type Equipment } from '../../types/equipment'
+import { cartGroupKey, EQUIPMENT_CATEGORIES, type CartItem, type Equipment } from '../../types/equipment'
 import { calcBundles, type Bundle } from '../../utils/bundleUtils'
 import ConfirmDialog from '../common/ConfirmDialog'
 import { useBookmarkStore } from '../../stores/bookmarkStore'
@@ -426,14 +426,14 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                 {bundle.items.map(c => (
                   <li key={c.equipmentId} className="flex justify-between">
                     <span>{equipmentData[c.equipmentId]?.name}</span>
-                    <span className="font-['Inter',_sans-serif]">×{c.quantity * sets}</span>
+                    <span className="font-english">×{c.quantity * sets}</span>
                   </li>
                 ))}
               </ul>
               <div className="flex items-center gap-2">
                 <span className="mr-auto">{t('Sets', '組數')}</span>
                 <button type="button" className={stepCls(sets > 1)} disabled={sets <= 1} onClick={() => step(-1)} aria-label={t('Fewer', '減少')}>−</button>
-                <span className="w-8 text-center font-['Inter',_sans-serif]">{sets}</span>
+                <span className="w-8 text-center font-english">{sets}</span>
                 <button type="button" className={stepCls(sets < maxSets)} disabled={sets >= maxSets} onClick={() => step(1)} aria-label={t('More', '增加')}>+</button>
               </div>
               <button
@@ -481,18 +481,18 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         {/* 狀態指示器列 - 空白表頭 */}
         <div></div>
 
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-left">
+        <div className="font-english text-xs text-gray-scale2 text-left">
           <div>{t('Favorites', '收藏')}</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2"></div>
+        <div className="font-english text-xs text-gray-scale2"></div>
+        <div className="font-english text-xs text-gray-scale2 text-center">
           <div>{t('Total Qty', '總數量')}</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2 text-center">
           <div>{t('Available', '可借數量')}</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
+        <div className="font-english text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
             <div>{t('On Hold', '待繳押金')}</div>
           </div>
@@ -508,13 +508,13 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
             </div>
           </div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2 text-center">
           <div>{t('Deposit', '押金/個')}</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2 text-center">
           <div>{t('Quantity', '數量')}</div>
         </div>
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center"></div>
+        <div className="font-english text-xs text-gray-scale2 text-center"></div>
       </div>
 
       {filteredEquipment.length > 0 ? (
@@ -598,6 +598,15 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.name}
+                    {/* 全部／收藏底下混了各種分類，名稱下方標出分類 chip（純文字）；進到單一分類就不用 */}
+                    {(selectedCategory === '全部' || selectedCategory === '收藏') && (() => {
+                      const cat = EQUIPMENT_CATEGORIES.find(c => c.zh === item.category)
+                      return (
+                        <span className={`inline-flex items-center h-5 px-2 rounded-lg bg-white/10 text-2xs font-chinese ${isAvailable ? 'text-gray-scale2' : ''}`}>
+                          {cat ? t(cat.en, cat.zh) : item.category}
+                        </span>
+                      )
+                    })()}
                     {rowBundles.length > 0 && (
                       <select
                         value={modes[item.id] ?? ''}
@@ -620,28 +629,28 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   </div>
 
                   {/* 總數量 */}
-                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                  <div className={`font-english text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {item.originalQuantity}
                   </div>
 
                   {/* 可借數量 */}
-                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                  <div className={`font-english text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {availableQty}
                   </div>
 
                   {/* 待繳押金數量（該時段押金未繳的佔用，見 equipment_reserved） */}
-                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                  <div className={`font-english text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     {reservedMap[item.id]?.onHold ?? 0}
                   </div>
 
                   {/* 押金/個 */}
-                  <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                  <div className={`font-english text-sm text-center ${
                     !isAvailable ? 'text-[#545454]' : 'text-white'
                   }`}>
                     NT$ {setBundle ? setBundle.deposit : item.deposit}
@@ -656,7 +665,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         decrementQuantity(item.id)
                       }}
                       disabled={!canAdd || quantity <= 1}
-                      className={`font-['Inter',_sans-serif] text-sm ${
+                      className={`font-english text-sm ${
                         !canAdd || quantity <= 1
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -673,7 +682,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       onBlur={() => handleQuantityBlur(item.id)}
                       onClick={(e) => e.stopPropagation()}
                       disabled={!canAdd}
-                      className={`font-['Inter',_sans-serif] text-sm w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      className={`font-english text-sm w-12 text-center bg-transparent border-none outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                         !canAdd ? 'text-[#545454] cursor-not-allowed' : 'text-white'
                       }`}
                       style={{
@@ -687,7 +696,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         incrementQuantity(item.id)
                       }}
                       disabled={!canAdd || quantity >= maxQty}
-                      className={`font-['Inter',_sans-serif] text-sm ${
+                      className={`font-english text-sm ${
                         !canAdd || quantity >= maxQty
                           ? 'text-[#545454] cursor-not-allowed'
                           : 'text-white hover:text-gray-scale1 cursor-pointer'

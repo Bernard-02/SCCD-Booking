@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect } from 'react'
+import CloseButton from './CloseButton'
 import { createPortal } from 'react-dom'
 import { useT } from '../../stores/langStore'
 
@@ -90,13 +91,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       >
         {/* 純資訊視窗：右上 X（位置同 InfoDialog） */}
         {closeOnly && (
-          <button
-            onClick={onCancel}
-            className="absolute top-6 right-6 text-white hover:opacity-70 cursor-pointer flex items-center"
-            aria-label="Close"
-          >
-            <span className="material-icons text-lg">close</span>
-          </button>
+          <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="absolute top-6 right-6" />
         )}
 
         {/* 標題區 */}

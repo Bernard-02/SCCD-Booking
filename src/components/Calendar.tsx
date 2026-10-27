@@ -107,7 +107,7 @@ const Calendar: React.FC<CalendarProps> = ({
 
   // 日期格字級：前台整頁 3.5rem、對話框 3rem、後台下拉 compact 1rem；compact 置中（欄等寬、左右對稱），其餘靠左
   const cellSize = variant === 'compact' ? 'text-sm' : variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
-  const cellCls = `${variant === 'compact' ? 'text-center' : 'text-left'} text-white ${cellSize} font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0`
+  const cellCls = `${variant === 'compact' ? 'text-center' : 'text-left'} text-white ${cellSize} font-bold font-english tracking-tighter leading-none py-1 min-w-0`
 
   // 比較兩個日期是否相同
   const isSameDay = (date1: Date | null, date2: Date | null): boolean => {
@@ -373,7 +373,7 @@ const Calendar: React.FC<CalendarProps> = ({
                   &gt;
                 </button>
               </div>
-              <div className={`text-white ${monthTitleSize} font-normal font-['Inter',_sans-serif] pr-6`}>
+              <div className={`text-white ${monthTitleSize} font-normal font-english pr-6`}>
                 {firstMonth.title}
               </div>
             </div>
@@ -407,7 +407,7 @@ const Calendar: React.FC<CalendarProps> = ({
                   &gt;
                 </button>
               </div>
-              <div className={`text-white ${monthTitleSize} font-normal font-['Inter',_sans-serif] pr-6`}>
+              <div className={`text-white ${monthTitleSize} font-normal font-english pr-6`}>
                 {secondMonth.title}
               </div>
             </div>
@@ -462,7 +462,7 @@ const Calendar: React.FC<CalendarProps> = ({
           <button
             onClick={() => setPicker(picker ? null : { year: currentDate.getFullYear() })}
             aria-expanded={!!picker}
-            className="text-white text-sm font-['Inter',_sans-serif] hover:opacity-70 cursor-pointer"
+            className="text-white text-sm font-english hover:opacity-70 cursor-pointer"
           >
             {picker ? picker.year : monthCalendar.title}
           </button>
@@ -511,7 +511,7 @@ const Calendar: React.FC<CalendarProps> = ({
         >
           &lt;
         </button>
-        <div className="text-white text-sm font-['Inter',_sans-serif]">
+        <div className="text-white text-sm font-english">
           {monthCalendar.title}
         </div>
         <button

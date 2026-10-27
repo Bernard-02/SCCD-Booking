@@ -37,8 +37,6 @@ src/
 css/                            # 舊的樣式，由 main.tsx 全量 import
 public/                         # 靜態資源（Area SVG 區域圖、Images、Icons）
 supabase/                       # 資料庫 SQL（schema、RPC、pg_cron、各次變更；在 Supabase SQL Editor 執行）
-legacy/                         # 遷移前備份（已 gitignore）
-old-html-backup/                # 舊 HTML 備份（已 gitignore）
 docs/rental-rules.md            # 租借規則單一事實來源（改租借邏輯前必讀）
 docs/roadmap.md                 # 完成路線圖（階段 1-6 與任務清單）
 docs/supabase-backend-plan.md   # 後端定案與接線規劃（Supabase）
@@ -61,7 +59,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 原本是純 HTML/JS 靜態站（根目錄 `*.html`＋`js/*.js`），已全部遷移成 React SPA 並刪除舊檔。
 入口 `index.html` → `src/main.tsx` → `App.tsx`；`vite.config.ts` 的 `appType: 'spa'` 讓 `/space` 等路徑 fallback 到 `index.html`。
-`legacy/` 與 `old-html-backup/` 為遷移前備份（已 gitignore）。
+遷移前備份（`legacy/`、`old-html-backup/`）2026-10-27 已刪，舊站原貌在 commit `3e86295`。
 
 ## 認證流程
 
@@ -109,7 +107,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA Booking 後台」＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
+- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
 - **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）；之後補的延期不得延入封鎖期、同類型限一單、修改已送出設備單也已完成。剩遠期單阻擋（待學會定細則）。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
@@ -142,7 +140,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   SQL `raise exception` 維持中文，英文在 `utils/serverErrors.ts` 對照——**新增或修改學生會看到的 server 錯誤時，那裡要一起加英文**。
   新寫的提示文字直接附英文；既有英文由使用者校稿後可直接改。
 - 檔頭常有 `/** 功能說明 */` 區塊註解。
-- 路徑 alias：`@/*` → `src/*`、`@legacy/*` → `./*`（後者已不再需要）。
+- 路徑 alias：`@/*` → `src/*`。
 - TypeScript 設定為 `strict: true`，並啟用 `noUnusedLocals` 與 `noUnusedParameters`，build 時型別錯誤會擋住。
 - **hover 一律即時變化，不加 fade**（2026-10-23 定）：hover 變色／變透明不要寫 `transition-colors`、`transition-opacity`、`transition`；
   非 hover 的動畫照常（展開收合、刪除淡出、選取模式位移、chevron 旋轉、圖片 hover 放大這類 transform）。
@@ -156,3 +154,5 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   補償放在外框 padding，不要用 icon 負邊距。
 - **舊 `css/*.css` 不可再定義與 Tailwind 同名的 class**（如 `.cursor-pointer`、`.opacity-30`）：未分層的規則永遠蓋過
   Tailwind 的 `disabled:`／`hover:` 變體（2026-10-22 停用按鈕仍顯示 pointer 即此因，booking.css 已刪）。
+- **英文字距**（2026-10-27 定）：`.font-english` 自動套 Inter 官方 Dynamic Metrics 字距（`src/index.css` 依字級 token 給 `--tracking-en`），
+  純英數元素一律寫 `font-english`，不要再寫 `font-['Inter',_sans-serif]`（2026-10-27 已全數換掉）；中英混排用 `font-chinese`，中文不套字距。

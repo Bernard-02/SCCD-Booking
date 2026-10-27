@@ -49,8 +49,8 @@ const AdminEquipmentPage: React.FC = () => {
   const [busy, setBusy] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null) // 上／下架處理中的那一列（防連點）
   const [dialog, setDialog] = useState<Dialog | null>(null)
-  // 新增組合鈕在標題列，用旗標叫 BundleManager 開它的對話框
-  const [addingBundle, setAddingBundle] = useState(false)
+  // 新增組合鈕在標題列，用旗標叫 BundleManager 開它的對話框；值＝預填品項（[]＝空白新增，選取模式「組成組合」＝勾選的設備）
+  const [addingBundle, setAddingBundle] = useState<false | { equipmentId: string; quantity: number }[]>(false)
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast, toastElement } = useToast()
 
@@ -165,13 +165,52 @@ const AdminEquipmentPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <PageTitle zh="設備管理">
         <button
-          onClick={() => (tab === 'equipment' ? openDialog() : setAddingBundle(true))}
+          onClick={() => (tab === 'equipment' ? openDialog() : setAddingBundle([]))}
           className={textBtn(false)}
         >
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">add</span>
           {tab === 'equipment' ? '新增設備' : '新增組合'}
         </button>
       </PageTitle>
+
+      {/* 搜尋列（分頁上方，同訂單頁）：左搜尋（常駐）；右＝選取模式、分類、狀態篩選 */}
+      <div className="flex items-center gap-2 mb-4">
+        <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
+        {/* 組合分頁只有搜尋；選取、分類、狀態是設備的 */}
+        {tab === 'equipment' && (<>
+        <SelectControls
+          mode={selectMode}
+          count={selectedCount}
+          onEnter={() => setSelectMode(true)}
+          onExit={exitSelect}
+          // 勾選的設備各 1 個帶去組合分頁開新增對話框（數量、押金、名稱在那裡填）
+          actions={[{
+            zh: '組成組合',
+            onClick: () => {
+              setAddingBundle(filtered.filter(r => selected.has(r.id)).map(r => ({ equipmentId: r.id, quantity: 1 })))
+              exitSelect()
+              setTab('bundle')
+            }
+          }]}
+        />
+        <Select
+          value={category}
+          onChange={setCategory}
+          options={[{ value: 'all', label: '全部分類' }, ...EQUIPMENT_CATEGORIES.map(c => ({ value: c.zh, label: c.zh }))]}
+          icon="category"
+          filled
+          className="font-chinese"
+        />
+        <Select<StatusFilter>
+          value={status}
+          onChange={setStatus}
+          options={[{ value: 'all', label: '全部狀態' }, { value: 'active', label: '上架中' }, { value: 'inactive', label: '已下架' }]}
+          icon="filter_list"
+          filled
+          className="font-chinese"
+        />
+        </>)}
+      </div>
 
       <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={{ equipment: rows.length, bundle: bundles.length }} />
 
@@ -184,6 +223,7 @@ const AdminEquipmentPage: React.FC = () => {
           <BundleManager
             equipment={rows}
             bundles={bundles}
+            search={search}
             reload={load}
             adding={addingBundle}
             onAddClose={() => setAddingBundle(false)}
@@ -191,34 +231,6 @@ const AdminEquipmentPage: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* 搜尋列：左搜尋（常駐）；右＝選取模式、分類、狀態篩選 */}
-          <div className="flex items-center gap-2 mb-4">
-            <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
-            <SelectControls
-              mode={selectMode}
-              count={selectedCount}
-              onEnter={() => setSelectMode(true)}
-              onExit={exitSelect}
-              actions={[]}
-            />
-            <Select
-              value={category}
-              onChange={setCategory}
-              options={[{ value: 'all', label: '全部分類' }, ...EQUIPMENT_CATEGORIES.map(c => ({ value: c.zh, label: c.zh }))]}
-              icon="category"
-              filled
-              className="font-chinese"
-            />
-            <Select<StatusFilter>
-              value={status}
-              onChange={setStatus}
-              options={[{ value: 'all', label: '全部狀態' }, { value: 'active', label: '上架中' }, { value: 'inactive', label: '已下架' }]}
-              icon="filter_list"
-              filled
-              className="font-chinese"
-            />
-          </div>
-
           <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
             {/* border-separate：表頭 sticky 時底線才跟著走（collapse 模式的 border 不會）。設備欄不給寬度、吃掉剩餘寬度 */}
             <table className="w-full text-xs border-separate border-spacing-0">

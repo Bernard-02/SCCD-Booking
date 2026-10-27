@@ -5,6 +5,7 @@
  */
 
 import React from 'react'
+import CloseButton from '../common/CloseButton'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
@@ -136,7 +137,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
       <header className="fixed top-0 left-0 right-0 bg-transparent header-main">
         <div className="container">
           <div className="flex justify-between items-center">
-            <Link to="/catalog" className="font-['Inter',_sans-serif] font-bold text-white text-md">
+            <Link to="/catalog" className="font-english font-bold text-white text-md">
               SCCDSA Booking
             </Link>
 
@@ -195,14 +196,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                         <h2 className="text-sm text-white">
                           {t('Notification', '通知')}
                         </h2>
-                        <button
-                          type="button"
-                          onClick={closeNotificationMenu}
-                          className="text-white hover:opacity-70 cursor-pointer flex items-center"
-                          aria-label="Close"
-                        >
-                          <span className="material-icons text-lg">close</span>
-                        </button>
+                        <CloseButton onClick={closeNotificationMenu} label={t('Close', '關閉')} />
                       </div>
 
                       {/* List */}
@@ -230,10 +224,10 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
                                 {/* 底部資訊 */}
                                 <div className="flex justify-between items-end">
-                                  <span className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
+                                  <span className="font-english text-gray-scale2 text-xs">
                                     {formatNotificationDate(n.timestamp)}
                                   </span>
-                                  <span className="font-['Inter',_sans-serif] text-gray-scale2 text-xs">
+                                  <span className="font-english text-gray-scale2 text-xs">
                                     {formatTimeAgo(n.timestamp)}
                                   </span>
                                 </div>
@@ -257,7 +251,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <nav className="flex items-center mobile-nav mobile-nav-gap">
                 <Link
                   to="/cart"
-                  className="font-['Inter',_sans-serif] font-bold uppercase text-white flex items-center"
+                  className="font-english font-bold uppercase text-white flex items-center"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">
@@ -271,7 +265,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   id="mobile-menu-btn"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="font-['Inter',_sans-serif] font-bold uppercase text-white flex items-center"
+                  className="font-english font-bold uppercase text-white flex items-center"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(MENU)</span>
@@ -292,7 +286,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-1">
                 <Link
                   to="/catalog"
-                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
+                  className="font-english font-bold uppercase text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -306,7 +300,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-2">
                 <Link
                   to="/login"
-                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
+                  className="font-english font-bold uppercase text-white text-h3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className="menu-item-wrapper">
@@ -322,7 +316,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   href="https://sccd.usc.edu.tw/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
+                  className="font-english font-bold uppercase text-white text-h3"
                 >
                   <div className="menu-item-wrapper">
                     <span className="menu-text">(TO SCCD)</span>
@@ -335,7 +329,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               <div className="menu-animate-enter-content menu-delay-4">
                 <button
                   type="button"
-                  className="font-['Inter',_sans-serif] font-bold uppercase text-white text-h3"
+                  className="font-english font-bold uppercase text-white text-h3"
                   onClick={() => { setMobileMenuOpen(false); setInfoTab('about') }}
                 >
                   <div className="menu-item-wrapper">
@@ -350,11 +344,11 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
           {/* Copyright 在底部 */}
           <div className="menu-animate-enter mobile-menu-content-bottom">
             <div className="menu-animate-enter-content menu-delay-5">
-              <div className="copyright font-['Inter',_sans-serif] font-bold text-white text-left text-xl">
+              <div className="copyright font-english font-bold text-white text-left text-xl">
                 <p>
                   <span className="copyright-original">
-                    <span className="font-['Inter',_sans-serif] uppercase">Copyright © SCCDSA</span>
-                    <span className="font-['Inter',_sans-serif]"> All rights reserved.</span>
+                    <span className="font-english uppercase">Copyright © SCCDSA</span>
+                    <span className="font-english"> All rights reserved.</span>
                   </span>
                 </p>
               </div>

@@ -38,9 +38,6 @@ vite.config.d.ts
 *.tmp
 .cache/
 
-# Legacy files (old HTML/JS before React migration)
-legacy/
-old-html-backup/
 
 # Claude Code user-local settings
 .claude/settings.local.json

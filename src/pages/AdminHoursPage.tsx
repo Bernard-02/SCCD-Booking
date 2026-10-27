@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import CloseButton from '../components/common/CloseButton'
 import {
   listClosedDates, addClosedDate, deleteClosedDate, listBlackouts, addBlackout, deleteBlackout,
   notifyClosedDateAffected, notifyBlackoutAffected, announceClosedDate, autoImportHolidays, CLOSED_KIND_ZH,
@@ -93,6 +94,27 @@ const AdminHoursPage: React.FC = () => {
   }, [pop])
 
   const exitMode = () => { setMode('idle'); setRange({ start: null, end: null }) }
+
+  // 寒暑假起訖也可以直接 key：接受 2026/10/26、2026-10-26、20261026；打完一個合法日期就套用並翻到那個月
+  const [typed, setTyped] = useState<{ start: string; end: string }>({ start: '', end: '' })
+  const parseTyped = (v: string): string | null => {
+    const d = v.replace(/\D/g, '')
+    if (d.length !== 8) return null
+    const y = +d.slice(0, 4), mo = +d.slice(4, 6), da = +d.slice(6, 8)
+    const dt = new Date(y, mo - 1, da)
+    return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === da ? toDateKey(dt) : null
+  }
+  const onTyped = (which: 'start' | 'end', v: string) => {
+    setTyped(t => ({ ...t, [which]: v }))
+    const key = parseTyped(v)
+    if (!key) return
+    setRange(r => (which === 'start'
+      ? { start: key, end: r.end && r.end >= key ? r.end : null }
+      : { start: r.start && r.start <= key ? r.start : key, end: r.start && r.start <= key ? key : null }))
+    setMonth(new Date(+key.slice(0, 4), +key.slice(5, 7) - 1, 1))
+  }
+  // 月曆點選後輸入框跟著顯示
+  useEffect(() => { setTyped({ start: range.start?.replace(/-/g, '/') ?? '', end: range.end?.replace(/-/g, '/') ?? '' }) }, [range])
 
   const onDayClick = (key: string, el: HTMLElement) => {
     if (mode === 'blackout') {
@@ -182,7 +204,7 @@ const AdminHoursPage: React.FC = () => {
   const daysInMonth = new Date(year, m + 1, 0).getDate()
   const rows = Math.max(6, Math.ceil((firstDow + daysInMonth) / 7)) // 固定 6 行，翻月高度不跳
   // 同前台日曆：大數字、Inter 粗體、靠左；hover 數字上滑由 booking.css 的 .cursor-pointer 規則處理
-  const cellCls = "text-left text-[2.5rem] font-bold font-['Inter',_sans-serif] tracking-tighter leading-none py-1 min-w-0"
+  const cellCls = "text-left text-[2.5rem] font-bold font-english tracking-tighter leading-none py-1 min-w-0"
   const inRange = (key: string) => {
     if (mode !== 'blackout' || !range.start) return false
     const end = range.end ?? (hover && hover >= range.start ? hover : range.start)
@@ -229,9 +251,7 @@ const AdminHoursPage: React.FC = () => {
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
           </button>
         )}
-        <button onClick={() => setPop(null)} title="關閉" aria-label="關閉" className={iconBtnCls}>
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
-        </button>
+        <CloseButton onClick={() => setPop(null)} />
       </div>
     </div>
   )
@@ -300,11 +320,19 @@ const AdminHoursPage: React.FC = () => {
               <h2 className="text-sm text-white">假期 &amp; 休息日</h2>
               {mode === 'blackout' ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-scale2 font-chinese mr-1">
-                    {range.end ? <span className="font-english text-white">{range.start} ～ {range.end}</span>
-                      : range.start ? <>起 <span className="font-english text-white">{range.start}</span>，再點訖日</>
-                        : '在月曆點起日'}
-                  </span>
+                  {/* 起訖日：同前台日期列顯示兩個日期，可點月曆也可直接 key */}
+                  {(['start', 'end'] as const).map(which => (
+                    <label key={which} className="flex items-center gap-2 text-xs text-gray-scale2 font-chinese">
+                      {which === 'start' ? '開始' : '結束'}
+                      <input
+                        value={typed[which]}
+                        onChange={e => onTyped(which, e.target.value)}
+                        placeholder="YYYY/MM/DD"
+                        inputMode="numeric"
+                        className="h-9 w-[6.5rem] px-2 text-center rounded-lg bg-white/10 focus:bg-white/15 text-xs text-white font-english placeholder:text-gray-scale3 outline-none"
+                      />
+                    </label>
+                  ))}
                   <button onClick={exitMode} className={textBtn(false)}>
                     <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">undo</span>
                     取消
@@ -353,7 +381,7 @@ const AdminHoursPage: React.FC = () => {
                   今天
                 </button>
               </div>
-              <div className="text-white text-xl font-normal font-['Inter',_sans-serif] pr-6">{year} {MONTH_ZH[m]}</div>
+              <div className="text-white text-xl font-normal font-english pr-6">{year} {MONTH_ZH[m]}</div>
             </div>
 
             {/* 月曆本體：relative 讓日期小視窗以格子位置定位 */}

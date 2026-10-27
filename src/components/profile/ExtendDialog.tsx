@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
+import CloseButton from '../common/CloseButton'
 import { createPortal } from 'react-dom'
 import { fetchBlackouts, checkExtendItems, type ExtendCheckItem } from '../../services/ordersService'
 import { useAuth } from '../../contexts/AuthContext'
@@ -246,19 +247,13 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             <h2 className="text-sm text-white">
               <span>{t('Extend', '延期規則')}</span>
             </h2>
-            <button
-              onClick={onCancel}
-              className="text-white hover:opacity-70 cursor-pointer -mt-1"
-              aria-label="Close"
-            >
-              <span className="material-icons text-lg">close</span>
-            </button>
+            <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="-mt-1" />
           </div>
 
           {/* 訂單號碼 */}
           <div className="text-xs text-gray-scale2">
             <span>{t('Order', '訂單號碼')}</span>:{' '}
-            <span className="font-['Inter',_sans-serif] text-white">{orderNumber}</span>
+            <span className="font-english text-white">{orderNumber}</span>
           </div>
         </div>
 
@@ -308,8 +303,8 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             {/* 狀態提示 */}
             <div style={{ minHeight: '18px' }}>
               <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs">
-                您已延期 <span className="font-['Inter',_sans-serif]">{selectedDays}</span> 天，新的歸還日是{' '}
-                <span className="font-['Inter',_sans-serif]">{formatNewReturnDate(selectedDays)}</span>。
+                您已延期 <span className="font-english">{selectedDays}</span> 天，新的歸還日是{' '}
+                <span className="font-english">{formatNewReturnDate(selectedDays)}</span>。
               </p>
             </div>
           </div>
@@ -350,7 +345,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               {isPartial && (
                 <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2 mt-3">
                   部分延期：勾選品項將拆為子單延期，未勾選品項照原歸還日（
-                  <span className="font-['Inter',_sans-serif]">
+                  <span className="font-english">
                     {dueDate.getMonth() + 1} 月 {dueDate.getDate()} 日
                   </span>
                   ）歸還。
@@ -369,7 +364,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               onClick={onCancel}
               className="text-[#cccccc] hover:text-white cursor-pointer"
             >
-              <span className="font-['Inter',_sans-serif] text-xs">
+              <span className="font-english text-xs">
                 {t('Cancel', '取消')}
               </span>
             </button>
@@ -384,7 +379,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                   : 'text-gray-scale3 cursor-not-allowed'
               }`}
             >
-              <span className="font-['Inter',_sans-serif] text-xs">
+              <span className="font-english text-xs">
                 {t('Send', '送出')}
               </span>
             </button>

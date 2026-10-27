@@ -81,23 +81,23 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         <div></div>
 
         {/* 圖片列 */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
+        <div className="font-english text-xs text-gray-scale2"></div>
 
         {/* 教室名稱列 - 空白（不顯示標簽） */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2"></div>
+        <div className="font-english text-xs text-gray-scale2"></div>
 
         {/* 總數量列 */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2 text-center">
           {t('Total Qty', '總數量')}
         </div>
 
         {/* 可借數量列 */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2 text-center">
           {t('Available Qty', '可借數量')}
         </div>
 
         {/* 保留中數量列 */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
+        <div className="font-english text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
           <div>
             {t('On Hold', '待繳押金')}
           </div>
@@ -115,12 +115,12 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         </div>
 
         {/* 押金列 */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-scale2 text-center">
           {t('Deposit', '押金')}
         </div>
 
         {/* 操作列 - 空白（不顯示標簽） */}
-        <div className="font-['Inter',_sans-serif] text-xs text-gray-scale2 text-center"></div>
+        <div className="font-english text-xs text-gray-scale2 text-center"></div>
       </div>
 
       {classrooms.length > 0 ? (
@@ -161,28 +161,28 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                 </div>
 
                 {/* 總數量 - 教室固定為 1 */}
-                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                <div className={`font-english text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   1
                 </div>
 
                 {/* 可借數量 - 在購物車中為 0，否則為 1 */}
-                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                <div className={`font-english text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   {isAvailable ? 1 : 0}
                 </div>
 
                 {/* 保留中數量 - 暫時顯示假數據 */}
-                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                <div className={`font-english text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   0
                 </div>
 
                 {/* 押金 */}
-                <div className={`font-['Inter',_sans-serif] text-sm text-center ${
+                <div className={`font-english text-sm text-center ${
                   !isAvailable ? 'text-[#545454]' : 'text-white'
                 }`}>
                   NT$ {classroom.price.toLocaleString()}

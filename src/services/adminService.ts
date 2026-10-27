@@ -15,7 +15,7 @@ import { invalidateClosedDates } from './ordersService'
 // 四種對計算的效果都一樣（同週末：倒數／逾期跳過、歸還期限順延），差別只在後台分區與是否發公告。
 export type ClosedKind = 'activity' | 'review' | 'other' | 'holiday'
 export const CLOSED_KIND_ZH: Record<ClosedKind, string> = {
-  activity: '學會辦活動', review: '大總評', other: '其他', holiday: '法定假日'
+  activity: '活動', review: '大總評', other: '其他', holiday: '法定假日'
 }
 export interface ClosedDate { day: string; reason: string | null; kind?: ClosedKind } // kind：SQL 執行前不存在
 export interface Blackout { id: number; start_date: string; end_date: string; reason: string | null }
@@ -28,7 +28,6 @@ export interface StaffMember {
   position: string
   duties: StaffDuty[]
 }
-export interface StudentHit { id: string; student_id: string; name: string }
 
 // ---- 幹部名單（staff_members + staff_duties，見 supabase/staff-members.sql）----
 // 收押金／歸還的「值班經手人」選單來源；幹部連結 students（搜學號新增），
@@ -48,16 +47,6 @@ export async function listStaff(): Promise<StaffMember[]> {
       (a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time)
     )
   }))
-}
-
-/** 依學號精確查學生（貼上名單匯入用；一次查一批） */
-export async function lookupStudents(studentIds: string[]): Promise<StudentHit[]> {
-  const { data, error } = await supabase
-    .from('students')
-    .select('id, student_id, name')
-    .in('student_id', studentIds)
-  if (error) throw error
-  return (data ?? []) as StudentHit[]
 }
 
 export async function addStaffBulk(
@@ -310,27 +299,47 @@ export async function addClosedDate(day: string, kind: ClosedKind, reason: strin
  * 只取平日的放假日（週末本來就不營業）；補班日不管——學會週末一律不營業。
  * 每個年度只在「該年還沒有任何法定假日」時匯入一次：學會刪掉某天（照常營業）不會被補回。
  * 今年＋明年各檢查一次；明年資料尚未公布（404）就略過，下次再試。由 AdminLayout 進後台時觸發。
+ * 資料對補假日只寫「補假」，看不出補哪個假：往前後 3 天找最近有名字的假日，寫成「國慶日補假」；
+ * 已匯入過、仍寫「補假」的列也順手改掉（2026-10-26 前匯入的資料）。
  */
+type TwCalDay = { date: string; week: string; isHoliday: boolean; description: string }
+const holidayName = (days: TwCalDay[], i: number) => {
+  const desc = days[i].description
+  if (desc !== '補假') return desc || '國定假日'
+  for (const k of [1, -1, 2, -2, 3, -3]) {
+    const near = days[i + k]
+    if (near?.isHoliday && near.description && near.description !== '補假') return `${near.description}補假`
+  }
+  return desc
+}
 export async function autoImportHolidays(): Promise<void> {
   const year = new Date().getFullYear()
   for (const y of [year, year + 1]) {
     const { data, error } = await supabase
-      .from('closed_dates').select('day').eq('kind', 'holiday')
-      .gte('day', `${y}-01-01`).lte('day', `${y}-12-31`).limit(1)
-    if (error || (data ?? []).length > 0) continue // kind 欄位不存在（SQL 未執行）或已匯入
+      .from('closed_dates').select('day, reason').eq('kind', 'holiday')
+      .gte('day', `${y}-01-01`).lte('day', `${y}-12-31`)
+    if (error) continue // kind 欄位不存在（SQL 未執行）
+    const imported = (data ?? []).length > 0
+    const stale = (data ?? []).filter(r => r.reason === '補假').map(r => r.day as string)
+    if (imported && stale.length === 0) continue
     try {
       const res = await fetch(`https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${y}.json`)
       if (!res.ok) continue
-      const days = (await res.json()) as { date: string; week: string; isHoliday: boolean; description: string }[]
-      const rows = days
-        .filter(r => r.isHoliday && r.week !== '六' && r.week !== '日')
-        .map(r => ({
-          day: `${r.date.slice(0, 4)}-${r.date.slice(4, 6)}-${r.date.slice(6, 8)}`,
-          kind: 'holiday' as const,
-          reason: r.description || '國定假日'
-        }))
-      // 已有同日的學會公休就保留原本那筆
-      await supabase.from('closed_dates').upsert(rows, { onConflict: 'day', ignoreDuplicates: true })
+      const days = (await res.json()) as TwCalDay[] // 全年每一天依序一筆
+      const rows = days.flatMap((r, i) =>
+        r.isHoliday && r.week !== '六' && r.week !== '日'
+          ? [{ day: `${r.date.slice(0, 4)}-${r.date.slice(4, 6)}-${r.date.slice(6, 8)}`, kind: 'holiday' as const, reason: holidayName(days, i) }]
+          : []
+      )
+      if (!imported) {
+        // 已有同日的學會公休就保留原本那筆
+        await supabase.from('closed_dates').upsert(rows, { onConflict: 'day', ignoreDuplicates: true })
+      } else {
+        for (const day of stale) {
+          const r = rows.find(x => x.day === day)
+          if (r && r.reason !== '補假') await supabase.from('closed_dates').update({ reason: r.reason }).eq('day', day)
+        }
+      }
       invalidateClosedDates()
     } catch {
       // 網路錯誤：下次進後台再試

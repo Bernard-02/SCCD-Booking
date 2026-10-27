@@ -93,7 +93,7 @@
 - [x] 收罰款／欠繳擋新單（情境 13）：歸還時「已當場繳清」勾選、欠繳單顯示「收罰款」鈕
       （`penalty_paid`／`penalty_collected_by`＋`admin_collect_penalty`＋`submit_orders` 擋單，
       SQL 在 supabase/penalty-and-grades.sql，已執行）
-- [x] 營業時間通知（2026-10-02，`AdminHoursPage`）：公休日分類（學會辦活動／大總評／其他，`closed_dates.kind`，supabase/closed-date-kinds.sql 已執行），新增時自動發全站公告 template（不另設手寫公告頁；網頁版進通知鈴鐺標「公告」，一人一列寫 notifications type `announcement`，日後做 App 可在 insert 掛 webhook 推播）；法定假日進後台時自動匯入（`autoImportHolidays`，今年＋明年各一次，刪除＝照常營業不補回），與寒暑假封鎖同列「假期」。另：新增公休日／寒暑假封鎖時自動通知受影響訂單（`notifyClosedDateAffected`／`notifyBlackoutAffected`）。
+- [x] 營業時間通知（2026-10-02，`AdminHoursPage`）：公休日分類（活動／大總評／其他，`closed_dates.kind`，supabase/closed-date-kinds.sql 已執行），新增時自動發全站公告 template（不另設手寫公告頁；網頁版進通知鈴鐺標「公告」，一人一列寫 notifications type `announcement`，日後做 App 可在 insert 掛 webhook 推播）；法定假日進後台時自動匯入（`autoImportHolidays`，今年＋明年各一次，刪除＝照常營業不補回），與寒暑假封鎖同列「假期」。另：新增公休日／寒暑假封鎖時自動通知受影響訂單（`notifyClosedDateAffected`／`notifyBlackoutAffected`）。
 - **公告兩邊同步**（2026-10-02 定案）：Facebook 與系統全站通知**同一則公告兩邊都發**，不是互相取代
   （2026-07 原定「公告只走 Facebook、系統不做」已改）。計算面不變：系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
 - [x] **助教直借（`staff` 角色）** server 端（情境 10）：`submit_orders` 對 staff 免押金、送出即 in-progress；
@@ -148,6 +148,9 @@
       登入後年級是快照（9/1 升級或後台改了要重登）；押金 cap 5,000／9 件／10 件／14・30 天等常數散在多處；
       種類／狀態標籤 7 份副本（做雙語時一併收斂）；舊多單購物車相容碼；~~使用說明 GuideDialog 與規則不符~~（2026-10-04 依新版使用說明修正兩處：3 天前限大量設備、押金上限空間／設備各 5,000）
 - [ ] `ProfilePage` 狀態圓點（`ProfilePage.tsx:642`）——等 Bernard 定 Profile 樣式再做
+- [ ] **UI 一致性複查（Bernard 2026-10-27 提）**：全站再檢查一次按鈕樣式（前台／後台的實心、外框、文字鈕、icon 鈕各自用在哪，
+      `adminUi` 的 `actionBtn`／`toolBtn`／`textBtn`／`iconFillBtn` 與前台 Extend 樣式是否對齊）與顏色的分類
+      （狀態色、警示色、成功色等各代表什麼、哪裡用，收斂成一份對照後寫進 CLAUDE.md 程式風格規則）
 
 ## 階段 5：手機版（純前端；等階段 1.5 桌面版驗收確認後再執行）
 

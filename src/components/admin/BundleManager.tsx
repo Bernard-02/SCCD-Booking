@@ -20,11 +20,13 @@ const EMPTY: BundleFields = { name: '', deposit: 500, items: [] }
 const BundleManager: React.FC<{
   equipment: AdminEquipment[]
   bundles: AdminBundle[]
+  /** 父層搜尋列的字串：篩組合名稱或內容裡的設備名 */
+  search?: string
   reload: () => Promise<void>
-  /** 父層標題列的「新增組合」鈕按下＝true；對話框關閉時呼叫 onAddClose */
-  adding: boolean
+  /** 父層要開新增對話框＝預填的品項（標題列「新增組合」＝[]；設備頁選取「組成組合」＝勾選的設備各 1 個）；false＝沒開。關閉時呼叫 onAddClose */
+  adding: false | BundleFields['items']
   onAddClose: () => void
-}> = ({ equipment, bundles, reload, adding, onAddClose }) => {
+}> = ({ equipment, bundles, search = '', reload, adding, onAddClose }) => {
   const [busy, setBusy] = useState(false)
   // 對話框：id＝null 為新增；一次只開一個。file／preview＝這次選的新圖（按確定才上傳）
   const [editing, setEditing] = useState<{
@@ -34,7 +36,7 @@ const BundleManager: React.FC<{
   const { showToast, toastElement } = useToast()
 
   // ponytail: 新增鈕在父層，用旗標開對話框；關閉時回報父層把旗標清掉
-  useEffect(() => { if (adding) setEditing({ id: null, f: EMPTY, imageUrl: null }) }, [adding])
+  useEffect(() => { if (adding) setEditing({ id: null, f: { ...EMPTY, items: adding }, imageUrl: null }) }, [adding])
   const close = () => {
     if (editing?.preview) URL.revokeObjectURL(editing.preview)
     setEditing(null)
@@ -48,6 +50,8 @@ const BundleManager: React.FC<{
 
   const byId = Object.fromEntries(equipment.map(e => [e.id, e]))
   const nameOf = (id: string) => byId[id]?.name ?? '（已刪除的設備）'
+  const q = search.trim().toLowerCase()
+  const visible = q ? bundles.filter(b => b.name.toLowerCase().includes(q) || b.items.some(i => nameOf(i.equipmentId).toLowerCase().includes(q))) : bundles
   // 單件合計：同一組照單件押金算的話要多少，方便和組合押金比較
   const itemsTotal = (f: BundleFields) => f.items.reduce((s, i) => s + (byId[i.equipmentId]?.deposit ?? 0) * i.quantity, 0)
 
@@ -120,7 +124,7 @@ const BundleManager: React.FC<{
           </tr>
         </thead>
         <tbody>
-          {bundles.map(r => (
+          {visible.map(r => (
             <tr key={r.id} className="hover:bg-white/5">
               <td className={td}>
                 <div className="flex items-center gap-3">
@@ -151,7 +155,7 @@ const BundleManager: React.FC<{
           ))}
         </tbody>
       </table>
-      {bundles.length === 0 && (
+      {visible.length === 0 && (
         <div className="py-16 text-center text-xs text-gray-scale2 font-chinese">尚未設定組合（所有設備照單件押金計算）</div>
       )}
 
@@ -209,7 +213,7 @@ const BundleManager: React.FC<{
                         aria-label="移除" title="移除"
                         className="flex items-center text-gray-scale2 hover:!text-white cursor-pointer"
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                       </button>
                     </div>
                   ))}

@@ -1,7 +1,7 @@
 /**
  * 後台外框：左側分類側欄 + 右側內容（<Outlet/>）。
  * 側欄樣式同前台 Profile 左選單：icon＋文字膠囊（navItemCls），選中白底黑字；後台只有中文。
- * 左上「SCCDSA Booking 後台」左右邊距＝前台 .container（css/common.css）；上緣 pt-10（不跟前台 Header 對齊，2026-10-24 定），
+ * 左上「SCCDSA／Booking 後台」兩行左右邊距＝前台 .container（css/common.css）；上緣 pt-10（不跟前台 Header 對齊，2026-10-24 定），
  * 各頁標題（PageTitle）同 pt-10，與它同高。側欄與內容區各自捲動（整頁 h-screen）；各頁要撐滿視窗用 h-full。
  */
 
@@ -62,10 +62,10 @@ const AdminLayout: React.FC = () => {
   return (
     <div className="h-screen bg-black text-white flex">
       {/* 側欄：固定滿高，項目多到超出時自己捲 */}
-      {/* 寬度跟著內容（標題不換行，最長的是標題） */}
+      {/* 寬度跟著內容（標題拆兩行、各行不換行，寬度由最長的選單項決定） */}
       <aside className={`shrink-0 flex flex-col items-start ${EDGE_L} pr-8 py-10 h-screen overflow-y-auto`}>
         {/* 同前台 Header logo 字樣：Inter 粗體 text-md */}
-        <p className="font-['Inter',_sans-serif] font-bold text-white text-md whitespace-nowrap">SCCDSA Booking 後台</p>
+        <p className="font-english font-bold text-white text-md whitespace-nowrap leading-tight">SCCDSA<br />Booking 後台</p>
         <p className="mt-1 text-xs text-gray-scale2 font-english">{fmtToday(now)}</p>
 
         {/* inline-flex＝各項同寬、以最長的為準（同 Profile）；組名小字對齊 icon 左緣（px-3＝膠囊 pl-3） */}

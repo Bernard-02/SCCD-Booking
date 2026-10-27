@@ -20,6 +20,7 @@ import type { AdminOrderRow } from '../services/ordersService'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { classLabel } from '../utils/gradeUtils'
+import MemberImportDialog from '../components/admin/MemberImportDialog'
 import {
   PageTitle, inputCls, textBtn, toolBtn, iconFillBtn, SearchBox, CountTabs, SelectControls, tableTh as th, tableTd as td,
   SortTh, toggleSort, sortRows, usePager, Pager, LoadError, Select, FormDialog, Field
@@ -389,6 +390,42 @@ const AdminMembersPage: React.FC = () => {
         </button>
       </PageTitle>
 
+      {/* 搜尋列（分頁上方，同訂單頁）：左搜尋；選取模式（批次標記畢業／休學／在學）；右＝年級、租借狀態篩選 */}
+      <div className="flex items-center gap-2 mb-4">
+        <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
+        <SelectControls
+          mode={selectMode}
+          count={selectedCount}
+          onEnter={() => setSelectMode(true)}
+          onExit={exitSelect}
+          actions={[]}
+        />
+        <button
+          onClick={() => setShowGraduated(v => !v)}
+          className={textBtn(showGraduated)}
+          title={showGraduated ? '隱藏已畢業' : '顯示已畢業（還有未完成的單的本來就會列）'}
+        >
+          <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">history_edu</span>
+          已畢業
+        </button>
+        <Select
+          value={gradeFilter}
+          onChange={setGradeFilter}
+          options={[{ value: 'all', label: '全部年級' }, ...GRADE_ORDER.map(g => ({ value: g, label: g })), { value: 'other', label: '其他' }]}
+          icon="school"
+          filled
+          className="font-chinese"
+        />
+        <Select<Rental | 'all'>
+          value={rentalFilter}
+          onChange={setRentalFilter}
+          options={RENTAL_FILTERS}
+          icon="filter_list"
+          filled
+          className="font-chinese"
+        />
+      </div>
+
       <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={counts} />
 
       {loading ? (
@@ -397,42 +434,6 @@ const AdminMembersPage: React.FC = () => {
         <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />
       ) : (
         <>
-          {/* 搜尋列：左搜尋；選取模式（批次標記畢業／休學／在學）；右＝年級、租借狀態篩選 */}
-          <div className="flex items-center gap-2 mb-4">
-            <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
-            <SelectControls
-              mode={selectMode}
-              count={selectedCount}
-              onEnter={() => setSelectMode(true)}
-              onExit={exitSelect}
-              actions={[]}
-            />
-            <button
-              onClick={() => setShowGraduated(v => !v)}
-              className={textBtn(showGraduated)}
-              title={showGraduated ? '隱藏已畢業' : '顯示已畢業（還有未完成的單的本來就會列）'}
-            >
-              <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">history_edu</span>
-              已畢業
-            </button>
-            <Select
-              value={gradeFilter}
-              onChange={setGradeFilter}
-              options={[{ value: 'all', label: '全部年級' }, ...GRADE_ORDER.map(g => ({ value: g, label: g })), { value: 'other', label: '其他' }]}
-              icon="school"
-              filled
-              className="font-chinese"
-            />
-            <Select<Rental | 'all'>
-              value={rentalFilter}
-              onChange={setRentalFilter}
-              options={RENTAL_FILTERS}
-              icon="filter_list"
-              filled
-              className="font-chinese"
-            />
-          </div>
-
           <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
             {/* border-separate：表頭 sticky 時底線才跟著走；欄位多，min-w 讓窄視窗橫向捲而不壓欄 */}
             <table className="w-full min-w-[1200px] text-xs border-separate border-spacing-0">
@@ -631,19 +632,18 @@ const AdminMembersPage: React.FC = () => {
         </FormDialog>
       )}
 
-      {/* 匯入：從 Excel／CSV 批次預先登記——功能尚未實作，先放對話框 */}
+      {/* 匯入：.xlsx 批次預先登記（預覽驗證後寫 login_allowlist，MemberImportDialog） */}
       {showImport && (
-        <FormDialog title="匯入會員" confirmZh="匯入" canConfirm={false} onConfirm={() => {}} onCancel={() => setShowImport(false)}>
-          <p className="text-xs text-gray-scale2 font-chinese leading-6">
-            從 Excel／CSV 批次新增會員，欄位：學號、姓名、Email、身份（學生／轉學生／系學會／系秘）。
-            <br />匯入功能尚未實作，目前請用「新增會員」逐筆登記。
-          </p>
-          <label className="flex flex-col items-center justify-center gap-2 h-32 rounded-xl border border-dashed border-gray-scale4 text-gray-scale3 cursor-not-allowed">
-            <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>input</span>
-            <span className="text-2xs font-english">XLSX / CSV</span>
-            <input type="file" accept=".xlsx,.csv" className="sr-only" disabled />
-          </label>
-        </FormDialog>
+        <MemberImportDialog
+          existingSids={new Set(members.map(m => m.student_id.toUpperCase()))}
+          showToast={showToast}
+          onCancel={() => setShowImport(false)}
+          onDone={async n => {
+            setShowImport(false)
+            showToast(`已登記 ${n} 筆，本人第一次登入後即啟用`, 'success')
+            await load()
+          }}
+        />
       )}
       <ConfirmDialog />
       {toastElement}

@@ -560,7 +560,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <div className="flex flex-col">
                 <span className="text-xs text-gray-scale2 leading-tight">{t('Start Date', '起租日')}</span>
               </div>
-              <span className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
+              <span className="text-2xl font-english font-normal text-white">
                 {formatDate(startDate)}
               </span>
             </div>
@@ -570,7 +570,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <div className="flex flex-col">
                 <span className="text-xs text-gray-scale2 leading-tight">{t('End Date', '歸還日')}</span>
               </div>
-              <span className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
+              <span className="text-2xl font-english font-normal text-white">
                 {formatDate(endDate)}
               </span>
               </div>
@@ -666,12 +666,12 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                         }}
                       >
                         {/* 日期範圍 + 數量 */}
-                        <div className={`text-xs font-['Inter',_sans-serif] mb-1 ${dateGroup.isDisabled ? 'text-gray-scale3' : 'text-white'}`}>
+                        <div className={`text-xs font-english mb-1 ${dateGroup.isDisabled ? 'text-gray-scale3' : 'text-white'}`}>
                           {formatDateFull(dateGroup.startDate)} - {formatDateFull(dateGroup.endDate)} ({dateGroup.itemCount})
                         </div>
 
                         {/* 類型文字 - 灰色 */}
-                        <div className="text-xs font-['Inter',_sans-serif] text-gray-scale2 flex items-center gap-2">
+                        <div className="text-xs font-english text-gray-scale2 flex items-center gap-2">
                           {typeText}
                           {dateGroup.isDisabled && (
                             <span className="text-xs text-gray-scale3">

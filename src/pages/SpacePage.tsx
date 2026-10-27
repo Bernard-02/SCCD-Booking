@@ -641,7 +641,7 @@ const SpacePage: React.FC = () => {
                         <span className="text-xs text-gray-scale2">{t('Selected Area', '選擇區塊')}</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4">
-                        <span className="text-md font-['Inter',_sans-serif] font-normal break-words">
+                        <span className="text-md font-english font-normal break-words">
                           {sortedSelectedBlocks.length > 0 ? sortedSelectedBlocks.join(', ') : '--'}
                         </span>
                       </div>
@@ -652,7 +652,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={handleSelectAll}
                           disabled={!selectedSubCategory || allAvailableSelected}
-                          className={`flex items-center gap-1 text-sm font-['Inter',_sans-serif] font-normal ${
+                          className={`flex items-center gap-1 text-sm font-english font-normal ${
                             !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
@@ -662,7 +662,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={() => setSelectedBlocks([])}
                           disabled={!selectedSubCategory || selectedBlocks.length === 0}
-                          className={`flex items-center gap-1 text-sm font-['Inter',_sans-serif] font-normal ${
+                          className={`flex items-center gap-1 text-sm font-english font-normal ${
                             !selectedSubCategory || selectedBlocks.length === 0 ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
                           }`}
                         >
@@ -702,7 +702,7 @@ const SpacePage: React.FC = () => {
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_shopping_cart</span>
                       <span className="text-sm">{t('Add', '加入清單')}</span>
-                      <span className="ml-auto text-sm font-['Inter',_sans-serif]">
+                      <span className="ml-auto text-sm font-english">
                         NT$ {calculateTotalDeposit(selectedBlocks).toLocaleString()}
                       </span>
                     </button>

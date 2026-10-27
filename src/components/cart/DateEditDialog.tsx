@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react'
+import CloseButton from '../common/CloseButton'
 import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
 import { formatYmd, toDateKey } from './cartHelpers'
@@ -71,13 +72,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               <span>{t('Edit Date', '編輯日期')}</span>
             </h2>
             {/* 關閉按鈕 */}
-            <button
-              onClick={onCancel}
-              className="text-white hover:opacity-70 cursor-pointer -mt-1"
-              aria-label="Close"
-            >
-              <span className="material-icons text-lg">close</span>
-            </button>
+            <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="-mt-1" />
           </div>
 
           {/* 標籤和原始日期在同一行 */}
@@ -87,14 +82,14 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               {/* 類別標籤 */}
               {category && (
                 <div className="px-3 py-1 bg-gray-scale4 rounded-lg flex items-center justify-center">
-                  <span className="font-['Inter',_sans-serif] text-xs text-white whitespace-nowrap">
+                  <span className="font-english text-xs text-white whitespace-nowrap">
                     {t(category === 'equipment' ? 'Equipment' : 'Space', category === 'equipment' ? '設備' : '空間')}
                   </span>
                 </div>
               )}
               {/* 租借類型標籤 */}
               <div className="px-3 py-1 bg-gray-scale4 rounded-lg flex items-center justify-center">
-                <span className="font-['Inter',_sans-serif] text-xs text-white whitespace-nowrap">
+                <span className="font-english text-xs text-white whitespace-nowrap">
                   {bookingType === 'little' && (
                     <>
                       {t('Little', '小量')}
@@ -119,7 +114,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               <span className="text-xs text-[#cccccc]">
                 <span>{t('Original Date', '原始時段')}</span>
               </span>
-              <span className="text-xs text-white font-['Inter',_sans-serif]">
+              <span className="text-xs text-white font-english">
                 {(() => {
                   const formatDate = (dateStr: string) => formatYmd(new Date(dateStr))
                   return `${formatDate(currentStartDate)} - ${formatDate(currentEndDate)}`
@@ -152,7 +147,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             <div className="flex-1 min-w-0">
               <p className="text-xs text-[#ffff00]">{t('After updating the date, items may become out of stock. We\'ll mark them for you.', '更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。')}</p>
             </div>
-            <div className="shrink-0 text-xl text-white font-['Inter',_sans-serif]">
+            <div className="shrink-0 text-xl text-white font-english">
               {(() => {
                 const startStr = startDate ? formatYmd(startDate) : '----/--/--'
                 const endStr = endDate ? formatYmd(endDate) : '----/--/--'

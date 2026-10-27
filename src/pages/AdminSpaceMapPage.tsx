@@ -160,10 +160,10 @@ const AdminSpaceMapPage: React.FC = () => {
 
   const occupantRow = (o: SpaceOccupant) => (
     <div key={o.rentalNumber} className="flex flex-wrap items-center gap-3 text-xs py-2">
-      <span className="font-chinese text-black">{o.studentName}</span>
-      <span className="font-english text-gray-scale3">{o.studentNo}</span>
-      <span className="font-english text-gray-scale3">{o.rentalNumber}</span>
-      <span className="font-english text-gray-scale3">{o.startDate} ~ {o.endDate}</span>
+      <span className="font-chinese text-white">{o.studentName}</span>
+      <span className="font-english text-gray-scale2">{o.studentNo}</span>
+      <span className="font-english text-gray-scale2">{o.rentalNumber}</span>
+      <span className="font-english text-gray-scale2">{o.startDate} ~ {o.endDate}</span>
       <StatusChip status={o.status as OrderStatus} />
     </div>
   )
@@ -200,21 +200,21 @@ const AdminSpaceMapPage: React.FC = () => {
           <DatePicker value={date} onChange={setDate} />
 
           {/* 選到的區塊：代號・區域＋該日期借用人。高度跟內容走；借用人太多超過右欄時只在面板內捲 */}
-          {/* 白底卡片（圓角 16px 同訂單卡片）：黑字、輔助文字用 gray-scale3 */}
-          <div className="min-h-0 flex flex-col bg-white text-black rounded-2xl p-4 text-xs">
+          {/* 深灰卡片（#151515，同營業時間的值班卡片、圓角 16px）：白字、輔助文字 gray-scale2 */}
+          <div className="min-h-0 flex flex-col bg-[#151515] text-white rounded-2xl p-4 text-xs">
             <div className="min-h-0 overflow-y-auto">
               {!selected ? (
                 <p className="font-chinese text-gray-scale3">點地圖上的區塊查看借用人</p>
               ) : (
                 <>
                   <p className="text-sm mb-3">
-                    <span className="font-english text-black">{selected.id}</span>
-                    <span className="font-chinese text-gray-scale3"> · {AREA_META[selected.area] ?? selected.area}</span>
+                    <span className="font-english text-white">{selected.id}</span>
+                    <span className="font-chinese text-gray-scale2"> · {AREA_META[selected.area] ?? selected.area}</span>
                   </p>
                   {selectedOccupants.length === 0 ? (
-                    <p className="font-chinese text-gray-scale3">此日期無人借用</p>
+                    <p className="font-chinese text-gray-scale2">此日期無人借用</p>
                   ) : (
-                    <div className="divide-y divide-black/10">
+                    <div className="divide-y divide-gray-scale4">
                       {selectedOccupants.map(occupantRow)}
                     </div>
                   )}

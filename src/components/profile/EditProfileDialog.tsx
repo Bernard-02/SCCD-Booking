@@ -122,7 +122,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       >
         {/* 標題 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
+          <h2 className="font-english text-sm text-white font-normal">
             {isPassword ? t('Change Password', '修改密碼') : t('Change Phone', '修改手機號碼')}
           </h2>
         </div>
@@ -206,7 +206,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             onClick={onCancel}
             className="text-[#cccccc] hover:text-white cursor-pointer"
           >
-            <span className="font-['Inter',_sans-serif] text-xs">
+            <span className="font-english text-xs">
               {t('Cancel', '取消')}
             </span>
           </button>
@@ -215,7 +215,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             disabled={submitting}
             className={`${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
           >
-            <span className="font-['Inter',_sans-serif] text-xs">
+            <span className="font-english text-xs">
               {t('Save', '儲存')}
             </span>
           </button>

@@ -1,5 +1,5 @@
 /**
- * 後台 · 訂單全覽（搜尋 + 租借時間／狀態／種類篩選 + 全欄排序 + 收押金／歸還）
+ * 後台 · 訂單全覽（搜尋 + 租借時間／狀態／種類篩選 + 點表頭單欄排序 + 收押金／歸還）
  * 樣式沿用前台 Profile：狀態標籤語彙與顏色同 getStatusInfo、按鈕同 Extend 樣式。
  * 「收押金」「歸還」兩欄＝每張單都會走的兩步（2026-10-26）：還沒做是按鈕、做完顯示經手人，一眼看出走到哪、誰經手；
  * 其餘動作（點交／延期／取消訂單）在最右「操作」欄。所有動作都走 OrderActionDialog，必選值班經手人
@@ -8,7 +8,7 @@
  * 待歸還＝使用中＋未完成歸還（都是要收回來的）；已歸還／已取消只在「全部」裡看（搜尋得到）。
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
 import type { AdminOrderRow, OrderInfo } from '../services/ordersService'
@@ -16,7 +16,8 @@ import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
 import { overduePenalty, overdueBusinessDays, pendingMsRemaining, isOnDuty, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
 import { ADMIN_HANDLER_KEY } from '../utils/storageKeys'
-import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, iconBtn, textBtn, SearchBox, CountTabs, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
+import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, textBtn, SearchBox, CountTabs, SortTh, toggleSort, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
+import type { Sort } from '../components/admin/adminUi'
 import OrderActionDialog, { type AdminActionMode } from '../components/admin/OrderActionDialog'
 import OrderInfoDialog from '../components/admin/OrderInfoDialog'
 import { useToast } from '../hooks/useToast'
@@ -83,11 +84,12 @@ type CellCtx = {
   act: (o: AdminOrderRow, mode: AdminActionMode) => void
   busy: string | null
 }
-// 收押金／歸還欄裡的動作鈕；該單處理中時改顯示文字（操作欄此時不顯示，免得兩格都寫處理中）
-const actBtn = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, zh: string) =>
+// 收押金／歸還欄裡的動作鈕；該單處理中時改顯示文字（操作欄此時不顯示，免得兩格都寫處理中）。
+// enabled=false＝這一步現在不能做（例：已取消的單）：按鈕照樣顯示但停用，每列欄位對齊、一眼看出走到哪
+const actBtn = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, zh: string, enabled = true) =>
   ctx.busy === o.rental_number
     ? <span className="text-gray-scale2">處理中…</span>
-    : <button onClick={() => ctx.act(o, mode)} className={actionBtn(true)}>{zh}</button>
+    : <button onClick={() => enabled && ctx.act(o, mode)} disabled={!enabled} className={actionBtn(enabled)}>{zh}</button>
 const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNode> = {
   rental_number: o => <td key="rental_number" className={`${td} font-english`}>{o.rental_number}</td>,
   name: o => <td key="name" className={`${td} font-chinese`}>{o.students?.name ?? '—'}</td>,
@@ -163,7 +165,7 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
   paid_by: (o, ctx) => (
     <td key="paid_by" className={`${td} font-chinese`}>
       {o.status === 'pending' && !o.deposit_paid_at ? actBtn(o, ctx, 'paid', '收押金')
-        : !o.paid_by ? <span className="text-gray-scale3">—</span>
+        : !o.paid_by ? actBtn(o, ctx, 'paid', '收押金', false)
         : (
           <div className="leading-5">
             <div>{o.paid_by}</div>
@@ -177,7 +179,7 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
   returned_by: (o, ctx) => (
     <td key="returned_by" className={`${td} font-chinese`}>
       {o.status === 'in-progress' || o.status === 'overdue' ? actBtn(o, ctx, 'return', '歸還')
-        : !o.returned_by ? <span className="text-gray-scale3">—</span>
+        : !o.returned_by ? actBtn(o, ctx, 'return', '歸還', false)
         : (
           <div className="leading-5">
             <div>{o.returned_by}</div>
@@ -205,17 +207,8 @@ const AdminOrdersPage: React.FC = () => {
   // 租借時間區間（與起訖重疊即符合；空字串＝不限）
   const [range, setRange] = useState({ from: '', to: '' })
   const [showRange, setShowRange] = useState(false)
-  const [showSort, setShowSort] = useState(false)
-  // 排序規則拖曳：改用 Pointer Events（原生 HTML5 DnD 在整列塞滿 <select> 時會被表單控制吃掉
-  // mousedown、拖曳根本不啟動）。dragIndex 只用於畫面淡化；dragRef 同步追蹤即時位置避免 setState 時序問題。
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const dragRef = useRef<number | null>(null)
-  const listRef = useRef<HTMLDivElement>(null)
-  // 多重排序（Notion 式）：依序比較，前面的規則優先。
-  // ponytail: 不做拖曳調順序——移除再加即可；要拖曳再說。
-  const [sorts, setSorts] = useState<{ field: SortField; dir: 'asc' | 'desc' }[]>([
-    { field: 'rental_number', dir: 'desc' }
-  ])
+  // 單欄排序（點表頭，同設備／空間／會員頁）：預設單號新→舊；多重排序面板 2026-10-27 拿掉
+  const [sort, setSort] = useState<Sort<SortField>>({ field: 'rental_number', dir: 'desc' })
   const [busy, setBusy] = useState<string | null>(null) // 正在操作的單號
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set())
   const [staff, setStaff] = useState<StaffMember[]>([]) // 幹部（經手人選單，值班中優先）
@@ -328,64 +321,18 @@ const AdminOrdersPage: React.FC = () => {
 
   const visible = useMemo(() => {
     const rows = base.filter(TABS.find(t => t.key === tab)!.match)
-    if (sorts.length === 0) return rows // 無排序規則＝維持建立時間新→舊（fetch 預設）
+    if (!sort) return rows // 維持建立時間新→舊（fetch 預設）
+    const { field, dir } = sort
     return [...rows].sort((a, b) => {
-      for (const s of sorts) {
-        const va = sortVal(a, s.field)
-        const vb = sortVal(b, s.field)
-        if (va < vb) return s.dir === 'asc' ? -1 : 1
-        if (va > vb) return s.dir === 'asc' ? 1 : -1
-      }
+      const va = sortVal(a, field), vb = sortVal(b, field)
+      if (va < vb) return dir === 'asc' ? -1 : 1
+      if (va > vb) return dir === 'asc' ? 1 : -1
       return 0
     })
-  }, [base, tab, sorts])
+  }, [base, tab, sort])
 
-  const { pageRows, pager } = usePager(visible, [search, tab, typeFilter, range, sorts])
-
-  // 表頭點擊＝快速單一排序：同欄再點切換升降冪，換欄則重設為該欄升冪
-  const toggleSort = (f: SortField) => {
-    setSorts(prev =>
-      prev.length === 1 && prev[0].field === f
-        ? [{ field: f, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }]
-        : [{ field: f, dir: 'asc' }]
-    )
-  }
-
-  const updateSort = (i: number, patch: Partial<{ field: SortField; dir: 'asc' | 'desc' }>) =>
-    setSorts(prev => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)))
-  const removeSort = (i: number) => setSorts(prev => prev.filter((_, idx) => idx !== i))
-  const addSort = () => {
-    const unused = COLUMNS.map(c => c.field).find(f => !sorts.some(s => s.field === f))
-    if (unused) setSorts(prev => [...prev, { field: unused, dir: 'asc' }])
-  }
-  const moveSort = (from: number, to: number) =>
-    setSorts(prev => {
-      if (from === to) return prev
-      const next = [...prev]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
-      return next
-    })
-
-  // 拖曳把手：按下即抓住該列，移動時依游標 Y 與各列中線即時重排（WYSIWYG，像 Notion）
-  const onGripDown = (i: number) => (e: React.PointerEvent) => {
-    e.preventDefault()
-    dragRef.current = i
-    setDragIndex(i)
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  const onGripMove = (e: React.PointerEvent) => {
-    const from = dragRef.current
-    if (from === null || !listRef.current) return
-    const rows = Array.from(listRef.current.querySelectorAll<HTMLElement>('[data-sort-row]'))
-    let to = rows.length - 1
-    for (let k = 0; k < rows.length; k++) {
-      const r = rows[k].getBoundingClientRect()
-      if (e.clientY < r.top + r.height / 2) { to = k; break }
-    }
-    if (to !== from) { moveSort(from, to); dragRef.current = to; setDragIndex(to) }
-  }
-  const onGripUp = () => { dragRef.current = null; setDragIndex(null) }
+  const { pageRows, pager } = usePager(visible, [search, tab, typeFilter, range, sort])
+  const sortProps = { sort, onSort: (f: SortField) => setSort(s => toggleSort(s, f)) }
 
   const hasRange = !!(range.from || range.to)
   const cellCtx: CellCtx = { closed: closedDates, editInfo: setInfoOrder, act: (order, mode) => setAction({ order, mode }), busy }
@@ -400,18 +347,19 @@ const AdminOrdersPage: React.FC = () => {
             更新於 <span className="font-english">{updatedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
           </span>
         )}
+        {/* 同其他頁標題列的「＋ 新增」鈕：灰底 icon＋文字 */}
         <button
           onClick={() => refresh(true)}
           disabled={refreshing}
-          className="w-7 h-7 -ml-1.5 flex items-center justify-center rounded-lg cursor-pointer text-gray-scale2 hover:!text-white hover:bg-white/10"
-          title="重新整理（每分鐘自動更新）"
-          aria-label="重新整理"
+          className={`${textBtn(false)} disabled:opacity-40 disabled:cursor-not-allowed`}
+          title="每分鐘自動更新"
         >
-          <span className={`material-symbols-outlined ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '18px' }}>refresh</span>
+          <span className={`material-symbols-outlined opacity-70 ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '18px' }} aria-hidden="true">refresh</span>
+          重新整理
         </button>
       </PageTitle>
 
-      {/* 工具列：左搜尋框（常駐）；右＝租借時間、狀態、種類、進階排序 */}
+      {/* 工具列：左搜尋框（常駐）；右＝租借時間、種類 */}
       <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center gap-2 mr-auto">
           <SearchBox value={search} onChange={setSearch} className="w-72" />
@@ -440,15 +388,6 @@ const AdminOrdersPage: React.FC = () => {
           filled
           className="font-chinese"
         />
-        {/* 篩選都已在工具列上，這顆展開的是多重排序面板（swap_vert＝排序；filter_list／sort 三條線會被看成篩選） */}
-        <button
-          onClick={() => setShowSort(v => !v)}
-          className={iconBtn(showSort || sorts.length > 1)}
-          title="排序"
-          aria-label="排序"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>swap_vert</span>
-        </button>
       </div>
 
       {/* 分類分頁（搜尋列下方） */}
@@ -462,59 +401,6 @@ const AdminOrdersPage: React.FC = () => {
         </div>
       )}
 
-      {/* 排序面板（Notion 式多重排序：由上而下依序比較） */}
-      {showSort && (
-        <div ref={listRef} className="flex flex-col items-start gap-3 mb-6">
-          {sorts.map((s, i) => (
-            <div
-              key={s.field}
-              data-sort-row
-              className={`group flex items-center gap-2 transition-opacity ${dragIndex === i ? 'opacity-40' : ''}`}
-            >
-              {/* 拖曳把手（唯一抓握點：整列塞滿 select，把手才是可靠的抓取區）；按住上下拖即時重排 */}
-              <span
-                onPointerDown={onGripDown(i)}
-                onPointerMove={onGripMove}
-                onPointerUp={onGripUp}
-                style={{ touchAction: 'none' }}
-                className="flex items-center text-gray-scale3 hover:!text-white cursor-grab active:cursor-grabbing select-none"
-                aria-label="拖曳排序"
-                title="拖曳調整優先順序"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>drag_indicator</span>
-              </span>
-              <Select<SortField>
-                value={s.field}
-                onChange={field => updateSort(i, { field })}
-                options={COLUMNS.filter(c => c.field === s.field || !sorts.some(x => x.field === c.field)).map(c => ({ value: c.field, label: c.zh }))}
-                className="font-chinese"
-              />
-              <Select<'asc' | 'desc'>
-                value={s.dir}
-                onChange={dir => updateSort(i, { dir })}
-                options={[{ value: 'asc', label: '升冪' }, { value: 'desc', label: '降冪' }]}
-                className="font-chinese"
-              />
-              <button
-                onClick={() => removeSort(i)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-scale2 hover:!text-white hover:bg-white/10 cursor-pointer"
-                aria-label="移除排序"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
-              </button>
-            </div>
-          ))}
-          {sorts.length < COLUMNS.length && (
-            <button
-              onClick={addSort}
-              className="text-xs text-gray-scale2 hover:!text-white cursor-pointer"
-            >
-              ＋ 新增排序
-            </button>
-          )}
-        </div>
-      )}
-
       {loading && <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>}
       {!loading && error && <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />}
 
@@ -524,32 +410,7 @@ const AdminOrdersPage: React.FC = () => {
           <table className="w-full min-w-[1420px] text-xs border-separate border-spacing-0">
             <thead>
               <tr className="text-left text-gray-scale2">
-                {COLUMNS.map(col => (
-                  <th
-                    key={col.field}
-                    onClick={() => toggleSort(col.field)}
-                    className={`${th} ${col.w ?? ''} cursor-pointer select-none hover:text-white`}
-                  >
-                    {col.zh}
-                    {/* 固定寬度佔位：icon 出現／移動時欄寬不變。上下 chevron 疊成一顆（±3px），排序方向那半亮、另一半暗；多重排序時附優先順序 */}
-                    <span className="inline-flex items-center w-5 ml-0.5 align-middle">
-                      {(() => {
-                        const i = sorts.findIndex(s => s.field === col.field)
-                        if (i === -1) return null
-                        const asc = sorts[i].dir === 'asc'
-                        return (
-                          <>
-                            <span className="relative inline-block w-4 h-4">
-                              <span className={`material-symbols-outlined absolute left-0 -top-[3px] ${asc ? '' : 'opacity-30'}`} style={{ fontSize: '16px' }}>expand_less</span>
-                              <span className={`material-symbols-outlined absolute left-0 top-[3px] ${asc ? 'opacity-30' : ''}`} style={{ fontSize: '16px' }}>expand_more</span>
-                            </span>
-                            {sorts.length > 1 && <span className="text-[10px] opacity-70">{i + 1}</span>}
-                          </>
-                        )
-                      })()}
-                    </span>
-                  </th>
-                ))}
+                {COLUMNS.map(col => <SortTh key={col.field} zh={col.zh} field={col.field} className={col.w ?? ''} {...sortProps} />)}
                 <th className={`${th} w-40`}>操作</th>
               </tr>
             </thead>

@@ -303,6 +303,26 @@ const AdminSpacesPage: React.FC = () => {
     <div className="h-full flex flex-col">
       <PageTitle zh="空間管理" />
 
+      {/* 搜尋列（分頁上方，同訂單頁）：左搜尋（常駐）；右＝選取模式、狀態篩選 */}
+      <div className="flex items-center gap-2 mb-4">
+        <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
+        <SelectControls
+          mode={selectMode}
+          count={selectedCount}
+          onEnter={() => setSelectMode(true)}
+          onExit={exitSelect}
+          actions={[]}
+        />
+        <Select<StatusFilter>
+          value={status}
+          onChange={setStatus}
+          options={[{ value: 'all', label: '全部狀態' }, { value: 'active', label: '開放中' }, { value: 'inactive', label: '已關閉' }]}
+          icon="filter_list"
+          filled
+          className="font-chinese"
+        />
+      </div>
+
       <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={{ classroom: classrooms.length, area: blocks.length }} />
 
       {loading ? (
@@ -311,26 +331,6 @@ const AdminSpacesPage: React.FC = () => {
         <LoadError message={loadError} onRetry={() => { setLoading(true); void load() }} />
       ) : (
         <>
-          {/* 搜尋列：左搜尋（常駐）；右＝選取模式、狀態篩選 */}
-          <div className="flex items-center gap-2 mb-4">
-            <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
-            <SelectControls
-              mode={selectMode}
-              count={selectedCount}
-              onEnter={() => setSelectMode(true)}
-              onExit={exitSelect}
-              actions={[]}
-            />
-            <Select<StatusFilter>
-              value={status}
-              onChange={setStatus}
-              options={[{ value: 'all', label: '全部狀態' }, { value: 'active', label: '開放中' }, { value: 'inactive', label: '已關閉' }]}
-              icon="filter_list"
-              filled
-              className="font-chinese"
-            />
-          </div>
-
           <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
             {/* border-separate：表頭 sticky 時底線才跟著走 */}
             <table className="w-full text-xs border-separate border-spacing-0">

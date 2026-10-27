@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect } from 'react'
+import CloseButton from './CloseButton'
 import { createPortal } from 'react-dom'
 import GuideContent from './GuideContent'
 import SaContent from './SaContent'
@@ -64,12 +65,10 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
         {/* 右上：關閉 X（與右側標題同在距頂 24px；z-20 蓋過 sticky 標題） */}
-        <button type="button" onClick={onClose} aria-label={t('Close', '關閉')} className="absolute top-6 right-6 z-20 flex text-white cursor-pointer">
-          <span className="material-symbols-outlined">close</span>
-        </button>
+        <CloseButton onClick={onClose} label={t('Close', '關閉')} className="absolute top-6 right-6 z-20" />
 
-        {/* 左：分頁膠囊（共用 navItemCls，無 icon）；手機版分頁橫排在上，右側留位給 X */}
-        <div className="p-6 pr-16 md:pr-6 md:w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-[#545454]">
+        {/* 左：分頁膠囊（共用 navItemCls，無 icon）；桌機寬度跟最長的分頁走（min 200px，英文 Student Association 較長）；手機版分頁橫排在上，右側留位給 X */}
+        <div className="p-6 pr-16 md:pr-6 md:min-w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-[#545454]">
           <nav className="inline-flex md:flex-col gap-1" role="tablist">
             {TABS.map(item => (
               <button

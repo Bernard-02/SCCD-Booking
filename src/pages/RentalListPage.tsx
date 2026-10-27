@@ -302,7 +302,7 @@ const RentalListPage = () => {
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
               {/* 頁面標題 */}
               <div className="mb-6 flex justify-between items-center flex-shrink-0">
-                <h1 className="font-['Inter',_sans-serif] text-white text-xl">
+                <h1 className="font-english text-white text-xl">
                   {t('Cart', '清單')} ({totalUniqueItems})
                 </h1>
                 {/* 選取 → 進入選取模式（各組左側出現圓圈），按鈕變清除；取消退出 */}
@@ -365,7 +365,7 @@ const RentalListPage = () => {
                   disabled={depositGroups.length === 0}
                   className={`w-full flex items-center justify-between mb-4 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
                 >
-                  <div className="text-2xl font-['Inter',_sans-serif] font-normal text-white">
+                  <div className="text-2xl font-english font-normal text-white">
                     NT$ {totalDeposit.toLocaleString()}
                   </div>
                   {depositGroups.length > 0 && (
@@ -386,13 +386,13 @@ const RentalListPage = () => {
                     {depositGroups.map((group, index) => (
                       <div key={index} className="flex items-center gap-3 text-xs text-white mb-3">
                         {/* 數字符號：自製圓圈＋數字（像 Guide，無數量上限；固定寬度讓後面日期對齊） */}
-                        <span className="flex-shrink-0 w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[10px] font-['Inter',_sans-serif] leading-none">
+                        <span className="flex-shrink-0 w-4 h-4 rounded-full border border-white flex items-center justify-center text-white text-[10px] font-english leading-none">
                           {index + 1}
                         </span>
-                        <span className="font-['Inter',_sans-serif]">
+                        <span className="font-english">
                           {formatYmd(new Date(group.startDate))} - {formatYmd(new Date(group.endDate))}
                         </span>
-                        <span className="font-['Inter',_sans-serif]">
+                        <span className="font-english">
                           NT$ {group.deposit.toLocaleString()}
                         </span>
                       </div>

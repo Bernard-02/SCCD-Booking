@@ -153,14 +153,14 @@ const Footer: React.FC = () => {
 
           {/* 中：Copyright（hover 彩蛋） */}
           <div
-            className="copyright desktop-copyright font-['Inter',_sans-serif] font-bold text-white text-center text-sm"
+            className="copyright desktop-copyright font-english font-bold text-white text-center text-sm"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
             <p>
               <span className="copyright-original" style={{ opacity: showEasterEgg ? 0 : 1 }}>
-                <span className="font-['Inter',_sans-serif] uppercase">Copyright © SCCDSA</span>
-                <span className="font-['Inter',_sans-serif]"> All rights reserved.</span>
+                <span className="font-english uppercase">Copyright © SCCDSA</span>
+                <span className="font-english"> All rights reserved.</span>
               </span>
               <span className="copyright-easter-egg" style={{ opacity: showEasterEgg ? 1 : 0 }}>
                 {easterEggText}

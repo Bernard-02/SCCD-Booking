@@ -320,12 +320,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
               </button>
 
               {/* 時間 */}
-              <h3 className={`font-['Inter',_sans-serif] text-xl ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
+              <h3 className={`font-english text-xl ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
                 {formatDate(group.startDate)} - {formatDate(group.endDate)} ({getTotalItemCount()})
               </h3>
 
               {/* 押金（應用上限） */}
-              <span className={`font-['Inter',_sans-serif] text-xl ml-auto ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
+              <span className={`font-english text-xl ml-auto ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
                 NT$ {groupDeposit.toLocaleString()}
               </span>
 
@@ -341,7 +341,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 className="flex items-center justify-center cursor-pointer"
               >
                 <span
-                  className={`material-icons transition-transform duration-300 text-xl ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-scale4' : 'text-white'}`}
+                  className={`material-symbols-outlined transition-transform duration-300 text-xl ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-scale4' : 'text-white'}`}
                   style={{ fontSize: '30px' }}
                 >
                   expand_more
@@ -353,14 +353,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
             <div className="flex items-center gap-3 py-4">
               {/* 類別標籤 (SPC 空間 / EQPT 設備) */}
               <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
-                <span className={`font-['Inter',_sans-serif] text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
+                <span className={`font-english text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
                   {t(categoryLabel.en, categoryLabel.zh)}
                 </span>
               </div>
 
               {/* 租借類型標籤 (個人/團體 或 小量/大量) */}
               <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
-                <span className={`font-['Inter',_sans-serif] text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
+                <span className={`font-english text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
                   {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
                 </span>
               </div>
@@ -418,7 +418,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       : 'bg-[#ffff00] hover:bg-[#e6e600] cursor-pointer'
                   }`}
                 >
-                  <span className={`material-icons text-md ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
+                  <span className={`material-symbols-outlined text-md ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
                     {bookingDetails[groupKey] ? 'check' : 'edit'}
                   </span>
                   <span className={`text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
@@ -443,7 +443,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       : 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
                   }`}
                 >
-                  <span className="material-icons text-md" style={{ fontSize: '20px' }}>add</span>
+                  <span className="material-symbols-outlined text-md" style={{ fontSize: '20px' }}>add</span>
                   <span className="text-xs whitespace-nowrap">{t('Add', '新增')}</span>
                 </button>
               </div>
@@ -527,7 +527,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 押金（總和） */}
-                          <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
+                          <div className="font-english text-sm text-white text-center">
                             NT$ {totalDeposit.toLocaleString()}
                           </div>
 
@@ -537,7 +537,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                               // 刪除該區域的所有區塊
                               blocks.forEach(block => handleRemoveItem(block.id, group.startDate, group.endDate))
                             }}
-                            className="font-['Inter',_sans-serif] text-sm text-white hover:text-gray-scale1 cursor-pointer"
+                            className="font-english text-sm text-white hover:text-gray-scale1 cursor-pointer"
                             title={`移除 ${areaName} 所有區塊`}
                           >
                             ✕
@@ -575,14 +575,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 押金 */}
-                          <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
+                          <div className="font-english text-sm text-white text-center">
                             NT$ {item.deposit.toLocaleString()}
                           </div>
 
                           {/* 刪除按鈕 */}
                           <button
                             onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                            className="font-['Inter',_sans-serif] text-sm text-white hover:text-gray-scale1 cursor-pointer"
+                            className="font-english text-sm text-white hover:text-gray-scale1 cursor-pointer"
                           >
                             ✕
                           </button>
@@ -642,7 +642,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                               <span className="material-symbols-outlined text-xs text-[#ff448a]">
                                 error
                               </span>
-                              <span className="font-['Inter',_sans-serif] text-xs text-[#ff448a]">
+                              <span className="font-english text-xs text-[#ff448a]">
                                 {t('Out of Stock', '缺貨')} ({t('Available', '可借')}: {maxQtyForThisItem})
                               </span>
                             </div>
@@ -654,7 +654,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity - 1)}
                             disabled={!canDecrement}
-                            className={`font-['Inter',_sans-serif] text-sm ${
+                            className={`font-english text-sm ${
                               !canDecrement
                                 ? 'text-gray-scale4 cursor-not-allowed'
                                 : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -662,13 +662,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           >
                             -
                           </button>
-                          <span className="font-['Inter',_sans-serif] text-sm text-white w-8 text-center">
+                          <span className="font-english text-sm text-white w-8 text-center">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity + 1)}
                             disabled={!canIncrement}
-                            className={`font-['Inter',_sans-serif] text-sm ${
+                            className={`font-english text-sm ${
                               !canIncrement
                                 ? 'text-gray-scale4 cursor-not-allowed'
                                 : 'text-white hover:text-gray-scale1 cursor-pointer'
@@ -679,14 +679,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         </div>
 
                         {/* 押金 */}
-                        <div className="font-['Inter',_sans-serif] text-sm text-white text-center">
+                        <div className="font-english text-sm text-white text-center">
                           NT$ {(item.deposit * item.quantity).toLocaleString()}
                         </div>
 
                         {/* 刪除按鈕 */}
                         <button
                           onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                          className="font-['Inter',_sans-serif] text-sm text-white hover:text-gray-scale1 cursor-pointer"
+                          className="font-english text-sm text-white hover:text-gray-scale1 cursor-pointer"
                         >
                           ✕
                         </button>

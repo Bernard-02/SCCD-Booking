@@ -47,6 +47,18 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* 英文字距＝Inter 官方「Dynamic Metrics」（rsms.me/inter）：tracking(em) = −0.0223 + 0.185·e^(−0.1745·px)。
+     字級 token 把算好的值放進 --tracking-en，只有英文元素（.font-english）取用；中文（Noto Sans TC）不套。
+     沒有字級 class 的沿 body 16px 基準。要個別調整用 Tailwind tracking-* 即可蓋過（這裡在 base 層） */
+  :root { --tracking-en: -0.011em; }
+  .text-2xs { --tracking-en: 0; }          /* 12px */
+  .text-xs { --tracking-en: -0.006em; }    /* 14px */
+  .text-sm { --tracking-en: -0.011em; }    /* 16px */
+  .text-md { --tracking-en: -0.017em; }    /* 20px */
+  .text-lg { --tracking-en: -0.02em; }     /* 24px */
+  .text-xl, .text-2xl, .text-3xl { --tracking-en: -0.022em; } /* 32px 以上趨近 −0.0223 */
+  .font-english { letter-spacing: var(--tracking-en); }
+
   #root {
     min-height: 100vh;
   }

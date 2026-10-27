@@ -14,8 +14,6 @@ import type { OrderStatus, OrderRow } from '../../services/ordersService'
 export const itemsSummary = (o: Pick<OrderRow, 'order_items'>) =>
   o.order_items.map(i => `${i.name}${i.item_type === 'equipment' ? ` ×${i.quantity}` : ''}`).join('\n')
 
-export const STATUS_ORDER: OrderStatus[] = ['pending', 'in-progress', 'overdue', 'returned', 'canceled']
-
 export const STATUS_META: Record<OrderStatus, { zh: string; color: string; textColor: string }> = {
   pending: { zh: '待銷單', color: 'var(--color-yellow)', textColor: 'black' },
   'in-progress': { zh: '使用中', color: 'var(--color-blue)', textColor: 'white' },
@@ -90,7 +88,6 @@ export const inputCls =
 // ---- 工具列（訂單／設備管理等清單頁共用，2026-10-24 定）：預設灰底白字、active（展開中／有生效篩選／選中分頁）＝白底黑字 ----
 export const toolBtn = (active: boolean) =>
   `h-9 rounded-lg text-xs whitespace-nowrap cursor-pointer ${active ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'}`
-export const iconBtn = (active: boolean) => `${toolBtn(active)} w-9 flex items-center justify-center`
 // icon＋文字：icon 側 padding 少 4px
 export const textBtn = (active: boolean) => `${toolBtn(active)} inline-flex items-center pl-2 pr-3 gap-1.5 font-chinese`
 // 列內的 icon 動作鈕（修改等）：白底黑 icon 方形（同前台的白色按鈕，hover 變淡）
@@ -690,19 +687,8 @@ export const DateRangePicker: React.FC<{
   )
 }
 
-/**
- * 清單排版：沿用前台 EquipmentGrid／ClassroomList——CSS grid 固定欄寬＋gap-6、
- * 列垂直置中、分隔線 #7c7c7c。欄寬（grid-cols-[…]）由各頁自帶。
- */
-export const listHeadCls = 'grid gap-6 pb-3 border-b border-[#7c7c7c]'
-export const listRowCls = 'grid gap-6 py-3 border-b border-[#7c7c7c] items-center'
-
-export const HeadCell: React.FC<{ zh: string; center?: boolean }> = ({ zh, center }) => (
-  <div className={`text-xs text-gray-scale2 ${center ? 'text-center' : ''}`}>{zh}</div>
-)
-
 /** 後台圖片只收 JPG／PNG（uploadImage 也擋） */
-export const IMAGE_ACCEPT = 'image/jpeg,image/png'
+const IMAGE_ACCEPT = 'image/jpeg,image/png'
 
 /**
  * 可換圖的縮圖：點擊開檔案選擇（原生 label＋file input，鍵盤可聚焦），hover 整張蓋相機 icon。
@@ -754,18 +740,6 @@ export const ImagePicker: React.FC<{
     </label>
   )
 }
-
-/** 編輯鈕：鉛筆 icon（同前台 Profile 的編輯），文字說明放 title／aria-label */
-export const EditIconBtn: React.FC<{ onClick: () => void; label?: string }> = ({ onClick, label = '編輯' }) => (
-  <button
-    onClick={onClick}
-    title={label}
-    aria-label={label}
-    className="flex items-center text-white hover:opacity-70 cursor-pointer"
-  >
-    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span>
-  </button>
-)
 
 /**
  * 分頁狀態：resetKey（搜尋／篩選／排序）或每頁筆數變動回第一頁；

@@ -140,7 +140,7 @@ export const NumberedList: React.FC<{ items: { en: string; zh: string; descEn?: 
     <ol className={items.some(r => r.descZh) ? 'space-y-3' : 'space-y-1'}>
       {items.map((r, i) => (
         <li key={i} className="flex gap-2 text-xs text-white leading-normal">
-          <span className="flex-shrink-0 min-w-4 font-['Inter',_sans-serif]">{i + 1}.</span>
+          <span className="flex-shrink-0 min-w-4 font-english">{i + 1}.</span>
           <div>
             <p>{t(r.en, r.zh)}</p>
             {r.descZh && <p className="text-[#cccccc] leading-relaxed mt-1">{t(r.descEn ?? r.descZh, r.descZh)}</p>}

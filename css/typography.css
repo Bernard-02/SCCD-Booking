@@ -6,6 +6,6 @@
   font-family: 'Inter', 'Noto Sans TC', sans-serif; /* Inter 先接英數，中文 fallback Noto */
 }
 
-.font-english {
+.font-english { /* 字距（Inter Dynamic Metrics）在 src/index.css base 層，依字級 token 套 */
   font-family: 'Inter', sans-serif;
 }

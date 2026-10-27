@@ -17,7 +17,6 @@ import '../css/typography.css'
 import '../css/animations.css'
 import '../css/booking.css'
 import '../css/rental-list.css'
-import '../css/forms.css'
 import '../css/numbered-area.css'
 import '../css/scrollbar.css'
 

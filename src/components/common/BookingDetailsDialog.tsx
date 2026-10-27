@@ -163,7 +163,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
       >
         {/* 標題區 */}
         <div className="px-6 pt-6">
-          <h2 className="font-['Inter',_sans-serif] text-sm text-white font-normal">
+          <h2 className="font-english text-sm text-white font-normal">
             {t('Booking Details', '借用資訊')}
           </h2>
         </div>
@@ -266,7 +266,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             onClick={onCancel}
             className="text-[#cccccc] hover:text-white cursor-pointer"
           >
-            <span className="font-['Inter',_sans-serif] text-xs">
+            <span className="font-english text-xs">
               {t('Cancel', '取消')}
             </span>
           </button>
@@ -281,7 +281,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
                 : 'text-gray-scale3 cursor-not-allowed'
             }`}
           >
-            <span className="font-['Inter',_sans-serif] text-xs">
+            <span className="font-english text-xs">
               {t('Confirm', '確認')}
             </span>
           </button>

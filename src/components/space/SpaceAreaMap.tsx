@@ -337,7 +337,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           </p>
           <div className="flex justify-between items-center mb-1">
             <span className="text-gray-scale2 text-xs">{t('Deposit/Pcs', '押金/塊')}</span>
-            <span className="font-['Inter',_sans-serif] text-white text-xs">NT$ {tooltip.deposit.toLocaleString()}</span>
+            <span className="font-english text-white text-xs">NT$ {tooltip.deposit.toLocaleString()}</span>
           </div>
           <div className="border-t border-gray-scale3 my-3"></div>
           <div>
