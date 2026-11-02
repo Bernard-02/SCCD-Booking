@@ -36,7 +36,7 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #ffffff;
+  background-color: var(--color-white);
   border-radius: 0; /* 方角 */
 }
 
@@ -44,6 +44,6 @@
 @supports not selector(::-webkit-scrollbar) {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #ffffff transparent;
+    scrollbar-color: var(--color-white) transparent;
   }
 }

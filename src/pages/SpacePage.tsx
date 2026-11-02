@@ -2,17 +2,20 @@
  * 空間租借頁面 - React 新版
  */
 
+import { BTN, BTN_TOOL } from '@/components/common/btn'
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Header from '../components/layouts/Header'
 import BackButton from '../components/common/BackButton'
 import Footer from '../components/layouts/Footer'
 import DatePickerBar from '../components/DatePickerBar'
 import SpaceAreaMap from '../components/space/SpaceAreaMap'
 import ClassroomList from '../components/space/ClassroomList'
-import { useSpaceBlocks, fetchOccupiedSpaces } from '../services/spaceService'
-import { toDateKey } from '../components/cart/cartHelpers'
-import { useCart, loginRequiredMsg } from '../hooks/useCart'
+import { useSpaceBlocks, fetchOccupiedSpaces, fetchOccupiedSpacesDaily } from '../services/spaceService'
+import { toDateKey, rescheduleCategory } from '../components/cart/cartHelpers'
+import { dayKeysBetween, fromDateKey } from '../utils/timeUtils'
+import PartialDialog from '../components/common/PartialDialog'
+import { useCart, loginPath, takePendingSelection } from '../hooks/useCart'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import Toast from '../components/common/Toast'
 import { useAuth } from '../contexts/AuthContext'
@@ -23,7 +26,7 @@ import Collapse from '../components/common/Collapse'
 import { navItemCls } from '../components/common/navItem'
 
 // 子分類項目（主分類用共用的 navItemCls）：icon 那側 padding 少 4px，一般字重
-const SUB_ITEM = 'flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg text-sm cursor-pointer text-left'
+const SUB_ITEM = 'flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg text-sm text-left cursor-pointer'
 
 // 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
 const AREA_MAPPING: Record<string, string[]> = {
@@ -36,10 +39,11 @@ const AREA_MAPPING: Record<string, string[]> = {
 
 const SpacePage: React.FC = () => {
   const t = useT()
-  const { cart, addToCart, removeFromCart, isSuspended } = useCart()
-  const { getCurrentSpaceDates } = useDateSelection()
+  const { cart, addToCart, removeFromCart, rescheduleCart, isSuspended } = useCart()
+  const { getCurrentSpaceDates, setSpaceDates } = useDateSelection()
   const { currentUser, isAuthenticated } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   // 獲取當前模式的日期
   const spaceDates = getCurrentSpaceDates()
@@ -52,20 +56,41 @@ const SpacePage: React.FC = () => {
 
   // 該時段被生效訂單佔用的空間 id（區塊＋教室）
   const [occupiedIds, setOccupiedIds] = useState<string[]>([])
+  // 逐日佔用（部分時段可借用，supabase/partial-availability.sql）；RPC 不在時為 null → 全部當整段已租
+  const [occupiedDays, setOccupiedDays] = useState<Record<string, Set<string>> | null>(null)
+  // 正在開選段 popup 的格子
+  const [partialBlock, setPartialBlock] = useState<string | null>(null)
   const occupiedStartKey = spaceDates.startDate ? toDateKey(spaceDates.startDate) : null
   const occupiedEndKey = spaceDates.endDate ? toDateKey(spaceDates.endDate) : null
 
   useEffect(() => {
     if (!occupiedStartKey || !occupiedEndKey) {
       setOccupiedIds([])
+      setOccupiedDays(null)
       return
     }
     let mounted = true
     fetchOccupiedSpaces(occupiedStartKey, occupiedEndKey)
       .then(ids => { if (mounted) setOccupiedIds(ids) })
       .catch(err => console.error('讀取空間佔用失敗:', err))
+    fetchOccupiedSpacesDaily(occupiedStartKey, occupiedEndKey)
+      .then(map => { if (mounted) setOccupiedDays(map) })
+      .catch(err => { console.warn('逐日佔用 RPC 不可用，退回整段判定:', err); if (mounted) setOccupiedDays(null) })
     return () => { mounted = false }
   }, [occupiedStartKey, occupiedEndKey])
+
+  // 部分時段：區間每一天；有逐日資料時，只佔幾天的格子是「部分」（橘），整段都被佔的才是已租（粉）
+  const spaceRangeDays = useMemo(
+    () => (occupiedStartKey && occupiedEndKey ? dayKeysBetween(fromDateKey(occupiedStartKey), fromDateKey(occupiedEndKey)) : []),
+    [occupiedStartKey, occupiedEndKey]
+  )
+  const partialIds = useMemo(
+    () => (occupiedDays && spaceRangeDays.length
+      ? occupiedIds.filter(id => (occupiedDays[id]?.size ?? spaceRangeDays.length) < spaceRangeDays.length)
+      : []),
+    [occupiedDays, occupiedIds, spaceRangeDays]
+  )
+  const rentedIds = useMemo(() => occupiedIds.filter(id => !partialIds.includes(id)), [occupiedIds, partialIds])
 
   // 個人租借（小量／大量-個人）：受每時段押金上限 5,000 約束，全選必定超標
   const isPersonalBooking = spaceDates.bookingType !== 'mass-group'
@@ -76,13 +101,17 @@ const SpacePage: React.FC = () => {
     addToCartRef.current = addToCart
   }, [addToCart])
 
+  // 訪客被導去登入前的選取（分類／區塊／專案許可），回來後還原
+  const [pending] = useState(() => takePendingSelection<{ main: 'NumberedArea' | 'Classroom'; sub: string | null; blocks: string[]; permit: boolean }>('space'))
   // 主分類：NumberedArea 或 Classroom
-  const [selectedMainCategory, setSelectedMainCategory] = useState<'NumberedArea' | 'Classroom'>('NumberedArea')
+  const [selectedMainCategory, setSelectedMainCategory] = useState<'NumberedArea' | 'Classroom'>(pending?.main ?? 'NumberedArea')
   // 編號區子分類 - 預設為 null（不選擇任何子分類，顯示全部地圖）
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null)
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(pending?.sub ?? null)
   // 當前選擇的區塊（尚未加入購物車）
-  const [selectedBlocks, setSelectedBlocks] = useState<string[]>([])
-  const [hasProjectPermission, setHasProjectPermission] = useState<boolean>(false)
+  const [selectedBlocks, setSelectedBlocks] = useState<string[]>(pending?.blocks ?? [])
+  const [hasProjectPermission, setHasProjectPermission] = useState<boolean>(pending?.permit ?? false)
+  // 訪客按加入清單：帶去登入頁、登入後還原的選取
+  const goLogin = () => navigate(loginPath('space', { main: selectedMainCategory, sub: selectedSubCategory, blocks: selectedBlocks, permit: hasProjectPermission }))
   // 狀態篩選 - 添加 partial 狀態
   const [statusFilters, setStatusFilters] = useState<Set<'available' | 'unavailable' | 'partial'>>(
     new Set(['available', 'unavailable', 'partial'])
@@ -173,18 +202,39 @@ const SpacePage: React.FC = () => {
 
     return openClassrooms.filter(classroom => {
       const inCart = isClassroomInCart(classroom.id)
-
-      // Available: 不在購物車中
-      if (statusFilters.has('available') && !inCart) return true
-      // Unavailable: 在購物車中
-      if (statusFilters.has('unavailable') && inCart) return true
-      // Partial: 教室不適用此狀態，所以忽略
-
+      const rented = rentedIds.includes(classroom.id)
+      const partial = partialIds.includes(classroom.id)
+      if (statusFilters.has('available') && !inCart && !rented && !partial) return true
+      if (statusFilters.has('unavailable') && (inCart || rented)) return true
+      if (statusFilters.has('partial') && partial) return true
       return false
     })
-  }, [statusFilters, cart, spaceBlocks])
+  }, [statusFilters, cart, spaceBlocks, rentedIds, partialIds])
 
   // 處理區塊選擇（只能選擇當前子分類的區塊）
+  // 部分時段 popup 確認：空間日期改成那段，清單裡的空間品項一起改日期；
+  // 教室＝直接加入清單（同設備），編號區格子＝進入選取（之後照常按加入清單）
+  const confirmPartialBlock = (startDate: string, endDate: string) => {
+    if (!partialBlock) return
+    const id = partialBlock
+    setPartialBlock(null)
+    setSpaceDates(fromDateKey(startDate), fromDateKey(endDate), spaceDates.bookingType)
+    const classroom = classroomData.find(c => c.id === id)
+    if (classroom) {
+      const result = addToCart(
+        { id: classroom.id, name: classroom.name, category: 'classroom', deposit: classroom.price, image: classroom.image,
+          quantity: 1, startDate, endDate, bookingType: spaceDates.bookingType },
+        rescheduleCategory(cart, 'space', startDate, endDate)
+      )
+      if (result.ok) showToast(t(`Added ${classroom.enName}. Space dates changed to ${startDate} – ${endDate}.`, `已加入 ${classroom.name}，空間日期改為 ${startDate} – ${endDate}`))
+      else showToast(result.reason || t('Couldn’t add to your list.', '無法加入清單'), 'error')
+      return
+    }
+    rescheduleCart('space', startDate, endDate)
+    setSelectedBlocks(prev => (prev.includes(id) ? prev : [...prev, id]))
+    showToast(t(`Space dates changed to ${startDate} – ${endDate}; ${id} selected.`, `空間日期改為 ${startDate} – ${endDate}，已選取 ${id}`))
+  }
+
   const handleBlockSelect = (blockId: string) => {
     // 如果該區塊已在購物車中，則移除
     if (cartBlockIds.includes(blockId)) {
@@ -310,7 +360,7 @@ const SpacePage: React.FC = () => {
 
     // 訪客／停權早退：在清空選取前擋下，保留使用者已選的區塊
     if (!isAuthenticated) {
-      showToast(loginRequiredMsg(), 'error')
+      goLogin()
       return
     }
     if (isSuspended) {
@@ -391,9 +441,21 @@ const SpacePage: React.FC = () => {
       return
     }
 
+    // 訪客：導去登入頁（放在 A508 年級檢查之前，訪客沒有年級）
+    if (!isAuthenticated) {
+      goLogin()
+      return
+    }
+
     // A508 限大二以上（submit_orders 亦擋，此處為 UX 提前提示）
     if (id === 'A508' && !isSophomoreOrAbove(currentUser?.year)) {
       showToast(t('Classroom A508 is only available to second-year students and above (including master’s students).', 'A508 教室僅限大二以上（含碩士）借用'), 'error')
+      return
+    }
+
+    // 部分時段：開 popup 選一段（空間日期會改成那段），不走整段佔用檢查
+    if (partialIds.includes(id)) {
+      setPartialBlock(id)
       return
     }
 
@@ -476,7 +538,7 @@ const SpacePage: React.FC = () => {
 
                 {/* 編號區子分類：只在編號區被選中時展開；直線＝主分類 icon 中心（pl-3 12px＋icon 半寬 10px） */}
                 <Collapse open={isNumberedAreaSelected}>
-                  <div className="mt-2 ml-[22px] pl-3 border-l border-[#545454] flex flex-col gap-1 py-1">
+                  <div className="mt-2 ml-[22px] pl-3 border-l border-gray-mid flex flex-col gap-1 py-1">
                     {numberedAreaCategories.map((category) => {
                       // 專案許可區使用黃色（選中＝淡黃底＋黃字，其餘子分類為淡白底）
                       const isCasePermit = category.id === 'CasePermitArea'
@@ -487,8 +549,8 @@ const SpacePage: React.FC = () => {
                           onClick={() => handleSubCategoryChange(isSelected ? null : category.id)}
                           className={`${SUB_ITEM} ${
                             isSelected
-                              ? (isCasePermit ? 'bg-[color-mix(in_srgb,var(--color-yellow)_18%,transparent)] text-yellow' : 'bg-white/15 text-white')
-                              : `text-gray-scale2 ${isCasePermit ? 'permit-hover' : 'hover:!text-white'}`
+                              ? (isCasePermit ? 'bg-gray-dark text-yellow' : 'bg-gray-dark text-white')
+                              : 'text-gray-light hover:text-white'
                           }`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{category.icon}</span>
@@ -518,11 +580,11 @@ const SpacePage: React.FC = () => {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => toggleStatusFilter('available')}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className={`flex items-center gap-2 ${statusFilters.has('available') ? 'cursor-pointer' : BTN}`}
                   >
-                    <div className="w-3 h-3 bg-[#00ff80]"></div>
+                    <div className="w-3 h-3 bg-green"></div>
                     <span className={`text-xs ${
-                      statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                      statusFilters.has('available') ? 'text-white' : 'text-gray-light'
                     }`}>
                       {t('Available', '全時段借用')}
                     </span>
@@ -530,11 +592,11 @@ const SpacePage: React.FC = () => {
 
                   <button
                     onClick={() => toggleStatusFilter('unavailable')}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className={`flex items-center gap-2 ${statusFilters.has('unavailable') ? 'cursor-pointer' : BTN}`}
                   >
-                    <div className="w-3 h-3 bg-[#ff448a]"></div>
+                    <div className="w-3 h-3 bg-pink"></div>
                     <span className={`text-xs ${
-                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-light'
                     }`}>
                       {t('Unavailable', '不可借用')}
                     </span>
@@ -542,11 +604,11 @@ const SpacePage: React.FC = () => {
 
                   <button
                     onClick={() => toggleStatusFilter('partial')}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className={`flex items-center gap-2 ${statusFilters.has('partial') ? 'cursor-pointer' : BTN}`}
                   >
-                    <div className="w-3 h-3 bg-[#ffa500]"></div>
+                    <div className="w-3 h-3 bg-orange"></div>
                     <span className={`text-xs ${
-                      statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                      statusFilters.has('partial') ? 'text-white' : 'text-gray-light'
                     }`}>
                       {t('Partially Available', '部分時段借用')}
                     </span>
@@ -576,8 +638,25 @@ const SpacePage: React.FC = () => {
                     selectedBlocks={selectedBlocks}
                     onBlockSelect={handleBlockSelect}
                     cartBlocks={cartBlockIds}
-                    rentedBlocks={occupiedIds}
+                    rentedBlocks={rentedIds}
+                    partialBlocks={partialIds}
+                    onPartialClick={id => (hasSelectedDates ? setPartialBlock(id) : showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error'))}
                   />
+                  {/* 部分時段：選一段再選取（空間日期改成那段） */}
+                  {partialBlock && (
+                    <PartialDialog
+                      isOpen
+                      title={`${classroomData.find(c => c.id === partialBlock)?.name ?? partialBlock}：只有部分天數可借`}
+                      titleEn={`${classroomData.find(c => c.id === partialBlock)?.enName ?? partialBlock}: only some days available`}
+                      days={spaceRangeDays}
+                      okDays={new Set(spaceRangeDays.filter(d => !occupiedDays?.[partialBlock]?.has(d)))}
+                      what="space"
+                      confirmLabel={classroomData.some(c => c.id === partialBlock) ? 'add' : 'select'}
+                      affectsOthers={cart.some(i => i.category !== 'equipment')}
+                      onConfirm={confirmPartialBlock}
+                      onCancel={() => setPartialBlock(null)}
+                    />
+                  )}
                 </div>
 
                 {/* 右側：30% - 借用資訊面板 */}
@@ -587,12 +666,12 @@ const SpacePage: React.FC = () => {
                   <div className="mb-6 flex flex-col gap-3 relative z-20">
                     <button
                       onClick={() => toggleStatusFilter('available')}
-                      className="flex items-center gap-2 cursor-pointer group"
+                      className={`flex items-center gap-2 ${statusFilters.has('available') ? 'cursor-pointer' : BTN}`}
                     >
-                      {/* Available: 不透明淺綠色 rgb(0, 128, 64) */}
-                      <div className="w-3 h-3 bg-[rgb(0,128,64)]"></div>
+                      {/* Available: 不透明淺綠色 color-mix(in srgb, var(--color-green) 50%, transparent) */}
+                      <div className="w-3 h-3 bg-green/50"></div>
                       <span className={`text-xs ${
-                        statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                        statusFilters.has('available') ? 'text-white' : 'text-gray-light'
                       }`}>
                         {t('Available', '可借用')}
                       </span>
@@ -600,12 +679,12 @@ const SpacePage: React.FC = () => {
 
                     <button
                       onClick={() => toggleStatusFilter('unavailable')}
-                      className="flex items-center gap-2 cursor-pointer group"
+                      className={`flex items-center gap-2 ${statusFilters.has('unavailable') ? 'cursor-pointer' : BTN}`}
                     >
-                      {/* Unavailable: #ff448a - 與 SVG is-rented 一致 */}
-                      <div className="w-3 h-3 bg-[#ff448a]"></div>
+                      {/* Unavailable: pink，與 SVG is-rented 一致 */}
+                      <div className="w-3 h-3 bg-pink"></div>
                       <span className={`text-xs ${
-                        statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                        statusFilters.has('unavailable') ? 'text-white' : 'text-gray-light'
                       }`}>
                         {t('Unavailable', '不可借用')}
                       </span>
@@ -613,20 +692,20 @@ const SpacePage: React.FC = () => {
 
                     <button
                       onClick={() => toggleStatusFilter('partial')}
-                      className="flex items-center gap-2 cursor-pointer group"
+                      className={`flex items-center gap-2 ${statusFilters.has('partial') ? 'cursor-pointer' : BTN}`}
                     >
-                      {/* Partial: #ffa500 橘色警告色 */}
-                      <div className="w-3 h-3 bg-[#ffa500]"></div>
+                      {/* Partial: orange */}
+                      <div className="w-3 h-3 bg-orange"></div>
                       <span className={`text-xs ${
-                        statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                        statusFilters.has('partial') ? 'text-white' : 'text-gray-light'
                       }`}>
                         {t('Partially Available', '部分時段可借用')}
                       </span>
                     </button>
 
-                    {/* Selected: #00ff80 - 與 SVG is-selected 一致 */}
+                    {/* Selected: green，與 SVG is-selected 一致 */}
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-[#00ff80]"></div>
+                      <div className="w-3 h-3 bg-green"></div>
                       <span className="text-xs text-white">
                         {t('Selected', '已選擇')}
                       </span>
@@ -638,7 +717,7 @@ const SpacePage: React.FC = () => {
                     {/* 選擇區塊 */}
                     <div className="mb-4">
                       <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-xs text-gray-scale2">{t('Selected Area', '選擇區塊')}</span>
+                        <span className="text-xs text-gray-light">{t('Selected Area', '選擇區塊')}</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar mb-4">
                         <span className="text-md font-english font-normal break-words">
@@ -647,13 +726,13 @@ const SpacePage: React.FC = () => {
                       </div>
 
                       {/* 全選和清除按鈕（icon＋文字）- 靠左對齊 */}
-                      <div className="flex gap-8">
+                      <div className="flex gap-2">
                         {/* 可選區塊全數選完時 disable；未選日期／個人租借時保持可點，點擊 toast 說明原因 */}
                         <button
                           onClick={handleSelectAll}
                           disabled={!selectedSubCategory || allAvailableSelected}
-                          className={`flex items-center gap-1 text-sm font-english font-normal ${
-                            !selectedSubCategory || allAvailableSelected || !hasSelectedDates || isPersonalBooking ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
+                          className={`${BTN_TOOL} font-english ${
+                            !hasSelectedDates || isPersonalBooking ? 'opacity-20 cursor-not-allowed' : BTN
                           }`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>select_all</span>
@@ -662,9 +741,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={() => setSelectedBlocks([])}
                           disabled={!selectedSubCategory || selectedBlocks.length === 0}
-                          className={`flex items-center gap-1 text-sm font-english font-normal ${
-                            !selectedSubCategory || selectedBlocks.length === 0 ? 'text-gray-scale4 cursor-not-allowed' : 'text-white hover:text-gray-scale2 cursor-pointer'
-                          }`}
+                          className={`${BTN_TOOL} font-english ${BTN}`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                           {t('Clear', '清除')}
@@ -685,7 +762,7 @@ const SpacePage: React.FC = () => {
                             onChange={(e) => setHasProjectPermission(e.target.checked)}
                             className="custom-checkbox"
                           />
-                          <span className="text-xs font-['Inter','Noto_Sans_TC',_sans-serif] text-white group-hover:text-gray-scale2 leading-tight">
+                          <span className="text-xs font-chinese text-white leading-tight">
                             已與老師討論，確認老師知情並允許於此專案借用
                           </span>
                         </label>
@@ -696,8 +773,8 @@ const SpacePage: React.FC = () => {
                     <button
                       onClick={handleAddBlocks}
                       aria-disabled={isAddBlocked}
-                      className={`w-full h-11 pl-3 pr-4 rounded-lg bg-white text-black flex items-center gap-2 ${
-                        isAddBlocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                      className={`w-full h-11 pl-3 pr-4 rounded-lg flex items-center gap-2 ${
+                        isAddBlocked ? 'bg-white text-black opacity-20 cursor-not-allowed' : `bg-white text-black ${BTN}`
                       }`}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_shopping_cart</span>
@@ -715,6 +792,8 @@ const SpacePage: React.FC = () => {
               <ClassroomList
                 classrooms={filteredClassrooms}
                 onAdd={handleClassroomAdd}
+                occupiedIds={rentedIds}
+                partialIds={partialIds}
               />
             </div>
           </div>

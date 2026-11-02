@@ -3,6 +3,7 @@
  * 以列表形式顯示教室，類似設備列表
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState } from 'react'
 import { useDateSelection } from '../../contexts/DateSelectionContext'
 import { useCart } from '../../hooks/useCart'
@@ -19,9 +20,11 @@ interface Classroom {
 interface ClassroomListProps {
   classrooms: Classroom[]
   onAdd: (id: string) => void
+  occupiedIds?: string[] // 你選的區間整段都被佔（粉，不能加）
+  partialIds?: string[] // 只佔幾天（橘，點加入開選段 popup，由 SpacePage 處理）
 }
 
-const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
+const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupiedIds = [], partialIds = [] }) => {
   const t = useT()
   const { getCurrentSpaceDates } = useDateSelection()
   const { cart, isSuspended } = useCart()
@@ -59,7 +62,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
           {/* 關閉按鈕 */}
           <button
             onClick={closeFullscreenImage}
-            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 cursor-pointer z-10"
+            className={`absolute top-20 right-8 text-white text-xl font-normal z-10 ${BTN}`}
             aria-label="關閉"
           >
             ×
@@ -76,51 +79,51 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
       )}
 
       {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="min-w-[900px] grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] items-center gap-6 pb-3 border-b border-[#7c7c7c] flex-shrink-0">
+      <div className="min-w-[900px] grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] items-center gap-6 pb-3 border-b border-gray-mid flex-shrink-0">
         {/* 狀態指示器列 */}
         <div></div>
 
         {/* 圖片列 */}
-        <div className="font-english text-xs text-gray-scale2"></div>
+        <div className="font-english text-xs text-gray-light"></div>
 
         {/* 教室名稱列 - 空白（不顯示標簽） */}
-        <div className="font-english text-xs text-gray-scale2"></div>
+        <div className="font-english text-xs text-gray-light"></div>
 
         {/* 總數量列 */}
-        <div className="font-english text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-light text-center">
           {t('Total Qty', '總數量')}
         </div>
 
         {/* 可借數量列 */}
-        <div className="font-english text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-light text-center">
           {t('Available Qty', '可借數量')}
         </div>
 
         {/* 保留中數量列 */}
-        <div className="font-english text-xs text-gray-scale2 text-center flex items-center justify-center gap-1">
+        <div className="font-english text-xs text-gray-light text-center flex items-center justify-center gap-1">
           <div>
             {t('On Hold', '待繳押金')}
           </div>
           <div className="relative group flex">
-            <span className="material-symbols-outlined text-gray-scale2 cursor-help" style={{ fontSize: '20px' }}>
+            <span className="material-symbols-outlined text-gray-light cursor-help" style={{ fontSize: '20px' }}>
               info
             </span>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-scale4 text-white text-xs whitespace-nowrap rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none z-50">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-gray-dark text-white text-xs whitespace-nowrap rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none z-50">
               已送出但未繳押金的設備
               {/* 小三角形 */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-scale4"></div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-gray-mid"></div>
             </div>
           </div>
         </div>
 
         {/* 押金列 */}
-        <div className="font-english text-xs text-gray-scale2 text-center">
+        <div className="font-english text-xs text-gray-light text-center">
           {t('Deposit', '押金')}
         </div>
 
         {/* 操作列 - 空白（不顯示標簽） */}
-        <div className="font-english text-xs text-gray-scale2 text-center"></div>
+        <div className="font-english text-xs text-gray-light text-center"></div>
       </div>
 
       {classrooms.length > 0 ? (
@@ -128,12 +131,14 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         <div className="flex-1 overflow-y-auto min-w-[900px]">
           {classrooms.map(classroom => {
             const inCart = isInCart(classroom.id)
-            const isAvailable = !inCart
-            const statusColor = inCart ? 'var(--color-error)' : 'var(--color-success)'
+            const occupied = occupiedIds.includes(classroom.id)
+            const partial = !occupied && partialIds.includes(classroom.id)
+            const isAvailable = !inCart && !occupied
+            const statusColor = inCart || occupied ? 'var(--color-pink)' : partial ? 'var(--color-orange)' : 'var(--color-green)'
             return (
               <div
                 key={classroom.id}
-                className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 py-3 border-b border-[#7c7c7c] items-center"
+                className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 py-3 border-b border-gray-mid items-center"
               >
                 {/* 狀態指示器 - 獨立的 grid 列 */}
                 <div
@@ -156,34 +161,34 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                 </div>
 
                 {/* 教室名稱 */}
-                <div className={`text-sm ${!isAvailable ? 'text-[#545454]' : 'text-white'}`}>
+                <div className={`text-sm ${!isAvailable ? 'text-gray-mid' : 'text-white'}`}>
                   {t(classroom.enName, classroom.name)}
                 </div>
 
                 {/* 總數量 - 教室固定為 1 */}
                 <div className={`font-english text-sm text-center ${
-                  !isAvailable ? 'text-[#545454]' : 'text-white'
+                  !isAvailable ? 'text-gray-mid' : 'text-white'
                 }`}>
                   1
                 </div>
 
-                {/* 可借數量 - 在購物車中為 0，否則為 1 */}
+                {/* 可借數量 - 在購物車中或整段被佔為 0，否則為 1（部分時段橘字） */}
                 <div className={`font-english text-sm text-center ${
-                  !isAvailable ? 'text-[#545454]' : 'text-white'
+                  !isAvailable ? 'text-gray-mid' : partial ? 'text-orange' : 'text-white'
                 }`}>
                   {isAvailable ? 1 : 0}
                 </div>
 
                 {/* 保留中數量 - 暫時顯示假數據 */}
                 <div className={`font-english text-sm text-center ${
-                  !isAvailable ? 'text-[#545454]' : 'text-white'
+                  !isAvailable ? 'text-gray-mid' : 'text-white'
                 }`}>
                   0
                 </div>
 
                 {/* 押金 */}
                 <div className={`font-english text-sm text-center ${
-                  !isAvailable ? 'text-[#545454]' : 'text-white'
+                  !isAvailable ? 'text-gray-mid' : 'text-white'
                 }`}>
                   NT$ {classroom.price.toLocaleString()}
                 </div>
@@ -197,10 +202,10 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
                     }}
                     disabled={!isAvailable || !hasSelectedDates}
                     aria-label={t('Add', '加入清單')}
-                    className={`w-9 h-9 rounded-lg bg-white text-black flex items-center justify-center ${
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
                       isAvailable && hasSelectedDates && !isSuspended
-                        ? 'cursor-pointer'
-                        : 'opacity-50 cursor-not-allowed'
+                        ? `bg-white text-black ${BTN}`
+                        : 'bg-white text-black opacity-20 cursor-not-allowed'
                     }`}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add_shopping_cart</span>
@@ -212,7 +217,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd }) => {
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <p className="text-gray-scale2 text-sm">{t('No Classroom Found', '找不到符合條件的教室')}</p>
+          <p className="text-gray-light text-sm">{t('No Classroom Found', '找不到符合條件的教室')}</p>
         </div>
       )}
     </div>

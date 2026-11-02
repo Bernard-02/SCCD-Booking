@@ -6,6 +6,7 @@
  * 清單資料由父層（AdminEquipmentPage）載入並傳入；新增／修改走同一個對話框（FormDialog）。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useEffect, useState } from 'react'
 import { saveBundle, deleteBundle, uploadImage, imageSrc } from '../../services/adminService'
 import type { AdminEquipment, BundleFields, AdminBundle } from '../../services/adminService'
@@ -115,7 +116,7 @@ const BundleManager: React.FC<{
       {/* border-separate：表頭 sticky 時底線才跟著走 */}
       <table className="w-full text-xs border-separate border-spacing-0">
         <thead>
-          <tr className="text-left text-gray-scale2">
+          <tr className="text-left text-gray-light">
             <th className={`${th} w-48`}>名稱</th>
             <th className={th}>一組內容</th>
             <th className={`${th} w-28 text-center`}>押金/組</th>
@@ -125,7 +126,7 @@ const BundleManager: React.FC<{
         </thead>
         <tbody>
           {visible.map(r => (
-            <tr key={r.id} className="hover:bg-white/5">
+            <tr key={r.id} className="hover:bg-white/10">
               <td className={td}>
                 <div className="flex items-center gap-3">
                   {/* 沒圖＝灰底組合 icon（不沿用設備的預設圖） */}
@@ -133,11 +134,11 @@ const BundleManager: React.FC<{
                   <span className="font-chinese">{r.name}</span>
                 </div>
               </td>
-              <td className="px-3 py-3 font-chinese text-gray-scale2 border-b border-gray-scale4">
+              <td className="px-3 py-3 font-chinese text-gray-light border-b border-gray-mid">
                 {r.items.map(i => `${nameOf(i.equipmentId)} ×${i.quantity}`).join('、')}
               </td>
               <td className={`${td} font-english text-center`}>NT$ {r.deposit.toLocaleString()}</td>
-              <td className={`${td} font-english text-center text-gray-scale2`}>NT$ {itemsTotal(r).toLocaleString()}</td>
+              <td className={`${td} font-english text-center text-gray-light`}>NT$ {itemsTotal(r).toLocaleString()}</td>
               <td className={`${td} text-center`}>
                 <div className="inline-flex items-center gap-3">
                   <button
@@ -146,7 +147,7 @@ const BundleManager: React.FC<{
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                   </button>
-                  <button onClick={() => handleDelete(r)} className="cursor-pointer hover:opacity-70 font-chinese" style={{ color: 'var(--color-error2)' }}>
+                  <button onClick={() => handleDelete(r)} className={`${BTN} font-chinese`} style={{ color: 'var(--color-error)' }}>
                     刪除
                   </button>
                 </div>
@@ -156,7 +157,7 @@ const BundleManager: React.FC<{
         </tbody>
       </table>
       {visible.length === 0 && (
-        <div className="py-16 text-center text-xs text-gray-scale2 font-chinese">尚未設定組合（所有設備照單件押金計算）</div>
+        <div className="py-16 text-center text-xs text-gray-light font-chinese">尚未設定組合（所有設備照單件押金計算）</div>
       )}
 
       {/* 新增／修改組合：同一個對話框 */}
@@ -192,7 +193,7 @@ const BundleManager: React.FC<{
                   <NumberInput value={editing.f.deposit} onChange={n => setF({ deposit: n })} step={50} />
                 </Field>
                 <Field zh="單件合計">
-                  <span className={`${inputCls} w-full font-english text-gray-scale2 border-transparent px-0`}>
+                  <span className={`${inputCls} w-full font-english text-gray-light border-transparent px-0`}>
                     NT$ {itemsTotal(editing.f).toLocaleString()}
                   </span>
                 </Field>
@@ -204,14 +205,14 @@ const BundleManager: React.FC<{
                   {editing.f.items.map((it, idx) => (
                     <div key={it.equipmentId} className="flex items-center gap-3">
                       <span className="flex-1 text-xs text-white font-chinese">{nameOf(it.equipmentId)}</span>
-                      <label className="flex items-center gap-1 text-xs text-gray-scale2 font-chinese">×
+                      <label className="flex items-center gap-1 text-xs text-gray-light font-chinese">×
                         <NumberInput value={it.quantity} onChange={n => setItemQty(idx, n)} min={1} className="w-24" />
                       </label>
                       <button
                         type="button"
                         onClick={() => setF({ items: editing.f.items.filter((_, i) => i !== idx) })}
                         aria-label="移除" title="移除"
-                        className="flex items-center text-gray-scale2 hover:!text-white cursor-pointer"
+                        className={`flex items-center text-gray-light ${BTN}`}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                       </button>

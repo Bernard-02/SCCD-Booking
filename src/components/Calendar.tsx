@@ -3,6 +3,7 @@
  * 從 calendar-generator.js 遷移
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { toDateKey } from './cart/cartHelpers'
 import { fetchBlackouts } from '../services/ordersService'
@@ -341,12 +342,8 @@ const Calendar: React.FC<CalendarProps> = ({
     const firstCells = padToRows(firstMonth.dateCells, displayRows, cellCls)
     const secondCells = padToRows(secondMonth.dateCells, displayRows, cellCls)
 
-    const prevButtonClasses = `nav-arrow prev text-white text-xl select-none ${
-      canGoPrev() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
-    }`
-    const nextButtonClasses = `nav-arrow next text-white text-xl select-none ${
-      canGoNext() ? 'cursor-pointer opacity-100' : 'opacity-30 cursor-not-allowed'
-    }`
+    const prevButtonClasses = `nav-arrow prev text-white text-xl select-none ${BTN}`
+    const nextButtonClasses = `nav-arrow next text-white text-xl select-none ${BTN}`
 
     const monthTitleSize = variant === 'dialog' ? 'text-md' : 'text-xl'
     const calendarPadding = variant === 'dialog' ? 'pb-4' : 'pb-8'
@@ -434,7 +431,7 @@ const Calendar: React.FC<CalendarProps> = ({
     const minIdx = monthIndex(minAllowedDate)
     const minYear = minAllowedDate.getFullYear()
     const maxYear = Math.floor(maxMonthIndex / 12)
-    const arrowCls = (ok: boolean) => `text-white text-md select-none ${ok ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`
+    const arrowCls = `text-white text-md select-none ${BTN}`
     const yearPrevOk = !!picker && picker.year > minYear
     const yearNextOk = !!picker && picker.year < maxYear
     return (
@@ -443,7 +440,7 @@ const Calendar: React.FC<CalendarProps> = ({
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-4">
             <button
-              className={arrowCls(picker ? yearPrevOk : canGoPrev())}
+              className={arrowCls}
               onClick={() => picker ? yearPrevOk && setPicker({ year: picker.year - 1 }) : handlePrevMonth()}
               disabled={picker ? !yearPrevOk : !canGoPrev()}
               aria-label={picker ? '上一年' : '上個月'}
@@ -451,7 +448,7 @@ const Calendar: React.FC<CalendarProps> = ({
               &lt;
             </button>
             <button
-              className={arrowCls(picker ? yearNextOk : canGoNext())}
+              className={arrowCls}
               onClick={() => picker ? yearNextOk && setPicker({ year: picker.year + 1 }) : handleNextMonth()}
               disabled={picker ? !yearNextOk : !canGoNext()}
               aria-label={picker ? '下一年' : '下個月'}
@@ -462,7 +459,7 @@ const Calendar: React.FC<CalendarProps> = ({
           <button
             onClick={() => setPicker(picker ? null : { year: currentDate.getFullYear() })}
             aria-expanded={!!picker}
-            className="text-white text-sm font-english hover:opacity-70 cursor-pointer"
+            className={`text-white text-sm font-english ${BTN}`}
           >
             {picker ? picker.year : monthCalendar.title}
           </button>
@@ -478,9 +475,7 @@ const Calendar: React.FC<CalendarProps> = ({
                   key={m}
                   disabled={!ok}
                   onClick={() => { setCurrentDate(new Date(picker.year, m, 1)); setPicker(null) }}
-                  className={`h-9 rounded-lg text-xs ${
-                    !ok ? 'text-gray-scale4 cursor-not-allowed' : current ? 'bg-white text-black cursor-pointer' : 'text-white hover:bg-white/10 cursor-pointer'
-                  }`}
+                  className={`h-9 rounded-lg text-xs ${current ? 'bg-white text-black cursor-pointer' : 'text-white cursor-pointer enabled:hover:bg-gray-dark disabled:cursor-not-allowed disabled:opacity-20'}`}
                 >
                   {t(MONTH_NAMES[m], zh)}
                 </button>
@@ -505,7 +500,7 @@ const Calendar: React.FC<CalendarProps> = ({
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <button
-          className={`text-white text-md ${canGoPrev() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
+          className={`text-white text-md ${BTN}`}
           onClick={handlePrevMonth}
           disabled={!canGoPrev()}
         >
@@ -515,7 +510,7 @@ const Calendar: React.FC<CalendarProps> = ({
           {monthCalendar.title}
         </div>
         <button
-          className={`text-white text-md ${canGoNext() ? 'cursor-pointer' : 'opacity-30 cursor-not-allowed'}`}
+          className={`text-white text-md ${BTN}`}
           onClick={handleNextMonth}
           disabled={!canGoNext()}
         >

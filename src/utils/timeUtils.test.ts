@@ -250,3 +250,26 @@ describe('dutyHoursText（前台營業時間）', () => {
     expect(dutyHoursText([])).toBeNull()
   })
 })
+
+// ---- 部分時段：逐日 key 與連續段 ----
+import { contiguousRuns, dayKeysBetween, fromDateKey } from './timeUtils'
+
+describe('部分時段可借用', () => {
+  const days = dayKeysBetween(fromDateKey('2026-10-01'), fromDateKey('2026-10-10'))
+
+  it('10/1–10/10 拆成 10 個 key', () => {
+    expect(days).toHaveLength(10)
+    expect(days[0]).toBe('2026-10-01')
+    expect(days[9]).toBe('2026-10-10')
+  })
+
+  it('前後兩段可借，依日期順序', () => {
+    const ok = new Set(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-10'])
+    expect(contiguousRuns(ok, days)).toEqual([['2026-10-01', '2026-10-03'], ['2026-10-07', '2026-10-10']])
+  })
+
+  it('每天都夠＝一整段；沒有一天夠＝沒有段', () => {
+    expect(contiguousRuns(new Set(days), days)).toEqual([['2026-10-01', '2026-10-10']])
+    expect(contiguousRuns(new Set(), days)).toEqual([])
+  })
+})

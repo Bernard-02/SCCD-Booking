@@ -25,8 +25,8 @@ export const useLangStore = create<LangState>()(
   )
 )
 
-// <html lang> 跟著切換（讀屏、字型 fallback 用）
-const syncHtmlLang = (lang: Lang) => {
+// <html lang> 跟著切換（讀屏、字型 fallback、index.css 的 EN 模式全域英文字距）；後台 AdminLayout 會改成 zh-TW
+export const syncHtmlLang = (lang: Lang) => {
   document.documentElement.lang = lang === 'en' ? 'en' : 'zh-TW'
 }
 syncHtmlLang(useLangStore.getState().lang)

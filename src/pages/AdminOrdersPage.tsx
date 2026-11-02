@@ -8,6 +8,7 @@
  * 待歸還＝使用中＋未完成歸還（都是要收回來的）；已歸還／已取消只在「全部」裡看（搜尋得到）。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
@@ -88,12 +89,12 @@ type CellCtx = {
 // enabled=false＝這一步現在不能做（例：已取消的單）：按鈕照樣顯示但停用，每列欄位對齊、一眼看出走到哪
 const actBtn = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, zh: string, enabled = true) =>
   ctx.busy === o.rental_number
-    ? <span className="text-gray-scale2">處理中…</span>
-    : <button onClick={() => enabled && ctx.act(o, mode)} disabled={!enabled} className={actionBtn(enabled)}>{zh}</button>
+    ? <span className="text-gray-light">處理中…</span>
+    : <button onClick={() => enabled && ctx.act(o, mode)} disabled={!enabled} className={actionBtn}>{zh}</button>
 const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNode> = {
   rental_number: o => <td key="rental_number" className={`${td} font-english`}>{o.rental_number}</td>,
   name: o => <td key="name" className={`${td} font-chinese`}>{o.students?.name ?? '—'}</td>,
-  student_id: o => <td key="student_id" className={`${td} text-gray-scale2 font-english`}>{o.students?.student_id ?? ''}</td>,
+  student_id: o => <td key="student_id" className={`${td} text-gray-light font-english`}>{o.students?.student_id ?? ''}</td>,
   booking_type: o => <td key="booking_type" className={`${td} font-chinese`}>{orderKindMeta(o).zh}</td>,
   start_date: o => <td key="start_date" className={`${td} font-english`}>{fmtDate(o.start_date)}–{fmtDate(o.end_date)}</td>,
   deposit_total: o => <td key="deposit_total" className={`${td} font-english`}>NT$ {o.deposit_total.toLocaleString()}</td>,
@@ -106,18 +107,18 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         const ms = pendingMsRemaining(o.created_at, new Date(), closed)
         return ms > 0
           ? <div className="mt-1 font-chinese" style={{ color: 'var(--color-yellow)' }}>剩 {Math.ceil(ms / 3_600_000)} 小時</div>
-          : <div className="mt-1 font-chinese text-gray-scale3">已逾時，將自動取消</div>
+          : <div className="mt-1 font-chinese text-gray-mid">已逾時，將自動取消</div>
       })()}
       {o.status === 'overdue' && (() => {
         const days = overdueBusinessDays(o.end_date, closed)
         return (
-          <div className="mt-1 font-chinese" style={{ color: 'var(--color-error2)' }}>
+          <div className="mt-1 font-chinese" style={{ color: 'var(--color-error)' }}>
             逾期 {days} 營業日{days >= SUSPENSION_OVERDUE_DAYS ? '（達停權門檻）' : ''}
           </div>
         )
       })()}
       {o.status === 'pending' && o.pickup_slot && (
-        <div className="mt-1 font-chinese text-gray-scale2 leading-5">
+        <div className="mt-1 font-chinese text-gray-light leading-5">
           {!o.deposit_paid_at && o.deposit_date && o.deposit_slot && (
             <div>繳 {slotLabel({ date: o.deposit_date, slot: o.deposit_slot })}</div>
           )}
@@ -125,7 +126,7 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         </div>
       )}
       {isPickupLate(o, toDateKey(new Date())) && (
-        <div className="mt-1 font-chinese" style={{ color: 'var(--color-error2)' }}>逾時未取件</div>
+        <div className="mt-1 font-chinese" style={{ color: 'var(--color-error)' }}>逾時未取件</div>
       )}
     </td>
   ),
@@ -137,24 +138,24 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
           {i.name}{i.item_type === 'equipment' && <span className="font-english"> ×{i.quantity}</span>}
           {i.pickup_pending
             ? <span className="ml-1" style={{ color: 'var(--color-yellow)' }}>待點交</span>
-            : i.changed_at && <span className="ml-1 text-gray-scale2">已更動</span>}
+            : i.changed_at && <span className="ml-1 text-gray-light">已更動</span>}
         </div>
       ))}
       {o.items_updated_at && (
-        <div className="text-gray-scale2 mt-1">改於 <span className="font-english">{fmtDateTime(o.items_updated_at)}</span></div>
+        <div className="text-gray-light mt-1">改於 <span className="font-english">{fmtDateTime(o.items_updated_at)}</span></div>
       )}
     </td>
   ),
   // 借用資訊（原因／班級／老師）任何狀態都可代改，修學生打錯字：文字在左，鉛筆推到欄位最右（各列對齊）
   reason: (o, { editInfo }) => (
-    <td key="reason" className={`px-3 py-3 font-chinese text-gray-scale2 ${rowLine}`}>
+    <td key="reason" className={`px-3 py-3 font-chinese text-gray-light ${rowLine}`}>
       <div className="flex items-start justify-between gap-3">
         <span>{o.reason || '—'}</span>
         <button
           onClick={() => editInfo(o)}
           title="修改借用資訊"
           aria-label="修改借用資訊"
-          className="shrink-0 flex text-gray-scale2 hover:!text-white cursor-pointer"
+          className={`shrink-0 flex text-gray-light ${BTN}`}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>edit</span>
         </button>
@@ -169,7 +170,7 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         : (
           <div className="leading-5">
             <div>{o.paid_by}</div>
-            {o.picked_up_by && o.picked_up_by !== o.paid_by && <div><span className="text-gray-scale2">取</span> {o.picked_up_by}</div>}
+            {o.picked_up_by && o.picked_up_by !== o.paid_by && <div><span className="text-gray-light">取</span> {o.picked_up_by}</div>}
             {isAwaitingPickup(o) && <div className="mt-1">{actBtn(o, ctx, 'pickup', '取件')}</div>}
           </div>
         )}
@@ -343,7 +344,7 @@ const AdminOrdersPage: React.FC = () => {
       {/* 標題右邊：資料更新時間＋重新整理（每分鐘自動更新，時間停住＝資料可能過時） */}
       <PageTitle zh="訂單全覽">
         {updatedAt && (
-          <span className="text-xs text-gray-scale3 font-chinese">
+          <span className="text-xs text-gray-mid font-chinese">
             更新於 <span className="font-english">{updatedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
           </span>
         )}
@@ -351,7 +352,7 @@ const AdminOrdersPage: React.FC = () => {
         <button
           onClick={() => refresh(true)}
           disabled={refreshing}
-          className={`${textBtn(false)} disabled:opacity-40 disabled:cursor-not-allowed`}
+          className={`${textBtn(false)}`}
           title="每分鐘自動更新"
         >
           <span className={`material-symbols-outlined opacity-70 ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '18px' }} aria-hidden="true">refresh</span>
@@ -395,13 +396,13 @@ const AdminOrdersPage: React.FC = () => {
 
       {/* 租借時間區間（date range icon 展開）：與訂單起訖有重疊即列出 */}
       {showRange && (
-        <div className="flex items-center gap-2 mb-6 text-xs text-gray-scale2 font-chinese">
+        <div className="flex items-center gap-2 mb-6 text-xs text-gray-light font-chinese">
           <span className="mr-1">租借時間</span>
           <DateRangePicker from={range.from} to={range.to} onChange={setRange} />
         </div>
       )}
 
-      {loading && <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>}
+      {loading && <div className="text-gray-light text-xs font-chinese">載入中…</div>}
       {!loading && error && <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />}
 
       {!loading && !error && (
@@ -409,14 +410,14 @@ const AdminOrdersPage: React.FC = () => {
           {/* min-w＝固定欄總和（1248px）＋品項至少 170px：塞不下時橫向捲動，不然 Chrome 會按比例壓縮所有欄、表頭又會跳 */}
           <table className="w-full min-w-[1420px] text-xs border-separate border-spacing-0">
             <thead>
-              <tr className="text-left text-gray-scale2">
+              <tr className="text-left text-gray-light">
                 {COLUMNS.map(col => <SortTh key={col.field} zh={col.zh} field={col.field} className={col.w ?? ''} {...sortProps} />)}
                 <th className={`${th} w-40`}>操作</th>
               </tr>
             </thead>
             <tbody>
               {pageRows.map(o => (
-                <tr key={o.id} className="hover:bg-white/5">
+                <tr key={o.id} className="hover:bg-white/10">
                   {COLUMNS.map(c => CELL[c.field](o, cellCtx))}
                   <td className={td}>
                     {(() => {
@@ -439,7 +440,7 @@ const AdminOrdersPage: React.FC = () => {
                             <button
                               key={a.mode}
                               onClick={() => setAction({ order: o, mode: a.mode })}
-                              className={actionBtn(true)}
+                              className={actionBtn}
                             >
                               {a.zh}
                             </button>
@@ -454,7 +455,7 @@ const AdminOrdersPage: React.FC = () => {
           </table>
 
           {visible.length === 0 && (
-            <div className="text-gray-scale3 text-xs py-8 text-center font-chinese">沒有符合的訂單</div>
+            <div className="text-gray-mid text-xs py-8 text-center font-chinese">沒有符合的訂單</div>
           )}
         </div>
       )}

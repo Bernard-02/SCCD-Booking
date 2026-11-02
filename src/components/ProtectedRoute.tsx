@@ -21,7 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       <div className="bg-black text-white min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg font-english mb-4">(LOADING...)</div>
-          <div className="text-xs text-gray-400">正在驗證登入狀態</div>
+          <div className="text-xs text-gray-light">正在驗證登入狀態</div>
         </div>
       </div>
     )
@@ -31,7 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!isAuthenticated) {
     // 將當前頁面 URL 作為 redirect_url 參數傳遞
     const redirectUrl = encodeURIComponent(location.pathname + location.search)
-    return <Navigate to={`/login?redirect_url=${redirectUrl}`} replace />
+    return <Navigate to={`/?redirect_url=${redirectUrl}`} replace />
   }
 
   // 已登入，顯示受保護的內容

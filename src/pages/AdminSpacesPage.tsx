@@ -9,6 +9,7 @@
  * 後台同一張（前／後陽台沒有示意圖＝灰底 icon），格子的 image_url 沒人讀，不提供換圖。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
 import {
   listSpacesAdmin, setSpaceActive, setSpaceActiveMany, updateSpace, updateAreaDeposit, uploadImage, imageSrc
@@ -213,7 +214,7 @@ const AdminSpacesPage: React.FC = () => {
   const renderRow = (r: AdminSpace, nested = false) => {
     const dim = r.is_active ? '' : 'opacity-50'
     return (
-      <tr key={r.id} className="hover:bg-white/5">
+      <tr key={r.id} className="hover:bg-white/10">
         {selectMode && (
           <td className={td}>
             <input
@@ -259,7 +260,7 @@ const AdminSpacesPage: React.FC = () => {
     const stop = (e: React.MouseEvent) => e.stopPropagation()
     return (
       <React.Fragment key={area}>
-        <tr className="hover:bg-white/5 cursor-pointer" onClick={() => setOpenAreas(s => toggled(s, area))}>
+        <tr className="hover:bg-white/10 cursor-pointer" onClick={() => setOpenAreas(s => toggled(s, area))}>
           {selectMode && (
             <td className={td} onClick={stop}>
               <input
@@ -269,7 +270,7 @@ const AdminSpacesPage: React.FC = () => {
             </td>
           )}
           <td className={td}>
-            <button type="button" aria-expanded={open} className={`flex items-center gap-2 cursor-pointer ${dim}`}>
+            <button type="button" aria-expanded={open} className={`flex items-center gap-2 ${BTN} ${dim}`}>
               <span className={`material-symbols-outlined transition-transform ${open ? 'rotate-180' : ''}`} style={{ fontSize: '20px' }}>expand_more</span>
               {/* 該區示意圖，同前台購物車／訂單頁（前／後陽台沒有＝灰底 icon） */}
               <Thumb src={AREA_IMAGE_MAP[area] ?? null} alt={areaZh(area)} icon="map" />
@@ -284,7 +285,7 @@ const AdminSpacesPage: React.FC = () => {
           <td className={`${td} text-center`} onClick={stop}>
             <span className="inline-flex items-center gap-2">
               <Switch checked={allOn} onChange={() => toggleArea(area, g)} busy={togglingId === area} label={allOn ? '關閉整區' : '開放整區'} />
-              {!allOn && on > 0 && <span className="text-2xs text-gray-scale2 font-english">{on}/{g.length}</span>}
+              {!allOn && on > 0 && <span className="text-2xs text-gray-light font-english">{on}/{g.length}</span>}
             </span>
           </td>
           <td className={`${td} text-center`} onClick={stop}>
@@ -326,7 +327,7 @@ const AdminSpacesPage: React.FC = () => {
       <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={{ classroom: classrooms.length, area: blocks.length }} />
 
       {loading ? (
-        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
+        <div className="text-gray-light text-xs font-chinese">載入中…</div>
       ) : loadError ? (
         <LoadError message={loadError} onRetry={() => { setLoading(true); void load() }} />
       ) : (
@@ -335,7 +336,7 @@ const AdminSpacesPage: React.FC = () => {
             {/* border-separate：表頭 sticky 時底線才跟著走 */}
             <table className="w-full text-xs border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-gray-scale2">
+                <tr className="text-left text-gray-light">
                   {selectMode && (
                     <th className={`${th} w-10`}>
                       <input type="checkbox" className="custom-checkbox block" checked={allSelected} onChange={toggleAll} aria-label="全選" />
@@ -351,7 +352,7 @@ const AdminSpacesPage: React.FC = () => {
             </table>
 
             {filtered.length === 0 && (
-              <div className="py-16 text-center text-xs text-gray-scale2 font-chinese">找不到符合條件的空間</div>
+              <div className="py-16 text-center text-xs text-gray-light font-chinese">找不到符合條件的空間</div>
             )}
           </div>
 

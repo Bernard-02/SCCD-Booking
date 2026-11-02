@@ -3,12 +3,16 @@
  * 用於訂單延期申請
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import CloseButton from '../common/CloseButton'
+import Collapse from '../common/Collapse'
 import { createPortal } from 'react-dom'
 import { fetchBlackouts, checkExtendItems, type ExtendCheckItem } from '../../services/ordersService'
 import { useAuth } from '../../contexts/AuthContext'
 import { useT } from '../../stores/langStore'
+import { zipLines } from '../../data/siteContent'
+import { useSiteContent } from '../../services/contentService'
 
 interface ExtendDialogProps {
   isOpen: boolean
@@ -26,9 +30,12 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
   onCancel
 }) => {
   const t = useT()
+  const content = useSiteContent()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [selectedDays, setSelectedDays] = useState(0)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  // 規則說明預設收合（accordion，不另開彈窗）
+  const [rulesOpen, setRulesOpen] = useState(false)
 
   // 寒暑假封鎖（情境 11-a）：學生的延長區間不得跨入封鎖期；admin／staff 不受限，不載入（同 Calendar）
   const { currentUser } = useAuth()
@@ -45,6 +52,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
       setSelectedIndex(null)
       setSelectedDays(0)
       setHoveredIndex(null)
+      setRulesOpen(false)
       setExtendItems(null)
       setCheckedIds(new Set())
       if (!isPrivileged) {
@@ -167,7 +175,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
   // 獲取日期單元格的樣式類
   const getDateCellClasses = (index: number, isDisabled: boolean) => {
-    let classes = 'text-left font-bold font-[\'Inter\',_sans-serif] tracking-tighter leading-none py-1 text-[3rem] relative'
+    let classes = 'text-left font-bold font-english tracking-tighter leading-none py-1 text-[3rem] relative'
 
     if (!isDisabled) {
       classes += ' cursor-pointer'
@@ -221,11 +229,11 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
   // 獲取日期顏色
   const getDateColor = (index: number, isDisabled: boolean) => {
     if (index === 0) {
-      return 'text-[#ffff00]' // 第一個數字（今天）- 黃色
+      return 'text-yellow' // 第一個數字（今天）- 黃色
     } else if (index === 1) {
-      return 'text-[#00FF80]' // 第二個數字（原歸還日）- 綠色
+      return 'text-green' // 第二個數字（原歸還日）- 綠色
     } else if (isDisabled) {
-      return 'text-gray-scale3' // 封鎖期內的延期選項 - 灰色不可選
+      return 'text-gray-mid' // 封鎖期內的延期選項 - 灰色不可選
     } else {
       return 'text-white' // 其他數字（延期選項）- 白色
     }
@@ -233,25 +241,24 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center fadeIn"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-[800px] w-[90%] mx-4"
+        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-[800px] w-[90%] mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 標題和關閉按鈕 */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-mid">
           <div className="flex items-start justify-between mb-4">
             <h2 className="text-sm text-white">
-              <span>{t('Extend', '延期規則')}</span>
+              <span>{t('Extend', '延期')}</span>
             </h2>
             <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="-mt-1" />
           </div>
 
           {/* 訂單號碼 */}
-          <div className="text-xs text-gray-scale2">
+          <div className="text-xs text-gray-light">
             <span>{t('Order', '訂單號碼')}</span>:{' '}
             <span className="font-english text-white">{orderNumber}</span>
           </div>
@@ -259,22 +266,33 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
         {/* 內容區 */}
         <div className="px-6 py-6">
-          {/* 規則說明 */}
+          {/* 規則說明：預設收合，點標題展開（開著＝active 不加 hover） */}
           <div className="mb-6">
-            <div className="text-white text-xs space-y-1">
-              <p>
-                <span>{t('1. Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.', '延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。')}</span>
-              </p>
-              <p>
-                <span>{t('2. If all spaces/equipment in the order cannot be extended together, the request cannot be submitted.', '若訂單內的所有空間/設備無法同時延期，則無法提出申請。')}</span>
-              </p>
-              <p>
-                <span>{t('3. Extension days are counted from the original return date, up to a maximum of 7 days.', '延期天數是原歸還日往後開始計算，可最多延期7天。')}</span>
-              </p>
-              <p className="text-gray-scale2 mt-2">
-                <span>{t('e.g. If the original return date is 1/20, you must apply by 1/17 (inclusive). You may extend up to 7 days; extending 7 days changes the new return date to 1/27.', '例：假設訂單的原歸還日是1/20，您需要在1/17（含）之前提出延期申請。您可以自由選擇延期的天數，最多7天。若選擇延期7天，則新的歸還日會更改至1/27日。')}</span>
+            <button
+              type="button"
+              onClick={() => setRulesOpen(!rulesOpen)}
+              aria-expanded={rulesOpen}
+              className={`flex items-center gap-1 text-xs text-gray-light ${rulesOpen ? 'cursor-pointer' : BTN}`}
+            >
+              {t('Extension rules', '延期規則')}
+              <span className={`material-symbols-outlined text-md transition-transform duration-300 ${rulesOpen ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+            <Collapse open={rulesOpen}>
+            <div className="text-white text-xs pt-3">
+              <ol className="space-y-1">
+                {/* 文字從 site_content 讀（後台「文字內容」頁可改）；實際天數限制在程式裡 */}
+                {zipLines(content('extend.rules')).map(({ en, zh }, i) => (
+                  <li key={i} className="flex gap-2 leading-normal">
+                    <span className="flex-shrink-0 min-w-4 font-english">{i + 1}.</span>
+                    <p>{t(en, zh)}</p>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-gray-light mt-2">
+                <span>{t(content('extend.example').en, content('extend.example').zh)}</span>
               </p>
             </div>
+            </Collapse>
           </div>
 
           {/* 日期選擇器和狀態提示（置中） */}
@@ -302,7 +320,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
             {/* 狀態提示 */}
             <div style={{ minHeight: '18px' }}>
-              <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-white text-xs">
+              <p className="font-chinese text-white text-xs">
                 您已延期 <span className="font-english">{selectedDays}</span> 天，新的歸還日是{' '}
                 <span className="font-english">{formatNewReturnDate(selectedDays)}</span>。
               </p>
@@ -310,31 +328,35 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
           </div>
 
           {/* 品項勾選（部分延期，情境 5＋8）：選定天數後顯示各品項可否延期 */}
-          {selectedDays > 0 && extendItems && (
+          {/* 只有一件就不列勾選（勾掉就沒東西可延）；那一件撞期時仍要顯示原因 */}
+          {selectedDays > 0 && extendItems && (extendItems.length > 1 || !extendItems[0].extendable) && (
             <div className="mb-6">
-              <p className="text-xs text-gray-scale2 mb-2">
-                <span>{t('Items to extend', '勾選要延期的品項')}</span>
-              </p>
+              {extendItems.length > 1 && (
+                <p className="text-xs text-gray-light mb-2">
+                  <span>{t('Items to extend', '勾選要延期的品項')}</span>
+                </p>
+              )}
               <div className="flex flex-col gap-2">
                 {extendItems.map(item => (
                   <label
                     key={item.id}
                     className={`flex items-center gap-3 text-xs ${
-                      item.extendable ? 'text-white cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
+                      item.extendable ? 'text-white cursor-pointer' : 'text-white opacity-20 cursor-not-allowed'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      className="custom-checkbox flex-shrink-0"
-                      checked={checkedIds.has(item.id)}
-                      disabled={!item.extendable}
-                      onChange={() => toggleItem(item.id)}
-                    />
-                    <span className="font-['Inter','Noto_Sans_TC',_sans-serif]">{item.name}</span>
+                    {extendItems.length > 1 && (
+                      <input
+                        type="checkbox"
+                        className="custom-checkbox flex-shrink-0"
+                        checked={checkedIds.has(item.id)}
+                        disabled={!item.extendable}
+                        onChange={() => toggleItem(item.id)}
+                      />
+                    )}
+                    <span className="font-chinese">{item.name}</span>
                     {!item.extendable && (
                       <span
-                        className="font-['Inter','Noto_Sans_TC',_sans-serif]"
-                        style={{ color: 'var(--color-error2)' }}
+                        style={{ color: 'var(--color-error)' }}
                       >
                         {t('Booked by someone else during the extension', '延長期間已被預約')}
                       </span>
@@ -343,7 +365,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
                 ))}
               </div>
               {isPartial && (
-                <p className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2 mt-3">
+                <p className="font-chinese text-xs text-gray-light mt-3">
                   部分延期：勾選品項將拆為子單延期，未勾選品項照原歸還日（
                   <span className="font-english">
                     {dueDate.getMonth() + 1} 月 {dueDate.getDate()} 日
@@ -355,14 +377,14 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
           )}
 
           {/* 橫線 */}
-          <div className="border-t border-[#545454] my-4"></div>
+          <div className="border-t border-gray-mid my-4"></div>
 
           {/* 按鈕 */}
           <div className="flex justify-end gap-6">
             {/* 取消按鈕 */}
             <button
               onClick={onCancel}
-              className="text-[#cccccc] hover:text-white cursor-pointer"
+              className={`text-gray-light ${BTN}`}
             >
               <span className="font-english text-xs">
                 {t('Cancel', '取消')}
@@ -373,11 +395,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
             <button
               onClick={handleConfirm}
               disabled={!canSend}
-              className={`${
-                canSend
-                  ? 'text-white hover:opacity-70 cursor-pointer'
-                  : 'text-gray-scale3 cursor-not-allowed'
-              }`}
+              className={`text-white ${BTN}`}
             >
               <span className="font-english text-xs">
                 {t('Send', '送出')}

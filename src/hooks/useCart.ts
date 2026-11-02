@@ -11,10 +11,21 @@ import { calcBundles } from '../utils/bundleUtils'
 import { tr } from '../stores/langStore'
 import { useSuspension } from './useSuspension'
 import { useAuth } from '../contexts/AuthContext'
-import { cartKey, readCart, writeCart } from '../components/cart/cartHelpers'
+import { cartKey, readCart, writeCart, rescheduleCategory } from '../components/cart/cartHelpers'
 
 // 訪客可逛型錄、選日期，加入清單才要求登入
 export const loginRequiredMsg = () => tr('Please log in to add items to your list.', '請先登入才能加入清單')
+// 訪客按加入清單：記下頁面上的選取、導去登入頁，登入後回到原頁（HomePage 讀 redirect_url）再還原
+export const loginPath = (page: 'equipment' | 'space', selection: unknown) => {
+  sessionStorage.setItem(`sccd_pending_${page}`, JSON.stringify(selection))
+  return `/?redirect_url=${encodeURIComponent(location.pathname + location.search)}`
+}
+export const takePendingSelection = <T>(page: 'equipment' | 'space'): T | null => {
+  const key = `sccd_pending_${page}`
+  const raw = sessionStorage.getItem(key)
+  sessionStorage.removeItem(key)
+  return raw ? JSON.parse(raw) : null
+}
 
 export const useCart = () => {
   const [cart, setCart] = useState<CartItem[]>([])
@@ -74,9 +85,9 @@ export const useCart = () => {
 
   // 加入後的整張訂單（同類別同時段）：新項目併進同設備的數量——組合要看加入後湊不湊得成組
   const groupAfterAdding = useCallback(
-    (newItems: CartItem[]): CartItem[] => {
+    (newItems: CartItem[], base: CartItem[] = cart): CartItem[] => {
       const groupKey = cartGroupKey(newItems[0])
-      const group = cart.filter((item) => cartGroupKey(item) === groupKey).map((item) => ({ ...item }))
+      const group = base.filter((item) => cartGroupKey(item) === groupKey).map((item) => ({ ...item }))
       newItems.forEach((n) => {
         const same = group.find((i) => i.id === n.id)
         if (same) same.quantity += n.quantity
@@ -89,9 +100,9 @@ export const useCart = () => {
 
   // 檢查添加項目後是否超過時段押金上限（可一次加多項：整組加入）
   const checkDepositLimit = useCallback(
-    (newItem: CartItem | CartItem[]): { allowed: boolean; reason?: string } => {
+    (newItem: CartItem | CartItem[], base: CartItem[] = cart): { allowed: boolean; reason?: string } => {
       const newItems = Array.isArray(newItem) ? newItem : [newItem]
-      const group = groupAfterAdding(newItems)
+      const group = groupAfterAdding(newItems, base)
 
       // 租借類型以購物車該單既有的為準（同 cartGroupKey 第一筆）
       const bookingType = group[0].bookingType || 'little'
@@ -131,7 +142,7 @@ export const useCart = () => {
 
       return { allowed: true }
     },
-    [groupAfterAdding, bundles]
+    [groupAfterAdding, bundles, cart]
   )
 
   // 從購物車移除項目
@@ -159,9 +170,9 @@ export const useCart = () => {
   // 類型擇一（設備小量／大量、空間個人／團體），時段也只能一個（學會規定上一張歸還才能開下一張；
   // 送單時 submit_orders 另擋同類型未歸還單）。設備與空間可同時存在，送單時自動拆成兩張訂單
   const checkBookingTypeConflict = useCallback(
-    (newItem: CartItem): { allowed: boolean; reason?: string } => {
+    (newItem: CartItem, base: CartItem[] = cart): { allowed: boolean; reason?: string } => {
       const isEquipment = newItem.category === 'equipment'
-      const existing = cart.find((item) => (item.category === 'equipment') === isEquipment)
+      const existing = base.find((item) => (item.category === 'equipment') === isEquipment)
       if (!existing) return { allowed: true }
 
       const existingType = existing.bookingType || 'little'
@@ -200,13 +211,13 @@ export const useCart = () => {
   // 檢查小量訂單的 9 件限制：僅計設備（2026-09-30 定案，空間由押金 cap 5,000 限量）；
   // 湊滿的組合算 1 件，所以看「加入後」的件數（補齊最後一個零件可能反而變少）
   const checkLittleBookingLimit = useCallback(
-    (newItem: CartItem | CartItem[]): { allowed: boolean; reason?: string } => {
+    (newItem: CartItem | CartItem[], base: CartItem[] = cart): { allowed: boolean; reason?: string } => {
       const newItems = Array.isArray(newItem) ? newItem : [newItem]
       if ((newItems[0].bookingType || 'little') !== 'little' || newItems[0].category !== 'equipment') {
         return { allowed: true }
       }
 
-      const units = calcBundles(groupAfterAdding(newItems), bundles).units
+      const units = calcBundles(groupAfterAdding(newItems, base), bundles).units
       if (units > 9) {
         return {
           allowed: false,
@@ -216,13 +227,13 @@ export const useCart = () => {
 
       return { allowed: true }
     },
-    [groupAfterAdding, bundles]
+    [groupAfterAdding, bundles, cart]
   )
 
   // 通用加入購物車 (不檢查庫存，用於教室或強制加入)；傳陣列＝整組一次加入（同一張單，全成功或全不加）
   // 回傳 { ok, reason }，由呼叫端以 toast 呈現，不再用原生 alert
   const addToCart = useCallback(
-    (itemOrItems: CartItem | CartItem[]): { ok: boolean; reason?: string } => {
+    (itemOrItems: CartItem | CartItem[], base: CartItem[] = cart): { ok: boolean; reason?: string } => {
       const items = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems]
       const item = items[0]
       if (!isAuthenticated) {
@@ -235,28 +246,28 @@ export const useCart = () => {
       }
 
       // 檢查租借類型衝突
-      const typeCheck = checkBookingTypeConflict(item)
+      const typeCheck = checkBookingTypeConflict(item, base)
       if (!typeCheck.allowed) {
         console.warn('無法加入購物車:', typeCheck.reason)
         return { ok: false, reason: typeCheck.reason }
       }
 
       // 檢查小量訂單 9 件限制
-      const limitCheck9 = checkLittleBookingLimit(items)
+      const limitCheck9 = checkLittleBookingLimit(items, base)
       if (!limitCheck9.allowed) {
         console.warn('無法加入購物車:', limitCheck9.reason)
         return { ok: false, reason: limitCheck9.reason }
       }
 
       // 檢查押金上限
-      const limitCheck = checkDepositLimit(items)
+      const limitCheck = checkDepositLimit(items, base)
       if (!limitCheck.allowed) {
         console.warn('無法加入購物車:', limitCheck.reason)
         return { ok: false, reason: limitCheck.reason }
       }
 
       // 需要同時比對 id、startDate 和 endDate，因為同一設備可能在不同時段被租借
-      const next = cart.map((i) => ({ ...i }))
+      const next = base.map((i) => ({ ...i }))
       items.forEach((n) => {
         const existingItem = next.find((i) =>
           i.id === n.id &&
@@ -270,6 +281,14 @@ export const useCart = () => {
       return { ok: true }
     },
     [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit, isSuspended, isAuthenticated]
+  )
+
+  // 部分時段可借：同一類（設備／空間）的品項全部改成新起訖（同類型限一單，不開第二張）；
+  // 空間頁選格用，設備頁改用 addToCart 的 base 參數一次做完（改日期＋加入同一次 save）
+  const rescheduleCart = useCallback(
+    (category: 'equipment' | 'space', startDate: string, endDate: string) =>
+      saveCart(rescheduleCategory(cart, category, startDate, endDate)),
+    [cart, saveCart]
   )
 
   // 更新設備數量
@@ -355,6 +374,7 @@ export const useCart = () => {
     getOriginalQuantity,
     getCartQuantity,
     addToCart,
+    rescheduleCart,
     updateEquipmentQuantity,
     removeFromCart,
     clearCart,

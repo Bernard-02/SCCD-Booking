@@ -3,11 +3,13 @@
  * 按照租借日期分組顯示購物車項目
  */
 
+import { BTN, BTN_OUTLINE, CHIP } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import type { CartItem, BookingType } from '../../types/equipment'
 import { useCart } from '../../hooks/useCart'
+import { useAuth } from '../../contexts/AuthContext'
 import { useItemImages } from '../../services/equipmentService'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import BookingDetailsDialog from '../common/BookingDetailsDialog'
@@ -42,6 +44,7 @@ interface CartListProps {
 const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveItem, bookingDetails, onBookingDetailsChange, expiredDateKeys = [], selectedGroups: externalSelectedGroups, onSelectedGroupsChange, selectMode = false, getReserved = () => 0 }) => {
   const t = useT()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const { getOriginalQuantity, getCartQuantity, bundles } = useCart()
   // 加入購物車時存的是當下的圖片網址；顯示一律用後台最新的（含已下架／關閉的）
   const images = useItemImages()
@@ -227,7 +230,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
     <div className="w-full">
       {cart.length === 0 && (
         <div className="empty-message-container flex-col">
-          <p className="text-sm text-white">{t('This list is empty.', '此清單是空的。')}</p>
+          <p className="text-sm text-white">
+            {t('This list is empty.', '此清單是空的。')}
+            {/* 訪客導去登入頁（登入後預設落在型錄）；已登入直接去型錄。容器 pointer-events: none，連結要自己開回來 */}
+            <Link to={isAuthenticated ? '/catalog' : '/'} className="ml-1 underline underline-offset-4 hover:opacity-50 pointer-events-auto">
+              {isAuthenticated ? t('Start renting', '開始租借') : t('Log in to start renting', '登入以開始租借')}
+            </Link>
+          </p>
         </div>
       )}
 
@@ -312,20 +321,20 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 aria-label={isSelected ? '取消選取' : '選取'}
               >
                 <span
-                  className="material-symbols-outlined hover:opacity-70"
-                  style={{ fontSize: '24px', color: isSelected ? '#00ff80' : '#cccccc' }}
+                  className="material-symbols-outlined hover:opacity-50"
+                  style={{ fontSize: '24px', color: isSelected ? 'var(--color-green)' : 'var(--color-gray-light)' }}
                 >
                   {isSelected ? 'check_circle' : 'radio_button_unchecked'}
                 </span>
               </button>
 
               {/* 時間 */}
-              <h3 className={`font-english text-xl ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
+              <h3 className={`font-english text-xl ${isExpired ? 'text-gray-mid' : 'text-white'}`}>
                 {formatDate(group.startDate)} - {formatDate(group.endDate)} ({getTotalItemCount()})
               </h3>
 
               {/* 押金（應用上限） */}
-              <span className={`font-english text-xl ml-auto ${isExpired ? 'text-gray-scale4' : 'text-white'}`}>
+              <span className={`font-english text-xl ml-auto ${isExpired ? 'text-gray-mid' : 'text-white'}`}>
                 NT$ {groupDeposit.toLocaleString()}
               </span>
 
@@ -338,10 +347,10 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     toggleSpace(groupKey)
                   }
                 }}
-                className="flex items-center justify-center cursor-pointer"
+                className={`flex items-center justify-center ${BTN}`}
               >
                 <span
-                  className={`material-symbols-outlined transition-transform duration-300 text-xl ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-scale4' : 'text-white'}`}
+                  className={`material-symbols-outlined transition-transform duration-300 text-xl ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-mid' : 'text-white'}`}
                   style={{ fontSize: '30px' }}
                 >
                   expand_more
@@ -352,18 +361,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
             {/* 第二行：Tags + 填寫資訊按鈕 + Add 按鈕 */}
             <div className="flex items-center gap-3 py-4">
               {/* 類別標籤 (SPC 空間 / EQPT 設備) */}
-              <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
-                <span className={`font-english text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
-                  {t(categoryLabel.en, categoryLabel.zh)}
-                </span>
-              </div>
+              <span className={`${CHIP} bg-gray-dark ${isExpired ? 'text-gray-light' : 'text-white'}`}>
+                {t(categoryLabel.en, categoryLabel.zh)}
+              </span>
 
               {/* 租借類型標籤 (個人/團體 或 小量/大量) */}
-              <div className="px-3 py-1 bg-gray-scale4 flex items-center justify-center rounded-lg">
-                <span className={`font-english text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-white'}`}>
-                  {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
-                </span>
-              </div>
+              <span className={`${CHIP} bg-gray-dark ${isExpired ? 'text-gray-light' : 'text-white'}`}>
+                {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
+              </span>
 
               {/* 湊成的組合（押金以組計、算 1 件）；組合名稱只有後台填的中文。
                   零件缺貨（別人先送出）時變黃，讓使用者選拆開或整組不借 */}
@@ -371,11 +376,11 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                 const short = isExpired ? [] : s.bundle.items
                   .map(c => group.items.find(i => i.id === c.equipmentId))
                   .filter((i): i is CartItem => !!i && i.quantity > maxQtyOf(i))
-                const color = short.length > 0 ? '#ffff00' : '#00ff80'
+                const color = short.length > 0 ? 'var(--color-yellow)' : 'var(--color-green)'
                 return (
-                  <div key={s.bundle.id} className="pl-2 pr-3 py-1 flex items-center gap-1 border rounded-lg" style={{ borderColor: color }}>
+                  <div key={s.bundle.id} className={`${CHIP} !pl-1.5 gap-1 border`} style={{ borderColor: color }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color }}>inventory_2</span>
-                    <span className="text-xs whitespace-nowrap" style={{ color }}>
+                    <span className="whitespace-nowrap" style={{ color }}>
                       {s.bundle.name} ×{s.count}
                       {short.length > 0 && `：${short.map(i => i.name).join('、')}${t(' out of stock', '庫存不足')}`}
                     </span>
@@ -384,13 +389,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         <button
                           onClick={() => fixBundle(group, s, 'split')}
                           title={t('Reduce the short parts to what is available; the rest is charged per item', '缺貨的零件減到可借數量，其餘照單件計')}
-                          className="ml-2 text-xs text-[#ffff00] underline underline-offset-2 hover:opacity-70 cursor-pointer whitespace-nowrap"
+                          className={`ml-2 text-yellow underline underline-offset-2 whitespace-nowrap ${BTN}`}
                         >
                           {t('Split', '拆開')}
                         </button>
                         <button
                           onClick={() => fixBundle(group, s, 'remove')}
-                          className="ml-2 text-xs text-[#ffff00] underline underline-offset-2 hover:opacity-70 cursor-pointer whitespace-nowrap"
+                          className={`ml-2 text-yellow underline underline-offset-2 whitespace-nowrap ${BTN}`}
                         >
                           {t('Remove set', '整組移除')}
                         </button>
@@ -410,18 +415,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     setIsDetailsDialogOpen(true)
                   }}
                   disabled={isExpired}
-                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 rounded-lg ${
-                    isExpired
-                      ? 'bg-gray-scale4 cursor-not-allowed'
-                      : bookingDetails[groupKey]
-                      ? 'bg-[#00ff80] hover:bg-[#00e070] cursor-pointer'
-                      : 'bg-[#ffff00] hover:bg-[#e6e600] cursor-pointer'
-                  }`}
+                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 rounded-lg ${bookingDetails[groupKey] ? 'bg-green' : 'bg-yellow'} ${BTN}`}
                 >
-                  <span className={`material-symbols-outlined text-md ${isExpired ? 'text-gray-scale2' : 'text-black'}`} style={{ fontSize: '20px' }}>
-                    {bookingDetails[groupKey] ? 'check' : 'edit'}
+                  <span className={`material-symbols-outlined text-md ${isExpired ? 'text-gray-light' : 'text-black'}`} style={{ fontSize: '20px' }}>
+                    {bookingDetails[groupKey] ? 'check' : 'description'}
                   </span>
-                  <span className={`text-xs whitespace-nowrap ${isExpired ? 'text-gray-scale2' : 'text-black'}`}>
+                  <span className={`text-xs whitespace-nowrap ${isExpired ? 'text-gray-light' : 'text-black'}`}>
                     {bookingDetails[groupKey] ? (
                       <>{t('Filled', '資訊已填')}</>
                     ) : (
@@ -437,11 +436,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     handleAddMore(group.category, group.startDate, group.endDate, bookingType)
                   }}
                   disabled={isAddDisabled}
-                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 border rounded-lg ${
-                    isAddDisabled
-                      ? 'border-gray-scale4 text-gray-scale4 cursor-not-allowed'
-                      : 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
-                  }`}
+                  className={`pl-2 pr-3 py-1 flex items-center justify-center gap-1 rounded-lg ${BTN_OUTLINE}`}
                 >
                   <span className="material-symbols-outlined text-md" style={{ fontSize: '20px' }}>add</span>
                   <span className="text-xs whitespace-nowrap">{t('Add', '新增')}</span>
@@ -451,13 +446,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
             {/* 第三行：過期提示 + 鉛筆改日期（僅過期時顯示） */}
             {isExpired && (
-              <div className={`flex items-center justify-between py-1 pl-4 pr-1 mb-4 bg-[#ffff00] rounded-lg`}>
+              <div className={`flex items-center justify-between py-1 pl-4 pr-1 mb-4 bg-yellow rounded-lg`}>
                 <span className="text-xs text-black">{t('Dates expired, please reselect', '日期已過期，請重新選擇')}</span>
                 <button
                   onClick={() => handleEditDate(group.startDate, group.endDate, dateKey, group.category, bookingType)}
                   aria-label={t('Edit Date', '編輯日期')}
                   title={t('Edit Date', '編輯日期')}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg text-black hover:bg-black/10 cursor-pointer"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg text-black hover:opacity-50 cursor-pointer"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span>
                 </button>
@@ -505,7 +500,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       renderedItems.push(
                         <div
                           key={areaGroupKey}
-                          className={`grid grid-cols-[80px_1fr_120px_40px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-opacity duration-300 ${
+                          className={`grid grid-cols-[80px_1fr_120px_40px] gap-6 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
                             isRemoving ? 'opacity-0' : 'opacity-100'
                           }`}
                         >
@@ -522,7 +517,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱（區域 + 所有編號） */}
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
+                          <div className="font-chinese text-sm text-white">
                             {areaName}（{blockIds.join('、')}）
                           </div>
 
@@ -537,7 +532,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                               // 刪除該區域的所有區塊
                               blocks.forEach(block => handleRemoveItem(block.id, group.startDate, group.endDate))
                             }}
-                            className="font-english text-sm text-white hover:text-gray-scale1 cursor-pointer"
+                            className={`font-english text-sm text-white ${BTN}`}
                             title={`移除 ${areaName} 所有區塊`}
                           >
                             ✕
@@ -553,7 +548,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       renderedItems.push(
                         <div
                           key={item.id}
-                          className={`grid grid-cols-[80px_1fr_120px_40px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-opacity duration-300 ${
+                          className={`grid grid-cols-[80px_1fr_120px_40px] gap-6 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
                             isRemoving ? 'opacity-0' : 'opacity-100'
                           }`}
                         >
@@ -570,7 +565,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱 */}
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
+                          <div className="font-chinese text-sm text-white">
                             {item.name}
                           </div>
 
@@ -582,7 +577,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           {/* 刪除按鈕 */}
                           <button
                             onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                            className="font-english text-sm text-white hover:text-gray-scale1 cursor-pointer"
+                            className={`font-english text-sm text-white ${BTN}`}
                           >
                             ✕
                           </button>
@@ -615,7 +610,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     return (
                       <div
                         key={item.id}
-                        className={`grid grid-cols-[80px_1fr_140px_120px_40px] gap-6 py-3 border-b border-[#7c7c7c] items-center transition-opacity duration-300 ${
+                        className={`grid grid-cols-[80px_1fr_140px_120px_40px] gap-6 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
                           isRemoving ? 'opacity-0' : 'opacity-100'
                         } ${isOutOfStock ? 'opacity-50' : ''}`}
                       >
@@ -633,16 +628,16 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
                         {/* 名稱和庫存狀態 */}
                         <div className="flex flex-col gap-1">
-                          <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-sm text-white">
+                          <div className="font-chinese text-sm text-white">
                             {item.name}
                           </div>
                           {/* 只在完全缺貨（灰色狀態）時顯示錯誤訊息 */}
                           {isOutOfStock && (
                             <div className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-xs text-[#ff448a]">
+                              <span className="material-symbols-outlined text-xs text-pink">
                                 error
                               </span>
-                              <span className="font-english text-xs text-[#ff448a]">
+                              <span className="font-english text-xs text-pink">
                                 {t('Out of Stock', '缺貨')} ({t('Available', '可借')}: {maxQtyForThisItem})
                               </span>
                             </div>
@@ -654,11 +649,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity - 1)}
                             disabled={!canDecrement}
-                            className={`font-english text-sm ${
-                              !canDecrement
-                                ? 'text-gray-scale4 cursor-not-allowed'
-                                : 'text-white hover:text-gray-scale1 cursor-pointer'
-                            }`}
+                            className={`font-english text-sm text-white ${BTN}`}
                           >
                             -
                           </button>
@@ -668,11 +659,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity + 1)}
                             disabled={!canIncrement}
-                            className={`font-english text-sm ${
-                              !canIncrement
-                                ? 'text-gray-scale4 cursor-not-allowed'
-                                : 'text-white hover:text-gray-scale1 cursor-pointer'
-                            }`}
+                            className={`font-english text-sm text-white ${BTN}`}
                           >
                             +
                           </button>
@@ -686,7 +673,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         {/* 刪除按鈕 */}
                         <button
                           onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                          className="font-english text-sm text-white hover:text-gray-scale1 cursor-pointer"
+                          className={`font-english text-sm text-white ${BTN}`}
                         >
                           ✕
                         </button>
@@ -709,7 +696,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
           {/* 關閉按鈕 */}
           <button
             onClick={() => setPreviewImage(null)}
-            className="absolute top-20 right-8 text-white text-xl font-normal hover:text-gray-scale2 cursor-pointer z-10"
+            className={`absolute top-20 right-8 text-white text-xl font-normal z-10 ${BTN}`}
             aria-label="關閉"
           >
             ×

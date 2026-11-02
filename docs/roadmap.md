@@ -1,7 +1,8 @@
 ﻿# 完成路線圖（Roadmap）
 
-> 距離可上線，剩下的階段與任務。整體現況（2026-09 更新）：**階段 1 後端接線已完成**——
-> 登入／訂單／庫存／空間／通知全部走 Supabase，mock 已全數移除。
+> 距離可上線，剩下的階段與任務。整體現況（2026-11-01 更新）：**階段 1 後端接線已完成**——
+> 登入／訂單／庫存／空間／通知全部走 Supabase，mock 已全數移除；學生登入已改學校 Google 帳號＋封閉名單（階段 2），
+> Google Cloud／Supabase 的一次性設定還沒做（階段 6）。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端用 **Supabase**（Auth + PostgreSQL + RLS）。
 > 階段 2 → 3 有依賴順序；階段 4（品質）可與任何階段並行；階段 5（手機版）等階段 1.5 桌面版驗收確認後再做（Bernard 2026-10-03）。
 
@@ -29,8 +30,8 @@
 
 - [ ] 兩人同時搶同一格空間／最後一件設備（一成一敗、敗方訊息清楚、購物車保留可重送）
 - [ ] 訂單送出後改日期重送（Exist Cart 過期時段就地修復 → 新時段的佔用計算正確）
-- [ ] pending 逾 24 小時（工作時）自動視為取消後，佔用是否釋放（目前 status 仍是 pending——
-      前端顯示取消但資料庫佔用未釋放，**已知落差，驗收時討論**：需排程或查詢時排除逾時 pending）
+- [ ] pending 逾 24 工作時自動取消後，佔用是否釋放（已實作：pg_cron 每 5 分鐘把逾時 pending 改 canceled、發通知，
+      佔用查詢只認 pending／in-progress／overdue，`supabase/auto-cancel.sql`；驗收時實測，原「佔用未釋放」落差已不存在）
 - [ ] 延期後的新歸還日是否正確影響後續時段的佔用
 - [ ] 同帳號多分頁／多裝置操作購物車與送單
 - [ ] 大量訂單（滿 10 件、班級老師必填）與團體空間（免押金上限）全流程
@@ -51,9 +52,14 @@
 - [x] ~~總覽 dashboard~~（2026-10-24 拿掉）：各狀態數量移到訂單頁上方、待繳押金倒數與逾期營業日進訂單狀態欄、
       解除停權移到會員管理（展開停權帳號）、教室／空間使用中看空間地圖
 - [x] 值班經手人追溯：收押金／歸還必選經手幹部（`orders.paid_by`／`returned_by` 姓名快照）；訂單頁「收押金」「歸還」兩欄＝沒做是按鈕、做完顯示經手人（2026-10-26，取件／收罰款也在這兩欄，操作欄剩點交／延期／取消訂單）；系學會名單每年換屆維護（2026-10-01 起併入會員管理 `AdminMembersPage`：身分選「系學會」＝加入 `staff_members`，見 supabase/staff-members.sql）
-- [x] 公休日／寒暑假封鎖維護（2026-10-01 合併為「營業時間管理」`AdminHoursPage`，`/admin/hours`；直接 CRUD，RLS 把關）
+- [x] 公休日／寒暑假封鎖維護（2026-10-01 合併為「營業時間管理」`AdminHoursPage`，`/admin/hours`；直接 CRUD，RLS 把關）；
+      2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日／寒暑假封鎖，點日期開小視窗新增或刪除；
+      右值班表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入。規則見 admin-hours.md
 - [x] 會員管理（2026-10-01，`AdminMembersPage`，`/admin/members`）：全體帳號搜尋＋身分／違規篩選、展開租借歷史、
-      改年級／身分（助教・系秘、休學擋新借、轉學生）。supabase/members.sql＋重貼 orders-rpc.sql（已執行 2026-10-01）
+      改年級／身分（助教・系秘、休學擋新借、轉學生）。supabase/members.sql＋重貼 orders-rpc.sql（已執行 2026-10-01）。
+      2026-10-25 重寫：分頁 全部／學生／系學會、身份五選一、年級與租借狀態篩選、選取模式批次改身份／狀態、已畢業預設隱藏、
+      總租借點了跳訂單頁（原展開歷史拿掉）、「新增會員」＝預先登記 `login_allowlist`（Google 登入封閉名單）、
+      Excel 匯入（`MemberImportDialog`＋`utils/memberImport`：表頭對應不看順序、逐列驗證、下載範本；SheetJS 自官方 CDN 裝）。規則見 admin-members.md
 - [x] **代客延期**（`admin_extend_order`：不受僅乙次／前三天限制、不動學生 has_extended、
       每次 1-7 天可多次、撞期照擋、overdue 延期後回 in-progress；經手人寫 `extended_by`）
 - [x] 前台「部分延期」（情境 5＋8）：ExtendDialog 選天數→逐品項顯示可否延（`extend_check`）→勾選送出，
@@ -98,6 +104,18 @@
   （2026-07 原定「公告只走 Facebook、系統不做」已改）。計算面不變：系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
 - [x] **助教直借（`staff` 角色）** server 端（情境 10）：`submit_orders` 對 staff 免押金、送出即 in-progress；
       封鎖期不擋 staff（原有）。前端數量上限對 staff 未豁免（遇到需求再放寬）；staff 帳號在 Studio 建（同 admin 流程）
+- [x] **學校 Google 登入＋封閉名單**（2026-10-24／25）：學生按「使用學校 Google 帳號登入」→ 跳回首頁 `finishGoogleLogin` 撈 profile；
+      資格在 DB trigger 把關（網域 gm／gm1／gm2.usc.edu.tw **且**學號或 Email 已在後台「新增會員」登記＝`login_allowlist`），
+      第一次登入自動建學生資料、不另寄驗證信。SQL：google-login.sql → members-v2.sql（已執行）。
+      **Google Cloud／Supabase 尚未設定**（階段 6），設定完成前登入頁預設學號密碼表單（`HomePage` 的 `PASSWORD_MODE_DEFAULT`）
+- [x] 設備組合（2026-10）：後台設備管理「組合」分頁（`BundleManager`，含圖片、選取設備一鍵「組成組合」）；
+      湊滿一組押金只收一組、件數算 1（`utils/bundleUtils`，有 vitest）；前台卡片「單個／整組」下拉、單個加入時提示整組；
+      訂單明細／收據組合一列。SQL：equipment-bundles.sql → bundle-images.sql（已執行）
+- [x] 後台共用 UI 語彙（2026-10-25，`adminUi`）：灰底工具列、計數分頁、搜尋框、sticky 表頭、可排序表頭、選取模式、
+      FormDialog／Field、Switch、Select（searchable）；設備／空間／會員三頁依此重寫；空間管理 F1–F6 刪除（remove-f-blocks.sql）
+- [x] 後台通知（2026-11-02）：學生自己送單／改品項／延期（含部分延期拆單）／取消 → `orders` trigger 發給 admin 帳號
+      （`supabase/admin-notifications.sql`，本人操作才發：auth.uid()＝該單學生；後台代操作與排程不發）；
+      側欄鈴鐺＋下拉（`NotificationPanel` 前後台共用），點一則跳該生訂單篩選，關掉即全部已讀
 
 ## 階段 3：規則補完（依賴階段 1 的資料模型）
 
@@ -112,7 +130,7 @@
       （SQL 改在 orders-rpc.sql，已重貼生效）
 - [x] 修改已送出的設備單（2026-10-03，情境 3）：小量／大量都改原單——取件前可增減、取件後只能加（新增待學會點交）；
       小量 ≤ 9、大量 ≥ 10、增量查庫存；押金已繳的差額現場算、系統記錄；品項標「已更動／待點交」＋最後修改時間；
-      新增未領 24 工作時自動取消（pg_cron）、總覽「新增待點交」清單。
+      新增未領 24 工作時自動取消（pg_cron）、待點交在訂單頁標示＋點交動作（原總覽清單 2026-10-24 隨總覽拿掉）。
       （SQL：modify-order.sql＋重貼 orders-rpc.sql，已執行 2026-10-03）
 - [x] 設備／空間分單（2026-10-02）：購物車組別＝訂單（`types/equipment.ts` `cartGroupKey`）——
       借用資訊每單各填、送單分組、類型互斥／押金／9 件（**僅計設備**）皆以單為單位；
@@ -129,15 +147,21 @@
 - [ ] 遠期單阻擋（方向定案 2026-09-30）：起租日最遠可選範圍**待 Bernard 與學會討論定細則**
       （rental-rules 待確認 #4）——定案後改日曆可選範圍＋server 端擋
 - [x] Order 頁使用說明補「現金交易不找零」（2026-10-03，畫面＋PDF 收據兩處）
-- [x] **訪客瀏覽**（2026-10-20）：登入頁「訪客登入」→ 型錄；UI 全保留、可選日期看可借數量，
-      加入清單時才擋（`useCart.addToCart` 回「請先登入才能加入清單」，空間區塊選取先擋不清空）
+- [x] **訪客瀏覽**（2026-10-20；2026-10-31 改導登入）：登入頁「訪客登入」→ 型錄；UI 全保留、可選日期看可借數量，
+      按加入清單才擋——導去登入頁（`useCart.loginPath`，帶 `redirect_url`），登入後回原頁並還原選取
+      （設備數量／整組、空間分類／區塊／專案許可存 sessionStorage `sccd_pending_*`；日期本來就在 localStorage）。
+      `ProtectedRoute` 同機制（原本導去不存在的 `/login`、回跳參數遺失，已修）
+- [x] 前台中／EN 切換（2026-10-20）：`stores/langStore`＋`useT`／`tr`，提示文字中英兩版各自維護、server 錯誤英文對照 `utils/serverErrors.ts`；
+      後台與 PDF 收據不切換。同批：登入頁改單欄直排、Header／Footer 改 icon、Info 單一 lightbox（/about 刪除）
 
 ## 階段 4：品質（可並行）
 
-- [x] 測試基礎：vitest 已建置（`timeUtils`／`gradeUtils`／`useCart`／`useCartValidation`，`npm test`）；後續有新規則再補對應案例
+- [x] 測試基礎：vitest 已建置（`timeUtils`／`gradeUtils`／`useCart`／`useCartValidation`／`bundleUtils`／`memberImport`／`serverErrors`／`supabase`，
+      8 檔 78 案例，`npm test`）；後續有新規則再補對應案例
 - [x] **安全修正（2026-10-03）**：`user_role()` 未登入回傳 NULL，後台 RPC 的 `<> 'admin'` 檢查被跳過
       （只帶 anon key 即可呼叫收押金／歸還／取消等 9 支）→ 改回傳 `'anon'`（supabase/user-role-fix.sql，已執行並驗證擋下）
-- [ ] Tech debt：拆 700 行大檔（`CartList`、`ProfilePage`、`SpacePage`、`RentalListPage`）、`DateSelectionContext` 拆成設備／空間兩個、CSS 雙軌漸進遷移
+- [ ] Tech debt：拆大檔（2026-11-01：`ProfilePage` 800、`CartList` 765、`SpacePage` 751、`EquipmentGrid` 736、`DatePickerBar` 717、`RentalListPage` 606 行）、
+      `DateSelectionContext`（406 行）拆成設備／空間兩個、CSS 雙軌漸進遷移（舊 `css/*.css` 剩 1,120 行，九個檔都還在 main.tsx 載入）
 - [x] 設備圖片（2026-10-03）：前台清單／購物車原本寫死延長線圖，改讀設備 `image_url`（`equipmentService.imageSrc`，
       未上傳才用預設圖）——圖片之後由後台設備管理上傳即生效
 - [x] 清理一輪（2026-10-04）：刪死碼（舊 equipment-data.json、localStorage 通知 key、未用的 RPC 包裝與 SQL `extend_my_order`／`admin_mark_returned`）；
@@ -146,15 +170,17 @@
       下架／未開放擋單、類型配對、數量（小量 ≤ 9、大量／團體 ≥ 10、正整數、不重複）、日期與天數上限、大量設備 3 天前（orders-rpc.sql 需重貼）
 - [ ] 清理待辦（2026-10-04 審查）：
       登入後年級是快照（9/1 升級或後台改了要重登）；押金 cap 5,000／9 件／10 件／14・30 天等常數散在多處；
-      種類／狀態標籤 7 份副本（做雙語時一併收斂）；舊多單購物車相容碼；~~使用說明 GuideDialog 與規則不符~~（2026-10-04 依新版使用說明修正兩處：3 天前限大量設備、押金上限空間／設備各 5,000）
-- [ ] `ProfilePage` 狀態圓點（`ProfilePage.tsx:642`）——等 Bernard 定 Profile 樣式再做
+      種類／狀態標籤副本（種類已收斂到 `adminUi.orderKind`、前台走 `t()`；狀態標籤 `ProfilePage.statusInfo` 與後台仍各一份）；舊多單購物車相容碼；~~使用說明 GuideDialog 與規則不符~~（2026-10-04 依新版使用說明修正兩處：3 天前限大量設備、押金上限空間／設備各 5,000）
+- [ ] `ProfilePage` 狀態圓點（`ProfilePage.tsx:706` 的 TODO）——等 Bernard 定 Profile 樣式再做
 - [ ] **UI 一致性複查（Bernard 2026-10-27 提）**：全站再檢查一次按鈕樣式（前台／後台的實心、外框、文字鈕、icon 鈕各自用在哪，
       `adminUi` 的 `actionBtn`／`toolBtn`／`textBtn`／`iconFillBtn` 與前台 Extend 樣式是否對齊）與顏色的分類
       （狀態色、警示色、成功色等各代表什麼、哪裡用，收斂成一份對照後寫進 CLAUDE.md 程式風格規則）
+      **進度**：按鈕狀態 2026-10-31 已定（`components/common/btn.ts` 的 `BTN`／`BTN_TOOL`：hover 整顆 50%、停用 20%，前台 21 檔套用）；
+      英文字距 2026-10-27／11-01 定案並全站補齊（含 EN 模式全域規則，CLAUDE.md）；**剩**顏色分類對照、後台按鈕與前台對齊
 
 ## 階段 5：手機版（純前端；等階段 1.5 桌面版驗收確認後再執行）
 
-RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：Home、Booking、BookingResources、About、Header（mobile menu）。
+RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：Home（登入頁單欄響應式）、BookingResources（雙 JSX）、Header（舊 mobile-menu）；About 頁 2026-10-20 已併入 InfoDialog。
 
 - [ ] Equipment 設備頁手機版（目前 `hidden md:block`，手機無內容）
 - [ ] Space 空間頁手機版（同上；區域地圖 SVG 的觸控操作要特別設計）
@@ -164,10 +190,47 @@ RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：
 - [ ] Footer 手機版（目前 `hidden md:flex`）
 - [ ] 對話框（DateEditDialog、InfoDialog 等 max-w 較大的）在小螢幕的呈現
 
+## 階段 5.5：無障礙（至少鍵盤可操作；純前端，可與階段 5 並行，上線前完成）
+
+目標：不碰滑鼠，只用 Tab／Shift+Tab／Enter／Space／方向鍵／Esc 走完前台「登入 → 選日期 → 加設備與空間 → 送單 → Profile 延期／修改」
+與後台「收押金 → 點交 → 歸還」；焦點永遠看得見。讀屏（NVDA／VoiceOver）能唸出按鈕用途與狀態變化是加分，不是門檻。
+現況（2026-11-02 掃過一輪）：後台 `Select` 已有完整鍵盤操作（↑↓／Enter／Esc／Tab、可搜尋）、9 個對話框接 Esc、`Collapse` 收合時 inert、
+icon 鈕 aria-label 約 75 處、登入頁錯誤訊息 aria-live——但核心流程的幾個關鍵元件還是滑鼠專用。
+
+- [ ] **可點的非按鈕元素改成鍵盤可達**（16 處 `<div>`／`<tr>`／`<th>` 掛 onClick，優先順序依流程）：
+      `Calendar` 日期格（`Calendar.tsx:260`，選日期是所有流程的第一步）、`ExtendDialog` 延期天數數字（304）、
+      `ProfilePage` 訂單卡摘要列展開（441）、`DatePickerBar` 已選日期清單（565）、`EquipmentGrid`／`CartList`／`ClassroomList` 的圖片預覽縮圖、
+      後台 `adminUi` 可排序表頭（242）、`AdminSpacesPage` 整列可點（263–291）、`AdminHoursPage` 月曆格（222）。
+      原則：能改 `<button>` 就改（最省，不用自己補 role／tabIndex／onKeyDown）；表格列保留 `<tr>` 時改成列內放一顆按鈕
+- [ ] **A5F 編號區地圖**（`SpaceAreaMap`）：格子是 SVG `<g>` 用 addEventListener 綁 click，完全沒有鍵盤路徑。
+      做法二選一：每格補 `tabindex="0"` `role="button"` `aria-label="A501-3（可借）"`＋Enter／Space 觸發、方向鍵在格間移動；
+      或旁邊給一份同資料的清單（手機版本來就需要，階段 5 可共用）。hover 的格子資訊提示要有 focus 版本
+- [ ] **對話框**（10 個 createPortal 彈窗＋通知／連結下拉）：補 `role="dialog"` `aria-modal="true"` `aria-labelledby`（指到標題）；
+      開啟時焦點移進去（第一個輸入框或 X）、Tab 困在裡面（focus trap）、關閉時焦點回到打開它的按鈕；
+      `DateEditDialog`／`ExtendDialog`／`PartialDialog`／Header 通知／Footer 連結下拉補 Esc。可抽一個 `useDialogA11y(ref, onClose)` hook 給全部用
+- [ ] **焦點可見**：`outline-none` 18 處、`focus-visible` 只有 4 處——大多數控制項被 Tab 到時看不出來。
+      `src/index.css` base 層加全站 `:focus-visible { outline: 2px solid var(--color-white); outline-offset: 2px }`（滑鼠點不會出現，只有鍵盤），
+      然後把沒有替代樣式的 `outline-none` 拿掉（輸入框 focus 變白框的那種可以留）。Calendar 日期格、地圖格、訂單卡的焦點樣式要另外設計（白框會跟選中白底打架）
+- [ ] **狀態變化要唸得出來**：`Toast` 加 `role="status"` `aria-live="polite"`（錯誤的紅 Toast 用 `role="alert"`）；
+      購物車數量徽章、「可借 n」變化、送單結果，鍵盤使用者看不到 Toast 也要能知道
+- [ ] **語意與地標**：每頁一個 `<main>`（Equipment／Space／RentalList／Profile 已有，其餘補）、`<nav aria-label>`、頁面第一個 Tab 停靠點是「跳到主內容」連結（Header 固定在上方時尤其需要）；
+      標題層級 h1→h2 不跳級；表單 `label` 都綁到輸入框（`htmlFor`／包起來）；icon-only 按鈕全部有 `aria-label`（複查剩下沒有的）
+- [ ] **hover-only 互動要有 focus／鍵盤替代**（同手機版「觸控替代」條）：待繳押金 ⓘ tooltip、設備卡 hover 預覽、地圖格 hover 資訊、
+      Profile 訂單卡 hover 反白——focus 時同樣顯示；Footer 頭像登出選單、通知下拉用 Tab 進得去、Esc 關得掉
+- [ ] **對比**：`gray-light`（#a4a4a4）在黑底約 8:1，正文與輔助字都過 AA；`gray-mid`（#545454）在黑底約 2.3:1，只能給停用／佔位與分隔線，
+      **不能用在要讀的資訊**（例：DatePickerBar 已選日期清單的「（已達上限）」、ExtendDialog 封鎖期數字是 text-gray-mid，要換 gray-light 或補文字說明）；
+      有色底 chip 黑字（yellow／green／pink／orange／cyan 底）都過 AA，維持
+- [ ] **驗收**：拔掉滑鼠走一遍上面兩條主流程（前台學生、後台 sccdsa）；Chrome Lighthouse Accessibility 前後台各頁 ≥ 90；
+      NVDA 或 VoiceOver 走登入→送單一次，記下唸不出來的地方
+
 ## 階段 6：部署上線
 
 - [ ] Hosting：**維持 Vercel**（`vercel.json` 已設好）＋環境變數管理（Supabase URL／anon key）
-- [ ] 正式資料填入：真實學號名單、設備清單與庫存、空間資料
+- [ ] 正式資料填入：真實學號名單（會員管理 Excel 匯入＝預先登記 `login_allowlist`）、設備清單與庫存、空間資料
+- [ ] **Google 登入一次性設定**：Google Cloud OAuth 用戶端＋Supabase Auth Google provider＋Redirect URLs（步驟 docs/google-login-setup.md）；
+      完成後 `HomePage` 的 `PASSWORD_MODE_DEFAULT` 改回 false，實測 gm／gm1／gm2 三個網域、未登記帳號被擋、LINE／IG 內建瀏覽器提示
+- [x] 字型自架（2026-10 底）：Inter／Noto Sans TC 改 `@fontsource` 套件、Material Symbols 只留 FILL 軸 woff2 放 `public/fonts`
+      （index.html 內嵌 @font-face＋`icons-ready` 旗標，字型到齊前 icon 文字不露出），`vercel.json` 給 `/fonts` 一年快取
 - [ ] 自訂 SMTP（Supabase Auth → SMTP Settings）：內建寄信只寄得到專案團隊成員信箱且每小時限量，學生收不到忘記密碼信；Redirect URLs 加正式網域 `/reset-password`
 - [ ] 上線前驗收：照 [rental-rules.md](./rental-rules.md) 逐條走一遍真實流程
 

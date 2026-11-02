@@ -4,9 +4,10 @@
  * Profile 與外部連結在 Footer
  */
 
+import { BTN } from '@/components/common/btn'
 import React from 'react'
-import CloseButton from '../common/CloseButton'
-import { Link } from 'react-router-dom'
+import NotificationPanel from '../common/NotificationPanel'
+import { Link, useLocation } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
 import { fetchMyNotifications, markAllNotificationsRead } from '../../services/notificationsService'
@@ -21,6 +22,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   const t = useT()
+  const { pathname } = useLocation()
   const { cart } = useCart()
   const { isAuthenticated, currentUser } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
@@ -86,41 +88,6 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [notificationMenuOpen])
 
-  // 格式化日期：2026/01/24 4:14PM
-  const formatNotificationDate = (timestamp: number) => {
-    const date = new Date(timestamp)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    let hours = date.getHours()
-    const minutes = date.getMinutes().toString().padStart(2, '0')
-    const ampm = hours >= 12 ? 'PM' : 'AM'
-    hours = hours % 12
-    hours = hours ? hours : 12
-    return `${year}/${month}/${day} ${hours}:${minutes}${ampm}`
-  }
-
-  // 格式化時間差距：英文 Just Now／3 Mins Ago…；中文 剛剛／3分鐘前／3小時前／3天前
-  const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now()
-    const diff = now - timestamp
-    const minuteMs = 60000
-    const hourMs = 3600000
-    const dayMs = 86400000
-
-    if (diff < minuteMs) return t('Just Now', '剛剛')
-    if (diff < hourMs) {
-      const mins = Math.floor(diff / minuteMs)
-      return t(`${mins} Min${mins > 1 ? 's' : ''} Ago`, `${mins}分鐘前`)
-    }
-    if (diff < dayMs) {
-      const hours = Math.floor(diff / hourMs)
-      return t(`${hours} Hour${hours > 1 ? 's' : ''} Ago`, `${hours}小時前`)
-    }
-    const days = Math.floor(diff / dayMs)
-    return t(`${days} Day${days > 1 ? 's' : ''} Ago`, `${days}天前`)
-  }
-
   // 計算購物車項目總數
   // 設備：累加所有設備的數量，編號區：每個區塊算1個，教室：每間教室算1個
   const cartCount = React.useMemo(() => {
@@ -148,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 <button
                   type="button"
                   onClick={() => setInfoTab('guide')}
-                  className="flex items-center text-white cursor-pointer"
+                  className={`flex items-center text-white ${BTN}`}
                   aria-label="Info"
                 >
                   <span className="material-symbols-outlined text-md">info</span>
@@ -157,12 +124,12 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 {/* Cart：右上角數量徽章 */}
                 <Link
                   to="/cart"
-                  className="relative flex items-center text-white"
+                  className={`relative flex items-center text-white ${pathname === '/cart' ? '' : 'hover:opacity-50'}`}
                   aria-label={`${t('Cart', '清單')} (${cartCount})`}
                 >
                   <span className="material-symbols-outlined text-md">shopping_cart</span>
                   {cartCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-white text-black text-2xs leading-4 text-center">
+                    <span className="font-english absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-white text-black text-2xs leading-4 text-center">
                       {cartCount}
                     </span>
                   )}
@@ -173,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   <Link
                     to="#"
                     onClick={handleNotificationClick}
-                    className="relative flex items-center text-white cursor-pointer"
+                    className={`relative flex items-center text-white ${notificationMenuOpen ? 'cursor-pointer' : BTN}`}
                     aria-label="Notification"
                   >
                     <span className="material-symbols-outlined text-md">
@@ -181,66 +148,18 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                     </span>
                     {/* 全域紅點：只有在選單關閉且有未讀訊息時顯示 */}
                     {unreadCount > 0 && !notificationMenuOpen && (
-                      <span className="absolute top-0 right-0 bg-[#ff448a] rounded-full w-2 h-2"></span>
+                      <span className="absolute top-0 right-0 bg-pink rounded-full w-2 h-2"></span>
                     )}
                   </Link>
 
                   {/* Notification Dropdown */}
                   {notificationMenuOpen && (
-                    <div
-                      className="absolute top-full right-0 mt-6 w-[400px] bg-[#151515] border border-[#545454] rounded-2xl overflow-hidden"
+                    <NotificationPanel
+                      items={notifications}
+                      onClose={closeNotificationMenu}
+                      className="absolute top-full right-0 mt-6"
                       style={{ zIndex: 1000 }}
-                    >
-                      {/* Header */}
-                      <div className="flex justify-between items-center p-4 border-b border-[#545454]">
-                        <h2 className="text-sm text-white">
-                          {t('Notification', '通知')}
-                        </h2>
-                        <CloseButton onClick={closeNotificationMenu} label={t('Close', '關閉')} />
-                      </div>
-
-                      {/* List */}
-                      <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                        {notifications.length === 0 ? (
-                          <div className="px-4 py-8 text-center">
-                            <p className="text-xs text-gray-scale2">
-                              目前沒有新通知
-                            </p>
-                          </div>
-                        ) : (
-                          notifications.map((n, index) => (
-                            <React.Fragment key={n.id}>
-                              <div className="p-4 hover:bg-white/5">
-                                {/* 內容＋右側未讀紅點 */}
-                                <div className="flex gap-3 mb-2">
-                                  <p className="flex-1 text-white text-xs leading-relaxed">
-                                    {n.announcement && (
-                                      <span className="inline-block mr-2 px-1.5 rounded border border-white text-[0.7rem] leading-4 align-[1px]">公告</span>
-                                    )}
-                                    {n.content}
-                                  </p>
-                                  {!n.read && <span className="mt-2 w-2 h-2 shrink-0 bg-[#ff448a] rounded-full" />}
-                                </div>
-
-                                {/* 底部資訊 */}
-                                <div className="flex justify-between items-end">
-                                  <span className="font-english text-gray-scale2 text-xs">
-                                    {formatNotificationDate(n.timestamp)}
-                                  </span>
-                                  <span className="font-english text-gray-scale2 text-xs">
-                                    {formatTimeAgo(n.timestamp)}
-                                  </span>
-                                </div>
-                              </div>
-                              {/* Separator */}
-                              {index < notifications.length - 1 && (
-                                <div className="h-[1px] bg-[#545454]"></div>
-                              )}
-                            </React.Fragment>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                    />
                   )}
                 </div>
               </nav>

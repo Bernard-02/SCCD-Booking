@@ -5,6 +5,8 @@
  * onConfirm 回傳結果，失敗時在對話框內顯示錯誤、不關閉。
  */
 
+import { BTN } from '@/components/common/btn'
+import CloseButton from '../common/CloseButton'
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../stores/langStore'
@@ -106,22 +108,22 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   }
 
   const inputClass =
-    'w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg'
-  const labelClass = 'block mb-2 text-xs text-[#cccccc]'
+    'w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg'
+  const labelClass = 'block mb-2 text-xs text-gray-light'
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-2xl"
+        className="relative bg-gray-darker border border-gray-mid max-w-md w-full mx-4 flex flex-col rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
+        <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="absolute top-6 right-6" />
         {/* 標題 */}
-        <div className="px-6 pt-6">
+        <div className="px-6 pt-6 pr-14">
           <h2 className="font-english text-sm text-white font-normal">
             {isPassword ? t('Change Password', '修改密碼') : t('Change Phone', '修改手機號碼')}
           </h2>
@@ -134,39 +136,39 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               <div>
                 <label className={labelClass}>
                   <span>{t('Current Password', '目前密碼')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} font-english`}
                   placeholder="請輸入目前密碼"
                 />
               </div>
               <div>
                 <label className={labelClass}>
                   <span>{t('New Password', '新密碼')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} font-english`}
                   placeholder="至少 8 個字元"
                 />
               </div>
               <div>
                 <label className={labelClass}>
                   <span>{t('Confirm New Password', '確認新密碼')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} font-english`}
                   placeholder="再次輸入新密碼"
                 />
               </div>
@@ -175,20 +177,20 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             <div>
               <label className={labelClass}>
                 <span>{t('Phone Number', '手機號碼')}</span>
-                <span className="text-[#ff8698] ml-1">*</span>
+                <span className="text-error ml-1">*</span>
               </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className={inputClass}
+                className={`${inputClass} font-english`}
                 placeholder="09xxxxxxxx"
               />
             </div>
           )}
 
           {error && (
-            <p className="text-xs text-[#ff8698]">
+            <p className="text-2xs text-error">
               {t(error.en, error.zh)}
             </p>
           )}
@@ -197,14 +199,14 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
 
         {/* 橫線 */}
         <div className="px-6">
-          <div className="border-t border-[#545454]"></div>
+          <div className="border-t border-gray-mid"></div>
         </div>
 
         {/* 按鈕 */}
         <div className="px-6 py-4 flex justify-end gap-6">
           <button
             onClick={onCancel}
-            className="text-[#cccccc] hover:text-white cursor-pointer"
+            className={`text-gray-light ${BTN}`}
           >
             <span className="font-english text-xs">
               {t('Cancel', '取消')}
@@ -213,7 +215,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className={`${submitting ? 'text-gray-scale2 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}`}
+            className={`text-white ${BTN}`}
           >
             <span className="font-english text-xs">
               {t('Save', '儲存')}

@@ -32,7 +32,8 @@ src/
   stores/langStore.ts           # 前台中／EN 切換（useT），後台只有中文
   services/                     # Supabase 存取層（supabase client、auth、orders、equipment、space、admin…）
   utils/                        # authTypes、authStorage、storageKeys、timeUtils、gradeUtils
-  data/contactInfo.ts           # 系學會聯絡資訊（設備資料已改由 Supabase equipment 表提供）
+  data/contactInfo.ts           # 系學會聯絡資訊的項目與順序（文字從 site_content 讀）
+  data/siteContent.ts           # 後台可改的說明文字清單＋內建預設（使用教學／系學會／關於／聯絡方式／延期規則）
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
 public/                         # 靜態資源（Area SVG 區域圖、Images、Icons）
@@ -90,6 +91,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 | `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
 | `sccd_google_pending` | sessionStorage：Google 登入進行中（值＝記住我 1／0），跳回首頁後即刪 |
 | `sccd_lang` | 前台介面語言（`zh`／`en`，zustand persist） |
+| `sccd_catalog_entered` | sessionStorage：型錄頁卡片進場動畫這個分頁已播過，再進來不重播 |
 
 ## 日期選擇邏輯
 
@@ -107,11 +109,16 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
+- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）／通知（2026-11-02 從左上鈴鐺改成獨立頁 `/admin/notifications`：清單由 AdminLayout 抓、Outlet context 傳入，標題右「全部已讀」鈕；側欄 icon 有未讀粉紅點）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／文字內容〔2026-11-02 加：ⓘ 三個分頁與延期規則的說明文字，`site_content` 表（`supabase/site-content.sql`），架構固定只改文字，清空＝回內建〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
+  後台通知（2026-11-02）：學生送單／改品項／延期／取消由 `orders` trigger 發給 admin（`supabase/admin-notifications.sql`），
+  側欄鈴鐺（`NotificationPanel` 與前台共用）點一則跳 `/admin/orders?student=學號`。
 - **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）；之後補的延期不得延入封鎖期、同類型限一單、修改已送出設備單也已完成。剩遠期單阻擋（待學會定細則）。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
+- **部分時段可借用**（2026-11-02）：設備卡（含整組，看零件逐日）／地圖格／教室依「你選的區間逐日夠不夠」分綠／橘／粉（設備看卡片上填的數量，最好的一天可借幾件＝數量上限；同類型有未歸還單時日期列會清掉已存的日期），橘的點加入開 `components/common/PartialDialog`
+  選一段（依日期順序、預設第一段），該類日期改成那段、清單同類品項一起改（同類型限一單，不開第二張）。SQL：`partial-availability.sql`（兩支逐日 RPC；沒執行時前端自動退回整段判定）。
 - **階段 5 手機版**：Equipment／Space／RentalList／Profile 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」；等桌面版驗收（階段 1.5）確認後再做。
+- **階段 5.5 無障礙**（2026-11-02 加）：至少鍵盤可操作——Calendar 日期格／地圖格／訂單卡等 16 處可點非按鈕元素、對話框焦點管理、全站 focus-visible、Toast aria-live；清單見 roadmap.md。
 - **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
 
 ## 手機版（RWD）標準
@@ -139,20 +146,37 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   元件內用 `t(英, 中)`、ConfirmDialog 的 `messageEn`；hook／service／事件裡用 `tr(英, 中)`（`stores/langStore`，讀當下語言）。
   SQL `raise exception` 維持中文，英文在 `utils/serverErrors.ts` 對照——**新增或修改學生會看到的 server 錯誤時，那裡要一起加英文**。
   新寫的提示文字直接附英文；既有英文由使用者校稿後可直接改。
+- **說明文字走 `site_content`**（2026-11-02 定）：使用教學／系學會／關於／聯絡方式／延期規則這類「給學生看的說明」不寫死在元件裡，
+  在 `data/siteContent.ts` 加一個 key（含中英內建預設），元件用 `useSiteContent()` 取值；條列用 `zipLines`。後台「文字內容」頁自動列出。
+  Toast／錯誤訊息等綁行為的提示文字不走這套。
 - 檔頭常有 `/** 功能說明 */` 區塊註解。
 - 路徑 alias：`@/*` → `src/*`。
 - TypeScript 設定為 `strict: true`，並啟用 `noUnusedLocals` 與 `noUnusedParameters`，build 時型別錯誤會擋住。
 - **hover 一律即時變化，不加 fade**（2026-10-23 定）：hover 變色／變透明不要寫 `transition-colors`、`transition-opacity`、`transition`；
   非 hover 的動畫照常（展開收合、刪除淡出、選取模式位移、chevron 旋轉、圖片 hover 放大這類 transform）。
-- **灰字 hover 變色一律加 `!`**：舊 `css/colors.css` 的 `.text-gray-scale*` 帶 `!important` 且不在 Tailwind layer，
-  一般的 `hover:text-white` 永遠蓋不過（只會看到其他 hover 效果如變粗）——寫 `hover:!text-white`、`group-hover:!text-white`。
-- **圓角三級**（2026-10-22 定）：`rounded-lg` 8px＝按鈕、chip、左側選單膠囊；
-  `rounded-xl` 12px＝Toast、tooltip（待繳押金 ⓘ）、地圖說明框與覆蓋提示；
+- **按鈕狀態一律接 `BTN`**（`components/common/btn.ts`，2026-10-31 定，前後台同）：hover 整顆 50%、停用整顆 20%，不另寫 hover／disabled class；
+  工具鈕（icon＋文字灰底 chip）加 `BTN_TOOL`；多選／分類膠囊走 `navItemCls`（未選中 hover 白字＋white/10 底）。
+  **線框鈕（白線白字）接 `BTN_OUTLINE`，hover 反白＝白底黑字**（2026-11-02 定；整顆變淡會像快停用）：借的是「選中」的白底黑字語彙，
+  所以只給動作型（後台 `actionBtn`、購物車「＋ 新增」、型錄 − ＋），toggle 不用；連結版（登入頁兩張卡）自己寫 `hover:bg-white hover:border-white hover:text-black`。
+  **有 active 狀態的按鈕，active 時不加 hover**（2026-11-02 定）：選中的膠囊、目前所在頁的 icon（Footer /profile 頭像、Header /cart）、
+  開著下拉／彈出清單的開關鈕（Header 通知鈴、Footer 連結、DatePickerBar 已選日期）——寫 `${active ? 'cursor-pointer' : BTN}`；沒有 active 狀態的按鈕照常接 `BTN`；
+  `<a>` 沒有 :enabled 直接寫 `hover:opacity-50`；仍可點、點了跳提示的 aria-disabled 鈕自己寫 `opacity-20 cursor-not-allowed`。Profile 訂單卡整列 hover 反白是卡片不是按鈕，維持。
+- **顏色只用 `src/index.css` `@theme` 的 token**（2026-11-01 定，前後台同一套；`--color-*: initial` 已關掉 Tailwind 預設色盤，寫 `text-zinc-400` 會沒效果、build 不擋）：
+  黑白＋四階灰 `gray-light`（輔助文字）／`gray-mid`（線、框、佔位）／`gray-dark`（灰鈕、chip、tooltip、選單 hover 底，2026-11-02 加，前後台灰鈕同這個）／`gray-darker`（面板底）；狀態色 `green`／`pink`（品牌粉）／`error`／`yellow`／`orange`／`cyan`，意義表在 token 註解。
+  不寫 hex、不寫 `text-[#…]`；inline style 用 `var(--color-xxx)`。透明層只給疊在別的東西上的（表格列 hover、鈕上的計數徽章、遮罩），只有 `white/10`、`white/50`、`black/80`；鈕／chip 本身的底是「一個東西」，用 `gray-dark` 不用 `white/10`；地圖可借用＝`green/50`。
+  有色底的 chip 一律黑字。舊 `css/colors.css` 與 `.text-gray-scale*` 已刪，`hover:text-white` 不用再加 `!`。
+- **圓角三級**（2026-10-22 定）：`rounded-lg` 8px＝按鈕、chip、左側選單膠囊（chip 一律用 `components/common/btn.ts` 的 `CHIP`：
+  h-6／px-2.5／text-2xs，2026-11-01 收斂，前後台同；底色字色各處自己給，有 icon 加 `!pl-1.5 gap-1`）；
+  `rounded-xl` 12px＝tooltip（待繳押金 ⓘ）、地圖說明框與覆蓋提示、後台大縮圖（Toast 2026-11-01 改 8px，表格小縮圖 6px 改 8px）；
   `rounded-2xl` 16px＝彈窗（ConfirmDialog／InfoDialog 等 lightbox）與下拉選單、訂單卡片，以及登入頁高 56px 以上的大按鈕／輸入框。
+- **下拉選單一律用 `components/admin/adminUi` 的 `Select`，不寫原生 `<select>`**（2026-11-02 定，前後台同；原生展開的清單改不了樣式）：
+  表單用預設（透明底灰框，跟容器底色）、工具列用 `filled`、卡片列裡的小下拉用 `size="xs"`，選項多的加 `searchable`。
 - **前面有 icon 的按鈕／選項，icon 那側 padding 少 4px**（例：`pl-3 pr-4`，參考 ProfilePage 左側選單）：
   Material Symbols 的圖形四周自帶約 2–4px 留白，數值等距看起來會偏寬；同 Material 3 按鈕規格（有 icon 側 16dp、另一側 24dp）。
   補償放在外框 padding，不要用 icon 負邊距。
 - **舊 `css/*.css` 不可再定義與 Tailwind 同名的 class**（如 `.cursor-pointer`、`.opacity-30`）：未分層的規則永遠蓋過
   Tailwind 的 `disabled:`／`hover:` 變體（2026-10-22 停用按鈕仍顯示 pointer 即此因，booking.css 已刪）。
-- **英文字距**（2026-10-27 定）：`.font-english` 自動套 Inter 官方 Dynamic Metrics 字距（`src/index.css` 依字級 token 給 `--tracking-en`），
-  純英數元素一律寫 `font-english`，不要再寫 `font-['Inter',_sans-serif]`（2026-10-27 已全數換掉）；中英混排用 `font-chinese`，中文不套字距。
+- **英文字距**（2026-10-27 定，2026-11-01 補 EN 模式）：有英文就要有字距（Inter 官方 Dynamic Metrics，`src/index.css` 依字級 token 給 `--tracking-en`），中文不套。
+  中文模式：純英數元素（含日期、金額、單號、學號、英數輸入框）一律寫 `font-english`；中英混排的容器標 `font-chinese`、裡面的英數再包 `font-english`。
+  EN 模式：`html[lang="en"]` 全域套字距、不必逐個加；`font-chinese` 子樹與 icon 除外——所以會隨語言切換的文字（t／tr）不要標 `font-chinese`，
+  `font-chinese` 只給 DB 中文資料與寫死的中文。後台 `AdminLayout` 把 `<html lang>` 固定 zh-TW。舊的 `font-['Inter',…]` 寫法已全數移除，不要再寫。

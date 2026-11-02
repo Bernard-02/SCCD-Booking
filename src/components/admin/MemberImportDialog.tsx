@@ -5,6 +5,7 @@
  * 只收 .xlsx 不收 CSV：Windows Excel 存的 CSV 預設 Big5，中文會亂碼。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState } from 'react'
 import { addAllowlist } from '../../services/adminService'
 import { parseMemberRows, IDENTITY_ZH_LIST, type ImportRow } from '../../utils/memberImport'
@@ -16,7 +17,7 @@ const TEMPLATE = [
   ['A112141002', '李小華', '', '系學會', '會長']
 ]
 const IDENTITY_ZH = { student: '學生', transfer: '轉學生', sa: '系學會', secretary: '系秘' } as const
-const cellCls = 'px-2 py-1.5 border-b border-gray-scale4 whitespace-nowrap'
+const cellCls = 'px-2 py-1.5 border-b border-gray-mid whitespace-nowrap'
 
 const MemberImportDialog: React.FC<{
   existingSids: ReadonlySet<string> // 已有帳號的學號（大寫）
@@ -79,16 +80,16 @@ const MemberImportDialog: React.FC<{
       onCancel={onCancel}
       wide
     >
-      <p className="text-xs text-gray-scale2 font-chinese leading-6">
+      <p className="text-xs text-gray-light font-chinese leading-6">
         Excel（.xlsx）第一列是表頭，認「學號、姓名、Email、身份、職稱」，順序不拘、其他欄略過。
         身份填 {IDENTITY_ZH_LIST}，空白＝學生；Email 空白＝學號@gm.usc.edu.tw；班級由學號自動判斷。
         已登記未啟用的學號以檔案為準更新，已有帳號的跳過。
-        <button type="button" onClick={downloadTemplate} className="ml-2 text-white underline hover:opacity-70 cursor-pointer">下載範本</button>
+        <button type="button" onClick={downloadTemplate} className={`ml-2 text-white underline ${BTN}`}>下載範本</button>
       </p>
 
       {!rows ? (
-        <label className={`flex flex-col items-center justify-center gap-2 h-32 rounded-xl border border-dashed border-gray-scale4 text-gray-scale2 ${
-          busy ? 'cursor-wait' : 'cursor-pointer hover:border-white hover:!text-white'
+        <label className={`flex flex-col items-center justify-center gap-2 h-32 rounded-xl border border-dashed border-gray-mid text-gray-light ${
+          busy ? 'cursor-wait' : 'cursor-pointer hover:border-white hover:text-white'
         }`}>
           <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>input</span>
           <span className="text-2xs font-chinese">{busy ? '讀取中…' : '點這裡選擇 .xlsx 檔案'}</span>
@@ -100,21 +101,21 @@ const MemberImportDialog: React.FC<{
       ) : (
         <>
           <div className="flex items-center gap-3 text-xs font-chinese">
-            <span className="font-english text-gray-scale2 truncate">{fileName}</span>
+            <span className="font-english text-gray-light truncate">{fileName}</span>
             <span>
               共 <span className="font-english">{rows.length}</span> 列、可匯入 <span className="font-english">{valid.length}</span> 筆
-              {bad > 0 && <span style={{ color: 'var(--color-error2)' }}>、<span className="font-english">{bad}</span> 筆有問題</span>}
+              {bad > 0 && <span style={{ color: 'var(--color-error)' }}>、<span className="font-english">{bad}</span> 筆有問題</span>}
             </span>
-            <button type="button" onClick={() => setRows(null)} className="ml-auto text-gray-scale2 hover:!text-white cursor-pointer">重選檔案</button>
+            <button type="button" onClick={() => setRows(null)} className={`ml-auto text-gray-light ${BTN}`}>重選檔案</button>
           </div>
           <div className="max-h-72 overflow-auto">
             <table className="w-full text-xs border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-gray-scale2 font-chinese">
+                <tr className="text-left text-gray-light font-chinese">
                   <th className={`${cellCls} font-normal w-10`}>列</th>
                   <th className={`${cellCls} font-normal`}>學號</th>
                   <th className={`${cellCls} font-normal`}>姓名</th>
-                  <th className={`${cellCls} font-normal`}>Email</th>
+                  <th className={`${cellCls} font-normal font-english`}>Email</th>
                   <th className={`${cellCls} font-normal`}>身份</th>
                   <th className={`${cellCls} font-normal`}>問題</th>
                 </tr>
@@ -122,12 +123,12 @@ const MemberImportDialog: React.FC<{
               <tbody>
                 {rows.map(r => (
                   <tr key={r.line} className={r.error ? 'opacity-60' : ''}>
-                    <td className={`${cellCls} font-english text-gray-scale2`}>{r.line}</td>
+                    <td className={`${cellCls} font-english text-gray-light`}>{r.line}</td>
                     <td className={`${cellCls} font-english`}>{r.sid || '—'}</td>
                     <td className={`${cellCls} font-chinese`}>{r.name || '—'}</td>
                     <td className={`${cellCls} font-english`}>{r.email || '—'}</td>
                     <td className={`${cellCls} font-chinese`}>{IDENTITY_ZH[r.identity]}{r.identity === 'sa' && r.position ? `・${r.position}` : ''}</td>
-                    <td className={`${cellCls} font-chinese`} style={r.error ? { color: 'var(--color-error2)' } : undefined}>{r.error ?? ''}</td>
+                    <td className={`${cellCls} font-chinese`} style={r.error ? { color: 'var(--color-error)' } : undefined}>{r.error ?? ''}</td>
                   </tr>
                 ))}
               </tbody>

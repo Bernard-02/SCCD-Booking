@@ -10,6 +10,24 @@
 @theme {
   --font-weight-bold: 600;
 
+  /* 顏色 token（2026-11-01 定，前後台同一套）：黑白＋四階灰＋六個狀態色，全站只用這些。
+     --color-*: initial 把 Tailwind 預設色盤整個關掉——寫 text-zinc-400 之類會直接沒效果，build 不會擋，靠 grep。
+     規則：本身是「一個東西」的（文字、框、鈕／chip 底、面板底）用真灰；疊在別的東西上的（列 hover、鈕上的計數徽章、遮罩）用透明度，
+     透明層只有 white/10、white/50、black/80。有色底 chip 一律黑字。 */
+  --color-*: initial;
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-gray-light: #a4a4a4;  /* 輔助文字、標籤、未選中、對話框「取消」、白底上的分隔線 */
+  --color-gray-mid: #545454;    /* 分隔線、卡片／輸入框邊框、佔位字、不可選日期、地圖未開放格、後台停用字、灰鈕／搜尋框的 focus 底 */
+  --color-gray-dark: #333333;   /* 灰鈕／chip／tooltip 底、左側選單 hover 底、後台工具列（鈕、搜尋框、下拉）、開關 off（2026-11-02 加：gray-mid 當填色太亮，且前後台灰鈕原本一邊 gray-mid 一邊 white/10） */
+  --color-gray-darker: #151515; /* 面板、下拉、通知、輸入框底、縮圖底 */
+  --color-green: #00ff80;       /* 有現貨、已選格、已歸還、完成勾、借用資訊已填、好寶寶；地圖可借用＝green/50、開關 on＝green/50 */
+  --color-pink: #ff448a;        /* 品牌粉：已借出、地圖已租格、圖例、通知紅點、罰款、Toast 錯誤字 */
+  --color-error: #ff8698;       /* 錯誤訊息、必填 *、danger 確認鈕、逾期、違規、停權 */
+  --color-yellow: #ffff00;      /* 待銷單、待點交、借用資訊未填、提醒、專案許可區、休學、帳號 1–3 級 */
+  --color-orange: #ffa500;      /* 待取件、部分時段可借用、帳號 4–5 級 */
+  --color-cyan: #00bfff;        /* 使用中／進行中、後台月曆的法定假日 */
+
   /* 字級系統：8 級，text-sm（1rem）為基準。xs/sm/lg/xl/2xl/3xl 覆寫 Tailwind 預設值（2xs、md 為新增）。
      內文三階對齊 Material 3 Body L/M/S：sm 16＝主要內文、xs 14＝次要內文、2xs 12＝錯誤訊息／輔助說明／徽章（不放長段落）。
      舊的 text-base/4xl 與 css/typography.css 的 text-* class 屬遷移期過渡，逐頁換成這 8 級 */
@@ -58,6 +76,9 @@
   .text-lg { --tracking-en: -0.02em; }     /* 24px */
   .text-xl, .text-2xl, .text-3xl { --tracking-en: -0.022em; } /* 32px 以上趨近 −0.0223 */
   .font-english { letter-spacing: var(--tracking-en); }
+  /* EN 模式整個介面都是英文：全域套字距，不必逐個加 font-english。排除 icon（ligature 遇到 letter-spacing 會失效）
+     與 .font-chinese 子樹（DB 的中文資料、寫死的中文）；後台 AdminLayout 把 <html lang> 固定 zh-TW */
+  html[lang="en"] *:not(.material-symbols-outlined, .font-chinese, .font-chinese *) { letter-spacing: var(--tracking-en); }
 
   #root {
     min-height: 100vh;
@@ -69,7 +90,7 @@
     width: 16px;
     height: 16px;
     margin-left: 4px;
-    background-color: var(--color-gray-scale2);
+    background-color: var(--color-gray-light);
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E") center / contain no-repeat;
     cursor: pointer;
   }
@@ -77,6 +98,8 @@
     background-color: white;
   }
 }
+
+html:not(.icons-ready) .material-symbols-outlined { visibility: hidden; } /* 字型載入中不露出 ligature 文字，index.html 載好後加 class */
 
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined'; /* 確保指定字體 */
@@ -90,6 +113,8 @@
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
+  font-feature-settings: 'liga'; /* 原本由 Google 的 CSS 給，現在自架要自己寫 */
+  -webkit-font-smoothing: antialiased;
   
   /* Google 變數設定 */
   font-variation-settings:

@@ -5,7 +5,7 @@
   left: 0;
   width: 100%;
   height: 100vh;
-  background-color: #000000 !important;
+  background-color: var(--color-black) !important;
   z-index: 999;
   opacity: 0;
   visibility: hidden;
@@ -17,7 +17,7 @@
 .mobile-menu.active {
   opacity: 1;
   visibility: visible;
-  background-color: #000000 !important;
+  background-color: var(--color-black) !important;
 }
 
 /* 響應式調整 */

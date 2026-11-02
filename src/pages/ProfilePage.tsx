@@ -4,6 +4,7 @@
  * 右上角為使用說明；姓名改顯示在 Footer 的 Profile icon 旁。
  */
 
+import { BTN, CHIP } from '@/components/common/btn'
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -71,7 +72,7 @@ const ProfilePage: React.FC = () => {
             <div className="w-[30%] flex-shrink-0 pr-3 flex flex-col items-start">
               {/* 選中的分頁＝白底黑字圓角矩形（同訂單卡片展開時的反白）；inline-flex＝各項同寬、以最長的為準；
                   樣式共用 components/common/navItem.ts */}
-              <nav className="inline-flex flex-col gap-2">
+              <nav className="inline-flex flex-col gap-2 flex-1">
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
@@ -82,13 +83,12 @@ const ProfilePage: React.FC = () => {
                     <span>{t(item.en, item.zh)}</span>
                   </button>
                 ))}
+                {/* 登出：同上方選單樣式，放同一欄底部（inline-flex 讓它與上方選單同寬），緊貼 Footer 的 Profile 頭像上方 */}
+                <button onClick={handleLogout} className={`mt-auto ${navItemCls(false)}`}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
+                  <span>{t('Log out', '登出')}</span>
+                </button>
               </nav>
-
-              {/* 登出：同上方選單樣式，放在側欄底部、緊貼 Footer 的 Profile 頭像上方 */}
-              <button onClick={handleLogout} className={`mt-auto ${navItemCls(false)}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
-                <span>{t('Log out', '登出')}</span>
-              </button>
             </div>
 
             {/* 右側：內容區域 */}
@@ -109,12 +109,6 @@ const ProfilePage: React.FC = () => {
 }
 
 // 工作時計算與訂單狀態判定統一在 utils/timeUtils.ts
-
-// 狀態 chip：由狀態色推出淺底（25% 色＋白）＋深字（40% 色＋黑），黑底卡片與展開的白底都看得清楚
-const statusChipStyle = (color: string): React.CSSProperties => ({
-  backgroundColor: `color-mix(in srgb, ${color} 25%, white)`,
-  color: `color-mix(in srgb, ${color} 40%, black)`
-})
 
 // 使用說明（訂單頁右上；PDF 收據另有一份中英並列）
 const USER_GUIDE = [
@@ -282,25 +276,25 @@ const RentalHistorySection: React.FC = () => {
         }
       case 'in-progress':
         return {
-          color: 'var(--color-blue)',
+          color: 'var(--color-cyan)',
           en: 'In Progress',
           zh: '使用中'
         }
       case 'returned':
         return {
-          color: 'var(--color-success)',
+          color: 'var(--color-green)',
           en: 'Returned',
           zh: '已歸還'
         }
       case 'overdue':
         return {
-          color: 'var(--color-error2)',
+          color: 'var(--color-error)',
           en: 'Overdue',
           zh: '未完成歸還'
         }
       case 'canceled':
         return {
-          color: 'var(--color-gray-scale3)',
+          color: 'var(--color-gray-mid)',
           en: 'Canceled',
           zh: '已取消'
         }
@@ -308,7 +302,9 @@ const RentalHistorySection: React.FC = () => {
   }
 
   // 獲取訂單種類標籤
-  const getBookingTypeLabel = (type?: string) => {
+  // 種類標籤：設備＝小量／大量；空間單的 booking_type 'little' 是「個人」、'mass-group' 是「團體」
+  const getBookingTypeLabel = (type?: string, isEquip = true) => {
+    if (!isEquip) return type === 'mass-group' ? { en: 'Group', zh: '團體' } : { en: 'Personal', zh: '個人' }
     switch (type) {
       case 'mass-personal':
         return { en: 'Mass - Personal', zh: '大量 - 個人' }
@@ -327,7 +323,7 @@ const RentalHistorySection: React.FC = () => {
     if (status === 'pending' && receipt.depositPaidAt) {
       return (
         <div className="text-right mt-2">
-          <span className="font-english text-sm" style={{ color: 'var(--color-cyan-blue)' }}>
+          <span className="font-english text-sm" style={{ color: 'var(--color-cyan)' }}>
             {t('Pickup', '取件')} {pickupText}
           </span>
         </div>
@@ -348,11 +344,11 @@ const RentalHistorySection: React.FC = () => {
         <div className="text-right mt-2">
           <span className="font-english text-sm text-yellow">
             {t('Expires in', '距離繳交押金')} {hoursRemaining} hrs
-            {isPaused && <span className="ml-2 text-gray-scale2">(Paused)</span>}
+            {isPaused && <span className="ml-2 text-gray-light">(Paused)</span>}
           </span>
           {receipt.depositDate && receipt.depositSlot && (
-            <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs text-gray-scale2 mt-1">
-              繳押金 {slotLabel({ date: receipt.depositDate, slot: receipt.depositSlot })}・取件 {pickupText}
+            <div className="font-chinese text-xs text-gray-light mt-1">
+              繳押金 <span className="font-english">{slotLabel({ date: receipt.depositDate, slot: receipt.depositSlot })}</span>・取件 <span className="font-english">{pickupText}</span>
             </div>
           )}
         </div>
@@ -382,12 +378,12 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-english text-sm text-blue">
+          <span className="font-english text-sm text-cyan">
             {t('Due in', '距離逾期')} {timeText}
           </span>
           {addMs > 0 && (
-            <div className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs mt-1" style={{ color: 'var(--color-yellow)' }}>
-              新增設備待點交・剩 <span className="font-english">{Math.ceil(addMs / 3_600_000)}</span> hrs
+            <div className="font-chinese text-xs mt-1" style={{ color: 'var(--color-yellow)' }}>
+              新增設備待點交・剩 <span className="font-english">{Math.ceil(addMs / 3_600_000)} hrs</span>
             </div>
           )}
         </div>
@@ -402,7 +398,7 @@ const RentalHistorySection: React.FC = () => {
 
       return (
         <div className="text-right mt-2">
-          <span className="font-english text-sm text-error2">
+          <span className="font-english text-sm text-error">
             {t('Penalty', '累計罰款')} NT$ {penalty.toLocaleString()}
           </span>
         </div>
@@ -423,7 +419,7 @@ const RentalHistorySection: React.FC = () => {
     const endDate = receipt.rentalDates[receipt.rentalDates.length - 1]
     const canExtend = status === 'in-progress' && !receipt.hasExtended && isWithinExtendWindow(endDate)
     const bookingType = receipt.items.length > 0 ? receipt.items[0].bookingType : 'little'
-    const bookingTypeLabel = getBookingTypeLabel(bookingType)
+    const bookingTypeLabel = getBookingTypeLabel(bookingType, receipt.items[0]?.category === 'equipment')
     // 可修改＝設備單（小量／大量）且待繳押金／已繳待取件／租借中（情境 3：改原單，不另開新單）
     const canModify =
       receipt.items[0]?.category === 'equipment' && bookingType !== 'mass-group' &&
@@ -432,12 +428,12 @@ const RentalHistorySection: React.FC = () => {
     const isOpen = openOrder === receipt.rentalNumber
     const toggle = () => setOpenOrder(isOpen ? null : receipt.rentalNumber)
     // icon 操作鈕：跟著卡片文字色（反白時變黑），不可用＝30% 透明
-    const iconBtnCls = 'flex items-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
+    const iconBtnCls = `flex items-center ${BTN}`
 
     return (
       <div
         key={index}
-        className={`group rounded-2xl border border-[#545454] overflow-hidden ${
+        className={`group rounded-2xl border border-gray-mid overflow-hidden ${
           isOpen ? 'bg-white text-black' : 'text-white hover:bg-white hover:text-black'
         }`}
       >
@@ -445,19 +441,20 @@ const RentalHistorySection: React.FC = () => {
         <div onClick={toggle} className="flex justify-between gap-6 p-6 cursor-pointer">
           {/* 左：單號 → 種類＋狀態 → 日期與押金 */}
           <div>
-            <div className="text-xl">{receipt.rentalNumber}</div>
+            <div className="font-english text-xl">{receipt.rentalNumber}</div>
             <div className="flex items-center gap-2 mt-2">
-              <span className="px-3 py-1 rounded-lg bg-gray-scale4 text-white text-xs whitespace-nowrap">
+              <span className={`${CHIP} bg-gray-dark text-white`}>
                 {t(bookingTypeLabel.en, bookingTypeLabel.zh)}
               </span>
+              {/* 有色底 chip 黑字；已取消是 gray-mid 灰底，黑字看不清，改白字 */}
               <span
-                className="px-3 py-1 rounded-lg text-xs whitespace-nowrap"
-                style={statusChipStyle(statusInfo.color)}
+                className={`${CHIP} ${status === 'canceled' ? 'text-white' : 'text-black'}`}
+                style={{ backgroundColor: statusInfo.color }}
               >
                 {t(statusInfo.en, statusInfo.zh)}
               </span>
             </div>
-            <div className="flex items-center gap-8 mt-4 text-md">
+            <div className="flex items-center gap-8 mt-4 text-md font-english">
               <span>{formatDateRange(receipt.rentalDates)}</span>
               <span>NT$ {receipt.totalDeposit.toLocaleString()}</span>
             </div>
@@ -505,7 +502,7 @@ const RentalHistorySection: React.FC = () => {
                 onClick={toggle}
                 aria-expanded={isOpen}
                 aria-label={t('Details', '明細')}
-                className="flex items-center cursor-pointer"
+                className={`flex items-center ${BTN}`}
               >
                 <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
@@ -516,7 +513,7 @@ const RentalHistorySection: React.FC = () => {
 
         {/* 展開：訂單明細（往下展開動畫） */}
         <Collapse open={isOpen}>
-          <div className="mx-6 py-6 border-t border-black/15">
+          <div className="mx-6 py-6 border-t border-gray-light">
             <OrderDetail receipt={receipt} />
           </div>
         </Collapse>
@@ -531,7 +528,7 @@ const RentalHistorySection: React.FC = () => {
         <button
           type="button"
           onClick={() => setGuideOpen(true)}
-          className="flex items-center gap-2 text-sm text-white cursor-pointer"
+          className={`flex items-center gap-2 text-sm text-white ${BTN}`}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>menu_book</span>
           {t('User Guide', '使用說明')}
@@ -551,7 +548,7 @@ const RentalHistorySection: React.FC = () => {
 
       {/* 所有訂單 */}
       {allReceipts.length === 0 ? (
-        <p className="text-gray-scale4 text-md">尚無訂單記錄</p>
+        <p className="text-gray-mid text-md">尚無訂單記錄</p>
       ) : (
         <div className="flex flex-col gap-4">
           {allReceipts.map((receipt, index) => renderReceiptItem(receipt, index))}
@@ -659,13 +656,13 @@ const ProfileDataSection: React.FC = () => {
             <div className="mb-6">
               <p className="text-white text-md">
                 {t(
-                  <>Your account is <span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>Suspended</span></>,
-                  <>您的帳號<span style={{ color: 'var(--color-error2)', fontWeight: 600 }}>已停權</span></>
+                  <>Your account is <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>Suspended</span></>,
+                  <>您的帳號<span style={{ color: 'var(--color-error)', fontWeight: 600 }}>已停權</span></>
                 )}
               </p>
             </div>
             <div>
-              <p className="text-gray-scale2 text-xs">{t('An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.', '有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜')}</p>
+              <p className="text-gray-light text-xs">{t('An order was overdue for 6 business days (incomplete return). You can no longer place bookings — please contact the student association.', '有訂單逾期滿 6 個營業日（未完成清潔歸還），已無法送出預約，請儘速聯絡系學會處理歸還與罰款事宜')}</p>
             </div>
           </>
         ) : worstOverdueDays > 0 ? (
@@ -673,13 +670,13 @@ const ProfileDataSection: React.FC = () => {
             <div className="mb-6">
               <p className="text-white text-md">
                 {t(
-                  <>Account status <span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span></>,
-                  <>帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error2)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span></>
+                  <>Account status <span style={{ color: tier >= 6 ? 'var(--color-error)' : tier >= 4 ? 'var(--color-orange)' : 'var(--color-yellow)', fontWeight: 600 }}>Level {tier}</span></>,
+                  <>帳號狀態<span style={{ color: tier >= 6 ? 'var(--color-error)' : tier >= 4 ? 'var(--color-orange)' : 'var(--color-yellow)', fontWeight: 600 }}>第 {tier} 級</span></>
                 )}
               </p>
             </div>
             <div>
-              <p className="text-gray-scale2 text-xs">
+              <p className="text-gray-light text-xs">
                 {t(
                   `You have an order overdue for ${worstOverdueDays} business day${worstOverdueDays > 1 ? 's' : ''}. At 6 days your account will be suspended — please return it as soon as possible.`,
                   `您有訂單已逾期 ${worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還`
@@ -692,13 +689,13 @@ const ProfileDataSection: React.FC = () => {
             <div className="mb-6">
               <p className="text-white text-md">
                 {t(
-                  <>You're in <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>Good Standing</span></>,
-                  <>您是個守規矩的<span style={{ color: 'var(--color-success)', fontWeight: 600 }}>好寶寶</span></>
+                  <>You're in <span style={{ color: 'var(--color-green)', fontWeight: 600 }}>Good Standing</span></>,
+                  <>您是個守規矩的<span style={{ color: 'var(--color-green)', fontWeight: 600 }}>好寶寶</span></>
                 )}
               </p>
             </div>
             <div>
-              <p className="text-gray-scale2 text-xs">{t('You return your rentals right on time, with no overdue records.', '您非常準時地歸還租借，沒有任何逾期記錄')}</p>
+              <p className="text-gray-light text-xs">{t('You return your rentals right on time, with no overdue records.', '您非常準時地歸還租借，沒有任何逾期記錄')}</p>
             </div>
           </>
         )}
@@ -706,18 +703,18 @@ const ProfileDataSection: React.FC = () => {
       </div>
 
       {/* 分割線（上下對稱間距） */}
-      <div className="border-t border-gray-scale4 my-12"></div>
+      <div className="border-t border-gray-mid my-12"></div>
 
       {/* 個人資料欄位 */}
       <div className="space-y-10">
         {/* 第一行：姓名和班級 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">{t('Name', '姓名')}</label>
+            <label className="text-gray-light text-xs block mb-2">{t('Name', '姓名')}</label>
             <p className="font-chinese text-white text-sm">{currentUser?.name || '阿志'}</p>
           </div>
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">{t('Class', '班級')}</label>
+            <label className="text-gray-light text-xs block mb-2">{t('Class', '班級')}</label>
             <p className="font-chinese text-white text-sm">
               {/* 班級以學生資料為準（grade＋class_name，同後台會員管理；Google 首次登入由學號給初值） */}
               {classLabel(currentUser?.year, currentUser?.className) || '—'}
@@ -728,24 +725,24 @@ const ProfileDataSection: React.FC = () => {
         {/* 第二行：帳號和密碼 */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">{t('Student ID', '學號')}</label>
+            <label className="text-gray-light text-xs block mb-2">{t('Student ID', '學號')}</label>
             <p className="font-english text-white text-sm">{currentUser?.studentId || 'A111144001'}</p>
           </div>
           {currentUser?.provider === 'google' ? (
             // Google 帳號沒有密碼：顯示登入方式，不能改
             <div>
-              <label className="text-gray-scale2 text-xs block mb-2">{t('Sign-in', '登入方式')}</label>
+              <label className="text-gray-light text-xs block mb-2">{t('Sign-in', '登入方式')}</label>
               <p className="font-english text-white text-sm">Google</p>
             </div>
           ) : (
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">{t('Password', '密碼')}</label>
+            <label className="text-gray-light text-xs block mb-2">{t('Password', '密碼')}</label>
             <div className="flex items-center gap-3">
               {/* 密碼僅存雜湊，無法顯示明文；此處固定遮罩，變更走右側編輯 */}
               <span className="font-english text-white text-sm flex-1">••••••••</span>
               <button
                 onClick={() => setEditMode('password')}
-                className="text-white hover:text-gray-scale2 cursor-pointer flex items-center"
+                className={`text-white flex items-center ${BTN}`}
                 aria-label="修改密碼"
                 title="修改密碼"
               >
@@ -759,14 +756,14 @@ const ProfileDataSection: React.FC = () => {
         {/* 第三行：手機號碼和Email */}
         <div className="grid grid-cols-2 gap-24">
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">{t('Phone', '手機號碼')}</label>
+            <label className="text-gray-light text-xs block mb-2">{t('Phone', '手機號碼')}</label>
             <div className="flex items-center gap-3">
               <p className="font-english text-white text-sm flex-1">
                 {phone ? maskPhone(phone) : '未設定'}
               </p>
               <button
                 onClick={() => setEditMode('phone')}
-                className="text-white hover:text-gray-scale2 cursor-pointer flex items-center"
+                className={`text-white flex items-center ${BTN}`}
                 aria-label={phone ? '修改手機號碼' : '設定手機號碼'}
                 title={phone ? '修改手機號碼' : '設定手機號碼'}
               >
@@ -775,7 +772,7 @@ const ProfileDataSection: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">{t('Email', '電子郵件')}</label>
+            <label className="text-gray-light text-xs block mb-2">{t('Email', '電子郵件')}</label>
             <p className="font-english text-white text-sm">
               {maskEmail((currentUser?.email || `${currentUser?.studentId}@gm2.usc.edu.tw`).toLowerCase())}
             </p>

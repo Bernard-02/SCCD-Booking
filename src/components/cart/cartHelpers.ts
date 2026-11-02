@@ -108,3 +108,7 @@ export const sortBlockIds = (ids: string[]): string[] => {
     return parseInt(numA, 10) - parseInt(numB, 10)
   })
 }
+
+/** 部分時段可借：購物車裡同一類（設備／空間）的品項全部改成新起訖（同類型限一單，不開第二張） */
+export const rescheduleCategory = (cart: CartItem[], category: 'equipment' | 'space', startDate: string, endDate: string): CartItem[] =>
+  cart.map(i => ((i.category === 'equipment') === (category === 'equipment') ? { ...i, startDate, endDate } : i))

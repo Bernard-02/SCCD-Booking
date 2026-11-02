@@ -76,11 +76,6 @@
 }
 
 /* 禁用的導航按鈕 */
-.nav-arrow:disabled,
-.nav-arrow.opacity-30 {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
 
 .nav-arrow:disabled:hover .arrow-text,
 .nav-arrow.opacity-30:hover .arrow-text {
@@ -122,7 +117,7 @@
 /* 不可選的日期（過去／超出天數／封鎖期）- 灰色且不可互動
    （原名 .text-gray-500，與 Tailwind 同名會蓋掉 Tailwind，已改名） */
 .disabled-date {
-    color: #777777 !important;
+    color: var(--color-gray-mid) !important;
     cursor: not-allowed !important;
 }
 
@@ -132,7 +127,7 @@
 
 .disabled-date .date-number-text,
 .disabled-date .date-number-hidden {
-    color: #777777 !important;
+    color: var(--color-gray-mid) !important;
 }
 
 /* 過期日期範圍 - 黃色且不可互動 */
@@ -146,13 +141,13 @@
 
 .expired-date .date-number-text,
 .expired-date .date-number-hidden {
-    color: #ffff00 !important;
+    color: var(--color-yellow) !important;
 }
 
 /* 有效日期範圍 - 綠色標記 */
 .valid-range .date-number-text,
 .valid-range .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* === 日期數字互動樣式 === */
@@ -198,7 +193,7 @@
 
 .cursor-pointer.start-date .date-number-text,
 .cursor-pointer.start-date .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 歸還日選擇狀態 - 綠色數字 */
@@ -208,7 +203,7 @@
 
 .cursor-pointer.end-date .date-number-text,
 .cursor-pointer.end-date .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 範圍內的日期 - 綠色數字 */
@@ -218,7 +213,7 @@
 
 .cursor-pointer.in-range .date-number-text,
 .cursor-pointer.in-range .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* Hover 預覽效果 - 深綠色數字 */
@@ -228,13 +223,13 @@
 
 .cursor-pointer.hover-preview .date-number-text,
 .cursor-pointer.hover-preview .date-number-hidden {
-    color: rgb(0, 128, 64) !important;
+    color: color-mix(in srgb, var(--color-green) 50%, transparent) !important;
 }
 
 /* 起租日在 hover 預覽時保持 100% 綠色 */
 .cursor-pointer.start-date.hover-preview .date-number-text,
 .cursor-pointer.start-date.hover-preview .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 同一天起租日 hover 預覽效果 - 保持 100% 綠色 */
@@ -244,13 +239,13 @@
 
 .cursor-pointer.same-day-hover-preview .date-number-text,
 .cursor-pointer.same-day-hover-preview .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 起租日選擇了歸還日後 - 綠色數字 */
 .cursor-pointer.complete-line .date-number-text,
 .cursor-pointer.complete-line .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 同一天選擇狀態 - 綠色數字 */
@@ -260,7 +255,7 @@
 
 .cursor-pointer.same-day-selected .date-number-text,
 .cursor-pointer.same-day-selected .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 按鈕狀態（opacity-30／100、cursor-pointer／not-allowed）改用 Tailwind 內建：
@@ -271,42 +266,42 @@
 /* 第1個數字（今天）- 黃色數字 */
 .extend-line-start .date-number-text,
 .extend-line-start .date-number-hidden {
-    color: #ffff00 !important;
+    color: var(--color-yellow) !important;
 }
 
 /* 第2個數字（原歸還日）- 綠色數字 */
 .extend-line-end .date-number-text,
 .extend-line-end .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* 第3個數字（延期選項）- 移除顏色覆蓋，使用預設白色 */
 /* .extend-line-third .date-number-text,
 .extend-line-third .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 } */
 
 /* 範圍內的數字（選中狀態）- 綠色數字 */
 .in-range-extend .date-number-text,
 .in-range-extend .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 
 /* hover 預覽 - 深綠色數字 */
 .hover-preview-extend .date-number-text,
 .hover-preview-extend .date-number-hidden {
-    color: rgb(0, 128, 64) !important;
+    color: color-mix(in srgb, var(--color-green) 50%, transparent) !important;
 }
 
 /* hover 位置本身 - 深綠色數字 */
 .hover-preview-end .date-number-text,
 .hover-preview-end .date-number-hidden {
-    color: rgb(0, 128, 64) !important;
+    color: color-mix(in srgb, var(--color-green) 50%, transparent) !important;
 }
 
 /* 選中的結束日期 - 綠色數字 */
 .end-date-extend .date-number-text,
 .end-date-extend .date-number-hidden {
-    color: #00FF80 !important;
+    color: var(--color-green) !important;
 }
 

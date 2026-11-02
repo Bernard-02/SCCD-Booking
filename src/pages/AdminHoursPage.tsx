@@ -1,6 +1,6 @@
 /**
  * 後台 · 營業時間——規則與說明見 docs/admin-hours.md（週六日固定不營業）
- * 左：「假期 & 休息日」月曆（同前台日曆的大數字單月）整合 closed_dates（休息日＝黃、法定假日＝粉紅，自動匯入）與
+ * 左：「假期 & 休息日」月曆（同前台日曆的大數字單月）整合 closed_dates（休息日＝黃、法定假日＝藍，自動匯入）與
  *   rental_blackouts（寒暑假＝灰）。點日期＝開在日期右側的小視窗：沒東西→新增休息日（日期唯讀、原因、其他才有說明欄）；
  *   已有→顯示內容可刪除。標題右「新增」下拉：休息日＝點月曆日期；寒暑假＝點起訖日（綠），下拉處變「確定」。
  * 右：值班時間表（staff_duties）：週一～五 × 午班／晚班（SHIFTS 寫死），每格 1～3 人（系學會名單）；
@@ -8,6 +8,7 @@
  * 休息日／法定假日：倒數與逾期跳過、歸還順延；新增休息日自動發公告＋通知受影響訂單。封鎖：擋新單、前台日曆灰化。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import CloseButton from '../components/common/CloseButton'
 import {
@@ -36,8 +37,8 @@ const shiftOf = (startTime: string): ShiftKey => (startTime.slice(0, 5) < '15:00
 const cellKey = (weekday: number, shift: ShiftKey) => `${weekday}|${shift}`
 const MAX_PER_SHIFT = 3
 
-// 月曆顏色：休息日黃、法定假日粉紅、寒暑假灰（同前台不可選的灰）、寒暑假選取中綠（同前台起訖日）
-const COLOR = { closed: 'var(--color-yellow)', holiday: 'var(--color-error2)', blackout: '#777777', range: 'var(--color-success)' }
+// 月曆顏色：休息日黃、法定假日藍（cyan，2026-11-02 從 error 粉紅改）、寒暑假灰（同前台不可選的灰）、寒暑假選取中綠（同前台起訖日）
+const COLOR = { closed: 'var(--color-yellow)', holiday: 'var(--color-cyan)', blackout: 'var(--color-gray-mid)', range: 'var(--color-green)' }
 const KIND_OPTIONS: ClosedKind[] = ['activity', 'review', 'other']
 const fmtDay = (key: string) => `${key.replace(/-/g, '/')}（週${WD[new Date(`${key}T00:00:00`).getDay()]}）`
 
@@ -241,7 +242,7 @@ const AdminHoursPage: React.FC = () => {
   // 小視窗內容：那天有什麼就顯示什麼，沒有＝新增休息日。標題列右上：垃圾桶（有東西才有）＋X 關閉
   const popDay = pop ? closedByDay.get(pop.day) : undefined
   const popBlackout = pop ? blackoutOf(pop.day) : undefined
-  const iconBtnCls = 'flex items-center text-gray-scale2 hover:!text-white cursor-pointer'
+  const iconBtnCls = `flex items-center text-gray-light ${BTN}`
   const popHeader = (title: string, onDelete?: () => void) => (
     <div className="flex items-center justify-between gap-4">
       <h3 className="text-sm text-white">{title}</h3>
@@ -309,7 +310,7 @@ const AdminHoursPage: React.FC = () => {
       <PageTitle zh="營業時間" />
 
       {loading ? (
-        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
+        <div className="text-gray-light text-xs font-chinese">載入中…</div>
       ) : loadError ? (
         <LoadError message={loadError} onRetry={() => { setLoading(true); void load() }} />
       ) : (
@@ -322,14 +323,14 @@ const AdminHoursPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {/* 起訖日：同前台日期列顯示兩個日期，可點月曆也可直接 key */}
                   {(['start', 'end'] as const).map(which => (
-                    <label key={which} className="flex items-center gap-2 text-xs text-gray-scale2 font-chinese">
+                    <label key={which} className="flex items-center gap-2 text-xs text-gray-light font-chinese">
                       {which === 'start' ? '開始' : '結束'}
                       <input
                         value={typed[which]}
                         onChange={e => onTyped(which, e.target.value)}
                         placeholder="YYYY/MM/DD"
                         inputMode="numeric"
-                        className="h-9 w-[6.5rem] px-2 text-center rounded-lg bg-white/10 focus:bg-white/15 text-xs text-white font-english placeholder:text-gray-scale3 outline-none"
+                        className="h-9 w-[6.5rem] px-2 text-center rounded-lg bg-gray-dark focus:bg-gray-mid text-xs text-white font-english placeholder:text-gray-mid outline-none"
                       />
                     </label>
                   ))}
@@ -340,14 +341,14 @@ const AdminHoursPage: React.FC = () => {
                   <button
                     onClick={handleConfirmBlackout}
                     disabled={!range.end || busy}
-                    className={`${toolBtn(true)} px-3 font-chinese disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={`${toolBtn(true)} px-3 font-chinese`}
                   >
                     確定
                   </button>
                 </div>
               ) : mode === 'closed' ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-scale2 font-chinese mr-1">點月曆日期新增休息日</span>
+                  <span className="text-xs text-gray-light font-chinese mr-1">點月曆日期新增休息日</span>
                   <button onClick={exitMode} className={textBtn(false)}>
                     <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">undo</span>
                     取消
@@ -370,13 +371,13 @@ const AdminHoursPage: React.FC = () => {
             {/* 月份導航同前台：箭頭靠左、標題靠右；後台翻月不限 */}
             <div className="flex justify-between items-center pb-6">
               <div className="flex items-center gap-4">
-                <button onClick={() => setMonth(new Date(year, m - 1, 1))} className="text-white text-xl select-none cursor-pointer" aria-label="上個月">&lt;</button>
-                <button onClick={() => setMonth(new Date(year, m + 1, 1))} className="text-white text-xl select-none cursor-pointer" aria-label="下個月">&gt;</button>
+                <button onClick={() => setMonth(new Date(year, m - 1, 1))} className={`text-white text-xl select-none ${BTN}`} aria-label="上個月">&lt;</button>
+                <button onClick={() => setMonth(new Date(year, m + 1, 1))} className={`text-white text-xl select-none ${BTN}`} aria-label="下個月">&gt;</button>
                 {/* 回到今天那個月；已在本月時停用 */}
                 <button
                   onClick={goToday}
                   disabled={todayKey.startsWith(toDateKey(month).slice(0, 7))}
-                  className={`${toolBtn(false)} px-3 font-chinese disabled:opacity-40 disabled:cursor-not-allowed`}
+                  className={`${toolBtn(false)} px-3 font-chinese`}
                 >
                   今天
                 </button>
@@ -396,7 +397,7 @@ const AdminHoursPage: React.FC = () => {
               {pop && (
                 <div
                   ref={popRef}
-                  className="absolute z-20 w-72 p-4 bg-[#151515] border border-[#545454] rounded-2xl text-xs flex flex-col gap-4"
+                  className="absolute z-20 w-72 p-4 bg-gray-darker border border-gray-mid rounded-2xl text-xs flex flex-col gap-4"
                   style={{ left: pop.left, top: pop.top, transform: pop.flip ? 'translateX(-100%)' : undefined }}
                 >
                   {popDay ? (
@@ -404,7 +405,7 @@ const AdminHoursPage: React.FC = () => {
                       {popHeader(popDay.kind === 'holiday' ? '法定假日' : '休息日', () => handleDeleteClosed(popDay))}
                       <div className="flex flex-col gap-1 font-chinese">
                         <span className="font-english text-white">{fmtDay(popDay.day)}</span>
-                        <span className="text-gray-scale2">
+                        <span className="text-gray-light">
                           {popDay.kind === 'holiday' ? popDay.reason : `${CLOSED_KIND_ZH[popDay.kind ?? 'other']}${popDay.reason ? `・${popDay.reason}` : ''}`}
                         </span>
                       </div>
@@ -418,7 +419,7 @@ const AdminHoursPage: React.FC = () => {
                     <>
                       {popHeader('新增休息日')}
                       <Field zh="日期">
-                        <span className={`${inputCls} w-full font-english text-gray-scale2 border-transparent px-0`}>{fmtDay(pop.day)}</span>
+                        <span className={`${inputCls} w-full font-english text-gray-light border-transparent px-0`}>{fmtDay(pop.day)}</span>
                       </Field>
                       <Field zh="原因" required>
                         <Select<ClosedKind>
@@ -441,7 +442,7 @@ const AdminHoursPage: React.FC = () => {
                         <button
                           onClick={handleAddClosed}
                           disabled={busy}
-                          className={busy ? 'text-gray-scale3 cursor-not-allowed' : 'text-white hover:opacity-70 cursor-pointer'}
+                          className={`text-white ${BTN}`}
                         >
                           {busy ? '處理中…' : '新增'}
                         </button>
@@ -463,7 +464,7 @@ const AdminHoursPage: React.FC = () => {
           </section>
 
           {/* ===== 右：值班時間（深灰卡片，和左邊月曆分開；表頭的 sticky 黑底在卡片裡改透明） ===== */}
-          <section className="w-[30rem] shrink-0 self-start bg-[#151515] rounded-2xl p-6">
+          <section className="w-[30rem] shrink-0 self-start bg-gray-darker rounded-2xl p-6">
             <div className="flex items-center justify-between gap-4 mb-6 h-9">
               <h2 className="text-sm text-white">值班時間</h2>
               {draft ? (
@@ -475,7 +476,7 @@ const AdminHoursPage: React.FC = () => {
                   <button
                     onClick={handleSaveDuties}
                     disabled={busy}
-                    className={`${toolBtn(true)} px-3 font-chinese disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={`${toolBtn(true)} px-3 font-chinese`}
                   >
                     {busy ? '處理中…' : '確定'}
                   </button>
@@ -493,7 +494,7 @@ const AdminHoursPage: React.FC = () => {
             {/* table-fixed：兩個班欄平分卡片寬度，下拉用 flex-1 縮放，不會撐破卡片 */}
             <table className="w-full table-fixed text-xs border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-gray-scale2">
+                <tr className="text-left text-gray-light">
                   <th className={`${th} !bg-transparent w-14`}>日期</th>
                   {SHIFTS.map(s => (
                     <th key={s.key} className={`${th} !bg-transparent`}>
@@ -530,7 +531,7 @@ const AdminHoursPage: React.FC = () => {
                                     onClick={() => setCell(k, ids.filter((_, j) => j !== i))}
                                     disabled={ids.length <= 1}
                                     title="移除" aria-label="移除"
-                                    className={`${iconBtnCls} disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:!text-gray-scale2`}
+                                    className={`${iconBtnCls}`}
                                   >
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                                   </button>
@@ -546,7 +547,7 @@ const AdminHoursPage: React.FC = () => {
                           ) : ids.length > 0 ? (
                             <span className="font-chinese">{ids.map(nameOf).join('、')}</span>
                           ) : (
-                            <span className="text-gray-scale3 font-chinese">未排</span>
+                            <span className="text-gray-mid font-chinese">未排</span>
                           )}
                         </td>
                       )
@@ -556,7 +557,7 @@ const AdminHoursPage: React.FC = () => {
               </tbody>
             </table>
             {staff.length === 0 && (
-              <p className="mt-4 text-xs text-gray-scale3 font-chinese">還沒有系學會成員：先到會員管理把身份設為系學會。</p>
+              <p className="mt-4 text-xs text-gray-mid font-chinese">還沒有系學會成員：先到會員管理把身份設為系學會。</p>
             )}
           </section>
         </div>

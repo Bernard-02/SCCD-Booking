@@ -14,7 +14,7 @@
 /* 游標：格子本身不設，跟著外層——縮小時整區 pointer（點了放大）；放大後可選的靠 is-interactive。
    only 未開放（is-closed，任何時候）與已借走（is-rented，放大後）才 not-allowed */
 .area-block.is-available {
-  fill: rgb(0, 128, 64) !important; /* 不透明淺綠色 - 與 legend 顏色一致 */
+  fill: color-mix(in srgb, var(--color-green) 50%, transparent) !important; /* 不透明淺綠色 - 與 legend 顏色一致 */
 }
 
 /* 可互動的區塊（當前選擇區域內的可用區塊） */
@@ -38,18 +38,18 @@ g[id^="B"] .area-block.is-available.is-interactive:hover,
 g[id^="C"] .area-block.is-available.is-interactive:hover,
 g[id^="D"] .area-block.is-available.is-interactive:hover,
 g[id^="E"] .area-block.is-available.is-interactive:hover {
-  fill: rgba(0, 255, 128, 0.5) !important;
+  fill: var(--color-green) !important;
 }
 
 /* 群組 hover（整個 <g> 群組一起變色）*/
 /* 目前只有 H1-H10（專案許可區）需要群組 hover */
 g[id^="H"]:hover > .area-block.is-available.is-interactive {
-  fill: rgba(0, 255, 128, 0.5) !important;
+  fill: var(--color-green) !important;
 }
 
 /* 被禁用的區塊（不在當前選擇區域內） */
 .area-block.is-disabled {
-  fill: #565656 !important;
+  fill: var(--color-gray-mid) !important;
   opacity: 0.3;
 }
 
@@ -57,23 +57,28 @@ g[id^="H"]:hover > .area-block.is-available.is-interactive {
 /* 未開放（後台關閉）的格子：可檢視但不能選——停用色＋not-allowed */
 .area-block.is-closed,
 .area-block.is-closed:hover {
-  fill: #565656 !important;
+  fill: var(--color-gray-mid) !important;
   opacity: 0.3;
   cursor: not-allowed;
 }
 
 .area-block.is-disabled:hover {
-  fill: #565656 !important;
+  fill: var(--color-gray-mid) !important;
   opacity: 0.3;
 }
 
 .area-block.is-selected {
-  fill: var(--color-success) !important; /* 選中變綠色 */
+  fill: var(--color-green) !important; /* 選中變綠色 */
   opacity: 1 !important; /* 100% 不透明度 */
 }
 
 .area-block.is-rented {
-  fill: var(--color-error) !important; /* 已租借紅色 */
+  fill: var(--color-pink) !important; /* 已租借紅色 */
+}
+
+/* 部分時段可借（橘）：你選的區間裡有幾天被佔，點了開選段 popup（SpaceAreaMap partialBlocks） */
+.area-block.is-partial {
+  fill: var(--color-orange) !important;
 }
 
 /* 已借走：放大後才是 not-allowed（縮小時點了是放大該區，屬可操作） */
@@ -81,8 +86,3 @@ g[id^="H"]:hover > .area-block.is-available.is-interactive {
   cursor: not-allowed;
 }
 
-/* 左側「專案許可區」選項未選取時 hover：黃色
-   （純 CSS :hover，因 .text-yellow 是普通 class，hover:!text-yellow 不會被 Tailwind 產生變體） */
-.permit-hover:hover {
-  color: var(--color-yellow) !important;
-}

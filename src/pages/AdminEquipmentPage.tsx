@@ -215,7 +215,7 @@ const AdminEquipmentPage: React.FC = () => {
       <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={{ equipment: rows.length, bundle: bundles.length }} />
 
       {loading ? (
-        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
+        <div className="text-gray-light text-xs font-chinese">載入中…</div>
       ) : loadError ? (
         <LoadError message={loadError} onRetry={() => { setLoading(true); void load() }} />
       ) : tab === 'bundle' ? (
@@ -235,7 +235,7 @@ const AdminEquipmentPage: React.FC = () => {
             {/* border-separate：表頭 sticky 時底線才跟著走（collapse 模式的 border 不會）。設備欄不給寬度、吃掉剩餘寬度 */}
             <table className="w-full text-xs border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-gray-scale2">
+                <tr className="text-left text-gray-light">
                   {selectMode && (
                     <th className={`${th} w-10`}>
                       <input type="checkbox" className="custom-checkbox block" checked={allSelected} onChange={toggleAll} aria-label="全選" />
@@ -254,7 +254,7 @@ const AdminEquipmentPage: React.FC = () => {
                   // 已下架：只淡化內容（不是整格），開關、修改鈕與儲存格底線維持原亮度
                   const dim = r.is_active ? '' : 'opacity-50'
                   return (
-                    <tr key={r.id} className="hover:bg-white/5">
+                    <tr key={r.id} className="hover:bg-white/10">
                       {selectMode && (
                         <td className={td}>
                           <input
@@ -294,7 +294,7 @@ const AdminEquipmentPage: React.FC = () => {
             </table>
 
             {filtered.length === 0 && (
-              <div className="py-16 text-center text-xs text-gray-scale2 font-chinese">找不到符合條件的設備</div>
+              <div className="py-16 text-center text-xs text-gray-light font-chinese">找不到符合條件的設備</div>
             )}
           </div>
 

@@ -11,6 +11,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import { autoImportHolidays } from '../../services/adminService'
 import { navItemCls, NAV_ITEM } from '../common/navItem'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
+import { useLangStore, syncHtmlLang } from '../../stores/langStore'
+import { fetchMyNotifications, markAllNotificationsRead, type AppNotification } from '../../services/notificationsService'
+
+/** 給子頁（Outlet context）：通知頁讀清單、「全部已讀」 */
+export interface AdminOutletContext { notifs: AppNotification[]; markAllRead: () => void }
 
 // 側欄分兩組、各有小字組名（2026-09-30 定案，防誤觸）：
 // 值班＝天天用的查看與訂單操作；設定＝改主檔會影響全站的資料維護。
@@ -22,7 +27,8 @@ const ADMIN_SECTION_GROUPS: { label: string; items: AdminSection[] }[] = [
     label: '值班',
     items: [
       { to: '/admin/orders', label: '訂單', icon: 'receipt_long' },
-      { to: '/admin/space-map', label: 'A5F 編號區', icon: 'map' }
+      { to: '/admin/space-map', label: 'A5F 編號區', icon: 'map' },
+      { to: '/admin/notifications', label: '通知', icon: 'notifications' } // 2026-11-02 從左上鈴鐺改成獨立頁；有未讀時文字右邊粉紅數字徽章，頁內「全部已讀」才消
     ]
   },
   {
@@ -31,7 +37,8 @@ const ADMIN_SECTION_GROUPS: { label: string; items: AdminSection[] }[] = [
       { to: '/admin/equipment', label: '設備管理', icon: 'photo_camera' },
       { to: '/admin/spaces', label: '空間管理', icon: 'meeting_room' },
       { to: '/admin/members', label: '會員管理', icon: 'group' }, // 含系學會（經手人）名單
-      { to: '/admin/hours', label: '營業時間', icon: 'schedule' } // 值班時間＋公休日＋法定假日＋寒暑假封鎖
+      { to: '/admin/hours', label: '營業時間', icon: 'schedule' }, // 值班時間＋公休日＋法定假日＋寒暑假封鎖
+      { to: '/admin/content', label: '文字內容', icon: 'edit_note' } // 使用教學／系學會／關於／聯絡方式／延期規則的說明文字
     ]
   }
 ]
@@ -49,10 +56,27 @@ const AdminLayout: React.FC = () => {
   const navigate = useNavigate()
   // 今天日期：分頁整天開著，跨過午夜要換（借自動更新的每分鐘／切回分頁觸發）
   const [now, setNow] = useState(() => new Date())
-  useAutoRefresh(() => setNow(new Date()))
+
+  // 後台通知（supabase/admin-notifications.sql：學生送單／改品項／延期／取消 → 發給 admin）：跟著每分鐘自動更新一起重抓，
+  // 清單經 Outlet context 給通知頁（/admin/notifications）
+  const [notifs, setNotifs] = useState<AppNotification[]>([])
+  const loadNotifs = () => fetchMyNotifications().then(setNotifs).catch(() => {})
+  useEffect(() => { void loadNotifs() }, [])
+  useAutoRefresh(() => { setNow(new Date()); void loadNotifs() })
+  const unread = notifs.filter(n => !n.read).length
+  // 通知頁的「全部已讀」鈕
+  const markAllRead = () => {
+    setNotifs(prev => prev.map(n => ({ ...n, read: true })))
+    void markAllNotificationsRead()
+  }
 
   // 法定假日每年自動匯入一次（今年＋明年；已匯入就略過）——倒數／逾期計算靠它，掛在任何後台頁都會跑
   useEffect(() => { void autoImportHolidays() }, [])
+  // 後台只有中文：<html lang> 固定 zh-TW（EN 模式的全域英文字距才不會套到後台），離開時還原
+  useEffect(() => {
+    document.documentElement.lang = 'zh-TW'
+    return () => syncHtmlLang(useLangStore.getState().lang)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -64,23 +88,31 @@ const AdminLayout: React.FC = () => {
       {/* 側欄：固定滿高，項目多到超出時自己捲 */}
       {/* 寬度跟著內容（標題拆兩行、各行不換行，寬度由最長的選單項決定） */}
       <aside className={`shrink-0 flex flex-col items-start ${EDGE_L} pr-8 py-10 h-screen overflow-y-auto`}>
-        {/* 同前台 Header logo 字樣：Inter 粗體 text-md */}
-        <p className="font-english font-bold text-white text-md whitespace-nowrap leading-tight">SCCDSA<br />Booking 後台</p>
-        <p className="mt-1 text-xs text-gray-scale2 font-english">{fmtToday(now)}</p>
+        {/* 同前台 Header logo 字樣（Inter 粗體 text-md）＋今天 */}
+        <div>
+          <p className="font-english font-bold text-white text-md whitespace-nowrap leading-tight">SCCDSA<br />Booking 後台</p>
+          <p className="mt-1 text-xs text-gray-light font-english">{fmtToday(now)}</p>
+        </div>
 
         {/* inline-flex＝各項同寬、以最長的為準（同 Profile）；組名小字對齊 icon 左緣（px-3＝膠囊 pl-3） */}
         <nav className="inline-flex flex-col mt-10 flex-1">
           {ADMIN_SECTION_GROUPS.map((group, gi) => (
             <div key={group.label} className={`flex flex-col gap-2 ${gi > 0 ? 'mt-8' : ''}`}>
-              <p className="px-3 text-xs text-gray-scale3">{group.label}</p>
+              <p className="px-3 text-xs text-gray-mid">{group.label}</p>
               {group.items.map(s => (
                 <NavLink
                   key={s.to}
                   to={s.to}
-                  className={({ isActive }) => navItemCls(isActive)}
+                  className={({ isActive }) => `${navItemCls(isActive)} ${s.to === '/admin/notifications' && unread > 0 ? '!pr-2' : ''}`}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{s.icon}</span>
                   <span>{s.label}</span>
+                  {/* 未讀數：同 CountTabs 的計數徽章（20px、圓角 8px），底色換未讀的粉紅；在通知頁上也顯示，按「全部已讀」才消 */}
+                  {s.to === '/admin/notifications' && unread > 0 && (
+                    <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english font-normal bg-pink text-black">
+                      {unread}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -88,10 +120,10 @@ const AdminLayout: React.FC = () => {
 
           {/* 登出放在 nav 裡才會和上面的項目同寬（flex-col stretch）；外層負責推到底＋最小間距，不把 padding 加進 hover 框 */}
           <div className="mt-auto pt-10 flex flex-col">
-            {/* 登出：平常灰字同其他項目，hover 才變紅字淡紅底（error2）；灰字帶 !important，hover 要用 !text */}
+            {/* 登出：平常灰字同其他項目，hover 才變 error 字＋gray-dark 底（同 NAV_HOVER） */}
             <button
               onClick={handleLogout}
-              className={`${NAV_ITEM} pl-3 pr-4 text-gray-scale2 hover:!text-[var(--color-error2)] hover:bg-[rgba(255,134,152,0.15)]`}
+              className={`${NAV_ITEM} pl-3 pr-4 text-gray-light hover:text-error hover:bg-gray-dark`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
               <span>登出</span>
@@ -102,7 +134,7 @@ const AdminLayout: React.FC = () => {
 
       {/* 內容區：自己捲動（捲軸貼視窗右緣，所以右邊距放在 main 內）；py-10 同側欄，頁標題與「SCCDSA Booking 後台」同高 */}
       <main className={`flex-1 min-w-0 h-screen overflow-y-auto pl-12 ${EDGE_R} py-10`}>
-        <Outlet />
+        <Outlet context={{ notifs, markAllRead } satisfies AdminOutletContext} />
       </main>
     </div>
   )

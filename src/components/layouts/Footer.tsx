@@ -3,8 +3,9 @@
  * 左 Profile icon＋學號姓名（登出在 Profile 頁側欄底部）、中 Copyright（Easter Egg）、右 語言切換＋link icon（工作室／攝影棚／官網）
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLangStore, useT } from '../../stores/langStore'
 
@@ -17,6 +18,7 @@ const EXTERNAL_LINKS = [
 const Footer: React.FC = () => {
   const { currentUser } = useAuth()
   const t = useT()
+  const { pathname } = useLocation()
   const toggleLang = useLangStore((s) => s.toggleLang)
   const [linksMenuOpen, setLinksMenuOpen] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
@@ -143,11 +145,11 @@ const Footer: React.FC = () => {
           <div className="justify-self-start">
             <Link
               to="/profile"
-              className="flex items-center gap-2 text-white"
+              className={`flex items-center gap-2 text-white ${pathname.startsWith('/profile') ? '' : 'hover:opacity-50'}`}
               aria-label={t('Profile', '我的')}
             >
               <span className="material-symbols-outlined">account_circle</span>
-              {currentUser && <span className="text-xs">{currentUser.studentId} {currentUser.name}</span>}
+              {currentUser && <span className="text-xs"><span className="font-english">{currentUser.studentId}</span> {currentUser.name}</span>}
             </Link>
           </div>
 
@@ -173,7 +175,7 @@ const Footer: React.FC = () => {
             <button
               type="button"
               onClick={toggleLang}
-              className="flex items-center text-white cursor-pointer"
+              className={`flex items-center text-white ${BTN}`}
               aria-label={t('切換為中文', 'Switch to English')}
             >
               <span className="material-symbols-outlined">language</span>
@@ -181,7 +183,7 @@ const Footer: React.FC = () => {
             <button
               type="button"
               onClick={() => setLinksMenuOpen(!linksMenuOpen)}
-              className="flex items-center text-white cursor-pointer"
+              className={`flex items-center text-white ${linksMenuOpen ? 'cursor-pointer' : BTN}`}
               aria-label="Links"
               aria-expanded={linksMenuOpen}
             >
@@ -197,7 +199,7 @@ const Footer: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setLinksMenuOpen(false)}
-                    className="flex items-center gap-4 px-5 py-3 bg-[#151515] border border-[#545454] rounded-2xl text-white text-sm hover:bg-[#222] whitespace-nowrap no-underline"
+                    className="flex items-center gap-4 px-5 py-3 bg-gray-darker border border-gray-mid rounded-2xl text-white text-sm hover:bg-gray-dark whitespace-nowrap no-underline"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
                     <span className="flex-1">{t(en, zh)}</span>

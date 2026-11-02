@@ -30,7 +30,7 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => {
         return (
           <div key={i} className="flex gap-3">
             {/* 高 22px＝內文一行高（text-xs × leading-relaxed），icon 對齊第一行 */}
-            <span className="flex-shrink-0 h-[22px] flex items-center text-[#cccccc]">
+            <span className="flex-shrink-0 h-[22px] flex items-center text-gray-light">
               {c.icon === 'facebook' ? (
                 <FacebookIcon />
               ) : (
@@ -46,14 +46,14 @@ const ContactList: React.FC<{ contacts: Contact[] }> = ({ contacts }) => {
                   {...(c.link.startsWith('http')
                     ? { target: '_blank', rel: 'noopener noreferrer' }
                     : {})}
-                  className="text-xs text-white font-bold leading-relaxed hover:opacity-70 break-all"
+                  className={`text-xs text-white font-bold leading-relaxed hover:opacity-50 break-all ${c.linkText ? 'font-english' : ''}`}
                 >
                   {value}
                 </a>
               ) : (
                 value && <p className="text-xs text-white leading-relaxed">{value}</p>
               )}
-              {note && <p className="text-xs text-[#cccccc] leading-relaxed mt-0.5">{note}</p>}
+              {note && <p className="text-xs text-gray-light leading-relaxed mt-0.5">{note}</p>}
             </div>
           </div>
         )

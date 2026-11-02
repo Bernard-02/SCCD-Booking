@@ -26,19 +26,18 @@ const AdminMembersPage = lazy(() => import('./pages/AdminMembersPage'))
 const AdminEquipmentPage = lazy(() => import('./pages/AdminEquipmentPage'))
 const AdminSpacesPage = lazy(() => import('./pages/AdminSpacesPage'))
 const AdminSpaceMapPage = lazy(() => import('./pages/AdminSpaceMapPage'))
+const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
+const AdminNotificationsPage = lazy(() => import('./pages/AdminNotificationsPage'))
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-white">
-    <div className="font-chinese text-xs text-zinc-400">載入中…</div>
+    <div className="font-chinese text-xs text-gray-light">載入中…</div>
   </div>
 )
 
 function App() {
   return (
     <>
-      {/* Google Material Icons - 全域載入 */}
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-
       <AuthProvider>
         <DateSelectionProvider>
           <BrowserRouter>
@@ -83,6 +82,8 @@ function App() {
                   <Route path="equipment" element={<AdminEquipmentPage />} />
                   <Route path="spaces" element={<AdminSpacesPage />} />
                   <Route path="space-map" element={<AdminSpaceMapPage />} />
+                  <Route path="notifications" element={<AdminNotificationsPage />} />
+                  <Route path="content" element={<AdminContentPage />} />
                 </Route>
 
                 {/* 404 重定向到首頁 */}

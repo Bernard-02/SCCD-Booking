@@ -13,8 +13,8 @@
 
 /* 選取（反白）樣式 */
 ::selection {
-  background-color: var(--color-selection-bg);
-  color: var(--color-selection-text);
+  background-color: var(--color-white);
+  color: var(--color-black);
 }
 
 /* 自定義checkbox樣式 */
@@ -43,7 +43,7 @@
 
 /* 不能勾的一律 not-allowed（全站 disabled 游標規則） */
 .custom-checkbox:disabled {
-  opacity: 0.3;
+  opacity: 0.2;
   cursor: not-allowed;
 }
 
@@ -52,10 +52,10 @@
   position: fixed;
   top: 4rem;
   right: -400px; /* 初始位置在右側外面 */
-  background-color: var(--color-bg-toast);
-  color: var(--color-primary);
+  background-color: var(--color-white);
+  color: var(--color-black);
   padding: 0.75rem 1rem; /* 上下 0.75 / 左右 1 */
-  border-radius: 0.75rem; /* 12px（xl）：單行提示，介於按鈕 8px 與彈窗 16px 之間 */
+  border-radius: 0.5rem; /* 8px（lg）：同按鈕（2026-11-01 自 12px 改） */
   z-index: 2000; /* 提高層級確保在最上層 (高於 Header 的 1000) */
   opacity: 0;
   pointer-events: none;
@@ -79,15 +79,15 @@
 }
 
 .toast.error, #notification.error {
-  background-color: var(--color-bg-toast-error) !important;
+  background-color: color-mix(in srgb, var(--color-pink) 15%, white) !important;
 }
 
 .toast.error p {
-  color: var(--color-error) !important;
+  color: var(--color-pink) !important;
 }
 
 #notification.error {
-  color: var(--color-error);
+  color: var(--color-pink);
 }
 
 .toast.show, #notification.show {
@@ -115,14 +115,14 @@
   left: 0;
   right: 0;
   height: 6px;
-  background-color: var(--color-success);
+  background-color: var(--color-green);
   transform: translateY(-50%);
   z-index: 10;
 }
 
 /* 狀態：已借出 選取時改為紅色中線 */
 .menu-item-wrapper.red-underline.active::after {
-  background-color: var(--color-error) !important;
+  background-color: var(--color-pink) !important;
 }
 
 /* 中文字樣之狀態按鈕：中線向下 2px 以達到視覺置中 */

@@ -3,6 +3,7 @@
  * 對應原本的 equipment.html
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Header from '../components/layouts/Header'
@@ -104,11 +105,11 @@ const EquipmentPage: React.FC = () => {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => toggleStatusFilter('available')}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className={`flex items-center gap-2 ${BTN}`}
                   >
-                    <div className="w-3 h-3 bg-[#00ff80]"></div>
+                    <div className="w-3 h-3 bg-green"></div>
                     <span className={`text-xs ${
-                      statusFilters.has('available') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                      statusFilters.has('available') ? 'text-white' : 'text-gray-light'
                     }`}>
                       {t('Available', '全時段借用')}
                     </span>
@@ -116,11 +117,11 @@ const EquipmentPage: React.FC = () => {
 
                   <button
                     onClick={() => toggleStatusFilter('unavailable')}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className={`flex items-center gap-2 ${BTN}`}
                   >
-                    <div className="w-3 h-3 bg-[#ff448a]"></div>
+                    <div className="w-3 h-3 bg-pink"></div>
                     <span className={`text-xs ${
-                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                      statusFilters.has('unavailable') ? 'text-white' : 'text-gray-light'
                     }`}>
                       {t('Unavailable', '不可借用')}
                     </span>
@@ -128,11 +129,11 @@ const EquipmentPage: React.FC = () => {
 
                   <button
                     onClick={() => toggleStatusFilter('partial')}
-                    className="flex items-center gap-2 cursor-pointer group"
+                    className={`flex items-center gap-2 ${BTN}`}
                   >
-                    <div className="w-3 h-3 bg-[#ffa500]"></div>
+                    <div className="w-3 h-3 bg-orange"></div>
                     <span className={`text-xs ${
-                      statusFilters.has('partial') ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+                      statusFilters.has('partial') ? 'text-white' : 'text-gray-light'
                     }`}>
                       {t('Partially Available', '部分時段借用')}
                     </span>

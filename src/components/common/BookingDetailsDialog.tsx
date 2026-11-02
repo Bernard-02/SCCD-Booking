@@ -5,6 +5,9 @@
  *   選項＝系學會值班時段；取件限起租日當天，繳押金限送單後 24 工作時內且不晚於取件（可同一時段＝同時進行）。
  */
 
+import { BTN } from '@/components/common/btn'
+import CloseButton from './CloseButton'
+import { Select } from '../admin/adminUi'
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { fetchClosedDates, fetchDutySlots } from '../../services/ordersService'
@@ -143,26 +146,24 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
     (!isMassBooking || (className.trim() !== '' && teacher.trim() !== '')) &&
     (!pickupDate || (pickupValid && depositValid))
 
-  const selectCls =
-    "w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg cursor-pointer font-['Inter','Noto_Sans_TC',_sans-serif]"
   const slotHint = (text: string) => (
-    <p className="mt-2 text-xs text-[#ff8698] font-['Inter','Noto_Sans_TC',_sans-serif]">{text}</p>
+    <p className="mt-2 text-2xs text-error">{text}</p>
   )
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       {/* 對話框容器 */}
       <div
-        className="bg-[#151515] border border-[#545454] max-w-md w-full mx-4 flex flex-col rounded-2xl"
+        className="relative bg-gray-darker border border-gray-mid max-w-md w-full mx-4 flex flex-col rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
+        <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="absolute top-6 right-6" />
         {/* 標題區 */}
-        <div className="px-6 pt-6">
+        <div className="px-6 pt-6 pr-14">
           <h2 className="font-english text-sm text-white font-normal">
             {t('Booking Details', '借用資訊')}
           </h2>
@@ -173,14 +174,13 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {/* 使用原因 */}
           <div>
             <label className="block mb-2">
-              <span className="text-xs text-[#cccccc]">{t('Reason', '使用原因')}</span>
-              <span className="text-[#ff8698] ml-1">*</span>
+              <span className="text-xs text-white">{t('Reason', '使用原因')}</span>
+              <span className="text-error ml-1">*</span>
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white resize-none rounded-lg"
-              style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
+              className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white resize-none rounded-lg"
               rows={3}
               placeholder={t('Please fill in the reason for use', '請填寫使用原因')}
             />
@@ -192,15 +192,14 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               {/* 使用班級 */}
               <div>
                 <label className="block mb-2">
-                  <span className="text-xs text-[#cccccc]">{t('Class', '使用班級')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-xs text-white">{t('Class', '使用班級')}</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   value={className}
                   onChange={(e) => setClassName(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
-                  style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
+                  className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
                   placeholder={t('Please fill in the class', '請填寫使用班級')}
                 />
               </div>
@@ -208,15 +207,14 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
               {/* 負責老師 */}
               <div>
                 <label className="block mb-2">
-                  <span className="text-xs text-[#cccccc]">{t('Teacher', '負責老師（若個人用就填個人）')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-xs text-white">{t('Teacher', '負責老師（若個人用就填個人）')}</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
                 <input
                   type="text"
                   value={teacher}
                   onChange={(e) => setTeacher(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
-                  style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
+                  className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
                   placeholder={t('Please fill in the teacher in charge', '請填寫負責老師')}
                 />
               </div>
@@ -227,27 +225,33 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {pickupDate && (
             <>
               <div>
-                <label className="block mb-2 text-xs text-[#cccccc]">
+                <label className="block mb-2 text-xs text-white">
                   <span>{t('Pickup', '取件時段（起租日當天，系學會值班時間）')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
-                <select value={pickupValid ? pickupSlot : ''} onChange={e => setPickupSlot(e.target.value)} className={selectCls}>
-                  <option value="" disabled>{duties ? '請選擇' : '載入中…'}</option>
-                  {pickupOptions.map(o => <option key={o.slot} value={o.slot}>{slotLabel(o)}</option>)}
-                </select>
+                <Select
+                  value={pickupValid ? pickupSlot : ''}
+                  onChange={setPickupSlot}
+                  placeholder={duties ? t('Select', '請選擇') : t('Loading…', '載入中…')}
+                  options={pickupOptions.map(o => ({ value: o.slot, label: slotLabel(o) }))}
+                  className="w-full"
+                  aria-label={t('Pickup slot', '取件時段')}
+                />
                 {duties && pickupOptions.length === 0 && slotHint('起租日沒有可取件的值班時段，請更改租借日期或洽系學會')}
               </div>
               <div>
-                <label className="block mb-2 text-xs text-[#cccccc]">
+                <label className="block mb-2 text-xs text-white">
                   <span>{t('Deposit', '繳押金時段（送單後 24 工作時內；可與取件同時）')}</span>
-                  <span className="text-[#ff8698] ml-1">*</span>
+                  <span className="text-error ml-1">*</span>
                 </label>
-                <select value={depositValid ? deposit : ''} onChange={e => setDeposit(e.target.value)} className={selectCls}>
-                  <option value="" disabled>{duties ? '請選擇' : '載入中…'}</option>
-                  {depositOptions.map(o => (
-                    <option key={`${o.date} ${o.slot}`} value={`${o.date} ${o.slot}`}>{slotLabel(o)}</option>
-                  ))}
-                </select>
+                <Select
+                  value={depositValid ? deposit : ''}
+                  onChange={setDeposit}
+                  placeholder={duties ? t('Select', '請選擇') : t('Loading…', '載入中…')}
+                  options={depositOptions.map(o => ({ value: `${o.date} ${o.slot}`, label: slotLabel(o) }))}
+                  className="w-full"
+                  aria-label={t('Deposit slot', '繳押金時段')}
+                />
                 {duties && depositOptions.length === 0 && slotHint('24 工作時內沒有可繳押金的值班時段，請洽系學會')}
               </div>
             </>
@@ -256,7 +260,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
 
         {/* 橫線 */}
         <div className="px-6">
-          <div className="border-t border-[#545454]"></div>
+          <div className="border-t border-gray-mid"></div>
         </div>
 
         {/* 按鈕區 */}
@@ -264,7 +268,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           {/* 取消按鈕 */}
           <button
             onClick={onCancel}
-            className="text-[#cccccc] hover:text-white cursor-pointer"
+            className={`text-gray-light ${BTN}`}
           >
             <span className="font-english text-xs">
               {t('Cancel', '取消')}
@@ -275,11 +279,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
           <button
             onClick={handleSubmit}
             disabled={!isValid}
-            className={`${
-              isValid
-                ? 'text-white hover:opacity-70 cursor-pointer'
-                : 'text-gray-scale3 cursor-not-allowed'
-            }`}
+            className={`text-white ${BTN}`}
           >
             <span className="font-english text-xs">
               {t('Confirm', '確認')}

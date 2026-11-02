@@ -70,6 +70,8 @@ interface SpaceAreaMapProps {
   selectedBlocks?: string[];
   rentedBlocks?: string[];
   cartBlocks?: string[]; // 已加入購物車的區塊
+  partialBlocks?: string[]; // 部分時段可借（橘）：你選的區間裡有幾天被佔
+  onPartialClick?: (blockId: string) => void; // 點橘格 → 開選段 popup（SpacePage）
 }
 
 // --- COMPONENT ---
@@ -80,7 +82,9 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
   onBlockSelect,
   selectedBlocks = [],
   rentedBlocks = [],
-  cartBlocks = []
+  cartBlocks = [],
+  partialBlocks = [],
+  onPartialClick
 }) => {
   const t = useT()
   // 區塊定義（id → 區域）來自 Supabase space_blocks；佔用狀態由 rentedBlocks prop 傳入
@@ -150,7 +154,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
 
     const blockElements = svgElement.querySelectorAll('g[id], path[id], rect[id], polygon[id], circle[id]');
     blockElements.forEach(el => {
-      el.classList.remove('area-block', 'is-available', 'is-selected', 'is-rented', 'is-interactive', 'is-disabled', 'is-closed');
+      el.classList.remove('area-block', 'is-available', 'is-selected', 'is-rented', 'is-partial', 'is-interactive', 'is-disabled', 'is-closed');
       (el as HTMLElement).style.opacity = '1';
       (el as HTMLElement).style.cursor = ''; // 外層設的區域 pointer 不能帶進放大狀態
     });
@@ -200,6 +204,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           const blockSubCategory = areaToSubCategory[blockData.area];
           const isInCurrentArea = blockSubCategory === selectedSubCategory;
           const isRented = rentedBlocks.includes(blockId);
+          const isPartial = partialBlocks.includes(blockId);
           const isInCart = cartBlocks.includes(blockId);
           const isSelectedButNotInCart = selectedBlocks.includes(blockId) && !isInCart;
 
@@ -211,7 +216,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
 
           // 先清除所有狀態 class（確保乾淨的狀態）
           elementsToStyle.forEach(el => {
-            el.classList.remove('is-available', 'is-selected', 'is-rented', 'is-interactive', 'is-disabled');
+            el.classList.remove('is-available', 'is-selected', 'is-rented', 'is-partial', 'is-interactive', 'is-disabled');
           });
 
           // 再添加新的狀態 class
@@ -219,6 +224,9 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
             el.classList.add('area-block');
             if (isRented) {
               el.classList.add('is-rented');
+            } else if (isPartial && isInCurrentArea && !isInCart) {
+              // 部分時段（橘）：點了開選段 popup
+              el.classList.add('is-partial', 'is-interactive');
             } else if (isInCart) {
               // 已加入購物車的區塊顯示為已選擇狀態（綠色），且可以點擊移除
               el.classList.add('is-selected', 'is-interactive');
@@ -239,10 +247,12 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           }
 
           // 只有在當前區域內、未租出的區塊才能被選擇（包含已在購物車中的，點擊可移除）
-          if (isInCurrentArea && !isRented && onBlockSelect) {
+          if (isInCurrentArea && !isRented && (onBlockSelect || onPartialClick)) {
             const clickHandler = (e: Event) => {
               e.stopPropagation();
-              onBlockSelect(blockId);
+              // 橘格（部分時段、還沒在購物車）→ 開選段 popup；其餘照舊選取／移除
+              if (isPartial && !isInCart && onPartialClick) onPartialClick(blockId);
+              else onBlockSelect?.(blockId);
             };
             addEventListener(blockElement, 'click', clickHandler);
           }
@@ -259,6 +269,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
         if (blockElement) {
           const isInCart = cartBlocks.includes(blockId);
           const isRented = rentedBlocks.includes(blockId);
+          const isPartial = partialBlocks.includes(blockId);
 
           const elementsToStyle = blockElement.tagName.toLowerCase() === 'g'
             ? Array.from(blockElement.querySelectorAll('path, rect, polygon, circle'))
@@ -266,7 +277,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
 
           // 先清除所有狀態 class
           elementsToStyle.forEach(el => {
-            el.classList.remove('is-available', 'is-selected', 'is-rented', 'is-interactive', 'is-disabled');
+            el.classList.remove('is-available', 'is-selected', 'is-rented', 'is-partial', 'is-interactive', 'is-disabled');
           });
 
           // 再添加新的狀態 class
@@ -274,6 +285,8 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
             el.classList.add('area-block');
             if (isRented) {
               el.classList.add('is-rented');
+            } else if (isPartial && !isInCart) {
+              el.classList.add('is-partial');
             } else if (isInCart) {
               el.classList.add('is-selected');
             } else {
@@ -309,7 +322,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
         }
       });
     }
-  }, [svgElement, selectedSubCategory, onAreaClick, onBlockSelect, selectedBlocks, rentedBlocks, cartBlocks, blocksData, closedIds]);
+  }, [svgElement, selectedSubCategory, onAreaClick, onBlockSelect, selectedBlocks, rentedBlocks, cartBlocks, partialBlocks, onPartialClick, blocksData, closedIds]);
 
 
   return (
@@ -321,7 +334,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
       >
         {/* 只在 SVG 還沒載入時顯示 loading */}
         {!svgContent && (
-          <div className="text-gray-scale2 text-center">
+          <div className="text-gray-light text-center">
             <p>{t('Loading floor plan...', '載入平面圖中...')}</p>
           </div>
         )}
@@ -336,10 +349,10 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
             {t(tooltip.english, tooltip.name)}
           </p>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-gray-scale2 text-xs">{t('Deposit/Pcs', '押金/塊')}</span>
+            <span className="text-gray-light text-xs">{t('Deposit/Pcs', '押金/塊')}</span>
             <span className="font-english text-white text-xs">NT$ {tooltip.deposit.toLocaleString()}</span>
           </div>
-          <div className="border-t border-gray-scale3 my-3"></div>
+          <div className="border-t border-gray-mid my-3"></div>
           <div>
             <p className="text-white text-xs">
               {tooltip.closed ? t('This area is currently not open for booking', '此區域目前不開放租借') : t('Click to Book', '點擊區塊以開始租借')}

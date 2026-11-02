@@ -4,6 +4,7 @@
  * supabase-js 自動換成 session），在此設定新密碼。
  */
 
+import { BTN } from '@/components/common/btn'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
@@ -68,11 +69,11 @@ const ResetPasswordPage = () => {
           </h1>
 
           {done ? (
-            <p className="text-md text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
+            <p className="text-md text-gray-light font-chinese">
               密碼已更新，即將回到登入頁…
             </p>
           ) : !ready ? (
-            <p className="text-md text-gray-scale1 font-['Inter','Noto_Sans_TC',_sans-serif]">
+            <p className="text-md text-gray-light font-chinese">
               請從「忘記密碼」重設信中的連結進入此頁。
             </p>
           ) : (
@@ -82,26 +83,20 @@ const ResetPasswordPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('New password', '新密碼（至少 8 碼）')}
-                className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
-                style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
+                className="font-english w-full px-4 py-3 bg-gray-darker border border-gray-mid rounded-lg text-white text-md focus:outline-none focus:border-white"
               />
               <input
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder={t('Confirm password', '再次輸入新密碼')}
-                className="w-full px-4 py-3 bg-[#2b2b2b] border border-[#545454] rounded-lg text-white text-md focus:outline-none focus:border-white"
-                style={{ fontFamily: 'Inter, "Noto Sans TC", sans-serif' }}
+                className="font-english w-full px-4 py-3 bg-gray-darker border border-gray-mid rounded-lg text-white text-md focus:outline-none focus:border-white"
               />
-              {error && <p className="text-xs text-[#ff8698]">{error}</p>}
+              {error && <p className="text-2xs text-error">{error}</p>}
               <button
                 type="submit"
                 disabled={!password || !confirm}
-                className={`w-full py-3 rounded-lg text-md font-normal ${
-                  password && confirm
-                    ? 'bg-white text-black hover:opacity-70 cursor-pointer'
-                    : 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
-                }`}
+                className={`w-full py-3 rounded-lg text-md font-normal bg-white text-black ${BTN}`}
               >
                 {t('Confirm', '確認')}
               </button>

@@ -4,6 +4,7 @@
  * 支援設備和空間各自獨立的日期選擇
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Calendar from './Calendar'
@@ -129,6 +130,14 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   }, [isStudent])
   const openOrderFor = (bt: BookingType) =>
     openOrders.find(o => o.isEquip === (type === 'equipment') && o.isMass === isMassType(bt))
+  // 同類型有未歸還單時，之前存下的日期也不能用（例：選完日期後學會才幫忙建單、或換了帳號）：直接清掉，
+  // 不然日期列看起來能用、東西也加得進清單，到送單才被 submit_orders 擋
+  useEffect(() => {
+    if (!openOrderFor(bookingType) || (!startDate && !endDate)) return
+    if (type === 'equipment') setEquipmentDates(null, null, bookingType)
+    else setSpaceDates(null, null, bookingType)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openOrders, bookingType, startDate, endDate])
 
   const promptOpenOrder = async (o: (typeof openOrders)[number], bt: BookingType) => {
     // 設備單常是忘了還有一張：不用另開新單，直接帶去修改那張
@@ -315,9 +324,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   // 計算樣式（簡化條件邏輯）
   const getButtonStyles = (isActive: boolean) => {
     return {
-      radio: isActive ? 'border-white' : 'border-gray-scale2 group-hover:border-white',
+      radio: isActive ? 'border-white' : 'border-gray-light',
       dot: 'bg-white',
-      text: isActive ? 'text-white' : 'text-gray-scale2 group-hover:!text-white'
+      text: isActive ? 'text-white' : 'text-gray-light'
     }
   }
 
@@ -476,7 +485,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           <div className="absolute top-0 left-0 right-0 container flex justify-end pt-28">
             <button
               onClick={handleCancel}
-              className="text-xl font-normal text-white hover:opacity-70 cursor-pointer leading-none"
+              className={`text-xl font-normal text-white leading-none ${BTN}`}
               aria-label="關閉"
             >
               ×
@@ -522,7 +531,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               <div className="flex items-center gap-8 flex-shrink-0">
                 <button
                   onClick={() => handleBookingTypeChange('little')}
-                  className="flex items-center gap-2 cursor-pointer group"
+                  className={`flex items-center gap-2 ${bookingType === 'little' ? 'cursor-pointer' : BTN}`}
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${littleStyles.radio}`}>
                     {bookingType === 'little' && (
@@ -536,7 +545,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
                 <button
                   onClick={() => handleBookingTypeChange(type === 'space' ? 'mass-group' : 'mass-personal')}
-                  className="flex items-center gap-2 cursor-pointer group"
+                  className={`flex items-center gap-2 ${isMass ? 'cursor-pointer' : BTN}`}
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${massStyles.radio}`}>
                     {(isMass) && (
@@ -554,11 +563,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <div className="flex items-center gap-10 flex-shrink-0 ml-6">
               {/* 起租日 - 可點擊開啟日曆 */}
               <div
-                className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-70"
+                className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-50"
                 onClick={handleStartDateClick}
               >
               <div className="flex flex-col">
-                <span className="text-xs text-gray-scale2 leading-tight">{t('Start Date', '起租日')}</span>
+                <span className="text-xs text-gray-light leading-tight">{t('Start Date', '起租日')}</span>
               </div>
               <span className="text-2xl font-english font-normal text-white">
                 {formatDate(startDate)}
@@ -568,7 +577,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             {/* 歸還日 */}
             <div className="flex items-center gap-8 flex-shrink-0">
               <div className="flex flex-col">
-                <span className="text-xs text-gray-scale2 leading-tight">{t('End Date', '歸還日')}</span>
+                <span className="text-xs text-gray-light leading-tight">{t('End Date', '歸還日')}</span>
               </div>
               <span className="text-2xl font-english font-normal text-white">
                 {formatDate(endDate)}
@@ -578,23 +587,23 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           </div>
 
           {/* 右邊群組：操作按鈕 - Reset + Exist Cart */}
-          <div className="flex items-center gap-8 flex-shrink-0 relative ml-auto @max-[1040px]:flex-col @max-[1040px]:items-end @max-[1040px]:gap-1">
-            {/* 重置：icon 鈕，不可用時 30% 透明 */}
+          <div className="flex items-center gap-2 flex-shrink-0 relative ml-auto @max-[1040px]:flex-col @max-[1040px]:items-end @max-[1040px]:gap-1">
+            {/* 重置：36px 灰底 icon 鈕（同工具鈕 BTN_TOOL 的灰底） */}
             <button
               disabled={!isResetEnabled}
               onClick={handleReset}
               aria-label={t('Reset', '重置')}
               title={t('Reset', '重置')}
-              className="flex items-center text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className={`w-9 h-9 flex items-center justify-center rounded-lg bg-gray-dark text-white ${BTN}`}
             >
               <span className="material-symbols-outlined">restart_alt</span>
             </button>
 
-            {/* 已選日期：白底 icon＋文字鈕（icon 側 padding 少 4px），購物車沒有日期時 50% 透明 */}
+            {/* 已選日期：灰底 icon＋文字鈕（同重置鈕；icon 側 padding 少 4px），購物車沒有日期時 20% 透明；清單開著＝active 不加 hover */}
             <button
               onClick={() => setShowExistingDates(!showExistingDates)}
               disabled={existingCartDates.length === 0}
-              className="existing-dates-btn flex items-center gap-2 pl-3 pr-4 py-2 rounded-lg bg-white text-black text-sm whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`existing-dates-btn flex items-center gap-2 pl-3 pr-4 py-2 rounded-lg bg-gray-dark text-white text-sm whitespace-nowrap ${showExistingDates ? 'cursor-pointer' : BTN}`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>event_available</span>
               {t('Exist Cart', '已選日期')}
@@ -602,9 +611,9 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
             {/* 彈出視窗 - 在按鈕上方顯示 */}
             {showExistingDates && existingCartDates.length > 0 && (
-              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-scale6 border border-gray-scale4 rounded-2xl min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
+              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-darker border border-gray-mid rounded-2xl min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
-                <div className="px-4 py-3 border-b border-gray-scale4">
+                <div className="px-4 py-3 border-b border-gray-mid">
                   <span className="text-sm text-white">{t('Existing Cart Dates', '購物車已選日期')}</span>
                 </div>
 
@@ -645,41 +654,26 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
                         }}
                         disabled={dateGroup.isDisabled}
                         className={`existing-date-item text-left py-3 px-4 ${
-                          index !== 0 ? 'border-t border-gray-scale4' : ''
-                        } ${dateGroup.isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                        style={{
-                          backgroundColor: isCurrentSelection ? 'var(--color-gray-scale4)' : 'transparent'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!dateGroup.isDisabled) {
-                            e.currentTarget.style.backgroundColor = isCurrentSelection
-                              ? 'var(--color-gray-scale4)'
-                              : 'var(--color-gray-scale5)'
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!dateGroup.isDisabled) {
-                            e.currentTarget.style.backgroundColor = isCurrentSelection
-                              ? 'var(--color-gray-scale4)'
-                              : 'transparent'
-                          }
-                        }}
+                          index !== 0 ? 'border-t border-gray-mid' : ''
+                        } ${isCurrentSelection ? 'bg-white cursor-pointer' : BTN}`}
                       >
                         {/* 日期範圍 + 數量 */}
-                        <div className={`text-xs font-english mb-1 ${dateGroup.isDisabled ? 'text-gray-scale3' : 'text-white'}`}>
+                        <div className={`text-xs font-english mb-1 ${
+                          isCurrentSelection ? 'text-black' : dateGroup.isDisabled ? 'text-gray-mid' : 'text-white'
+                        }`}>
                           {formatDateFull(dateGroup.startDate)} - {formatDateFull(dateGroup.endDate)} ({dateGroup.itemCount})
                         </div>
 
                         {/* 類型文字 - 灰色 */}
-                        <div className="text-xs font-english text-gray-scale2 flex items-center gap-2">
+                        <div className={`text-xs font-english flex items-center gap-2 ${isCurrentSelection ? 'text-gray-mid' : 'text-gray-light'}`}>
                           {typeText}
                           {dateGroup.isDisabled && (
-                            <span className="text-xs text-gray-scale3">
+                            <span className="text-xs text-gray-mid">
                               (已達上限)
                             </span>
                           )}
                           {dateGroup.isExpired && (
-                            <span className="text-xs text-[#ffff00]">
+                            <span className="text-xs text-yellow">
                               <span>{t('Expired', '已過期，點擊重選日期')}</span>
                             </span>
                           )}

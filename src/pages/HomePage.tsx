@@ -5,8 +5,9 @@
  * Google Cloud／Supabase 尚未設定完成，目前預設顯示學號密碼表單（PASSWORD_MODE_DEFAULT）。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { requestPasswordReset } from '../services/authService'
 import { useT } from '../stores/langStore'
@@ -32,6 +33,8 @@ const GoogleIcon = () => (
 
 // ponytail: Google 登入設定完成後改回 false（預設 Google、密碼表單退為次要）
 const PASSWORD_MODE_DEFAULT = true
+// 登入後回跳的頁面（訪客按加入清單／ProtectedRoute 帶來的 redirect_url）；放 sessionStorage 撐過 Google 來回
+const REDIRECT_KEY = 'sccd_login_redirect'
 
 const HomePage = () => {
   const navigate = useNavigate()
@@ -39,9 +42,16 @@ const HomePage = () => {
   const t = useT()
   const [passwordMode, setPasswordMode] = useState(PASSWORD_MODE_DEFAULT) // 學號＋密碼表單
   const [googleError, setGoogleError] = useState('')
+  const [searchParams] = useSearchParams()
+  const redirectUrl = searchParams.get('redirect_url')
+  if (redirectUrl?.startsWith('/')) sessionStorage.setItem(REDIRECT_KEY, redirectUrl)
 
-  // 登入後導向：admin 進後台，其餘進型錄
-  const landingPath = (role?: string) => (role === 'admin' ? '/admin/orders' : '/catalog')
+  // 登入後導向：admin 進後台，其餘回到被擋下的頁面或型錄
+  const landingPath = (role?: string) => {
+    const back = sessionStorage.getItem(REDIRECT_KEY)
+    sessionStorage.removeItem(REDIRECT_KEY)
+    return role === 'admin' ? '/admin/orders' : back || '/catalog'
+  }
   const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -134,7 +144,7 @@ const HomePage = () => {
 
   // 輸入框共用樣式：錯誤時改紅框（ring-inset 避免被 float-up-container 的 overflow 裁掉）
   const inputClass = (hasError: string) =>
-    `w-full h-14 px-6 rounded-2xl bg-[#1a1a1a] text-sm text-white placeholder:text-white outline-none ring-inset focus:ring-1 focus:ring-white ${hasError ? 'ring-1 ring-[var(--color-error2)]' : ''}`
+    `font-english w-full h-14 px-6 rounded-2xl bg-gray-darker text-sm text-white placeholder:text-white/50 outline-none ring-inset focus:ring-1 focus:ring-white ${hasError ? 'ring-1 ring-error' : ''}`
 
   return (
     <div className="bg-black text-white min-h-screen flex items-center py-16">
@@ -142,20 +152,24 @@ const HomePage = () => {
         {/* 單欄：手機置中、桌機靠右 */}
         <div className="w-full max-w-[340px] md:mr-[8%] float-up-container">
           <div className="float-up flex flex-col">
-            <h1 className="text-lg text-center mb-16">SCCDSA Booking</h1>
+            <h1 className={`font-english text-lg text-center ${redirectUrl ? 'mb-6' : 'mb-16'}`}>SCCDSA Booking</h1>
+            {/* 被擋下才來登入（加入清單／進 Profile）：說明原因 */}
+            {redirectUrl && (
+              <p className="mb-6 text-center text-sm text-gray-light">{t('Please log in to continue', '請先登入以繼續')}</p>
+            )}
 
             {!passwordMode ? (
               <div className="flex flex-col">
                 <button
                   type="button"
                   onClick={handleGoogle}
-                  className="h-14 rounded-2xl bg-white text-black text-sm hover:opacity-70 cursor-pointer flex items-center justify-center gap-3"
+                  className={`h-14 rounded-2xl bg-white text-black text-sm flex items-center justify-center gap-3 ${BTN}`}
                 >
                   <GoogleIcon />
                   {t('Continue with School Google Account', '使用學校 Google 帳號登入')}
                 </button>
                 {/* 錯誤預留槽（同密碼表單）；原因可能兩行，用 min-h */}
-                <p className="min-h-9 pt-2 px-2 text-2xs text-error2" aria-live="polite">{googleError}</p>
+                <p className="min-h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{googleError}</p>
                 <div className="flex justify-between items-center px-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -164,12 +178,12 @@ const HomePage = () => {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="custom-checkbox"
                     />
-                    <span className="text-sm text-gray-scale2">{t('Remember Me', '記住我')}</span>
+                    <span className="text-sm text-gray-light">{t('Remember Me', '記住我')}</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => { setPasswordMode(true); setGoogleError('') }}
-                    className="text-sm text-white hover:opacity-70 cursor-pointer"
+                    className={`text-sm text-white ${BTN}`}
                   >
                     {t('Sign in with Student ID', '學號密碼登入')}
                   </button>
@@ -190,7 +204,7 @@ const HomePage = () => {
                   aria-invalid={!!studentIdError}
                   autoComplete="username"
                 />
-                <p className="h-9 pt-2 px-2 text-2xs text-error2" aria-live="polite">{studentIdError}</p>
+                <p className="h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{studentIdError}</p>
               </div>
 
               {/* 密碼 */}
@@ -209,7 +223,7 @@ const HomePage = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 inset-y-0 px-5 flex items-center text-white hover:opacity-70 cursor-pointer"
+                    className={`absolute right-0 inset-y-0 px-5 flex items-center text-white ${BTN}`}
                     aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
                     tabIndex={-1}
                   >
@@ -218,7 +232,7 @@ const HomePage = () => {
                     </span>
                   </button>
                 </div>
-                <p className="h-9 pt-2 px-2 text-2xs text-error2" aria-live="polite">{passwordError}</p>
+                <p className="h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{passwordError}</p>
               </div>
 
               {/* 記住我／忘記密碼 */}
@@ -231,12 +245,12 @@ const HomePage = () => {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="custom-checkbox"
                   />
-                  <span className="text-sm text-gray-scale2">{t('Remember Me', '記住我')}</span>
+                  <span className="text-sm text-gray-light">{t('Remember Me', '記住我')}</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowForgotPasswordModal(true)}
-                  className="text-sm text-white hover:opacity-70 cursor-pointer"
+                  className={`text-sm text-white ${BTN}`}
                 >
                   {t('Forgot Password?', '忘記密碼？')}
                 </button>
@@ -244,7 +258,7 @@ const HomePage = () => {
 
               <button
                 type="submit"
-                className="mt-5 h-14 rounded-2xl bg-white text-black text-sm hover:opacity-70 cursor-pointer"
+                className={`mt-5 h-14 rounded-2xl bg-white text-black text-sm ${BTN}`}
               >
                 {t('Login', '登入')}
               </button>
@@ -256,7 +270,7 @@ const HomePage = () => {
               <button
                 type="button"
                 onClick={() => setPasswordMode(false)}
-                className="mt-5 self-center text-sm text-gray-scale2 underline underline-offset-4 hover:!text-white cursor-pointer"
+                className={`mt-5 self-center text-sm text-gray-light underline underline-offset-4 ${BTN}`}
               >
                 {t('Sign in with School Google Account', '使用學校 Google 帳號登入')}
               </button>
@@ -264,7 +278,8 @@ const HomePage = () => {
             {/* 訪客：可逛型錄、選日期；加入清單時才要求登入（useCart 把關） */}
             <Link
               to="/catalog"
-              className={`${passwordMode ? 'mt-3' : 'mt-5'} self-center text-sm text-gray-scale2 underline underline-offset-4 hover:!text-white`}
+              onClick={() => sessionStorage.removeItem(REDIRECT_KEY)}
+              className={`${passwordMode ? 'mt-3' : 'mt-5'} self-center text-sm text-gray-light underline underline-offset-4 hover:opacity-50`}
             >
               {t('Browse as Guest', '訪客登入')}
             </Link>
@@ -277,7 +292,7 @@ const HomePage = () => {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-16 px-6 rounded-2xl border border-white/80 flex items-center gap-5 text-white hover:bg-white hover:text-black no-underline"
+                  className="h-16 px-6 rounded-2xl border border-white/50 flex items-center gap-5 text-white hover:bg-white hover:border-white hover:text-black no-underline"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
                   <span className="flex-1 text-sm">{t(en, zh)}</span>
@@ -321,9 +336,9 @@ const HomePage = () => {
               placeholder={t('Student ID', '學號')}
               aria-label={t('Student ID', '學號')}
               autoFocus
-              className="w-full px-3 py-2 bg-[#2b2b2b] border border-[#545454] text-white text-xs focus:outline-none focus:border-white rounded-lg"
+              className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
             />
-            {resetError && <p className="mt-2 text-2xs text-[#ff8698]">{resetError}</p>}
+            {resetError && <p className="mt-2 text-2xs text-error">{resetError}</p>}
           </form>
         )}
       </ConfirmDialog>

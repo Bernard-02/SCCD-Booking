@@ -268,3 +268,33 @@ export const overduePenalty = (
   if (days <= 0) return 0
   return Math.min(100 * (2 ** days - 1), depositTotal)
 }
+
+// ---- 部分時段可借用（2026-11-02；資料 supabase/partial-availability.sql，UI components/common/PartialDialog.tsx） ----
+
+/** 'YYYY-MM-DD' → 本地日期（toDateKey 的反向；new Date('YYYY-MM-DD') 會當 UTC，在台灣以外可能差一天） */
+export const fromDateKey = (key: string): Date => {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+/** 起訖（含）之間每一天的 key，依日期順序 */
+export const dayKeysBetween = (start: Date, end: Date): string[] => {
+  const last = toDateKey(end)
+  const out: string[] = []
+  for (const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); toDateKey(d) <= last; d.setDate(d.getDate() + 1)) {
+    out.push(toDateKey(d))
+  }
+  return out
+}
+
+/** 把「夠的天」依 allDays 順序切成連續段 [起, 訖]，依日期順序（popup 預設選第一段） */
+export const contiguousRuns = (okDays: ReadonlySet<string>, allDays: readonly string[]): [string, string][] => {
+  const runs: [string, string][] = []
+  let cur: [string, string] | null = null
+  for (const d of allDays) {
+    if (!okDays.has(d)) { cur = null; continue }
+    if (cur) cur[1] = d
+    else { cur = [d, d]; runs.push(cur) }
+  }
+  return runs
+}

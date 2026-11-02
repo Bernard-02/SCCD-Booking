@@ -3,6 +3,7 @@
  * 從 rental-list.html 遷移
  */
 
+import { BTN, BTN_TOOL } from '@/components/common/btn'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { cartGroupKey, type CartItem } from '../types/equipment'
@@ -21,6 +22,7 @@ import { useCartReserved } from '../services/equipmentService'
 import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
 import { getCurrentStudentId } from '../utils/authStorage'
 import { useT } from '../stores/langStore'
+import { useSiteContent } from '../services/contentService'
 
 interface BookingDetailsData {
   reason: string
@@ -44,6 +46,7 @@ const parseGroupKey = (key: string): { category: string; startDate: string; endD
 
 const RentalListPage = () => {
   const t = useT()
+  const content = useSiteContent()
   const {
     cart,
     updateEquipmentQuantity,
@@ -306,11 +309,11 @@ const RentalListPage = () => {
                   {t('Cart', '清單')} ({totalUniqueItems})
                 </h1>
                 {/* 選取 → 進入選取模式（各組左側出現圓圈），按鈕變清除；取消退出 */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                   {selectMode && (
                     <button
                       onClick={exitSelectMode}
-                      className="flex items-center gap-1 text-sm font-normal whitespace-nowrap text-gray-scale2 hover:!text-white cursor-pointer"
+                      className={`${BTN_TOOL} ${BTN}`}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>undo</span>
                       {t('Cancel', '取消')}
@@ -319,11 +322,7 @@ const RentalListPage = () => {
                   <button
                     onClick={selectMode ? handleClearAll : () => setSelectMode(true)}
                     disabled={selectMode ? selectedGroups.size === 0 : cart.length === 0}
-                    className={`flex items-center gap-1 text-sm font-normal whitespace-nowrap ${
-                      (selectMode ? selectedGroups.size === 0 : cart.length === 0)
-                        ? 'text-gray-scale4 cursor-not-allowed'
-                        : 'text-white hover:opacity-70 cursor-pointer'
-                    }`}
+                    className={`${BTN_TOOL} ${selectMode ? '' : '!pl-3'} ${BTN}`}
                   >
                     {selectMode && <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>}
                     {selectMode ? t('Clear', '清除') : t('Select', '選取')}
@@ -354,7 +353,7 @@ const RentalListPage = () => {
               <div className="flex-1 min-h-0 overflow-y-auto">
                 {/* 押金標籤 */}
                 <div className="mb-2">
-                  <div className="text-xs text-gray-scale2">
+                  <div className="text-xs text-gray-light">
                     <span>{t('Total Deposit', '總押金')}</span>
                   </div>
                 </div>
@@ -363,14 +362,14 @@ const RentalListPage = () => {
                 <button
                   onClick={() => setDepositBreakdownExpanded(!depositBreakdownExpanded)}
                   disabled={depositGroups.length === 0}
-                  className={`w-full flex items-center justify-between mb-4 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
+                  className={`group w-full flex items-center justify-between mb-4 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
                 >
                   <div className="text-2xl font-english font-normal text-white">
                     NT$ {totalDeposit.toLocaleString()}
                   </div>
                   {depositGroups.length > 0 && (
                     <svg
-                      className={`w-4 h-4 text-white transition-transform ${depositBreakdownExpanded ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 text-white transition-transform group-hover:opacity-50 ${depositBreakdownExpanded ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -415,13 +414,13 @@ const RentalListPage = () => {
                     {!expiredOrdersValidation.valid && (
                       <div className="flex items-start gap-2">
                         <span className="material-symbols-outlined text-xs" style={{
-                          color: '#ffff00',
+                          color: 'var(--color-yellow)',
                           marginTop: '2px'
                         }}>
                           info
                         </span>
                         <div className="flex-1">
-                          <span className={`text-xs text-[#ffff00]`}>
+                          <span className={`text-xs text-yellow`}>
                             <span>{t(expiredOrdersValidation.detail, expiredOrdersValidation.message)}</span>
                           </span>
                         </div>
@@ -432,13 +431,13 @@ const RentalListPage = () => {
                     {!stockAvailabilityValidation.valid && (
                       <div className="flex items-start gap-2">
                         <span className="material-symbols-outlined text-xs" style={{
-                          color: '#ffff00',
+                          color: 'var(--color-yellow)',
                           marginTop: '2px'
                         }}>
                           info
                         </span>
                         <div className="flex-1">
-                          <span className={`text-xs text-[#ffff00]`}>
+                          <span className={`text-xs text-yellow`}>
                             <span>{t(stockAvailabilityValidation.detail, stockAvailabilityValidation.message)}</span>
                           </span>
                         </div>
@@ -448,11 +447,11 @@ const RentalListPage = () => {
                     {/* 條件 0.55: 小量設備超過 9 件（減少數量拆散組合時）- 僅違規時顯示 */}
                     {!littleLimitValidation.valid && (
                       <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-xs" style={{ color: '#ffff00', marginTop: '2px' }}>
+                        <span className="material-symbols-outlined text-xs" style={{ color: 'var(--color-yellow)', marginTop: '2px' }}>
                           info
                         </span>
                         <div className="flex-1">
-                          <span className="text-xs text-[#ffff00]">
+                          <span className="text-xs text-yellow">
                             <span>{t(littleLimitValidation.detail, littleLimitValidation.message)}</span>
                           </span>
                         </div>
@@ -462,11 +461,11 @@ const RentalListPage = () => {
                     {/* 條件 0.6: 同類別多張訂單（規則上線前的舊購物車）- 僅違規時顯示 */}
                     {!singleOrderValidation.valid && (
                       <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-xs" style={{ color: '#ffff00', marginTop: '2px' }}>
+                        <span className="material-symbols-outlined text-xs" style={{ color: 'var(--color-yellow)', marginTop: '2px' }}>
                           info
                         </span>
                         <div className="flex-1">
-                          <span className="text-xs text-[#ffff00]">
+                          <span className="text-xs text-yellow">
                             <span>{t(singleOrderValidation.detail, singleOrderValidation.message)}</span>
                           </span>
                         </div>
@@ -476,12 +475,12 @@ const RentalListPage = () => {
                     {/* 條件 1: 填寫借用資訊 - 常駐 */}
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-xs" style={{
-                        color: bookingDetailsValidation.valid ? '#00ff80' : '#cccccc'
+                        color: bookingDetailsValidation.valid ? 'var(--color-green)' : 'var(--color-gray-light)'
                       }}>
                         {bookingDetailsValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                       <span className={`text-xs ${
-                        bookingDetailsValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
+                        bookingDetailsValidation.valid ? 'text-green' : 'text-gray-light'
                       }`}>
                         <span>{t('Fill in booking details', '填寫借用資訊')}</span>
                       </span>
@@ -497,12 +496,12 @@ const RentalListPage = () => {
                       return (
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-xs" style={{
-                            color: cartValidation.valid ? '#00ff80' : '#cccccc'
+                            color: cartValidation.valid ? 'var(--color-green)' : 'var(--color-gray-light)'
                           }}>
                             {cartValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
                           </span>
                           <span className={`text-xs ${
-                            cartValidation.valid ? 'text-[#00ff80]' : 'text-gray-scale2'
+                            cartValidation.valid ? 'text-green' : 'text-gray-light'
                           }`}>
                             <span>{t('Min. 10 items', '大量租借需滿 10 件')}</span>
                           </span>
@@ -513,12 +512,12 @@ const RentalListPage = () => {
                     {/* 條件 3: 同意條款 - 常駐 */}
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-xs" style={{
-                        color: agreedToTerms ? '#00ff80' : '#cccccc'
+                        color: agreedToTerms ? 'var(--color-green)' : 'var(--color-gray-light)'
                       }}>
                         {agreedToTerms ? 'check_circle' : 'radio_button_unchecked'}
                       </span>
                       <span className={`text-xs ${
-                        agreedToTerms ? 'text-[#00ff80]' : 'text-gray-scale2'
+                        agreedToTerms ? 'text-green' : 'text-gray-light'
                       }`}>
                         <span>{t('Agree to terms', '同意借用條款')}</span>
                       </span>
@@ -538,20 +537,20 @@ const RentalListPage = () => {
                     className="custom-checkbox"
                   />
                   <span className="text-xs text-white leading-tight">
-                    <span>{t('I have read and agree to the department&apos;s equipment &amp; space rental', '我已閱讀並同意系上租借設備與空間的')}</span>
+                    <span>{t("I have read and agree to the department's equipment & space rental ", '我已閱讀並同意系上租借設備與空間的')}</span>
                     <a
-                      href="https://docs.google.com/document/d/1m4i89PruGw1ih7NehOEbR_vdNx7KKpTT1svbM1aOIvQ/edit?usp=sharing"
+                      href={content('guide.doc_url').zh}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline cursor-pointer hover:text-zinc-300"
+                      className="underline cursor-pointer hover:opacity-50"
                     >
-                      <span>{t('Terms &amp; Conditions', '使用規則與條款')}</span>
+                      <span>{t('Terms & Conditions', '使用規則與條款')}</span>
                     </a>
                   </span>
                 </div>
 
                 {isSuspended && (
-                  <div className="flex items-start gap-2 mb-3 text-error2">
+                  <div className="flex items-start gap-2 mb-3 text-error">
                     <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '18px', marginTop: '1px' }}>warning</span>
                     <div className="text-xs">
                       <p>{t('Account suspended — bookings are disabled.', '帳號已停權，無法送出預約，請聯絡系學會')}</p>
@@ -561,11 +560,7 @@ const RentalListPage = () => {
                 <button
                   onClick={handleCheckout}
                   disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid || !littleLimitValidation.valid}
-                  className={`w-full h-12 flex items-center justify-center gap-1 pl-4 pr-3 rounded-lg text-sm font-normal whitespace-nowrap ${
-                    isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid || !littleLimitValidation.valid
-                      ? 'bg-gray-scale4 text-gray-scale2 cursor-not-allowed'
-                      : 'bg-white text-black hover:opacity-70 cursor-pointer'
-                  }`}
+                  className={`w-full h-12 flex items-center justify-center gap-1 pl-4 pr-3 rounded-lg text-sm font-normal whitespace-nowrap bg-white text-black ${BTN}`}
                 >
                   {t('Book', '送出')}
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chevron_right</span>
@@ -588,7 +583,7 @@ const RentalListPage = () => {
             gap: '1rem'
           }}
         >
-          <span className="font-['Inter','Noto_Sans_TC',_sans-serif] text-xs">
+          <span className="text-xs">
             {toastMessage}
           </span>
           <button

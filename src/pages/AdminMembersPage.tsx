@@ -8,6 +8,7 @@
  * 違規／租借狀態由訂單即時算不入庫；系學會＝staff_members（經手人名單）。寫入走 RLS "students: admin update"。
  */
 
+import { BTN, CHIP } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -34,21 +35,21 @@ const IDENTITY_OPTIONS: Exclude<Identity, 'admin'>[] = ['student', 'transfer', '
 
 // 狀態 chip（優先序：已畢業＞休學＞違規＞在學；未啟用＝預先登記）
 type Status = 'active' | 'on_leave' | 'violation' | 'graduated' | 'pending'
-const STATUS_META: Record<Status, { zh: string; color: string; textColor: string }> = {
-  active: { zh: '在學', color: 'var(--color-success)', textColor: 'black' },
-  on_leave: { zh: '休學', color: 'var(--color-yellow)', textColor: 'black' },
-  violation: { zh: '違規', color: 'var(--color-error2)', textColor: 'white' },
-  graduated: { zh: '已畢業', color: 'var(--color-gray-scale3)', textColor: 'white' },
-  pending: { zh: '未啟用', color: 'var(--color-gray-scale4)', textColor: 'white' }
+const STATUS_META: Record<Status, { zh: string; color: string }> = {
+  active: { zh: '在學', color: 'var(--color-green)' },
+  on_leave: { zh: '休學', color: 'var(--color-yellow)' },
+  violation: { zh: '違規', color: 'var(--color-error)' },
+  graduated: { zh: '已畢業', color: 'var(--color-gray-light)' },
+  pending: { zh: '未啟用', color: 'var(--color-gray-light)' }
 }
 // 租借狀態 chip（優先序：停權＞逾期中＞欠罰款＞進行中＞可租借）
 type Rental = 'ok' | 'in_progress' | 'unpaid' | 'overdue' | 'suspended'
-const RENTAL_META: Record<Rental, { zh: string; color: string; textColor: string }> = {
-  ok: { zh: '未租借', color: 'var(--color-gray-scale4)', textColor: 'white' },
-  in_progress: { zh: '進行中', color: 'var(--color-blue)', textColor: 'white' },
-  unpaid: { zh: '欠罰款', color: 'var(--color-yellow)', textColor: 'black' },
-  overdue: { zh: '逾期中', color: 'var(--color-error2)', textColor: 'white' },
-  suspended: { zh: '停權', color: 'var(--color-error)', textColor: 'white' }
+const RENTAL_META: Record<Rental, { zh: string; color: string }> = {
+  ok: { zh: '未租借', color: 'var(--color-gray-light)' },
+  in_progress: { zh: '進行中', color: 'var(--color-cyan)' },
+  unpaid: { zh: '欠罰款', color: 'var(--color-pink)' },
+  overdue: { zh: '逾期中', color: 'var(--color-error)' },
+  suspended: { zh: '停權', color: 'var(--color-error)' }
 }
 const RENTAL_FILTERS: { value: Rental | 'all'; label: string }[] = [
   { value: 'all', label: '全部租借狀態' },
@@ -85,14 +86,12 @@ interface Row {
   orders: number
 }
 
-const Chip: React.FC<{ meta: { color: string; textColor: string }; children: React.ReactNode }> = ({ meta, children }) => (
-  <span className="px-2.5 py-0.5 inline-flex items-center rounded-lg" style={{ backgroundColor: meta.color }}>
-    <span className="text-[0.75rem] font-chinese whitespace-nowrap" style={{ color: meta.textColor }}>{children}</span>
-  </span>
+const Chip: React.FC<{ meta: { color: string }; children: React.ReactNode }> = ({ meta, children }) => (
+  <span className={`${CHIP} font-chinese text-black`} style={{ backgroundColor: meta.color }}>{children}</span>
 )
 
 // 唯讀欄位（同輸入框高度，無框）
-const readOnly = `${inputCls} w-full text-gray-scale2 border-transparent px-0`
+const readOnly = `${inputCls} w-full text-gray-light border-transparent px-0`
 
 type EditDialog = { row: Row; identity: Identity; position: string; status: 'active' | 'on_leave' | 'graduated' }
 type NewDialog = { sid: string; name: string; email: string; emailTouched: boolean; identity: Exclude<Identity, 'admin'>; position: string }
@@ -429,7 +428,7 @@ const AdminMembersPage: React.FC = () => {
       <CountTabs tabs={TABS} value={tab} onChange={setTab} counts={counts} />
 
       {loading ? (
-        <div className="text-gray-scale2 text-xs font-chinese">載入中…</div>
+        <div className="text-gray-light text-xs font-chinese">載入中…</div>
       ) : error ? (
         <LoadError message={error} onRetry={() => { setLoading(true); void load() }} />
       ) : (
@@ -438,7 +437,7 @@ const AdminMembersPage: React.FC = () => {
             {/* border-separate：表頭 sticky 時底線才跟著走；欄位多，min-w 讓窄視窗橫向捲而不壓欄 */}
             <table className="w-full min-w-[1200px] text-xs border-separate border-spacing-0">
               <thead>
-                <tr className="text-left text-gray-scale2">
+                <tr className="text-left text-gray-light">
                   {selectMode && (
                     <th className={`${th} w-10`}>
                       <input type="checkbox" className="custom-checkbox block" checked={allSelected} onChange={toggleAll} aria-label="全選" disabled={selectable.length === 0} />
@@ -458,7 +457,7 @@ const AdminMembersPage: React.FC = () => {
               </thead>
               <tbody>
                 {pageRows.map(r => (
-                  <tr key={r.key} className="hover:bg-white/5">
+                  <tr key={r.key} className="hover:bg-white/10">
                     {selectMode && (
                       <td className={td}>
                         <input
@@ -470,8 +469,8 @@ const AdminMembersPage: React.FC = () => {
                     <td className={`${td} font-english`}>{r.student_id}</td>
                     <td className={`${td} font-chinese`}>{r.name || '—'}</td>
                     <td className={`${td} font-chinese`}>{r.classText || '—'}</td>
-                    <td className={`${td} font-english text-gray-scale2`}>{r.email || '—'}</td>
-                    <td className={`${td} font-english`}>{r.phone || <span className="text-gray-scale3">—</span>}</td>
+                    <td className={`${td} font-english text-gray-light`}>{r.email || '—'}</td>
+                    <td className={`${td} font-english`}>{r.phone || <span className="text-gray-mid">—</span>}</td>
                     <td className={`${td} font-chinese`}>
                       {/* 選取模式下勾選的列：身份變下拉，改一個＝套用到所有勾選的人（管理員除外） */}
                       {selectMode && selected.has(r.key) && r.identity !== 'admin' ? (
@@ -501,7 +500,7 @@ const AdminMembersPage: React.FC = () => {
                       ) : <Chip meta={STATUS_META[r.status]}>{STATUS_META[r.status].zh}</Chip>}
                     </td>
                     <td className={td}>
-                      {r.member ? <Chip meta={RENTAL_META[r.rental]}>{r.rentalLabel}</Chip> : <span className="text-gray-scale3">—</span>}
+                      {r.member ? <Chip meta={RENTAL_META[r.rental]}>{r.rentalLabel}</Chip> : <span className="text-gray-mid">—</span>}
                     </td>
                     <td className={`${td} text-center`}>
                       {/* 租借歷史在訂單頁：帶學號過去搜尋 */}
@@ -509,11 +508,11 @@ const AdminMembersPage: React.FC = () => {
                         <button
                           onClick={() => navigate(`/admin/orders?student=${encodeURIComponent(r.student_id)}`)}
                           title="到訂單頁看租借歷史"
-                          className="min-w-7 h-7 px-2 inline-flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/15 font-english cursor-pointer"
+                          className={`min-w-7 h-7 px-2 inline-flex items-center justify-center rounded-lg bg-gray-dark font-english ${BTN}`}
                         >
                           {r.orders}
                         </button>
-                      ) : <span className="text-gray-scale3">—</span>}
+                      ) : <span className="text-gray-mid">—</span>}
                     </td>
                     <td className={`${td} text-center`}>
                       {r.member ? (
@@ -532,7 +531,7 @@ const AdminMembersPage: React.FC = () => {
             </table>
 
             {filtered.length === 0 && (
-              <div className="py-16 text-center text-xs text-gray-scale2 font-chinese">沒有符合的帳號</div>
+              <div className="py-16 text-center text-xs text-gray-light font-chinese">沒有符合的帳號</div>
             )}
           </div>
 
@@ -584,7 +583,7 @@ const AdminMembersPage: React.FC = () => {
             )}
             {edit.row.rental === 'suspended' && (
               <div className="col-span-2 flex items-center justify-between gap-4 text-xs font-chinese">
-                <span style={{ color: 'var(--color-error2)' }}>已停權（逾期滿 6 營業日），不能送新單</span>
+                <span style={{ color: 'var(--color-error)' }}>已停權（逾期滿 6 營業日），不能送新單</span>
                 <button onClick={() => handleUnsuspend(edit.row.member!)} className={`${toolBtn(false)} px-3 font-chinese`}>解除停權</button>
               </div>
             )}
@@ -628,7 +627,7 @@ const AdminMembersPage: React.FC = () => {
               <input value={draft.position} placeholder="會長、器材長…" onChange={e => setDraft(d => (d ? { ...d, position: e.target.value } : d))} className={`${inputCls} w-full font-chinese`} />
             </Field>
           )}
-          <p className="text-2xs text-gray-scale3 font-chinese">帳號在本人第一次用學校 Google 帳號登入時建立，登記前顯示為「未啟用」。</p>
+          <p className="text-2xs text-gray-mid font-chinese">帳號在本人第一次用學校 Google 帳號登入時建立，登記前顯示為「未啟用」。</p>
         </FormDialog>
       )}
 

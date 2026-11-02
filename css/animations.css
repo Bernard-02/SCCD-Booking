@@ -56,7 +56,6 @@
     opacity: 0;
     transform: translateX(100px);
     animation: slideInFromRight 1s ease forwards;
-    transition: border-color 0.3s ease;
     padding: 2rem;
   }
   
@@ -70,10 +69,6 @@
     animation-delay: 0.7s;
   }
   
-  
-  .card-slide-in:hover {
-    border-color: transparent;
-  }
   
   @keyframes slideInFromRight {
     from {

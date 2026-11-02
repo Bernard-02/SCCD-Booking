@@ -7,6 +7,7 @@
  */
 
 import React from 'react'
+import { CHIP } from '@/components/common/btn'
 import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../cart/cartHelpers'
 import { useT } from '../../stores/langStore'
 import { useBundles, useItemImages } from '../../services/equipmentService'
@@ -62,7 +63,7 @@ export const formatOrderTime = (iso?: string | null) => {
   return `${formatDate(iso)} ${d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`
 }
 
-const ROW = 'grid grid-cols-[56px_1fr_60px_100px] gap-4 py-3 border-b border-black/15 last:border-b-0 items-center text-sm'
+const ROW = 'grid grid-cols-[56px_1fr_60px_100px] gap-4 py-3 border-b border-gray-light last:border-b-0 items-center text-sm'
 
 const Thumb: React.FC<{ src: string; alt: string }> = ({ src, alt }) => (
   <div className="w-14 h-14 overflow-hidden rounded-lg">
@@ -74,8 +75,8 @@ const Thumb: React.FC<{ src: string; alt: string }> = ({ src, alt }) => (
 const GroupHeader: React.FC<{ label: string; count: number; deposit: number }> = ({ label, count, deposit }) => (
   <div className="grid grid-cols-[1fr_60px_100px] gap-4 pb-2 text-sm" style={{ fontWeight: 500 }}>
     <span>{label}</span>
-    <span className="text-center">{count}</span>
-    <span>NT$ {Math.min(deposit, 5000).toLocaleString()}</span>
+    <span className="text-center font-english">{count}</span>
+    <span className="font-english">NT$ {Math.min(deposit, 5000).toLocaleString()}</span>
   </div>
 )
 
@@ -92,20 +93,21 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
   const spaceCount = classrooms.length + Object.values(blocksByArea).flat().length
 
   // 日期、押金、借用者（本人）、預約時段在摘要列已看得到，這裡只放摘要沒有的
-  const info: [string, string][] = [
-    [t('Order Time', '送單時間'), formatOrderTime(receipt.createdAt)],
-    ...(receipt.itemsUpdatedAt ? [[t('Updated', '最後修改'), formatOrderTime(receipt.itemsUpdatedAt)] as [string, string]] : []),
-    ...(receipt.reason ? [[t('Reason', '使用原因'), receipt.reason] as [string, string]] : [])
+  // 第三欄＝值的字型：時間用英文字距、使用原因是中文
+  const info: [string, string, string][] = [
+    [t('Order Time', '送單時間'), formatOrderTime(receipt.createdAt), 'font-english'],
+    ...(receipt.itemsUpdatedAt ? [[t('Updated', '最後修改'), formatOrderTime(receipt.itemsUpdatedAt), 'font-english'] as [string, string, string]] : []),
+    ...(receipt.reason ? [[t('Reason', '使用原因'), receipt.reason, 'font-chinese'] as [string, string, string]] : [])
   ]
 
   return (
     <div className="grid grid-cols-[2fr_3fr] gap-12">
       {/* 左：借用資訊 */}
       <dl className="space-y-4 text-sm">
-        {info.map(([label, value]) => (
+        {info.map(([label, value, cls]) => (
           <div key={label} className="grid grid-cols-[100px_1fr] gap-4">
             <dt className="text-xs opacity-50">{label}</dt>
-            <dd>{value}</dd>
+            <dd className={cls}>{value}</dd>
           </div>
         ))}
       </dl>
@@ -132,8 +134,8 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
                       {bundle.items.map(c => `${equipment.find(i => i.id === c.equipmentId)?.name ?? ''} ×${c.quantity * count}`).join('、')}
                     </div>
                   </div>
-                  <div className="text-center">{count} {t('set', '組')}</div>
-                  <div>NT$ {(bundle.deposit * count).toLocaleString()}</div>
+                  <div className="text-center"><span className="font-english">{count}</span> {t('set', '組')}</div>
+                  <div className="font-english">NT$ {(bundle.deposit * count).toLocaleString()}</div>
                 </div>
               )
             })}
@@ -144,11 +146,11 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
                   {item.name}
                   {/* 修改訂單（情境 3）：取件後新增待點交／送單後改過 */}
                   {item.pickupPending
-                    ? <span className="text-2xs ml-2 px-1.5 rounded bg-[var(--color-yellow)] text-black">待點交</span>
+                    ? <span className={`${CHIP} ml-2 bg-yellow text-black`}>待點交</span>
                     : item.changedAt && <span className="text-2xs ml-2 opacity-50">已更動</span>}
                 </div>
-                <div className="text-center">{item.quantity}</div>
-                <div>NT$ {(item.deposit * item.quantity).toLocaleString()}</div>
+                <div className="text-center font-english">{item.quantity}</div>
+                <div className="font-english">NT$ {(item.deposit * item.quantity).toLocaleString()}</div>
               </div>
             ))}
           </div>
@@ -167,8 +169,8 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
                 <div key={area} className={ROW}>
                   <Thumb src={images[blocks[0].id] || getBlockImage(blocks[0].id)} alt={getAreaName(blocks[0].id)} />
                   <div>{getAreaName(blocks[0].id)}（{blockIds.join('、')}）</div>
-                  <div className="text-center">{blocks.length}</div>
-                  <div>NT$ {blocks.reduce((s, b) => s + b.deposit, 0).toLocaleString()}</div>
+                  <div className="text-center font-english">{blocks.length}</div>
+                  <div className="font-english">NT$ {blocks.reduce((s, b) => s + b.deposit, 0).toLocaleString()}</div>
                 </div>
               )
             })}
@@ -176,8 +178,8 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
               <div key={`${item.id}-${idx}`} className={ROW}>
                 <Thumb src={item.image} alt={item.name} />
                 <div>{item.name}</div>
-                <div className="text-center">1</div>
-                <div>NT$ {item.deposit.toLocaleString()}</div>
+                <div className="text-center font-english">1</div>
+                <div className="font-english">NT$ {item.deposit.toLocaleString()}</div>
               </div>
             ))}
           </div>

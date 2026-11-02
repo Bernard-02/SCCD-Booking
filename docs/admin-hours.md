@@ -7,7 +7,7 @@
 
 - **左：「假期 & 休息日」月曆**（設計同前台日曆，單月、大數字），整合三種日期：
   - **休息日**（`closed_dates`，kind＝活動／大總評／其他）：學會自己的不營業日。黃色。
-  - **法定假日**（`closed_dates`，kind＝holiday）：進後台時自動匯入（`autoImportHolidays`，今年＋明年）。粉紅。
+  - **法定假日**（`closed_dates`，kind＝holiday）：進後台時自動匯入（`autoImportHolidays`，今年＋明年）。藍（cyan）。
     刪除＝學會當天照常營業，之後不會再被自動補回。
   - **寒暑假封鎖**（`rental_blackouts`）：區間內學生不可租借，前台日曆灰化、`submit_orders` 擋單。灰色。
 - **右：值班時間表**（`staff_duties`）：週一～五 × 午班／晚班。

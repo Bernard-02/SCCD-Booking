@@ -4,6 +4,7 @@
  * 刪除／移除請用垃圾桶（delete），不要拿 X 當刪除。
  */
 
+import { BTN } from '@/components/common/btn'
 import React from 'react'
 
 const CloseButton: React.FC<{ onClick: () => void; label?: string; className?: string }> = ({
@@ -14,7 +15,7 @@ const CloseButton: React.FC<{ onClick: () => void; label?: string; className?: s
     onClick={onClick}
     aria-label={label}
     title={label}
-    className={`flex items-center justify-center w-6 h-6 shrink-0 text-white hover:opacity-70 cursor-pointer ${className}`}
+    className={`flex items-center justify-center w-6 h-6 shrink-0 text-white ${BTN} ${className}`}
   >
     <span className="material-symbols-outlined" style={{ fontSize: '20px' }} aria-hidden="true">close</span>
   </button>

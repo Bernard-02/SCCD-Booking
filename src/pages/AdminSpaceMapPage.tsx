@@ -63,7 +63,7 @@ const AdminSpaceMapPage: React.FC = () => {
       svg.style.width = '100%'
       svg.style.height = '100%'
       svg.style.display = 'block'
-      svg.setAttribute('preserveAspectRatio', 'xMinYMid meet')
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet') // 地圖在欄內置中（2026-11-02 自靠左改）
       // 格子編號是疊在格子上面的獨立 path：讓滑鼠事件穿透，hover 到編號也算 hover 到格子（游標與點擊才準）
       svg.querySelectorAll<SVGElement>('path.cls-2, path.cls-3').forEach(l => { l.style.pointerEvents = 'none' })
       setSvgElement(svg)
@@ -110,7 +110,7 @@ const AdminSpaceMapPage: React.FC = () => {
         const b = l.getBoundingClientRect()
         const cx = b.left + b.width / 2
         const cy = b.top + b.height / 2
-        if (cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom) l.style.setProperty('fill', '#000000', 'important')
+        if (cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom) l.style.setProperty('fill', 'var(--color-black)', 'important')
       })
     }
     // 同一格同一天理論上只有一張生效訂單；萬一重疊取最嚴重的
@@ -118,7 +118,7 @@ const AdminSpaceMapPage: React.FC = () => {
       const occ = occupantsByItem[id]
       if (!occ?.length) return null
       const st = (['overdue', 'in-progress', 'pending'] as const).find(k => occ.some(o => o.status === k)) ?? (occ[0].status as OrderStatus)
-      return STATUS_META[st]?.color ?? 'var(--color-error2)'
+      return STATUS_META[st]?.color ?? 'var(--color-error)'
     }
 
     spaces.filter(s => s.area !== 'classroom').forEach(s => {
@@ -135,7 +135,7 @@ const AdminSpaceMapPage: React.FC = () => {
         if (color) shape.classList.add('area-block')
         else if (!s.is_active) shape.classList.add('area-block', 'is-disabled')
         const st = (shape as SVGElement).style
-        if (selected) st.setProperty('fill', '#ffffff', 'important')
+        if (selected) st.setProperty('fill', 'var(--color-white)', 'important')
         else if (color) st.setProperty('fill', color, 'important')
         else st.removeProperty('fill')
       })
@@ -143,7 +143,7 @@ const AdminSpaceMapPage: React.FC = () => {
       ;(el as HTMLElement).style.cursor = s.is_active ? 'pointer' : 'not-allowed'
       if (!s.is_active) return
 
-      const handler = () => setSelectedId(s.id)
+      const handler = () => setSelectedId(prev => (prev === s.id ? null : s.id)) // 再點同一格＝取消選取
       el.addEventListener('click', handler)
       listenersRef.current.push({ element: el, handler })
     })
@@ -160,10 +160,10 @@ const AdminSpaceMapPage: React.FC = () => {
 
   const occupantRow = (o: SpaceOccupant) => (
     <div key={o.rentalNumber} className="flex flex-wrap items-center gap-3 text-xs py-2">
-      <span className="font-chinese text-white">{o.studentName}</span>
-      <span className="font-english text-gray-scale2">{o.studentNo}</span>
-      <span className="font-english text-gray-scale2">{o.rentalNumber}</span>
-      <span className="font-english text-gray-scale2">{o.startDate} ~ {o.endDate}</span>
+      <span className="font-chinese">{o.studentName}</span>
+      <span className="font-english">{o.studentNo}</span>
+      <span className="font-english">{o.rentalNumber}</span>
+      <span className="font-english">{o.startDate} ~ {o.endDate}</span>
       <StatusChip status={o.status as OrderStatus} />
     </div>
   )
@@ -193,28 +193,28 @@ const AdminSpaceMapPage: React.FC = () => {
               </span>
             ))}
             <span className="flex items-center gap-2">
-              <span className="inline-block w-3 h-3 bg-gray-scale4" />已關閉
+              <span className="inline-block w-3 h-3 bg-gray-mid" />已關閉
             </span>
           </div>
 
           <DatePicker value={date} onChange={setDate} />
 
           {/* 選到的區塊：代號・區域＋該日期借用人。高度跟內容走；借用人太多超過右欄時只在面板內捲 */}
-          {/* 深灰卡片（#151515，同營業時間的值班卡片、圓角 16px）：白字、輔助文字 gray-scale2 */}
-          <div className="min-h-0 flex flex-col bg-[#151515] text-white rounded-2xl p-4 text-xs">
+          {/* 灰卡片（gray-dark，同上方日期框底色、圓角 16px）：全部白字（gray-dark 底上 gray-light 對比太低，2026-11-02） */}
+          <div className="min-h-0 flex flex-col bg-gray-dark text-white rounded-2xl p-4 text-xs">
             <div className="min-h-0 overflow-y-auto">
               {!selected ? (
-                <p className="font-chinese text-gray-scale3">點地圖上的區塊查看借用人</p>
+                <p className="font-chinese">點地圖上的區塊查看借用人</p>
               ) : (
                 <>
                   <p className="text-sm mb-3">
                     <span className="font-english text-white">{selected.id}</span>
-                    <span className="font-chinese text-gray-scale2"> · {AREA_META[selected.area] ?? selected.area}</span>
+                    <span className="font-chinese"> · {AREA_META[selected.area] ?? selected.area}</span>
                   </p>
                   {selectedOccupants.length === 0 ? (
-                    <p className="font-chinese text-gray-scale2">此日期無人借用</p>
+                    <p className="font-chinese">此日期無人借用</p>
                   ) : (
-                    <div className="divide-y divide-gray-scale4">
+                    <div className="divide-y divide-gray-mid">
                       {selectedOccupants.map(occupantRow)}
                     </div>
                   )}

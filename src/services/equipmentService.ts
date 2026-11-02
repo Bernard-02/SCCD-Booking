@@ -216,3 +216,20 @@ export const useEquipmentData = (): EquipmentData => {
 
   return data
 }
+
+/**
+ * 該時段各設備「逐日」佔用量（部分時段可借用；supabase/partial-availability.sql）：item_id → { 'YYYY-MM-DD': 佔用件數 }。
+ * RPC 還沒執行時會 throw，呼叫端退回整段判定（equipment_reserved）。
+ */
+export async function fetchEquipmentReservedDaily(
+  startDate: string,
+  endDate: string
+): Promise<Record<string, Record<string, number>>> {
+  const { data, error } = await supabase.rpc('equipment_reserved_daily', { p_start: startDate, p_end: endDate })
+  if (error) throw error
+  const out: Record<string, Record<string, number>> = {}
+  for (const row of data as { item_id: string; day: string; reserved: number }[]) {
+    ;(out[row.item_id] ??= {})[row.day] = Number(row.reserved)
+  }
+  return out
+}

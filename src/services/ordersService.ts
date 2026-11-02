@@ -157,7 +157,11 @@ export async function fetchBlackouts(): Promise<{ start: string; end: string }[]
  * 硬性資料（日期／品項／狀態／押金）不走這裡，一律走專用 RPC（order-lifecycle 情境 9）。
  */
 /** 小量只有 reason；大量／團體三項皆有（不帶的欄位不會被更新） */
-export type OrderInfo = { reason: string; class_name?: string; teacher?: string }
+// 大量設備待取件時可一併改預選時段（OrderInfoDialog；沒顯示的欄位不送）
+export type OrderInfo = {
+  reason: string; class_name?: string; teacher?: string
+  deposit_date?: string; deposit_slot?: string; pickup_slot?: string
+}
 
 export async function adminUpdateOrderInfo(
   rentalNumber: string,

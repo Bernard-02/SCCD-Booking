@@ -5,10 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SCCDSA Booking</title>
 
-  <!-- 字體 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+TC:wght@400;600&display=swap" rel="stylesheet" />
+  <!-- 字體全部自架：Inter／Noto Sans TC 由 main.tsx import @fontsource；Material Symbols 只要 FILL 軸（收藏實心／空心）465 KB，
+       @font-face 內嵌在這裡（不放 CSS bundle）讓下面的 fonts.load 一解析 HTML 就能開始下載。換字型檔請改檔名（vercel.json 設 immutable 快取） -->
+  <style>
+    @font-face {
+      font-family: 'Material Symbols Outlined';
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url(/fonts/material-symbols-outlined-fill-v382.woff2) format('woff2');
+    }
+  </style>
+  <script>
+    // 字型到齊前 icon 文字先藏起來（index.css），不等 React
+    document.fonts.load('24px "Material Symbols Outlined"').finally(function () { document.documentElement.classList.add('icons-ready') })
+  </script>
 
 </head>
 

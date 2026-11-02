@@ -54,13 +54,12 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onClose}
     >
       {/* 對話框容器：固定高度，切分頁時不跳動 */}
       <div
-        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-4xl w-full mx-4 h-[85vh] flex flex-col md:flex-row relative overflow-hidden"
+        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-4xl w-full mx-4 h-[85vh] flex flex-col md:flex-row relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -68,7 +67,7 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
         <CloseButton onClick={onClose} label={t('Close', '關閉')} className="absolute top-6 right-6 z-20" />
 
         {/* 左：分頁膠囊（共用 navItemCls，無 icon）；桌機寬度跟最長的分頁走（min 200px，英文 Student Association 較長）；手機版分頁橫排在上，右側留位給 X */}
-        <div className="p-6 pr-16 md:pr-6 md:min-w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-[#545454]">
+        <div className="p-6 pr-16 md:pr-6 md:min-w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-mid">
           <nav className="inline-flex md:flex-col gap-1" role="tablist">
             {TABS.map(item => (
               <button
@@ -88,7 +87,7 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
         {/* 右：內容（key＝分頁，切換時捲動回頂端）。
             標題 sticky 固定 h-16（pt-6 與右上關閉 X 同高）；各段 Section 標題以 top-16 黏在它下方——改標題高度要一起改 */}
         <div key={tab} className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6" role="tabpanel">
-          <h2 className="sticky top-0 z-10 h-16 pt-6 mb-4 bg-[#151515] text-sm text-white font-normal">
+          <h2 className="sticky top-0 z-10 h-16 pt-6 mb-4 bg-gray-darker text-sm text-white font-normal">
             {t(current.en, current.zh)}
           </h2>
           <current.Content />

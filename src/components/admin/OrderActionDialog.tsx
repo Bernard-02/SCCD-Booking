@@ -5,6 +5,8 @@
  * 不勾＝只收押金（已繳待取件），之後再用 pickup 模式確認取件。
  */
 
+import { BTN } from '@/components/common/btn'
+import CloseButton from '../common/CloseButton'
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { suggestedDeposit, type AdminOrderRow } from '../../services/ordersService'
@@ -109,23 +111,23 @@ const OrderActionDialog: React.FC<Props> = ({
     return `${d.getMonth() + 1} 月 ${d.getDate()} 日`
   })()
   const field =
-    'bg-black border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none w-full'
+    'bg-black border border-gray-mid rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none w-full'
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] max-w-lg w-full mx-4 rounded-2xl"
+        className="relative bg-gray-darker border border-gray-mid max-w-lg w-full mx-4 rounded-2xl"
         onClick={e => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
+        <CloseButton onClick={onCancel} className="absolute top-6 right-6" />
         {/* 標題區 */}
-        <div className="px-6 pt-6">
+        <div className="px-6 pt-6 pr-14">
           <h2 className="text-sm text-white font-normal">{title}</h2>
-          <p className="font-english text-xs text-gray-scale2 mt-1">
+          <p className="font-english text-xs text-gray-light mt-1">
             {order.rental_number} · <span className="font-chinese">{order.students?.name ?? '—'}</span>
             {' '}· NT$ {order.deposit_total.toLocaleString()}
           </p>
@@ -145,7 +147,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 代客延期：天數輸入＋新歸還日預覽（不受僅乙次／前三天限制；撞期照擋） */}
           {mode === 'extend' && (
             <div>
-              <label className="text-gray-scale2 text-tiny block mb-2">
+              <label className="text-gray-light text-tiny block mb-2">
                 延期天數（1-7，更長分次延）
               </label>
               <input
@@ -156,7 +158,7 @@ const OrderActionDialog: React.FC<Props> = ({
                 onChange={e => setDays(e.target.value)}
                 className={`${field} font-english`}
               />
-              <p className="text-tiny text-gray-scale2 font-chinese mt-2">
+              <p className="text-tiny text-gray-light font-chinese mt-2">
                 原歸還日 <span className="font-english">{order.end_date}</span>
                 {newEndDate && <>，延期後為 <span className="font-english">{newEndDate}</span></>}
                 {order.status === 'overdue' && '；逾期單延期後將回到「租借中」。'}
@@ -167,7 +169,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 收押金（大量設備有預選時段）：顯示學生預約的時段＋是否同時取件 */}
           {mode === 'paid' && hasPickupSlot && (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-gray-scale2 font-chinese">
+              <p className="text-xs text-gray-light font-chinese">
                 學生預約：繳押金 {order.deposit_date && order.deposit_slot
                   ? slotLabel({ date: order.deposit_date, slot: order.deposit_slot }) : '—'}
                 ；取件 {slotLabel({ date: order.start_date, slot: order.pickup_slot! })}
@@ -195,9 +197,9 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 點交：學生取件後新增、尚未交付的設備 */}
           {mode === 'handover' && (
             <div className="text-xs text-white font-chinese">
-              <p className="text-gray-scale2 mb-2">學生取件後新增的設備，交付後按確認：</p>
+              <p className="text-gray-light mb-2">學生取件後新增的設備，交付後按確認：</p>
               {pendingItems.map(i => (
-                <div key={i.id}>{i.name} <span className="font-english text-gray-scale2">×{i.quantity}</span></div>
+                <div key={i.id}>{i.name} <span className="font-english text-gray-light">×{i.quantity}</span></div>
               ))}
             </div>
           )}
@@ -205,7 +207,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 押金（現場計算，系統只記錄）：預填最新品項的建議值，可修改 */}
           {needDeposit && (
             <div>
-              <label className="text-gray-scale2 text-xs block mb-2">
+              <label className="text-gray-light text-xs block mb-2">
                 押金總額（現場計算後填入）
               </label>
               <input
@@ -215,7 +217,7 @@ const OrderActionDialog: React.FC<Props> = ({
                 onChange={e => setDeposit(e.target.value)}
                 className={`${field} font-english`}
               />
-              <p className="text-xs text-gray-scale2 font-chinese mt-2">
+              <p className="text-xs text-gray-light font-chinese mt-2">
                 目前已收 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>
                 ，依最新品項建議 <span className="font-english">NT$ {suggested.toLocaleString()}</span>
                 {depositValid && depositNum !== order.deposit_total && (
@@ -236,11 +238,11 @@ const OrderActionDialog: React.FC<Props> = ({
 
           {/* 值班經手人 */}
           <div>
-            <label className="text-gray-scale2 text-xs block mb-2">
+            <label className="text-gray-light text-xs block mb-2">
               值班經手人
             </label>
             {staff.length === 0 ? (
-              <p className="text-xs font-chinese" style={{ color: 'var(--color-error2)' }}>
+              <p className="text-xs font-chinese" style={{ color: 'var(--color-error)' }}>
                 尚無系學會成員，請先到「會員管理 Members」把幹部的身分設為系學會
               </p>
             ) : (
@@ -261,7 +263,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 歸還品項勾選（情境 5-①）：預設全勾＝整單歸還；部分勾＝未還品項拆子單續租 */}
           {mode === 'return' && (
             <div>
-              <label className="text-gray-scale2 text-xs block mb-2">
+              <label className="text-gray-light text-xs block mb-2">
                 已歸還品項（未勾選者拆為子單繼續租借）
               </label>
               <div className="flex flex-col gap-2">
@@ -274,12 +276,12 @@ const OrderActionDialog: React.FC<Props> = ({
                       onChange={() => toggleReturnItem(item.id)}
                     />
                     <span className="font-chinese">{item.name}</span>
-                    {item.quantity > 1 && <span className="font-english text-gray-scale2">×{item.quantity}</span>}
+                    {item.quantity > 1 && <span className="font-english text-gray-light">×{item.quantity}</span>}
                   </label>
                 ))}
               </div>
               {isPartialReturn && (
-                <p className="text-xs text-gray-scale2 font-chinese mt-2">
+                <p className="text-xs text-gray-light font-chinese mt-2">
                   部分歸還：未勾選品項將拆為子單（歸還日不變），續走逾期／延期／罰款流程。
                 </p>
               )}
@@ -289,7 +291,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 已標逾期的單：下拉區分準時歸還（免罰）／逾期歸還（計罰款）——情境 6 定案 2026-09-26 */}
           {isOverdue && (
             <div>
-              <label className="text-gray-scale2 text-xs block mb-2">
+              <label className="text-gray-light text-xs block mb-2">
                 歸還認定
               </label>
               <Select<'late' | 'ontime'>
@@ -307,7 +309,7 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 罰款金額（僅認定為逾期歸還時） */}
           {chargePenalty && (
             <div>
-              <label className="text-gray-scale2 text-xs block mb-2">
+              <label className="text-gray-light text-xs block mb-2">
                 罰款金額
                 <span className="font-chinese ml-2">
                   （系統試算 NT$ {estPenalty.toLocaleString()}，可修改）
@@ -335,18 +337,18 @@ const OrderActionDialog: React.FC<Props> = ({
             </div>
           )}
           {mode === 'return' && !isOverdue && (
-            <p className="text-xs text-gray-scale2 font-chinese">準時歸還，無罰款。</p>
+            <p className="text-xs text-gray-light font-chinese">準時歸還，無罰款。</p>
           )}
         </div>
 
         {/* 橫線 */}
         <div className="px-6">
-          <div className="border-t border-[#545454]"></div>
+          <div className="border-t border-gray-mid"></div>
         </div>
 
         {/* 按鈕區 */}
         <div className="px-6 py-4 flex justify-end gap-6">
-          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white cursor-pointer">
+          <button onClick={onCancel} className={`text-gray-light ${BTN}`}>
             <span className="text-xs">取消</span>
           </button>
           <button
@@ -363,9 +365,7 @@ const OrderActionDialog: React.FC<Props> = ({
               )
             }
             disabled={!canConfirm}
-            className={`${
-              canConfirm ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
-            }`}
+            className={`text-white ${BTN}`}
           >
             <span className="text-xs">確認</span>
           </button>

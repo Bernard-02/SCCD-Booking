@@ -10,8 +10,11 @@ import type { Receipt } from './OrderDetail'
 import { useBundles } from '../../services/equipmentService'
 import { splitIntoSets } from '../../utils/bundleUtils'
 
-const bookingTypeLabel = (type?: string) =>
-  type === 'mass-personal' || type === 'mass-group' ? 'Mass - 大量' : 'Light - 小量'
+// 設備＝小量／大量；空間單 'little'＝個人、'mass-group'＝團體
+const bookingTypeLabel = (type?: string, isEquip = true) =>
+  isEquip
+    ? (type === 'mass-personal' || type === 'mass-group' ? 'Mass - 大量' : 'Light - 小量')
+    : (type === 'mass-group' ? 'Group - 團體' : 'Personal - 個人')
 
 const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ receipt }, ref) => {
   const spaceItems = receipt.items.filter(i => i.category !== 'equipment')
@@ -21,18 +24,17 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
   return (
     <div
       ref={ref}
-      className="w-[210mm] min-h-[297mm] bg-white text-black p-8 box-border flex flex-col"
-      style={{ fontFamily: 'Inter, Noto Sans TC, sans-serif' }}
+      className="font-chinese w-[210mm] min-h-[297mm] bg-white text-black p-8 box-border flex flex-col"
     >
       {/* A. Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-lg font-bold mb-1">SCCDSA Booking</h1>
+          <h1 className="font-english text-lg font-bold mb-1">SCCDSA Booking</h1>
           <p className="text-lg font-bold">實踐媒傳系學會借用系統</p>
         </div>
         <div className="text-right">
           <h2 className="text-xl font-bold mb-1">Receipt 收據</h2>
-          <p className="text-lg font-bold">{receipt.rentalNumber}</p>
+          <p className="font-english text-lg font-bold">{receipt.rentalNumber}</p>
         </div>
       </div>
 
@@ -40,17 +42,17 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div>
           <p className="text-xs text-black mb-1 font-bold">Order Time 送出時間</p>
-          <p className="text-sm font-bold">{formatOrderTime(receipt.createdAt)}</p>
+          <p className="font-english text-sm font-bold">{formatOrderTime(receipt.createdAt)}</p>
           {receipt.itemsUpdatedAt && (
             <>
               <p className="text-xs text-black mb-1 mt-2 font-bold">Updated 最後修改</p>
-              <p className="text-sm font-bold">{formatOrderTime(receipt.itemsUpdatedAt)}</p>
+              <p className="font-english text-sm font-bold">{formatOrderTime(receipt.itemsUpdatedAt)}</p>
             </>
           )}
         </div>
         <div>
           <p className="text-xs text-black mb-1 font-bold">Booking Date 使用日期</p>
-          <p className="text-sm font-bold">{formatDateRange(receipt.rentalDates)}</p>
+          <p className="font-english text-sm font-bold">{formatDateRange(receipt.rentalDates)}</p>
         </div>
         <div className="flex flex-col items-center">
           <div className="text-left w-fit">
@@ -64,7 +66,7 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div>
           <p className="text-xs text-black mb-1 font-bold">Order Type 訂單種類</p>
-          <p className="text-sm font-bold">{bookingTypeLabel(receipt.items[0]?.bookingType)}</p>
+          <p className="text-sm font-bold">{bookingTypeLabel(receipt.items[0]?.bookingType, receipt.items[0]?.category === 'equipment')}</p>
         </div>
         <div>
           <p className="text-xs text-black mb-1 font-bold">Reason 使用原因</p>
@@ -77,9 +79,9 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
         <table className="w-full border-collapse mb-4">
           <thead>
             <tr>
-              <th className="w-[60%] border-b border-[#7c7c7c]"><div className="text-left pt-2 pb-4 font-bold">Item 項目</div></th>
-              <th className="w-[20%] border-b border-[#7c7c7c]"><div className="text-left pt-2 pb-4 font-bold">Qty 數量</div></th>
-              <th className="w-[20%] border-b border-[#7c7c7c]"><div className="text-left pt-2 pb-4 font-bold">Deposit 押金</div></th>
+              <th className="w-[60%] border-b border-gray-mid"><div className="text-left pt-2 pb-4 font-bold">Item 項目</div></th>
+              <th className="w-[20%] border-b border-gray-mid"><div className="text-left pt-2 pb-4 font-bold">Qty 數量</div></th>
+              <th className="w-[20%] border-b border-gray-mid"><div className="text-left pt-2 pb-4 font-bold">Deposit 押金</div></th>
             </tr>
           </thead>
           <tbody>
@@ -88,9 +90,9 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
             )}
             {spaceItems.map((item, idx) => (
               <tr key={`space-${idx}`}>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4">{item.name}</div></td>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4 text-left">{item.quantity || 1}</div></td>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4 text-left">NT$ {item.deposit.toLocaleString()}</div></td>
+                <td className="border-b border-gray-mid"><div className="pt-2 pb-4">{item.name}</div></td>
+                <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">{item.quantity || 1}</div></td>
+                <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">NT$ {item.deposit.toLocaleString()}</div></td>
               </tr>
             ))}
             {equipmentItems.length > 0 && (
@@ -99,26 +101,26 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
             {/* 湊成的組合一列（押金以組計），其餘單件照列 */}
             {equipmentSets.sets.map(({ bundle, count }) => (
               <tr key={bundle.id}>
-                <td className="border-b border-[#7c7c7c]">
+                <td className="border-b border-gray-mid">
                   <div className="pt-2 pb-4">
                     Set 組合：{bundle.name}（
                     {bundle.items.map(c => `${equipmentItems.find(i => i.id === c.equipmentId)?.name ?? ''} ×${c.quantity * count}`).join('、')}）
                   </div>
                 </td>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4 text-left">{count}</div></td>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4 text-left">NT$ {(bundle.deposit * count).toLocaleString()}</div></td>
+                <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">{count}</div></td>
+                <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">NT$ {(bundle.deposit * count).toLocaleString()}</div></td>
               </tr>
             ))}
             {equipmentSets.loose.map((item, idx) => (
               <tr key={`equip-${idx}`}>
-                <td className="border-b border-[#7c7c7c]">
+                <td className="border-b border-gray-mid">
                   <div className="pt-2 pb-4">
                     {item.name}
                     {item.pickupPending ? '（待點交）' : item.changedAt ? '（已更動）' : ''}
                   </div>
                 </td>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4 text-left">{item.quantity || 1}</div></td>
-                <td className="border-b border-[#7c7c7c]"><div className="pt-2 pb-4 text-left">NT$ {(item.deposit * (item.quantity || 1)).toLocaleString()}</div></td>
+                <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">{item.quantity || 1}</div></td>
+                <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">NT$ {(item.deposit * (item.quantity || 1)).toLocaleString()}</div></td>
               </tr>
             ))}
           </tbody>
@@ -126,7 +128,7 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
             <tr>
               <td className="pt-6"></td>
               <td className="pt-6 text-left font-bold">Total 總押金</td>
-              <td className="pt-6 text-left font-normal">NT$ {receipt.totalDeposit.toLocaleString()}</td>
+              <td className="font-english pt-6 text-left font-normal">NT$ {receipt.totalDeposit.toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
@@ -139,21 +141,21 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
             <h3 className="font-bold mb-2 text-xs">User Guide 使用說明</h3>
             <div className="text-xs space-y-1 text-black">
               <div className="flex gap-2">
-                <span className="flex-shrink-0">1.</span>
+                <span className="font-english flex-shrink-0">1.</span>
                 <span>Please bring this receipt to the SA during business hours to pay the deposit. 請於營業時間內持本收據至系學會繳交押金。</span>
               </div>
               <div className="flex gap-2">
-                <span className="flex-shrink-0">2.</span>
+                <span className="font-english flex-shrink-0">2.</span>
                 <span>Cash payments only. No change given. 僅接受現金，恕不找零。</span>
               </div>
               <div className="flex gap-2">
-                <span className="flex-shrink-0">3.</span>
+                <span className="font-english flex-shrink-0">3.</span>
                 <span>On the return date, please present this receipt to retrieve your deposit. 歸還時請出示本收據以退還押金。</span>
               </div>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs font-normal">page 1/1</p>
+            <p className="font-english text-xs font-normal">page 1/1</p>
           </div>
         </div>
       </div>

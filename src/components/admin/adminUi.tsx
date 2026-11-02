@@ -4,6 +4,8 @@
  * 改狀態語彙時兩邊要一起動。
  */
 
+import { BTN, BTN_OUTLINE, CHIP } from '@/components/common/btn'
+import CloseButton from '../common/CloseButton'
 import React, { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
@@ -14,12 +16,12 @@ import type { OrderStatus, OrderRow } from '../../services/ordersService'
 export const itemsSummary = (o: Pick<OrderRow, 'order_items'>) =>
   o.order_items.map(i => `${i.name}${i.item_type === 'equipment' ? ` ×${i.quantity}` : ''}`).join('\n')
 
-export const STATUS_META: Record<OrderStatus, { zh: string; color: string; textColor: string }> = {
-  pending: { zh: '待銷單', color: 'var(--color-yellow)', textColor: 'black' },
-  'in-progress': { zh: '使用中', color: 'var(--color-blue)', textColor: 'white' },
-  overdue: { zh: '未完成歸還', color: 'var(--color-error2)', textColor: 'white' },
-  returned: { zh: '已歸還', color: 'var(--color-success)', textColor: 'white' },
-  canceled: { zh: '已取消', color: 'var(--color-gray-scale3)', textColor: 'white' }
+export const STATUS_META: Record<OrderStatus, { zh: string; color: string }> = {
+  pending: { zh: '待銷單', color: 'var(--color-yellow)' },
+  'in-progress': { zh: '使用中', color: 'var(--color-cyan)' },
+  overdue: { zh: '未完成歸還', color: 'var(--color-error)' },
+  returned: { zh: '已歸還', color: 'var(--color-green)' },
+  canceled: { zh: '已取消', color: 'var(--color-gray-light)' }
 }
 
 export const BOOKING_TYPE_META: Record<string, { zh: string }> = {
@@ -50,7 +52,7 @@ export const orderKindMeta = (o: Pick<OrderRow, 'booking_type' | 'order_items'>)
  * 大量設備已預繳押金、尚未取件：status 仍是 pending（佔用規則不變），以 deposit_paid_at 區分（mass-pickup.sql）。
  * 顯示成獨立的「待取件」標籤；前台 Profile 同一份用字與顏色（en 給前台英文版用）。
  */
-export const AWAITING_PICKUP_META = { en: 'Paid', zh: '待取件', color: 'var(--color-cyan-blue)', textColor: 'black' }
+export const AWAITING_PICKUP_META = { en: 'Paid', zh: '待取件', color: 'var(--color-orange)' }
 export const isAwaitingPickup = (o: Pick<OrderRow, 'status' | 'deposit_paid_at'>) =>
   o.status === 'pending' && !!o.deposit_paid_at
 /** 已預繳但起租日（＝取件日）已過仍未取件 → 後台提醒，學會手動處理 */
@@ -61,37 +63,26 @@ export const isPickupLate = (o: Pick<OrderRow, 'status' | 'deposit_paid_at' | 's
 export const StatusChip: React.FC<{ status: OrderStatus; awaitingPickup?: boolean }> = ({ status, awaitingPickup }) => {
   const meta = awaitingPickup ? AWAITING_PICKUP_META : STATUS_META[status]
   return (
-    <span
-      className="px-2.5 py-0.5 inline-flex items-center justify-center rounded-lg border border-transparent"
-      style={{ backgroundColor: meta.color }}
-    >
-      {/* 比表格內文小一號（12px）：有底色的標籤視覺上會顯大，同字級反而搶版面 */}
-      <span className="text-[0.75rem] whitespace-nowrap" style={{ color: meta.textColor }}>
-        {meta.zh}
-      </span>
+    <span className={`${CHIP} text-black`} style={{ backgroundColor: meta.color }}>
+      {meta.zh}
     </span>
   )
 }
 
-/** 動作按鈕樣式（Profile 的 Extend 延期按鈕） */
-export const actionBtn = (enabled = true) =>
-  `px-3 py-1 inline-flex items-center justify-center border rounded-lg text-xs whitespace-nowrap ${
-    enabled
-      ? 'border-white text-white hover:bg-white hover:text-black cursor-pointer'
-      : 'border-gray-scale3 text-gray-scale3 cursor-not-allowed'
-  }`
+/** 線框動作鈕（訂單頁收押金／歸還、重試）：停用靠 disabled 屬性（BTN 20%） */
+export const actionBtn = `px-3 py-1 inline-flex items-center justify-center rounded-lg text-xs whitespace-nowrap ${BTN_OUTLINE}`
 
 /** 表單輸入框樣式（深色透明底＋聚焦白框） */
 export const inputCls =
-  'bg-transparent border border-gray-scale4 rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none'
+  'bg-transparent border border-gray-mid rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none'
 
-// ---- 工具列（訂單／設備管理等清單頁共用，2026-10-24 定）：預設灰底白字、active（展開中／有生效篩選／選中分頁）＝白底黑字 ----
+// ---- 工具列（訂單／設備管理等清單頁共用，2026-10-24 定）：預設 gray-dark 底白字（同前台 BTN_TOOL）、active（展開中／有生效篩選／選中分頁）＝白底黑字 ----
 export const toolBtn = (active: boolean) =>
-  `h-9 rounded-lg text-xs whitespace-nowrap cursor-pointer ${active ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'}`
+  `h-9 rounded-lg text-xs whitespace-nowrap ${active ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white ${BTN}`}`
 // icon＋文字：icon 側 padding 少 4px
 export const textBtn = (active: boolean) => `${toolBtn(active)} inline-flex items-center pl-2 pr-3 gap-1.5 font-chinese`
 // 列內的 icon 動作鈕（修改等）：白底黑 icon 方形（同前台的白色按鈕，hover 變淡）
-export const iconFillBtn = 'w-9 h-9 inline-flex items-center justify-center rounded-lg bg-white text-black hover:opacity-70 cursor-pointer'
+export const iconFillBtn = `w-9 h-9 inline-flex items-center justify-center rounded-lg bg-white text-black ${BTN}`
 
 /** iOS 式開關：on 綠底、off 灰底，白色圓鈕滑動（非 hover 動畫，可以有 transition）；busy 時半透明不可點 */
 export const Switch: React.FC<{ checked: boolean; onChange: () => void; busy?: boolean; label: string }> = ({
@@ -105,8 +96,8 @@ export const Switch: React.FC<{ checked: boolean; onChange: () => void; busy?: b
     title={label}
     disabled={busy}
     onClick={onChange}
-    className="relative inline-flex w-11 h-6 shrink-0 rounded-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-    style={{ backgroundColor: checked ? '#34c759' : 'var(--color-gray-scale4)' }} // on＝iOS 系統綠（--color-success 太亮）
+    className="relative inline-flex w-11 h-6 shrink-0 rounded-full cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
+    style={{ backgroundColor: checked ? 'color-mix(in srgb, var(--color-green) 50%, transparent)' : 'var(--color-gray-dark)' }} // on＝iOS 系統綠（--color-success 太亮）
   >
     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${checked ? 'translate-x-5' : ''}`} />
   </button>
@@ -127,7 +118,7 @@ export const NumberInput: React.FC<{
       tabIndex={-1}
       aria-label={label}
       onClick={() => onChange(clamp(value + delta))}
-      className="flex-1 flex items-center justify-center text-gray-scale2 hover:!text-white cursor-pointer"
+      className={`flex-1 flex items-center justify-center text-gray-light ${BTN}`}
     >
       <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{icon}</span>
     </button>
@@ -157,7 +148,7 @@ export const SearchBox: React.FC<{ value: string; onChange: (v: string) => void;
 }) => (
   <label className={`relative ${className}`}>
     <span
-      className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-scale2"
+      className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-light"
       style={{ fontSize: '20px' }}
       aria-hidden="true"
     >search</span>
@@ -167,7 +158,7 @@ export const SearchBox: React.FC<{ value: string; onChange: (v: string) => void;
       onChange={e => onChange(e.target.value)}
       onKeyDown={e => { if (e.key === 'Escape') onChange('') }}
       placeholder={placeholder}
-      className="h-9 w-full pl-9 pr-3 rounded-lg bg-white/10 focus:bg-white/15 text-xs text-white placeholder:text-gray-scale2 outline-none font-chinese"
+      className="h-9 w-full pl-9 pr-3 rounded-lg bg-gray-dark focus:bg-gray-mid text-xs text-white placeholder:text-gray-light outline-none font-chinese"
     />
   </label>
 )
@@ -193,7 +184,7 @@ export function CountTabs<K extends string>({ tabs, value, counts, onChange }: {
           >
             {t.zh}
             <span className={`min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english font-normal ${
-              active ? 'bg-black/10' : 'bg-white/10 opacity-70'
+              active ? 'bg-gray-light' : 'bg-white/10 opacity-70'
             }`}>
               {counts[t.key] ?? 0}
             </span>
@@ -206,7 +197,7 @@ export function CountTabs<K extends string>({ tabs, value, counts, onChange }: {
 
 // ---- 清單表格（訂單／設備管理共用）：表頭固定在捲動區頂端，無底色、有底線；bg-black 只是讓捲上來的列不透出來。
 // 表格用 border-collapse: separate、分隔線畫在每個儲存格上（separate 模式 <tr> 的 border 不會畫），表頭底線也跟著 sticky 走 ----
-export const tableRowLine = 'border-b border-gray-scale4'
+export const tableRowLine = 'border-b border-gray-mid'
 const rowLine = tableRowLine
 export const tableTh = `px-3 py-3 font-normal whitespace-nowrap sticky top-0 z-10 bg-black ${rowLine}`
 export const tableTd = `px-3 py-3 whitespace-nowrap ${rowLine}`
@@ -216,9 +207,9 @@ export const Thumb: React.FC<{ src: string | null; alt: string; icon: string }> 
   const [broken, setBroken] = useState(false)
   useEffect(() => { setBroken(false) }, [src])
   return src && !broken ? (
-    <img src={src} alt={alt} loading="lazy" onError={() => setBroken(true)} className="w-10 h-10 object-cover rounded-md shrink-0" />
+    <img src={src} alt={alt} loading="lazy" onError={() => setBroken(true)} className="w-10 h-10 object-cover rounded-lg shrink-0" />
   ) : (
-    <span className="w-10 h-10 rounded-md bg-white/10 shrink-0 flex items-center justify-center text-gray-scale2" aria-hidden="true">
+    <span className="w-10 h-10 rounded-lg bg-gray-darker shrink-0 flex items-center justify-center text-gray-light" aria-hidden="true">
       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
     </span>
   )
@@ -271,7 +262,7 @@ export const SelectControls: React.FC<{
   actions: { zh: string; onClick: () => void }[]
 }> = ({ mode, count, onEnter, onExit, actions }) => mode ? (
   <div className="flex items-center gap-2">
-    <span className="text-xs text-gray-scale2 font-chinese mr-1">
+    <span className="text-xs text-gray-light font-chinese mr-1">
       已選 <span className="font-english text-white">{count}</span>
     </span>
     {actions.map(a => (
@@ -279,7 +270,7 @@ export const SelectControls: React.FC<{
         key={a.zh}
         onClick={a.onClick}
         disabled={count === 0}
-        className={`${toolBtn(false)} px-3 font-chinese disabled:opacity-40 disabled:cursor-not-allowed`}
+        className={`${toolBtn(false)} px-3 font-chinese`}
       >
         {a.zh}
       </button>
@@ -320,27 +311,27 @@ export const FormDialog: React.FC<{
   const ok = canConfirm && !busy
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       <div
-        className={`bg-[#151515] border border-[#545454] ${wide ? 'max-w-2xl' : 'max-w-lg'} w-full mx-4 rounded-2xl`}
+        className={`relative bg-gray-darker border border-gray-mid ${wide ? 'max-w-2xl' : 'max-w-lg'} w-full mx-4 rounded-2xl`}
         onClick={e => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
-        <div className="px-6 pt-6">
+        <CloseButton onClick={onCancel} className="absolute top-6 right-6" />
+        <div className="px-6 pt-6 pr-14">
           <h2 className="text-sm text-white font-normal">{title}</h2>
-          {subtitle && <p className="text-xs text-gray-scale2 mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-gray-light mt-1">{subtitle}</p>}
         </div>
         <div className="px-6 py-5 flex flex-col gap-4">{children}</div>
-        <div className="px-6"><div className="border-t border-[#545454]" /></div>
+        <div className="px-6"><div className="border-t border-gray-mid" /></div>
         <div className="px-6 py-4 flex justify-end gap-6 text-xs">
-          <button onClick={onCancel} className="text-gray-scale2 hover:!text-white cursor-pointer">取消</button>
+          <button onClick={onCancel} className={`text-gray-light ${BTN}`}>取消</button>
           <button
             onClick={() => ok && onConfirm()}
             disabled={!ok}
-            className={ok ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'}
+            className={`text-white ${BTN}`}
           >
             {busy ? '處理中…' : confirmZh}
           </button>
@@ -354,9 +345,9 @@ export const FormDialog: React.FC<{
 /** 對話框內的欄位：灰字標籤（必填加紅星）＋下方輸入元件 */
 export const Field: React.FC<{ zh: string; required?: boolean; children: React.ReactNode }> = ({ zh, required, children }) => (
   <label className="flex flex-col gap-1.5">
-    <span className="text-xs text-gray-scale2 font-chinese">
+    <span className="text-xs text-gray-light font-chinese">
       {zh}
-      {required && <span className="ml-1" style={{ color: 'var(--color-error2)' }}>*</span>}
+      {required && <span className="ml-1" style={{ color: 'var(--color-error)' }}>*</span>}
     </span>
     {children}
   </label>
@@ -374,15 +365,21 @@ export const Field: React.FC<{ zh: string; required?: boolean; children: React.R
 export interface SelectOption<V> { value: V; label: React.ReactNode; disabled?: boolean; group?: string }
 
 export function Select<V extends string | number>({
-  value, options, onChange, placeholder = '請選擇', disabled, icon, filled, searchable, className = '', 'aria-label': ariaLabel
+  value, options, onChange, placeholder = '請選擇', disabled, icon, filled, searchable,
+  searchPlaceholder = '搜尋', emptyText = '找不到符合的項目', className = '', size = 'sm', 'aria-label': ariaLabel
 }: {
   value: V
+  /** xs＝卡片列裡的小下拉（設備卡「單個／整組」）：高 28、12px 字；預設 sm＝高 36、14px 字（同輸入框） */
+  size?: 'xs' | 'sm'
   /** 顯示在選中文字左邊的 Material icon（工具列篩選用，如 category） */
   icon?: string
-  /** 工具列樣式：灰底無框，展開＝白底黑字（同狀態分頁的選中膠囊）；預設是表單用的黑底灰框 */
+  /** 工具列樣式：灰底無框，展開＝白底黑字（同狀態分頁的選中膠囊）；預設是表單用的透明底灰框（跟著容器底色：對話框 gray-darker、頁面黑） */
   filled?: boolean
   /** 清單頂端放搜尋框過濾選項 */
   searchable?: boolean
+  /** 搜尋框提示／沒有符合時的文字（前台用 t() 傳英文；後台用預設中文） */
+  searchPlaceholder?: string
+  emptyText?: string
   options: SelectOption<V>[]
   onChange: (value: V) => void
   placeholder?: string
@@ -479,17 +476,20 @@ export function Select<V extends string | number>({
         aria-controls={open ? listId : undefined}
         aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
         aria-label={ariaLabel}
-        className={`relative inline-flex items-center h-9 ${icon ? 'pl-2 gap-1.5' : 'pl-3'} pr-9 rounded-lg text-xs text-left outline-none whitespace-nowrap ${
+        className={`relative inline-flex items-center ${size === 'xs' ? 'h-7 text-2xs pr-7' : 'h-9 text-xs pr-9'} ${
+          icon ? 'pl-2 gap-1.5' : size === 'xs' ? 'pl-2' : 'pl-3'
+        } rounded-lg text-left outline-none whitespace-nowrap ${
           filled
-            ? open ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15 focus-visible:bg-white/15'
-            : `bg-black border text-white ${open ? 'border-white' : 'border-gray-scale4 focus-visible:border-white'}`
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${className}`}
+            ? open ? 'bg-white text-black' : `bg-gray-dark text-white focus-visible:bg-gray-mid ${BTN}`
+            : `bg-transparent border text-white ${open ? 'border-white' : 'border-gray-mid focus-visible:border-white'}`
+        } ${open ? 'cursor-pointer' : BTN} ${className}`}
       >
         {icon && <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">{icon}</span>}
-        <span className={`min-w-0 truncate ${selected ? '' : 'text-gray-scale2'}`}>{selected?.label ?? placeholder}</span>
+        {/* placeholder 灰字；filled 展開中是白底，placeholder 跟著黑（如營業時間的「新增」） */}
+        <span className={`min-w-0 truncate ${selected ? '' : open && filled ? 'text-black' : 'text-gray-light'}`}>{selected?.label ?? placeholder}</span>
         <span
-          className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-70"
-          style={{ fontSize: '18px' }}
+          className={`material-symbols-outlined absolute ${size === 'xs' ? 'right-1.5' : 'right-2.5'} top-1/2 -translate-y-1/2 pointer-events-none opacity-70`}
+          style={{ fontSize: size === 'xs' ? '16px' : '18px' }}
           aria-hidden="true"
         >expand_more</span>
       </button>
@@ -499,15 +499,15 @@ export function Select<V extends string | number>({
           id={listId}
           role="listbox"
           style={pos}
-          className={`fixed z-[10000] max-h-80 overflow-y-auto p-1 ${searchable ? 'pt-0' : ''} bg-[#151515] border border-[#545454] rounded-lg text-xs`}
+          className={`fixed z-[10000] max-h-80 overflow-y-auto p-1 ${searchable ? 'pt-0' : ''} bg-gray-darker border border-gray-mid rounded-lg text-xs`}
         >
           {searchable && (
             // sticky：清單捲動時搜尋框留在頂端。清單的上內距改由這列的 pt-1 補（清單 pt-0），列才從 0 開始、
             // 底色蓋得住捲過去的選項（sticky 用負邊距會留縫）；pb-1 與下方選項隔開。外觀同 SearchBox；空白鍵不交給 onKeyDown（那會當成選取）
-            <li role="presentation" className="sticky top-0 z-10 bg-[#151515] pt-1 pb-1">
+            <li role="presentation" className="sticky top-0 z-10 bg-gray-darker pt-1 pb-1">
               <label className="relative block">
                 <span
-                  className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-scale2"
+                  className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-light"
                   style={{ fontSize: '20px' }}
                   aria-hidden="true"
                 >search</span>
@@ -517,21 +517,21 @@ export function Select<V extends string | number>({
                   autoFocus
                   onChange={e => { setQuery(e.target.value); setActive(0) }}
                   onKeyDown={e => { if (e.key !== ' ') onKeyDown(e) }}
-                  placeholder="搜尋"
+                  placeholder={searchPlaceholder}
                   aria-controls={listId}
                   aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
-                  className="h-9 w-full pl-9 pr-3 rounded-lg bg-white/10 focus:bg-white/15 text-xs text-white placeholder:text-gray-scale2 outline-none font-chinese"
+                  className="h-9 w-full pl-9 pr-3 rounded-lg bg-gray-dark focus:bg-gray-mid text-xs text-white placeholder:text-gray-light outline-none font-chinese"
                 />
               </label>
             </li>
           )}
           {searchable && shown.length === 0 && (
-            <li role="presentation" className="px-3 py-2 text-gray-scale2 font-chinese">找不到符合的項目</li>
+            <li role="presentation" className="px-3 py-2 text-gray-light">{emptyText}</li>
           )}
           {shown.map((o, i) => (
             <React.Fragment key={`${o.group ?? ''}-${o.value}`}>
               {o.group && o.group !== shown[i - 1]?.group && (
-                <li role="presentation" className="px-3 pt-2 pb-1 text-2xs text-gray-scale3">{o.group}</li>
+                <li role="presentation" className="px-3 pt-2 pb-1 text-2xs text-gray-mid">{o.group}</li>
               )}
               <li
                 id={`${listId}-${i}`}
@@ -543,7 +543,7 @@ export function Select<V extends string | number>({
                 onMouseDown={e => e.preventDefault()} // 不搶走觸發鈕的焦點
                 onClick={() => choose(o)}
                 className={`flex items-center justify-between gap-6 pl-3 pr-2 py-2 rounded-lg whitespace-nowrap ${
-                  o.disabled ? 'text-gray-scale3 cursor-not-allowed' : 'text-white cursor-pointer'
+                  o.disabled ? 'text-white opacity-20 cursor-not-allowed' : 'text-white cursor-pointer'
                 } ${i === active ? 'bg-white/10' : ''}`}
               >
                 <span>{o.label}</span>
@@ -573,7 +573,7 @@ const parseKey = (k: string) => {
 }
 const fmtKey = (k: string) => k.replace(/-/g, '/')
 const FAR_PAST = new Date(2020, 0, 1) // 篩過去的訂單，不受前台「今天以後」的限制
-const popoverCls = 'absolute left-0 right-0 top-full mt-1 z-20 p-4 bg-[#151515] border border-[#545454] rounded-lg'
+const popoverCls = 'absolute left-0 right-0 top-full mt-1 z-20 p-4 bg-gray-darker border border-gray-mid rounded-lg'
 
 // 點外面／Esc 收起（Esc 不往外傳，開在對話框裡不會連對話框一起關）
 const useCloseOnOutside = (open: boolean, setOpen: (v: boolean) => void, ref: React.RefObject<HTMLElement>) => {
@@ -599,10 +599,10 @@ const DateTrigger: React.FC<{ value: string; placeholder: string; open: boolean;
     aria-haspopup="dialog"
     aria-expanded={open}
     className={`relative inline-flex items-center h-9 pl-3 pr-9 rounded-lg text-xs text-left outline-none cursor-pointer ${
-      open ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15 focus-visible:bg-white/15'
+      open ? 'bg-white text-black' : `bg-gray-dark text-white focus-visible:bg-gray-mid ${BTN}`
     } ${className}`}
   >
-    <span className={value ? 'font-english' : 'text-gray-scale2 font-chinese'}>{value ? fmtKey(value) : placeholder}</span>
+    <span className={value ? 'font-english' : 'text-gray-light font-chinese'}>{value ? fmtKey(value) : placeholder}</span>
     <span
       className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-70"
       style={{ fontSize: '18px' }}
@@ -620,7 +620,7 @@ export const DatePicker: React.FC<{ value: string; onChange: (v: string) => void
   const d = value ? parseKey(value) : null
   // 兩顆按鈕（同後台工具列：灰底無框、hover 稍亮；展開中＝白底黑字）：左＝月曆 icon、右＝日期；點哪顆都開同一個月曆
   const btnCls = `h-9 inline-flex items-center rounded-lg text-xs outline-none cursor-pointer ${
-    open ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'
+    open ? 'bg-white text-black' : `bg-gray-dark text-white ${BTN}`
   }`
   const toggle = () => setOpen(v => !v)
   return (
@@ -661,7 +661,7 @@ export const DateRangePicker: React.FC<{
   return (
     <div ref={ref} className="relative inline-flex items-center gap-2">
       <DateTrigger value={from} placeholder="開始" open={open} onClick={toggle} className="w-36" />
-      <span className="text-gray-scale3">–</span>
+      <span className="text-gray-mid">–</span>
       <DateTrigger value={to} placeholder="結束" open={open} onClick={toggle} className="w-36" />
       {open && (
         <div role="dialog" className={popoverCls}>
@@ -677,9 +677,9 @@ export const DateRangePicker: React.FC<{
           <div className="mt-3 flex justify-end gap-6 text-xs font-chinese">
             <button
               onClick={() => onChange({ from: '', to: '' })}
-              className="text-gray-scale2 hover:!text-white cursor-pointer"
+              className={`text-gray-light ${BTN}`}
             >清除</button>
-            <button onClick={() => setOpen(false)} className="text-white hover:opacity-70 cursor-pointer">完成</button>
+            <button onClick={() => setOpen(false)} className={`text-white ${BTN}`}>完成</button>
           </div>
         </div>
       )}
@@ -699,7 +699,7 @@ export const ImagePicker: React.FC<{
   src: string | null; alt: string; busy?: boolean; onPick: (file: File) => void; size?: number; caption?: string
 }> = ({ src, alt, busy, onPick, size = 40, caption }) => {
   const big = size > 40
-  const radius = big ? 'rounded-xl' : 'rounded-md'
+  const radius = big ? 'rounded-xl' : 'rounded-lg'
   return (
     <label
       title={src ? '更換圖片' : '選擇圖片'}
@@ -715,14 +715,14 @@ export const ImagePicker: React.FC<{
             </span>
           </>
         ) : (
-          <span className={`w-full h-full flex flex-col items-center justify-center gap-2 ${radius} border border-dashed border-gray-scale3 bg-white/5 text-gray-scale2 group-hover:!text-white group-hover:border-white`}>
+          <span className={`w-full h-full flex flex-col items-center justify-center gap-2 ${radius} border border-dashed border-gray-mid bg-gray-dark text-gray-light group-hover:text-white group-hover:border-white`}>
             <span className="material-symbols-outlined" style={{ fontSize: big ? '28px' : '18px' }}>upload</span>
             {big && <span className="text-2xs font-english">JPG / PNG, 5MB</span>}
           </span>
         )}
       </span>
       {caption && (
-        <span className={`${textBtn(false)} w-full justify-center group-hover:bg-white/15`}>
+        <span className={`${textBtn(false)} w-full justify-center group-hover:opacity-50`}>
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">photo_camera</span>
           {caption}
         </span>
@@ -756,8 +756,7 @@ export function usePager<T>(rows: T[], resetKey: unknown[]) {
   }
 }
 
-const pagerBtn =
-  'w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer text-gray-scale2 enabled:hover:!text-white enabled:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed'
+const pagerBtn = `w-9 h-9 flex items-center justify-center rounded-lg text-gray-light ${BTN}`
 
 /** 分頁列：左＝目前區間與總數、中＝上下頁＋頁碼（最多 5 個，目前頁盡量置中）、右＝每頁筆數；0 筆不顯示 */
 export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, page, pageSize, onPage, onPageSize }) => {
@@ -766,7 +765,7 @@ export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, p
   const first = Math.max(0, Math.min(page - 2, pages - 5))
   const nums = Array.from({ length: Math.min(5, pages) }, (_, i) => first + i)
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mt-4 text-xs text-gray-scale2 font-chinese">
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mt-4 text-xs text-gray-light font-chinese">
       <span>
         顯示 <span className="font-english">{page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)}</span>，共{' '}
         <span className="font-english">{total}</span> 筆
@@ -780,7 +779,7 @@ export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, p
             key={n}
             onClick={() => onPage(n)}
             aria-current={n === page ? 'page' : undefined}
-            className={`${n === page ? 'w-9 h-9 flex items-center justify-center rounded-lg text-white bg-white/10' : pagerBtn} font-english`}
+            className={`${n === page ? 'w-9 h-9 flex items-center justify-center rounded-lg text-white bg-gray-dark' : pagerBtn} font-english`}
           >
             {n + 1}
           </button>
@@ -804,21 +803,21 @@ export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, p
  */
 export const LoadError: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
   <div className="py-16 flex flex-col items-center gap-4 text-xs font-chinese">
-    <p style={{ color: 'var(--color-error2)' }}>讀取失敗：{message}</p>
-    <button onClick={onRetry} className={actionBtn(true)}>重試</button>
+    <p style={{ color: 'var(--color-error)' }}>讀取失敗：{message}</p>
+    <button onClick={onRetry} className={actionBtn}>重試</button>
   </div>
 )
 
-/** 頁標題（＋選填說明列；children 靠右對齊，如訂單頁的更新時間） */
+/** 頁標題（＋選填說明列；children 靠右對齊，如訂單頁的更新時間）。標題列固定 h-9＝工具鈕高度：有鈕沒鈕的頁標題同高（2026-11-02） */
 // sticky：內容區（AdminLayout main，自己捲動）捲動時標題固定，位置不跳。
 // -mt-10/pt-10 吃掉 main 的上邊距，黑底蓋到視窗頂；mb-8 改 pb-8 讓黑底蓋住下方間距，內容從標題底下捲過去。
 // top 必須是 -2.5rem 不是 0：sticky 在有 padding 的捲動容器裡是從 padding 內緣算，top-0 會被往下推 2.5rem、蓋到下方內容
 export const PageTitle: React.FC<{ zh: string; desc?: string; children?: React.ReactNode }> = ({ zh, desc, children }) => (
   <div className="sticky -top-10 z-10 -mt-10 pt-10 pb-8 bg-black">
-    <div className="flex items-center gap-3">
+    <div className="h-9 flex items-center gap-3">
       <h1 className="text-lg text-white mr-auto">{zh}</h1>
       {children}
     </div>
-    {desc && <p className="mt-1 text-xs text-gray-scale2 font-chinese">{desc}</p>}
+    {desc && <p className="mt-1 text-xs text-gray-light font-chinese">{desc}</p>}
   </div>
 )

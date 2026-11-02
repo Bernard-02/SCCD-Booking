@@ -81,3 +81,12 @@ export async function fetchOccupiedSpaces(startDate: string, endDate: string): P
   if (error) throw error
   return (data as { item_id: string }[]).map(row => row.item_id)
 }
+
+/** 該時段各空間被佔用的「日子」（部分時段可借用；supabase/partial-availability.sql）：id → Set<'YYYY-MM-DD'>。RPC 沒執行時 throw */
+export async function fetchOccupiedSpacesDaily(startDate: string, endDate: string): Promise<Record<string, Set<string>>> {
+  const { data, error } = await supabase.rpc('space_occupied_daily', { p_start: startDate, p_end: endDate })
+  if (error) throw error
+  const out: Record<string, Set<string>> = {}
+  for (const row of data as { item_id: string; day: string }[]) (out[row.item_id] ??= new Set()).add(row.day)
+  return out
+}

@@ -3,6 +3,7 @@
  * 用於編輯過期訂單的日期
  */
 
+import { BTN, CHIP } from '@/components/common/btn'
 import React, { useState } from 'react'
 import CloseButton from '../common/CloseButton'
 import { createPortal } from 'react-dom'
@@ -56,12 +57,11 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center py-15"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-6xl w-full mx-4 max-h-full overflow-y-auto flex flex-col"
+        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-6xl w-full mx-4 max-h-full overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -81,15 +81,13 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             <div className="flex items-center gap-3">
               {/* 類別標籤 */}
               {category && (
-                <div className="px-3 py-1 bg-gray-scale4 rounded-lg flex items-center justify-center">
-                  <span className="font-english text-xs text-white whitespace-nowrap">
-                    {t(category === 'equipment' ? 'Equipment' : 'Space', category === 'equipment' ? '設備' : '空間')}
-                  </span>
-                </div>
+                <span className={`${CHIP} bg-gray-dark text-white`}>
+                  {t(category === 'equipment' ? 'Equipment' : 'Space', category === 'equipment' ? '設備' : '空間')}
+                </span>
               )}
               {/* 租借類型標籤 */}
-              <div className="px-3 py-1 bg-gray-scale4 rounded-lg flex items-center justify-center">
-                <span className="font-english text-xs text-white whitespace-nowrap">
+              <div className={`${CHIP} bg-gray-dark text-white`}>
+                <span className="whitespace-nowrap">
                   {bookingType === 'little' && (
                     <>
                       {t('Little', '小量')}
@@ -111,7 +109,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 
             {/* 右側：顯示原始日期 */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#cccccc]">
+              <span className="text-xs text-gray-light">
                 <span>{t('Original Date', '原始時段')}</span>
               </span>
               <span className="text-xs text-white font-english">
@@ -140,12 +138,12 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 
         {/* 選中的日期顯示 - 永遠顯示；中段空間放缺貨警語 */}
         <div className="px-6 pb-4">
-          <div className="p-4 bg-[#2b2b2b] border border-[#545454] rounded-lg flex justify-between items-center gap-8">
+          <div className="p-4 bg-gray-darker border border-gray-mid rounded-lg flex justify-between items-center gap-8">
             <div className="shrink-0">
-              <p className="text-xs text-[#cccccc]">{t('New Date', '新的時段')}</p>
+              <p className="text-xs text-gray-light">{t('New Date', '新的時段')}</p>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#ffff00]">{t('After updating the date, items may become out of stock. We\'ll mark them for you.', '更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。')}</p>
+              <p className="text-xs text-yellow">{t('After updating the date, items may become out of stock. We\'ll mark them for you.', '更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。')}</p>
             </div>
             <div className="shrink-0 text-xl text-white font-english">
               {(() => {
@@ -159,25 +157,21 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 
         {/* 橫線 */}
         <div className="px-6">
-          <div className="border-t border-[#545454]"></div>
+          <div className="border-t border-gray-mid"></div>
         </div>
 
         {/* 按鈕區 */}
         <div className="px-6 py-4 flex justify-end gap-6">
           <button
             onClick={onCancel}
-            className="text-[#cccccc] hover:text-white cursor-pointer"
+            className={`text-gray-light ${BTN}`}
           >
             <span className="text-xs">{t('Cancel', '取消')}</span>
           </button>
           <button
             onClick={handleConfirm}
             disabled={isConfirmDisabled}
-            className={`cursor-pointer ${
-              isConfirmDisabled
-                ? 'text-gray-scale3 cursor-not-allowed'
-                : 'text-white hover:opacity-70'
-            }`}
+            className={`text-white ${BTN}`}
           >
             <span className="text-xs">{t('Confirm', '確認')}</span>
           </button>

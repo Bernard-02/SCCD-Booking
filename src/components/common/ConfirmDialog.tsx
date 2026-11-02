@@ -2,9 +2,10 @@
  * ConfirmDialog 組件
  * 可重用的確認對話框，用於需要用戶二次確認的重要操作；
  * children 可塞輸入欄位（例：忘記密碼），hideCancel 用於只需「確認」的告知訊息，
- * closeOnly＝純資訊視窗（右上 X 關閉，不顯示確認／取消，例：使用說明）
+ * closeOnly＝純資訊視窗（不顯示確認／取消列；右上 X 所有彈窗一律有，2026-11-01 統一）
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useEffect } from 'react'
 import CloseButton from './CloseButton'
 import { createPortal } from 'react-dom'
@@ -75,34 +76,31 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   // 根據 variant 設置確認按鈕文字顏色
   const getConfirmButtonTextColor = () =>
-    variant === 'danger' ? 'text-[#ff8698]' : 'text-white'
+    variant === 'danger' ? 'text-error' : 'text-white'
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       {/* 對話框容器 */}
       <div
-        className="relative bg-[#151515] border border-[#545454] max-w-lg w-full mx-4 flex flex-col rounded-2xl"
+        className="relative bg-gray-darker border border-gray-mid max-w-lg w-full mx-4 flex flex-col rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
-        {/* 純資訊視窗：右上 X（位置同 InfoDialog） */}
-        {closeOnly && (
-          <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="absolute top-6 right-6" />
-        )}
+        {/* 右上 X＝取消（2026-11-01 起所有彈窗統一） */}
+        <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="absolute top-6 right-6" />
 
         {/* 標題區 */}
-        <div className={`px-6 pt-6 ${closeOnly ? 'pr-14' : ''}`}>
+        <div className="px-6 pt-6 pr-14">
           <h2 className="text-sm text-white font-normal">{t(titleEn ?? title, title)}</h2>
         </div>
 
         {/* 內容區 */}
         <div className={`px-6 ${closeOnly ? 'pt-4 pb-6' : 'py-4'}`}>
           {message && (
-            <p className="text-xs text-[#cccccc] leading-relaxed whitespace-pre-line">
+            <p className="text-xs text-gray-light leading-relaxed whitespace-pre-line">
               {t(messageEn ?? message, message)}
             </p>
           )}
@@ -112,7 +110,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         {!closeOnly && (<>
         {/* 橫線 */}
         <div className="px-6">
-          <div className="border-t border-[#545454]"></div>
+          <div className="border-t border-gray-mid"></div>
         </div>
 
         {/* 按鈕區 */}
@@ -121,7 +119,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           {!hideCancel && (
             <button
               onClick={onCancel}
-              className="text-[#cccccc] hover:text-white cursor-pointer"
+              className={`text-gray-light ${BTN}`}
             >
               <span className="text-xs">{t(cancelText, cancelTextZh)}</span>
             </button>
@@ -131,7 +129,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             onClick={onConfirm}
             disabled={confirmDisabled}
-            className={`${getConfirmButtonTextColor()} hover:opacity-70 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed`}
+            className={`${getConfirmButtonTextColor()} ${BTN}`}
           >
             <span className="text-xs">{t(confirmText, confirmTextZh)}</span>
           </button>

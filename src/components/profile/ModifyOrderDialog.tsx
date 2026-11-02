@@ -4,8 +4,10 @@
  * 可借數量＝庫存 − 該時段佔用＋本單原有數量；規則最終由 server 端 modify_my_order 把關。
  */
 
+import { BTN } from '@/components/common/btn'
 import React, { useEffect, useState } from 'react'
 import CloseButton from '../common/CloseButton'
+import { Select } from '../admin/adminUi'
 import { createPortal } from 'react-dom'
 import { useEquipmentData, useBundles, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
 import { calcBundles } from '../../utils/bundleUtils'
@@ -99,30 +101,26 @@ const ModifyOrderDialog: React.FC<Props> = ({
   ]
 
   // − ＋ 純文字鈕（無外框，同型錄數量調整）；點擊區保留 28px
-  const stepBtn = (enabled: boolean) =>
-    `w-7 h-7 flex items-center justify-center text-sm font-english ${
-      enabled ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'
-    }`
+  const stepBtn = `w-7 h-7 flex items-center justify-center text-sm font-english text-white ${BTN}`
   // 品項表格欄位：設備／可借／數量（表頭與每列共用；可借、數量置中）
   const cols = 'grid grid-cols-[1fr_64px_104px] gap-4 items-center'
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center fadeIn"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
       onClick={onCancel}
     >
       <div
-        className="bg-[#151515] border border-[#545454] rounded-2xl max-w-[640px] w-[90%] mx-4 max-h-[90vh] flex flex-col"
+        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-[640px] w-[90%] mx-4 max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* 標題 */}
         {/* 標題：修改訂單＋單號（單號不另起一行） */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#545454]">
+        <div className="px-6 pt-6 pb-4 border-b border-gray-mid">
           <div className="flex items-start justify-between">
             <h2 className="text-sm text-white">
               <span>{t('Edit Order', '修改訂單')}</span>
-              <span className="ml-3 text-gray-scale2 font-english">{rentalNumber}</span>
+              <span className="ml-3 text-gray-light font-english">{rentalNumber}</span>
             </h2>
             <CloseButton onClick={onCancel} label={t('Close', '關閉')} className="-mt-1" />
           </div>
@@ -130,7 +128,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
 
         <div className="px-6 py-6 overflow-y-auto">
           {/* 規則 */}
-          <div className="text-white text-xs space-y-1 mb-6 font-['Inter','Noto_Sans_TC',_sans-serif]">
+          <div className="text-white text-xs space-y-1 mb-6 font-chinese">
             {picked ? (
               <>
                 <p>1. 已取件的訂單只能新增設備；不需要的設備到期一起歸還即可。</p>
@@ -144,7 +142,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
 
           {/* 品項：表頭寫欄位名稱，下面只放數字 */}
           <div className="flex flex-col">
-            <div className={`${cols} pb-2 border-b border-[#545454] text-2xs text-gray-scale2`}>
+            <div className={`${cols} pb-2 border-b border-gray-mid text-2xs text-gray-light`}>
               <span>{t('Equipment', '設備')}</span>
               <span className="text-center">{t('Available', '可借')}</span>
               <span className="text-center">{t('Quantity', '數量')}</span>
@@ -153,27 +151,27 @@ const ModifyOrderDialog: React.FC<Props> = ({
               const max = available(r.id)
               const canDec = r.quantity > minQty(r) // 減到 0＝移除（取件後已點交的不可）
               return (
-                <div key={r.id} className={`${cols} py-3 border-b border-[#545454]`}>
-                  <span className="text-xs text-white font-['Inter','Noto_Sans_TC',_sans-serif]">
+                <div key={r.id} className={`${cols} py-3 border-b border-gray-mid`}>
+                  <span className="text-xs text-white font-chinese">
                     {r.name}
                     {picked && r.held > 0 && (
-                      <span className="text-gray-scale2 ml-2">已取 {r.held}</span>
+                      <span className="text-gray-light ml-2">已取 {r.held}</span>
                     )}
                     {picked && r.quantity > r.held && (
                       <span className="ml-2" style={{ color: 'var(--color-yellow)' }}>新增 {r.quantity - r.held} 待點交</span>
                     )}
                   </span>
-                  <span className="text-xs text-gray-scale2 font-english text-center">{max}</span>
+                  <span className="text-xs text-gray-light font-english text-center">{max}</span>
                   <div className="flex items-center justify-center">
                     <button
-                      className={stepBtn(canDec)}
+                      className={stepBtn}
                       disabled={!canDec}
                       onClick={() => setQty(r.id, r.quantity - 1)}
                       aria-label="減少"
                     >−</button>
                     <span className="w-8 text-center text-xs text-white font-english">{r.quantity}</span>
                     <button
-                      className={stepBtn(r.quantity < max)}
+                      className={stepBtn}
                       disabled={r.quantity >= max}
                       onClick={() => setQty(r.id, r.quantity + 1)}
                       aria-label="增加"
@@ -184,39 +182,31 @@ const ModifyOrderDialog: React.FC<Props> = ({
             })}
           </div>
 
-          {/* 新增設備 */}
-          <select
+          {/* 新增設備：共用 Select（分組＋搜尋，同後台組合「加入設備」）；value 固定空字串，選了就加進品項、選單回到提示 */}
+          <Select
             value=""
-            onChange={e => addItem(e.target.value)}
-            className="mt-4 w-full bg-black border border-gray-scale4 rounded-lg px-3 py-2 text-xs text-white focus:border-white outline-none cursor-pointer font-['Inter','Noto_Sans_TC',_sans-serif]"
-          >
-            <option value="" disabled>＋ {t('Add equipment', '新增設備')}</option>
-            {groups.map(g => {
-              const items = addable.filter(e => e.category === g)
-              if (items.length === 0) return null
-              return (
-                <optgroup key={g} label={g}>
-                  {items.map(e => {
-                    const n = available(e.id)
-                    return (
-                      <option key={e.id} value={e.id} disabled={n <= 0}>
-                        {e.name}（可借 {n}）
-                      </option>
-                    )
-                  })}
-                </optgroup>
-              )
-            })}
-          </select>
+            placeholder={`＋ ${t('Add equipment', '新增設備')}`}
+            searchable
+            searchPlaceholder={t('Search', '搜尋')}
+            emptyText={t('No matching items', '找不到符合的項目')}
+            options={groups.flatMap(g =>
+              addable.filter(e => e.category === g).map(e => {
+                const n = available(e.id)
+                return { value: e.id, label: `${e.name}（${t('available', '可借')} ${n}）`, disabled: n <= 0, group: g }
+              })
+            )}
+            onChange={addItem}
+            className="mt-4 w-full"
+          />
 
           {/* 小計 */}
-          <div className="mt-6 text-xs font-['Inter','Noto_Sans_TC',_sans-serif] flex justify-between">
-            <span className={limitError ? '' : 'text-white'} style={limitError ? { color: 'var(--color-error2)' } : undefined}>
+          <div className="mt-6 text-xs font-chinese flex justify-between">
+            <span className={limitError ? '' : 'text-white'} style={limitError ? { color: 'var(--color-error)' } : undefined}>
               共 <span className="font-english">{total}</span> 件
               {calc.sets.length > 0 && `（含 ${calc.sets.map(s => `${s.bundle.name} ×${s.count}`).join('、')}，整組算 1 件）`}
               {limitError && `（${limitError}）`}
             </span>
-            <span className="text-gray-scale2">
+            <span className="text-gray-light">
               {depositPaid
                 ? '押金差額由系學會現場計算'
                 : <>押金 <span className="font-english">NT$ {Math.min(calc.deposit, 5000).toLocaleString()}</span></>}
@@ -224,13 +214,13 @@ const ModifyOrderDialog: React.FC<Props> = ({
           </div>
 
           {error && (
-            <p className="mt-3 text-xs font-['Inter','Noto_Sans_TC',_sans-serif]" style={{ color: 'var(--color-error2)' }}>{error}</p>
+            <p className="mt-3 text-2xs text-error">{error}</p>
           )}
 
-          <div className="border-t border-[#545454] my-4"></div>
+          <div className="border-t border-gray-mid my-4"></div>
 
           <div className="flex justify-end gap-6">
-            <button onClick={onCancel} className="text-[#cccccc] hover:text-white cursor-pointer">
+            <button onClick={onCancel} className={`text-gray-light ${BTN}`}>
               <span className="font-english text-xs">
                 {t('Cancel', '取消')}
               </span>
@@ -238,7 +228,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
             <button
               onClick={handleSave}
               disabled={!canSave}
-              className={`${canSave ? 'text-white hover:opacity-70 cursor-pointer' : 'text-gray-scale3 cursor-not-allowed'}`}
+              className={`text-white ${BTN}`}
             >
               <span className="font-english text-xs">
                 {t(busy ? 'Saving…' : 'Save', '儲存')}
