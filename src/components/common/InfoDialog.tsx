@@ -7,8 +7,7 @@
 import React, { useEffect } from 'react'
 import CloseButton from './CloseButton'
 import { createPortal } from 'react-dom'
-import GuideContent from './GuideContent'
-import SaContent from './SaContent'
+import SectionsContent from './SectionsContent'
 import AboutContent from './AboutContent'
 import { useT } from '../../stores/langStore'
 import { navItemCls } from './navItem'
@@ -16,8 +15,8 @@ import { navItemCls } from './navItem'
 export type InfoTab = 'guide' | 'sa' | 'about'
 
 const TABS: { id: InfoTab; en: string; zh: string; Content: React.FC }[] = [
-  { id: 'guide', en: 'User Guide', zh: '使用教學', Content: GuideContent },
-  { id: 'sa', en: 'Student Association', zh: '系學會', Content: SaContent },
+  { id: 'guide', en: 'User Guide', zh: '使用教學', Content: () => <SectionsContent page="guide" /> },
+  { id: 'sa', en: 'Student Association', zh: '系學會', Content: () => <SectionsContent page="sa" /> },
   { id: 'about', en: 'Who Made This', zh: '誰做的系統', Content: AboutContent },
 ]
 
@@ -59,7 +58,7 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
     >
       {/* 對話框容器：固定高度，切分頁時不跳動 */}
       <div
-        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-4xl w-full mx-4 h-[85vh] flex flex-col md:flex-row relative overflow-hidden"
+        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-4xl w-full mx-4 h-[85dvh] flex flex-col md:flex-row relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -68,7 +67,7 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
 
         {/* 左：分頁膠囊（共用 navItemCls，無 icon）；桌機寬度跟最長的分頁走（min 200px，英文 Student Association 較長）；手機版分頁橫排在上，右側留位給 X */}
         <div className="p-6 pr-16 md:pr-6 md:min-w-[200px] flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-mid">
-          <nav className="inline-flex md:flex-col gap-1" role="tablist">
+          <nav className="inline-flex md:flex-col gap-1 max-md:flex max-md:overflow-x-auto" role="tablist">
             {TABS.map(item => (
               <button
                 key={item.id}
@@ -76,7 +75,7 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ tab, onTabChange, onClose }) =>
                 role="tab"
                 aria-selected={item.id === tab}
                 onClick={() => onTabChange(item.id)}
-                className={`${navItemCls(item.id === tab, false)} whitespace-nowrap`}
+                className={`${navItemCls(item.id === tab, false)} whitespace-nowrap shrink-0`}
               >
                 {t(item.en, item.zh)}
               </button>

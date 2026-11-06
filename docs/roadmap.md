@@ -4,7 +4,7 @@
 > 登入／訂單／庫存／空間／通知全部走 Supabase，mock 已全數移除；學生登入已改學校 Google 帳號＋封閉名單（階段 2），
 > Google Cloud／Supabase 的一次性設定還沒做（階段 6）。
 > 業務規則見 [rental-rules.md](./rental-rules.md)；後端用 **Supabase**（Auth + PostgreSQL + RLS）。
-> 階段 2 → 3 有依賴順序；階段 4（品質）可與任何階段並行；階段 5（手機版）等階段 1.5 桌面版驗收確認後再做（Bernard 2026-10-03）。
+> 階段 2 → 3 有依賴順序；階段 4（品質）可與任何階段並行；階段 5（RWD 與手機版）前台 layout 大致定案即可開始，不必等階段 1.5（2026-11-06 調整）。
 
 ## 階段 1：Supabase 後端接線 ✅（2026-07 完成）
 
@@ -22,10 +22,10 @@
 - [x] 收尾（2026-10-03）：刪除 `orderValidation`（讀 localStorage receipts 的重複下單檢查）與
       `useOrderSubmission` 的 receipts 雙寫——server 端 `submit_orders`＋`DatePickerBar` 同類型未歸還檢查已取代
 
-## 階段 1.5：桌面版整體驗收（先於階段 2 與手機版，已與 Bernard 議定）
+## 階段 1.5：桌面版整體驗收（上線前完成；手機版不必等，2026-11-06 調整）
 
 **前置：先逐項定案 [order-lifecycle.md](./order-lifecycle.md) 的訂單生命週期情境**（沒繳押金、逾期、
-取消、部分歸還等——情境沒定案，後台沒得做），再用桌面版把整套流程跑過一遍確認無誤，才進後台與手機版。
+取消、部分歸還等——情境沒定案，後台沒得做），再用桌面版把整套流程跑過一遍確認無誤。
 測試工具：測試帳號（阿志／小美，大明已改為 sccdsa admin）開不同瀏覽器互相搶。候選衝突場景（開工時再補齊）：
 
 - [ ] 兩人同時搶同一格空間／最後一件設備（一成一敗、敗方訊息清楚、購物車保留可重送）
@@ -117,6 +117,11 @@
       （`supabase/admin-notifications.sql`，本人操作才發：auth.uid()＝該單學生；後台代操作與排程不發）；
       側欄鈴鐺＋下拉（`NotificationPanel` 前後台共用），點一則跳該生訂單篩選，關掉即全部已讀
 
+- [x] 文字內容段落化（2026-11-03）：使用教學／系學會改成「一頁一串段落」（`site_sections`＋`save_site_sections` RPC，`supabase/site-sections.sql`），
+      一段＝標題＋一串積木（段落／編號條列／項目＋說明／連結／聯絡方式）；後台段落清單拖曳排序（原生 HTML5 DnD）、
+      點一列右側滑入面板改標題與積木（積木也拖曳、增刪），標題自動編號；
+      關於／聯絡方式／延期規則維持固定欄位。清單頁「完整使用說明」連結改讀使用教學第一個「連結」段落
+
 ## 階段 3：規則補完（依賴階段 1 的資料模型）
 
 - [x] 空間 14 天例外：四年級、碩士班放寬到 30 天（`gradeUtils.ts`＋`DatePickerBar`／`DateEditDialog`）
@@ -160,6 +165,11 @@
       8 檔 78 案例，`npm test`）；後續有新規則再補對應案例
 - [x] **安全修正（2026-10-03）**：`user_role()` 未登入回傳 NULL，後台 RPC 的 `<> 'admin'` 檢查被跳過
       （只帶 anon key 即可呼叫收押金／歸還／取消等 9 支）→ 改回傳 `'anon'`（supabase/user-role-fix.sql，已執行並驗證擋下）
+- [x] **後台登入期限（2026-11-06）**：admin 登入起算固定 12 小時、不續期（後台在學會共用電腦上用），前端到期導回登入頁、
+      server 端 `user_role()` 同步失效（supabase/admin-session-limit.sql，待執行）；登出改 `scope: 'local'`，只登出這台。
+      **2FA**：帳密或 Google 登入後還要輸入驗證器 App 的 6 位數驗證碼（Supabase TOTP，免費；`MfaGate`），`user_role()` 要求 `aal2`。
+      後台同時只留一台：通過 2FA 才把其他裝置登出（`signOut({ scope: 'others' })`，免費方案可用），舊裝置一分鐘內導回登入頁並提示。
+      不做「擋新登入」（上一台忘了登出，下一班就進不去）；兩台同時值班會互踢，這是刻意的取捨
 - [ ] Tech debt：拆大檔（2026-11-01：`ProfilePage` 800、`CartList` 765、`SpacePage` 751、`EquipmentGrid` 736、`DatePickerBar` 717、`RentalListPage` 606 行）、
       `DateSelectionContext`（406 行）拆成設備／空間兩個、CSS 雙軌漸進遷移（舊 `css/*.css` 剩 1,120 行，九個檔都還在 main.tsx 載入）
 - [x] 設備圖片（2026-10-03）：前台清單／購物車原本寫死延長線圖，改讀設備 `image_url`（`equipmentService.imageSrc`，
@@ -178,17 +188,36 @@
       **進度**：按鈕狀態 2026-10-31 已定（`components/common/btn.ts` 的 `BTN`／`BTN_TOOL`：hover 整顆 50%、停用 20%，前台 21 檔套用）；
       英文字距 2026-10-27／11-01 定案並全站補齊（含 EN 模式全域規則，CLAUDE.md）；**剩**顏色分類對照、後台按鈕與前台對齊
 
-## 階段 5：手機版（純前端；等階段 1.5 桌面版驗收確認後再執行）
+## 階段 5：RWD 與手機版（純前端）
 
-RWD 標準見 CLAUDE.md「手機版（RWD）標準」一節。已有手機版：Home（登入頁單欄響應式）、BookingResources（雙 JSX）、Header（舊 mobile-menu）；About 頁 2026-10-20 已併入 InfoDialog。
+範圍（Bernard 2026-11-06 定）：**後台只做桌面 RWD，不做手機版**（手機難操作，用電腦即可）；**前台先做 RWD，再調手機版面**。
+標準見 CLAUDE.md「手機版（RWD）標準」一節。舊手機選單（`mobile-menu.css`、Header 的 mobile-menu）已刪，Header／Footer 全寬度共用同一套。
 
-- [ ] Equipment 設備頁手機版（目前 `hidden md:block`，手機無內容）
-- [ ] Space 空間頁手機版（同上；區域地圖 SVG 的觸控操作要特別設計）
-- [ ] RentalList 清單頁手機版
-- [ ] Profile 訂單 accordion 手機版（含 PDF 輸出的手機行為；原 /order 詳情頁已併入 Profile）
-- [ ] Profile 頁手機版檢查（無 `md:` 斷點，需逐一驗證）
-- [ ] Footer 手機版（目前 `hidden md:flex`）
-- [ ] 對話框（DateEditDialog、InfoDialog 等 max-w 較大的）在小螢幕的呈現
+### 後台：桌面 RWD（待人工確認：後台有 2FA，自動截圖進不去）
+
+- [ ] 最窄到 1280px 不出現頁面級橫向卷軸，後台各頁逐頁檢查（2026-11-06 的自動截圖停在 2FA 畫面，尚未真的驗過）
+- [ ] 訂單頁操作欄已固定在右側（`sticky right-0`），未實測：確認表頭同時黏住、整列 hover 底色一致
+- [ ] 會員頁 `min-w-[1200px]` 要不要固定欄位：等實際用起來再決定
+
+### 前台第一步：RWD（2026-11-06 完成）
+
+- [x] `h-screen` 改 `h-dvh`（6 頁）
+- [x] Equipment／Space／RentalList 拿掉 `hidden md:*`；日期列改佔實際高度，頁面不再靠 `pb-20` 留位
+- [x] 左欄固定比例在 `lg` 以下重新排列（分類移到上方、清單頁摘要併入同一欄、Profile 選單橫排）
+- [x] `EquipmentGrid`／`ClassroomList` 容器 < 940px 改卡片（`card:` 變體），原本 1350px 以下要橫向捲動的問題一併解決
+- [x] 日曆數字隨容器縮放（`cqw`），窄寬度雙月不互撞；矮螢幕設備頁左欄可捲動，圖例不被裁掉
+
+### 前台第二步：手機版面（2026-11-06 完成，待實機驗收）
+
+- [x] 手機導覽與 Footer（icon 鈕觸控面積 44px，`TAP`）
+- [x] 設備分類＋Legend、日期列（兩列）、手機單月日曆（`hooks/useIsMobile`）
+- [x] Space 地圖：`lg` 以下加格子清單（共用地圖的選取邏輯，階段 5.5 鍵盤操作可沿用）；hover 資訊不需替代，點一下直接進該區
+- [x] Profile 訂單卡與明細、清單頁品項列、InfoDialog、通知面板
+- [x] 手機字級獨立（`src/index.css` 覆寫 token，輸入框固定 16px）
+- [x] 手機收合：設備卡片（高度約 175px → 90px）、圖例、日期列、使用教學段落
+- [ ] 對話框實測：Confirm／借用資訊已看過；`DateEditDialog`／`ExtendDialog`／`ModifyOrderDialog` 有調整但還沒用真實訂單開過
+- [ ] PDF 收據在手機下載的行為
+- [ ] 實機驗收（iPhone Safari、Android Chrome；目前只測過 Chrome 模擬）
 
 ## 階段 5.5：無障礙（至少鍵盤可操作；純前端，可與階段 5 並行，上線前完成）
 
@@ -220,6 +249,7 @@ icon 鈕 aria-label 約 75 處、登入頁錯誤訊息 aria-live——但核心�
 - [ ] **對比**：`gray-light`（#a4a4a4）在黑底約 8:1，正文與輔助字都過 AA；`gray-mid`（#545454）在黑底約 2.3:1，只能給停用／佔位與分隔線，
       **不能用在要讀的資訊**（例：DatePickerBar 已選日期清單的「（已達上限）」、ExtendDialog 封鎖期數字是 text-gray-mid，要換 gray-light 或補文字說明）；
       有色底 chip 黑字（yellow／green／pink／orange／cyan 底）都過 AA，維持
+- [ ] **拖曳排序的鍵盤替代**：後台文字內容的段落清單與積木用原生 DnD，鍵盤碰不到——面板內補 ↑↓ 鈕或方向鍵移動
 - [ ] **驗收**：拔掉滑鼠走一遍上面兩條主流程（前台學生、後台 sccdsa）；Chrome Lighthouse Accessibility 前後台各頁 ≥ 90；
       NVDA 或 VoiceOver 走登入→送單一次，記下唸不出來的地方
 
@@ -229,6 +259,11 @@ icon 鈕 aria-label 約 75 處、登入頁錯誤訊息 aria-live——但核心�
 - [ ] 正式資料填入：真實學號名單（會員管理 Excel 匯入＝預先登記 `login_allowlist`）、設備清單與庫存、空間資料
 - [ ] **Google 登入一次性設定**：Google Cloud OAuth 用戶端＋Supabase Auth Google provider＋Redirect URLs（步驟 docs/google-login-setup.md）；
       完成後 `HomePage` 的 `PASSWORD_MODE_DEFAULT` 改回 false，實測 gm／gm1／gm2 三個網域、未登記帳號被擋、LINE／IG 內建瀏覽器提示
+- [ ] **後台改用學會 Gmail 登入**（2026-11-06 定，等 Gmail 申請好，不做一人一帳號）：同一組 Gmail 也是上面 Google Cloud 專案的擁有者；學生各用自己的學校帳號，不靠它。
+      步驟見 docs/google-login-setup.md「後台用學會 Gmail 登入」：`sccdsa` 的 email 換成 Gmail，實測 Google 登入接到同一個帳號（`handle_new_user` trigger 只收學校網域，被當新帳號會擋下）。
+      學號密碼保留當備援，兩條路都要過 2FA，所以共用電腦留著 Google 登入狀態也不會一鍵進後台；換屆清單在同一份文件「交接」。
+      上線時一起做（2026-11-06 定，開發期不分帳號）：另一案是 Gmail 建新管理員帳號、`sccdsa` 留給開發者測試（Supabase 後台手動新增＋SQL 設管理員，不用改 trigger），上線時再選；
+      值班的人一起重新綁定 2FA（docs/google-login-setup.md「交接」）
 - [x] 字型自架（2026-10 底）：Inter／Noto Sans TC 改 `@fontsource` 套件、Material Symbols 只留 FILL 軸 woff2 放 `public/fonts`
       （index.html 內嵌 @font-face＋`icons-ready` 旗標，字型到齊前 icon 文字不露出），`vercel.json` 給 `/fonts` 一年快取
 - [ ] 自訂 SMTP（Supabase Auth → SMTP Settings）：內建寄信只寄得到專案團隊成員信箱且每小時限量，學生收不到忘記密碼信；Redirect URLs 加正式網域 `/reset-password`

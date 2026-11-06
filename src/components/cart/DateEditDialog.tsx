@@ -76,7 +76,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
           </div>
 
           {/* 標籤和原始日期在同一行 */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-y-2">
             {/* 左側：標籤 - 類別和租借類型 */}
             <div className="flex items-center gap-3">
               {/* 類別標籤 */}
@@ -123,7 +123,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
         </div>
 
         {/* 日曆區 */}
-        <div className="px-8 pb-4">
+        <div className="px-8 max-md:px-6 pb-4">
           <Calendar
             startDate={startDate}
             endDate={endDate}
@@ -138,7 +138,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 
         {/* 選中的日期顯示 - 永遠顯示；中段空間放缺貨警語 */}
         <div className="px-6 pb-4">
-          <div className="p-4 bg-gray-darker border border-gray-mid rounded-lg flex justify-between items-center gap-8">
+          <div className="p-4 bg-gray-darker border border-gray-mid rounded-lg flex justify-between items-center gap-8 max-md:flex-col max-md:items-start max-md:gap-2">
             <div className="shrink-0">
               <p className="text-xs text-gray-light">{t('New Date', '新的時段')}</p>
             </div>

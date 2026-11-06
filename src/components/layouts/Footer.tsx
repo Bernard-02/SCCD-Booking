@@ -3,7 +3,7 @@
  * 左 Profile icon＋學號姓名（登出在 Profile 頁側欄底部）、中 Copyright（Easter Egg）、右 語言切換＋link icon（工作室／攝影棚／官網）
  */
 
-import { BTN } from '@/components/common/btn'
+import { BTN, TAP } from '@/components/common/btn'
 import React, { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
@@ -139,13 +139,13 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-transparent footer-main">
       <div className="container">
-        {/* 桌面版 Footer */}
-        <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-end">
+        {/* 手機收掉中間的 Copyright（hover 彩蛋沒有觸控），左右兩邊同桌機 */}
+        <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto_1fr] items-end">
           {/* 左：Profile（登出放在 Profile 頁側欄底部，就在這個頭像上方） */}
           <div className="justify-self-start">
             <Link
               to="/profile"
-              className={`flex items-center gap-2 text-white ${pathname.startsWith('/profile') ? '' : 'hover:opacity-50'}`}
+              className={`flex items-center gap-2 text-white ${TAP} ${pathname.startsWith('/profile') ? '' : 'hover:opacity-50'}`}
               aria-label={t('Profile', '我的')}
             >
               <span className="material-symbols-outlined">account_circle</span>
@@ -155,7 +155,7 @@ const Footer: React.FC = () => {
 
           {/* 中：Copyright（hover 彩蛋） */}
           <div
-            className="copyright desktop-copyright font-english font-bold text-white text-center text-sm"
+            className="copyright hidden md:block font-english font-bold text-white text-center text-sm"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
@@ -175,7 +175,7 @@ const Footer: React.FC = () => {
             <button
               type="button"
               onClick={toggleLang}
-              className={`flex items-center text-white ${BTN}`}
+              className={`flex items-center text-white ${TAP} ${BTN}`}
               aria-label={t('切換為中文', 'Switch to English')}
             >
               <span className="material-symbols-outlined">language</span>
@@ -183,7 +183,7 @@ const Footer: React.FC = () => {
             <button
               type="button"
               onClick={() => setLinksMenuOpen(!linksMenuOpen)}
-              className={`flex items-center text-white ${linksMenuOpen ? 'cursor-pointer' : BTN}`}
+              className={`flex items-center text-white ${TAP} ${linksMenuOpen ? 'cursor-pointer' : BTN}`}
               aria-label="Links"
               aria-expanded={linksMenuOpen}
             >

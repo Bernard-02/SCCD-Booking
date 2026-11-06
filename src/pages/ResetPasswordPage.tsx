@@ -59,7 +59,7 @@ const ResetPasswordPage = () => {
   }
 
   return (
-    <div className="bg-black text-white h-screen flex flex-col">
+    <div className="bg-black text-white h-dvh flex flex-col">
       <Header hideNavigation />
 
       <section className="flex-1 flex items-center justify-center px-4">

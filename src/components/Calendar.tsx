@@ -9,6 +9,7 @@ import { toDateKey } from './cart/cartHelpers'
 import { fetchBlackouts } from '../services/ordersService'
 import { useAuth } from '../contexts/AuthContext'
 import { useT } from '../stores/langStore'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 interface CalendarProps {
   startDate: Date | null
@@ -57,13 +58,14 @@ const Calendar: React.FC<CalendarProps> = ({
   startDate,
   endDate,
   onDateSelect,
-  isMobile = false,
+  isMobile: isMobileProp = false,
   minSelectableDate,
   maxDays = 30,
   variant = 'default',
   originalStartDate,
   originalEndDate
 }) => {
+  const isMobile = useIsMobile() || isMobileProp // 手機一律單月，呼叫端不用傳
   const t = useT()
   // compact 從已選的起日那個月開始顯示（後台篩過去的區間）；前台維持從本月開始
   const [currentDate, setCurrentDate] = useState<Date>(() => (variant === 'compact' && startDate) || new Date())
@@ -107,7 +109,7 @@ const Calendar: React.FC<CalendarProps> = ({
   const minAllowedDate = getMinAllowedDate()
 
   // 日期格字級：前台整頁 3.5rem、對話框 3rem、後台下拉 compact 1rem；compact 置中（欄等寬、左右對稱），其餘靠左
-  const cellSize = variant === 'compact' ? 'text-sm' : variant === 'dialog' ? 'text-[3rem]' : 'text-[3.5rem]'
+  const cellSize = variant === 'compact' ? 'text-sm' : isMobile ? 'text-xl' : variant === 'dialog' ? 'text-[length:min(3rem,5.2cqw)]' : 'text-[length:min(3.5rem,5.6cqw)]'
   const cellCls = `${variant === 'compact' ? 'text-center' : 'text-left'} text-white ${cellSize} font-bold font-english tracking-tighter leading-none py-1 min-w-0`
 
   // 比較兩個日期是否相同
@@ -349,7 +351,7 @@ const Calendar: React.FC<CalendarProps> = ({
     const calendarPadding = variant === 'dialog' ? 'pb-4' : 'pb-8'
 
     return (
-      <div className="w-full">
+      <div className="w-full @container">
         <div className="flex gap-12">
           {/* 左側月份 */}
           <div className="flex-1 min-w-0 flex flex-col">
@@ -500,7 +502,7 @@ const Calendar: React.FC<CalendarProps> = ({
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <button
-          className={`text-white text-md ${BTN}`}
+          className={`w-11 h-11 -ml-3 text-white text-md ${BTN}`}
           onClick={handlePrevMonth}
           disabled={!canGoPrev()}
         >
@@ -510,7 +512,7 @@ const Calendar: React.FC<CalendarProps> = ({
           {monthCalendar.title}
         </div>
         <button
-          className={`text-white text-md ${BTN}`}
+          className={`w-11 h-11 -mr-3 text-white text-md ${BTN}`}
           onClick={handleNextMonth}
           disabled={!canGoNext()}
         >
@@ -522,7 +524,7 @@ const Calendar: React.FC<CalendarProps> = ({
         {monthCalendar.weekdayCells}
       </div>
       {/* 日期數字行 */}
-      <div className={`grid grid-cols-7 gap-1`} style={{ gridTemplateRows: `repeat(${mobileRows}, 1fr)` }}>
+      <div className={`grid grid-cols-7 gap-1`} style={{ gridTemplateRows: `repeat(${mobileRows}, minmax(2.75rem, 1fr))` }}>
         {mobileCells}
       </div>
     </div>

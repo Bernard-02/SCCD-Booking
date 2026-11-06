@@ -91,7 +91,7 @@ const NotificationPanel: React.FC<{
 }> = ({ items, onClose, onSelect, zhOnly, className = '', style }) => {
   const t = useZh(zhOnly)
   return (
-    <div className={`w-[400px] bg-gray-darker border border-gray-mid rounded-2xl overflow-hidden ${className}`} style={style}>
+    <div className={`w-[400px] max-w-[calc(100vw-3rem)] bg-gray-darker border border-gray-mid rounded-2xl overflow-hidden ${className}`} style={style}>
       <div className="flex justify-between items-center p-4 border-b border-gray-mid">
         <h2 className="text-sm text-white">{t('Notification', '通知')}</h2>
         <CloseButton onClick={onClose} label={t('Close', '關閉')} />

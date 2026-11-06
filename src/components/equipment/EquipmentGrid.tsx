@@ -3,7 +3,7 @@
  * 以列表形式顯示設備
  */
 
-import { BTN, BTN_OUTLINE, CHIP } from '@/components/common/btn'
+import { BTN, BTN_OUTLINE, CHIP, TAP } from '@/components/common/btn'
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cartGroupKey, EQUIPMENT_CATEGORIES, type CartItem, type Equipment } from '../../types/equipment'
@@ -35,6 +35,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   // 訪客被導去登入前的選取（數量／整組），回來後還原
   const [pending] = useState(() => takePendingSelection<{ quantities: Record<string, number | ''>; modes: Record<string, string> }>('equipment'))
   const [quantities, setQuantities] = useState<Record<string, number | ''>>({})
+  const [openCard, setOpenCard] = useState<string | null>(null) // 卡片模式展開中的設備（一次一張，同 Profile 訂單）
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
@@ -462,10 +463,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     status === 'available' ? 'var(--color-green)' : status === 'partial' ? 'var(--color-orange)' : 'var(--color-pink)'
 
   return (
-    // 表格 RWD：外層 overflow-x-auto ＋ 表頭／列 min-w-[1000px]。
-    // 1000 < 1400px 視窗時右欄實際寬度（約 1038：container 扣 padding、捲軸、左欄 20%、gap），
-    // 視窗 ≥1400 不出現橫向捲軸，約 1350 以下才開始捲，名稱欄不會被壓縮到逐字直排
-    <div className="w-full h-full flex flex-col pt-[60px] overflow-x-auto">
+    // 表格 RWD：表頭與列都接 card: 變體，容器 < 940px 改卡片（index.css），不再橫向捲動
+    <div className="w-full h-full flex flex-col pt-[60px] max-lg:pt-0">
       {/* Toast 通知 */}
       {toastMessage && (
         <Toast message={toastMessage} type={toastType} onClose={() => setToastMessage(null)} />
@@ -559,8 +558,10 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         </div>
       )}
 
-      {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="min-w-[1000px] grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] items-center gap-6 pb-3 border-b border-gray-mid flex-shrink-0">
+      {/* @container 不放在外層：container 會變成 fixed 的定位基準，全螢幕圖片要留在外面 */}
+      <div className="@container flex-1 min-h-0 flex flex-col">
+      {/* 表頭 - 固定不滾動；卡片模式每格自帶標籤，不顯示 */}
+      <div className="grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] items-center gap-4 @[1040px]:gap-6 pb-3 border-b border-gray-mid flex-shrink-0 card:hidden">
         {/* 狀態指示器列 - 空白表頭 */}
         <div></div>
 
@@ -602,7 +603,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
       {filteredEquipment.length > 0 ? (
         // 設備列表 - 可滾動
-        <div className="flex-1 overflow-y-auto min-w-[1000px]">
+        <div className="flex-1 overflow-y-auto">
             {filteredEquipment.map(item => {
               const isBookmarked = bookmarkedIds.has(item.id)
               const quantity = quantities[item.id] || 1
@@ -635,14 +636,18 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     bookingType: equipmentDates.bookingType
                   }).allowed === false
 
+              // 卡片模式收起時藏的欄（數量、收藏、待繳、分類、單個／整組）；表格模式 card: 不作用
+              const fold = openCard === item.id ? '' : 'card:hidden'
+
               return (
                 <div
                   key={item.id}
-                  className="grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-6 py-3 border-b border-gray-mid items-center"
+                  onClick={() => setOpenCard(openCard === item.id ? null : item.id)}
+                  className="grid grid-cols-[6px_40px_80px_1fr_80px_80px_90px_100px_120px_60px] gap-4 @[1040px]:gap-6 card:grid-cols-[6px_64px_1fr_44px] card:gap-x-3 card:gap-y-1 card:cursor-pointer py-3 border-b border-gray-mid items-center"
                 >
                   {/* 狀態指示器 - 獨立的 grid 列 */}
                   <div
-                    className="h-full w-full"
+                    className={`h-full w-full ${fold ? 'card:row-span-2' : 'card:row-span-3'}`}
                     style={{
                       backgroundColor: statusColor
                     }}
@@ -654,7 +659,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       e.stopPropagation()
                       toggleBookmark(item.id, item.name)
                     }}
-                    className={`w-6 h-6 flex items-center justify-center ${isBookmarked ? 'cursor-pointer' : BTN}`}
+                    className={`w-6 h-6 card:box-content card:col-start-4 card:row-start-3 card:justify-self-center flex items-center justify-center ${fold} ${TAP} ${isBookmarked ? 'cursor-pointer' : BTN}`}
                     aria-label={isBookmarked ? '取消收藏' : '加入收藏'}
                   >
                     <span
@@ -667,7 +672,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
                   {/* 設備圖片 */}
                   <div
-                    className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
+                    className="w-[80px] h-[80px] card:w-16 card:h-16 card:col-start-2 card:row-start-1 card:row-span-2 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
                     onClick={(e) => handleImageClick(e, item.mainImage)}
                   >
                     <img
@@ -678,7 +683,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   </div>
 
                   {/* 設備名稱＋（屬於組合時）單個／整組下拉 */}
-                  <div className={`font-chinese text-sm flex flex-col items-start gap-1 ${
+                  <div className={`font-chinese text-sm flex flex-col items-start gap-1 card:col-start-3 card:row-start-1 ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
                     {item.name}
@@ -686,12 +691,13 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     {(selectedCategory === '全部' || selectedCategory === '收藏') && (() => {
                       const cat = EQUIPMENT_CATEGORIES.find(c => c.zh === item.category)
                       return (
-                        <span className={`${CHIP} bg-gray-dark font-chinese ${isAvailable ? 'text-gray-light' : ''}`}>
+                        <span className={`${CHIP} bg-gray-dark font-chinese ${fold} ${isAvailable ? 'text-gray-light' : ''}`}>
                           {cat ? t(cat.en, cat.zh) : item.category}
                         </span>
                       )
                     })()}
                     {rowBundles.length > 0 && (
+                      <div className={fold} onClick={e => e.stopPropagation()}>
                       <Select
                         size="xs"
                         value={modes[item.id] ?? ''}
@@ -708,47 +714,63 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                           }))
                         ]}
                       />
+                      </div>
                     )}
                   </div>
 
+                  {/* 數字欄：表格時 contents＝各佔一格；卡片時併一列（總數量收掉，留可借／待繳／押金） */}
+                  <div className="contents card:flex card:flex-wrap card:items-center card:gap-x-2 card:gap-y-1 card:col-start-3 card:row-start-2">
                   {/* 總數量 */}
-                  <div className={`font-english text-sm text-center ${
+                  <div className={`font-english text-sm text-center card:hidden ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
                     {item.originalQuantity}
                   </div>
 
                   {/* 可借數量：部分時段顯示最好的一天可借幾件（橘字） */}
-                  <div className={`font-english text-sm text-center ${
+                  <div className={`font-english text-sm card:text-xs text-center card:flex card:items-baseline card:gap-1 ${
                     !isAvailable ? 'text-gray-mid' : status === 'partial' ? 'text-orange' : 'text-white'
                   }`}>
+                    <div className="hidden card:block text-2xs text-gray-light">{t('Avail.', '可借')}</div>
                     {status === 'partial' ? maxDayQty : availableQty}
                   </div>
 
-                  {/* 待繳押金數量（該時段押金未繳的佔用，見 equipment_reserved） */}
-                  <div className={`font-english text-sm text-center ${
+                  {/* 待繳押金數量（該時段押金未繳的佔用，見 equipment_reserved）；卡片展開時獨立一行 */}
+                  <div className={`font-english text-sm card:text-xs text-center card:flex card:items-baseline card:gap-1 card:order-last card:basis-full ${fold} ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
+                    <div className="hidden card:block text-2xs text-gray-light">{t('On Hold', '待繳押金')}</div>
                     {reservedMap[item.id]?.onHold ?? 0}
                   </div>
 
                   {/* 押金/個 */}
-                  <div className={`font-english text-sm text-center ${
+                  <div className={`font-english text-sm card:text-xs text-center ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
                     NT$ {setBundle ? setBundle.deposit : item.deposit}
                     {setBundle && <span className="text-2xs text-gray-light">/{t('set', '組')}</span>}
                   </div>
 
+                  {/* 展開鈕：點擊冒泡到整列的 onClick，鍵盤 Enter 也走同一條 */}
+                  <button
+                    type="button"
+                    aria-expanded={!fold}
+                    aria-label={t('Details', '明細')}
+                    className={`hidden card:flex ml-auto items-center text-gray-light cursor-pointer ${TAP}`}
+                  >
+                    <span className={`material-symbols-outlined transition-transform duration-300 ${fold ? '' : 'rotate-180'}`}>expand_more</span>
+                  </button>
+                  </div>
+
                   {/* 數量調整 - + (純文字按鈕，中間可輸入) */}
-                  <div className="flex items-center justify-center gap-4">
+                  <div className={`flex items-center justify-center gap-4 card:gap-0 card:justify-start card:col-start-2 card:col-span-2 card:row-start-3 ${fold}`}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         decrementQuantity(item.id)
                       }}
                       disabled={!canAdd || quantity <= 1}
-                      className={`font-english text-sm text-white ${BTN}`}
+                      className={`font-english text-sm text-white card:w-11 card:h-11 ${BTN}`}
                     >
                       -
                     </button>
@@ -775,14 +797,14 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         incrementQuantity(item.id)
                       }}
                       disabled={!canAdd || quantity >= maxQty}
-                      className={`font-english text-sm text-white ${BTN}`}
+                      className={`font-english text-sm text-white card:w-11 card:h-11 ${BTN}`}
                     >
                       +
                     </button>
                   </div>
 
                   {/* 加入清單：白底圓角購物車 icon；不可加時 50% 透明但仍可點（toast 說明原因） */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center card:col-start-4 card:row-start-1 card:row-span-2 card:justify-end">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -790,7 +812,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       }}
                       aria-disabled={!canAdd || !hasSelectedDates || wouldExceedLightLimit || isSuspended}
                       aria-label={t('Add', '加入清單')}
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                      className={`w-9 h-9 card:w-11 card:h-11 rounded-lg flex items-center justify-center ${
                         canAdd && hasSelectedDates && !wouldExceedLightLimit && !isSuspended
                           ? `bg-white text-black ${BTN}`
                           : 'bg-white text-black opacity-20 cursor-not-allowed'
@@ -808,6 +830,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
           <p className="text-gray-light text-sm">{t('No Equipment Found', '找不到符合條件的設備')}</p>
         </div>
       )}
+      </div>
     </div>
   )
 }

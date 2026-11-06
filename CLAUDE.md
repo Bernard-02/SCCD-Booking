@@ -8,7 +8,7 @@
 - **React Router v7** — SPA 路由
 - **Zustand** — 收藏（bookmark）狀態、介面語言（`stores/langStore.ts`）
 - **Tailwind CSS v4** (`@tailwindcss/vite`) 共存於舊的 `css/*.css` 檔案
-- **動畫**：GSAP（唯一動畫庫，舊的 framer-motion／animejs 已移除）
+- **動畫**：原生 CSS（transition、`@keyframes`，共用的在 `css/animations.css`），不裝動畫庫（2026-11-06 定；gsap 從沒被 import 過，已移除）
 - **其他**：jspdf、html2canvas（僅 Profile 訂單下載收據用，點下載時才動態載入：`components/profile/OrderReceipt.tsx`）
 
 ## 目錄結構
@@ -25,7 +25,7 @@ src/
     common/                     # Toast、ConfirmDialog、BookingDetailsDialog
     space/                      # ClassroomList、SpaceAreaMap
     profile/                    # ExtendDialog
-    admin/                      # 後台共用 UI 語彙（adminUi）、OrderActionDialog
+    admin/                      # 後台共用 UI 語彙（adminUi）、OrderActionDialog、MfaGate（2FA 關卡）
   contexts/                     # AuthContext、DateSelectionContext
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
   stores/bookmarkStore.ts       # Zustand 收藏 store
@@ -33,7 +33,8 @@ src/
   services/                     # Supabase 存取層（supabase client、auth、orders、equipment、space、admin…）
   utils/                        # authTypes、authStorage、storageKeys、timeUtils、gradeUtils
   data/contactInfo.ts           # 系學會聯絡資訊的項目與順序（文字從 site_content 讀）
-  data/siteContent.ts           # 後台可改的說明文字清單＋內建預設（使用教學／系學會／關於／聯絡方式／延期規則）
+  data/siteContent.ts           # 後台可改的欄位型文字＋內建預設（關於／聯絡方式／延期規則）
+  data/siteSections.ts          # 段落型說明頁（使用教學／系學會）的內建段落與積木種類；後台拖曳排序、滑入面板編輯
   types/equipment.ts
 css/                            # 舊的樣式，由 main.tsx 全量 import
 public/                         # 靜態資源（Area SVG 區域圖、Images、Icons）
@@ -67,7 +68,11 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **登入狀態**：`localStorage.sccd_login_data`（記住我）或 `sessionStorage.sccd_login_data`（僅此次）；
   Supabase 憑證（`sb-*`）也跟著放同一邊（`services/supabase.ts` 自訂 storage＋`persistAuth`），沒勾記住我關分頁即真的登出
 - **過期**：閒置效期 30 天——每次開 app 把 `loginTime` 續成現在，`loginTime + expiresIn < now` 才過期，過期連 Supabase 一起登出；
-  app 資料在但 Supabase 憑證已沒了也視為登出
+  app 資料在但 Supabase 憑證已沒了也視為登出。**admin 例外**（2026-11-06，後台在學會共用電腦上用）：登入起算固定 12 小時、不續期，分頁開著也會到期
+  （`authStorage.isLoginExpired`＋`AdminLayout` 每分鐘檢查，導回 `/?expired=1` 顯示提示）；真正的防線在 `user_role()`（`supabase/admin-session-limit.sql`，看 `auth.sessions.created_at`）。
+  **後台 2FA**：帳密或 Google 登入後由 `AdminRoute` 的 `components/admin/MfaGate` 接手（Supabase TOTP，免費；第一次顯示 QR 綁定，之後輸入 6 位數驗證碼），`user_role()` 要求 JWT `aal2`，只過第一步拿不到後台權限。
+  **後台同時只留一台**：通過 2FA 才把其他裝置登出（`verifyMfa` 的 `signOut({ scope: 'others' })`，只知道密碼的人踢不掉值班中的電腦），舊裝置由 `AdminLayout` 每分鐘查 `user_role` 發現、導回 `/?kicked=1`。
+  踢舊的、不擋新的：擋新登入的話上一台忘了登出，下一班就進不去。登出用 `scope: 'local'` 只登出這台。後台帳號改用學會 Gmail 登入、換屆交接見 `docs/google-login-setup.md`
 - **登入實作**（2026-10-24 改學校 Google 帳號）：學生按「使用學校 Google 帳號登入」→ `signInWithGoogle` 導去 Google →
   跳回首頁由 `HomePage` 呼叫 `AuthContext.finishGoogleLogin` 撈 profile；資格在 DB trigger 把關（`supabase/google-login.sql`：
   網域 gm／gm1／gm2.usc.edu.tw，**且學號或 Email 要先在後台會員管理「新增會員」登記過**＝`login_allowlist`，`members-v2.sql`，2026-10-25 改封閉名單，不再依學號格式自動放行），
@@ -87,7 +92,6 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 | `sccd_equipment_dates` | 設備日期選擇（24h 過期） |
 | `sccd_space_dates` | 空間日期選擇（24h 過期） |
 | `sccd_bookmarks` 或 `sccd_bookmarks_{studentId}` | 收藏（依是否登入） |
-| `sccd_favorites_equipment` / `sccd_favorites_classroom` | 舊的收藏 key（legacy-bridge 使用） |
 | `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
 | `sccd_google_pending` | sessionStorage：Google 登入進行中（值＝記住我 1／0），跳回首頁後即刪 |
 | `sccd_lang` | 前台介面語言（`zh`／`en`，zustand persist） |
@@ -109,7 +113,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）／通知（2026-11-02 從左上鈴鐺改成獨立頁 `/admin/notifications`：清單由 AdminLayout 抓、Outlet context 傳入，標題右「全部已讀」鈕；側欄 icon 有未讀粉紅點）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／文字內容〔2026-11-02 加：ⓘ 三個分頁與延期規則的說明文字，`site_content` 表（`supabase/site-content.sql`），架構固定只改文字，清空＝回內建〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
+- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）／通知（2026-11-02 從左上鈴鐺改成獨立頁 `/admin/notifications`：清單由 AdminLayout 抓、Outlet context 傳入，標題右「全部已讀」鈕；側欄 icon 有未讀粉紅點）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／文字內容〔2026-11-02 加、11-03 段落化：使用教學／系學會＝段落清單拖曳排序＋右側滑入面板改標題與積木（`site_sections` 表，`supabase/site-sections.sql`，整頁一次儲存）；關於／聯絡方式／延期規則仍是固定欄位（`site_content`），清空＝回內建〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
   後台通知（2026-11-02）：學生送單／改品項／延期／取消由 `orders` trigger 發給 admin（`supabase/admin-notifications.sql`），
   側欄鈴鐺（`NotificationPanel` 與前台共用）點一則跳 `/admin/orders?student=學號`。
 - **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）；之後補的延期不得延入封鎖期、同類型限一單、修改已送出設備單也已完成。剩遠期單阻擋（待學會定細則）。grade 慣例見 rental-rules.md「年級限制」。
@@ -117,17 +121,22 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
 - **部分時段可借用**（2026-11-02）：設備卡（含整組，看零件逐日）／地圖格／教室依「你選的區間逐日夠不夠」分綠／橘／粉（設備看卡片上填的數量，最好的一天可借幾件＝數量上限；同類型有未歸還單時日期列會清掉已存的日期），橘的點加入開 `components/common/PartialDialog`
   選一段（依日期順序、預設第一段），該類日期改成那段、清單同類品項一起改（同類型限一單，不開第二張）。SQL：`partial-availability.sql`（兩支逐日 RPC；沒執行時前端自動退回整段判定）。
-- **階段 5 手機版**：Equipment／Space／RentalList／Profile 等頁目前只有桌機版，標準見下方「手機版（RWD）標準」；等桌面版驗收（階段 1.5）確認後再做。
+- **階段 5 RWD 與手機版**：前台 RWD 與手機版面 2026-11-06 完成（Equipment／Space／RentalList／Profile、導覽、日期列、地圖格子清單），待實機驗收；後台只做桌面 RWD，不做手機版，1280px 待人工確認。標準見下方「手機版（RWD）標準」，清單見 roadmap.md。
 - **階段 5.5 無障礙**（2026-11-02 加）：至少鍵盤可操作——Calendar 日期格／地圖格／訂單卡等 16 處可點非按鈕元素、對話框焦點管理、全站 focus-visible、Toast aria-live；清單見 roadmap.md。
 - **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
 
 ## 手機版（RWD）標準
 
-- **斷點**：以 Tailwind 的 `md`（768px）為手機／桌機唯一分界，不另設自訂斷點。
-- **模式**：複雜頁面採「同頁兩份 JSX」——桌機 `hidden md:block`／`md:flex`、手機 `md:hidden`（參考 `BookingResourcesPage` 既有做法）；簡單版面優先用響應式 class 寫成單份 JSX（參考 `HomePage` 登入頁）。
-- **日曆**：`Calendar` 已有 `isMobile` prop（單月顯示），手機版直接傳 `isMobile={true}`。
-- **觸控**：hover-only 的互動（tooltip、hover 預覽）必須有觸控替代；可點擊目標最小 44×44px。
-- **驗證寬度**：手機以 375px 為基準寬度檢查，橫向不得出現頁面級卷軸。
+- **範圍**（2026-11-06 定）：前台先做 RWD，再調手機版面；後台只做桌面 RWD，不做手機版。
+- **斷點**：以 Tailwind 的 `md`（768px）為手機／桌機分界，桌面內的寬度差異用內建 `lg`／`xl`，不另設自訂斷點。Equipment／Space／日期列的左欄版面 `lg` 以上才有，以下分類移到上方；清單頁摘要 `lg` 以下併入同一欄。
+- **寫法**：手機覆寫一律用 `max-md:`／`max-lg:`，桌機 class 不動（改動最小、不會誤傷桌機）。Tailwind v4 的 `hover:` 只在有滑鼠的裝置生效，不用另外處理觸控黏住。
+- **清單列**：`EquipmentGrid`／`ClassroomList` 用 `card:` 變體（`src/index.css`，容器 < 940px 改卡片），看容器寬不看視窗。父層要有 `@container`，且不要放在含 `fixed` 子元素（全螢幕圖片）的外層，container 會變成 fixed 的定位基準。
+- **模式**：優先用響應式 class 寫成單份 JSX（參考 `HomePage` 登入頁）。差太多的區塊才用「同頁兩份 JSX」——桌機 `hidden md:block`／`md:flex`、手機 `md:hidden`（參考 `BookingResourcesPage`）；`hidden` 只是 CSS 隱藏，兩份都會 mount，自己抓資料的元件（如 `EquipmentGrid`）不要用這招，改用 `matchMedia` 只 mount 一份。
+- **字級**（2026-11-06 定）：手機另有一組字級，在 `src/index.css` 的 `@media` 覆寫 token（18／20／24／28／40），12／14／16 內文不動；元件照寫 `text-*` 就好，排版真的塞不下才加 `max-md:text-*`。手機輸入框固定 16px，否則 iOS 聚焦會放大整頁。
+- **收合**（2026-11-06 定）：桌機一次呈現、手機可收起的內容用 `Collapse` 的 `below="md"`／`"lg"`（純 CSS，以上永遠展開）。目前有圖例（標題列「狀態」鈕）、使用教學段落、日期列（選完日期自動收，只留起訖日與類型）；設備卡片用 `card:` 變體收合，一次展開一張，收著仍可直接加入清單。**警示、缺貨與送出條件不收**，學生要看得到為什麼不能送出。
+- **日曆**：`Calendar` 內部用 `hooks/useIsMobile`，手機自動單月，呼叫端不用傳 prop。排列差異用 CSS 就好，`useIsMobile` 只給渲染內容不同的地方。
+- **觸控**：hover-only 的互動（tooltip、hover 預覽）必須有觸控替代；可點擊目標最小 44×44px，icon 鈕接 `TAP`（`components/common/btn.ts`，撐大點擊範圍但版面不變）。A5F 地圖格子手機上點不到（玻璃牆最窄 2.4px），`lg` 以下由 `SpacePage` 的格子清單代替，雙指縮放用瀏覽器原生。
+- **驗證寬度**：手機以 375px 為基準寬度檢查，後台以 1280px 為最窄桌面寬度，橫向都不得出現頁面級卷軸。自動截圖不要登入 `sccdsa` 開 `/admin`：2FA 未綁定時每次載入都會重建未驗證的 factor，後台版面由人工確認。
 
 ## 已知 Tech Debt
 
@@ -146,8 +155,10 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   元件內用 `t(英, 中)`、ConfirmDialog 的 `messageEn`；hook／service／事件裡用 `tr(英, 中)`（`stores/langStore`，讀當下語言）。
   SQL `raise exception` 維持中文，英文在 `utils/serverErrors.ts` 對照——**新增或修改學生會看到的 server 錯誤時，那裡要一起加英文**。
   新寫的提示文字直接附英文；既有英文由使用者校稿後可直接改。
-- **說明文字走 `site_content`**（2026-11-02 定）：使用教學／系學會／關於／聯絡方式／延期規則這類「給學生看的說明」不寫死在元件裡，
-  在 `data/siteContent.ts` 加一個 key（含中英內建預設），元件用 `useSiteContent()` 取值；條列用 `zipLines`。後台「文字內容」頁自動列出。
+- **說明文字不寫死在元件裡**（2026-11-02 定，2026-11-03 分兩層）：
+  段落型頁（ⓘ 使用教學／系學會）走 `site_sections`——一頁一串段落，一段＝標題＋一串積木（段落／編號條列／項目＋說明／連結／聯絡方式，存 `blocks` jsonb）；
+  後台段落清單拖曳排序、點一列右側滑入面板改標題與積木（積木也拖曳、增刪），標題顯示時自動編號；內建段落在 `data/siteSections.ts`，前台 `SectionsContent` 用 `useSiteSections(page)`。
+  欄位型（關於／聯絡方式／延期規則）走 `site_content`：在 `data/siteContent.ts` 加 key（含中英內建預設），元件用 `useSiteContent()`；條列用 `zipLines`。
   Toast／錯誤訊息等綁行為的提示文字不走這套。
 - 檔頭常有 `/** 功能說明 */` 區塊註解。
 - 路徑 alias：`@/*` → `src/*`。

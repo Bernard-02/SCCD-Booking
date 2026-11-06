@@ -412,14 +412,15 @@ const AdminOrdersPage: React.FC = () => {
             <thead>
               <tr className="text-left text-gray-light">
                 {COLUMNS.map(col => <SortTh key={col.field} zh={col.zh} field={col.field} className={col.w ?? ''} {...sortProps} />)}
-                <th className={`${th} w-40`}>操作</th>
+                <th className={`${th} w-40 right-0 z-20`}>操作</th>
               </tr>
             </thead>
             <tbody>
               {pageRows.map(o => (
-                <tr key={o.id} className="hover:bg-white/10">
+                <tr key={o.id} className="group hover:bg-white/10">
                   {COLUMNS.map(c => CELL[c.field](o, cellCtx))}
-                  <td className={td}>
+                  {/* sticky 要實色底蓋住捲過去的欄；hover 用同色漸層疊上去，才跟整列 white/10 一致 */}
+                  <td className={`${td} sticky right-0 bg-black group-hover:bg-linear-to-r group-hover:from-white/10 group-hover:to-white/10`}>
                     {(() => {
                       // 收押金／取件／歸還／收罰款在各自的欄；這裡是其餘動作（情境 9／13）：
                       // 學生取件後新增設備 → 前面多一個「點交」；處理中由收押金／歸還欄顯示，這裡留白

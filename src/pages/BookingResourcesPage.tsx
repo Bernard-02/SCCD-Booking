@@ -24,7 +24,7 @@ const BookingResourcesPage = () => {
     onAnimationEnd: () => setReady(prev => new Set(prev).add(key))
   })
   return (
-    <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
+    <div className="bg-black text-white h-dvh flex flex-col overflow-hidden">
       <Header />
 
       {/* 主要內容區域 - 佔滿剩餘空間，Footer 固定在底部 */}

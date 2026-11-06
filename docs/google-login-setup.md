@@ -70,10 +70,33 @@
 | LINE／IG 裡開網頁登不進去 | Google 不允許 App 內建瀏覽器登入；LINE 會自動改開外部瀏覽器，其他請學生用 Safari／Chrome |
 | 跳回 `localhost` 或錯的網址 | D-2 的 Redirect URLs／Site URL 沒設對 |
 
+## 後台用學會 Gmail 登入
+
+學會 Gmail 除了建 Google Cloud 專案，也用來登入後台（2026-11-06 定），上面 A～D 完成後做一次。
+
+1. **SQL Editor** 把 `sccdsa` 帳號的 email 換成學會 Gmail，Google 登入才會接到同一個帳號（Gmail 不是學校網域，被當成新帳號會擋下）：
+   ```sql
+   update auth.users set email = '學會Gmail', email_confirmed_at = now()
+     where id = (select id from public.students where student_id = 'sccdsa');
+   update public.students set email = '學會Gmail' where student_id = 'sccdsa';
+   ```
+2. 登入頁按 Google 登入鈕、選學會 Gmail → 應該出現 2FA 驗證碼，通過後進後台。
+   如果顯示「請使用學校 Google 帳號登入」，代表沒接到同一個帳號，先用學號密碼登入，別重複建帳號。
+3. 學號密碼登入保留當備援（Google 故障時用），一樣要過 2FA。
+
+**還沒實測**：Supabase 文件寫明同 email 會自動連結，但第 1 步是直接改資料表，要實際走一次才算數。
+
 ## 交接
 
 - Google Cloud 專案：IAM 把下一屆的帳號加成 Owner，或直接交接學會 Google 帳號。
 - Client secret 外洩或忘記：C 的同一個用戶端可新增一組 secret，貼到 D-1 後刪掉舊的。
+- **後台帳號**（換屆必做，舊幹部才會失效）：① 改學會 Gmail 密碼 ② 改 `sccdsa` 密碼（改了舊裝置也會被登出）③ 重新綁定 2FA。
+  順序不能反：不先改密碼，知道舊密碼的人可以搶先綁定。
+- **重新綁定 2FA**（換屆、手機全部遺失、要加新手機時）：SQL Editor 執行下面這行，下次登入會出現新 QR，所有要值班的人一起重掃。
+  QR 只在綁定時顯示，事後要加手機只能這樣重綁。
+  ```sql
+  delete from auth.mfa_factors where user_id = (select id from public.students where student_id = 'sccdsa');
+  ```
 
 ## 待定
 

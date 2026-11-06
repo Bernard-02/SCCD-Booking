@@ -4,7 +4,7 @@
  * 右上角為使用說明；姓名改顯示在 Footer 的 Profile icon 旁。
  */
 
-import { BTN, CHIP } from '@/components/common/btn'
+import { BTN, CHIP, TAP } from '@/components/common/btn'
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -60,19 +60,19 @@ const ProfilePage: React.FC = () => {
   ]
 
   return (
-    <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
+    <div className="bg-black text-white h-dvh flex flex-col overflow-hidden">
       <Header />
 
       {/* Main Content */}
-      <main className="flex-1 pt-20 flex flex-col overflow-hidden">
+      <main className="flex-1 pt-20 max-md:pt-16 flex flex-col overflow-hidden">
         <div className="container h-full flex flex-col">
           {/* 左右分割佈局 */}
-          <div className="flex flex-1 overflow-hidden pt-4 pb-4">
+          <div className="flex flex-1 overflow-hidden pt-4 pb-4 max-md:flex-col max-md:gap-4 max-md:pt-0">
             {/* 左側：功能選單（佔 3） */}
-            <div className="w-[30%] flex-shrink-0 pr-3 flex flex-col items-start">
+            <div className="w-[30%] max-md:w-full flex-shrink-0 pr-3 max-md:pr-0 flex flex-col items-start">
               {/* 選中的分頁＝白底黑字圓角矩形（同訂單卡片展開時的反白）；inline-flex＝各項同寬、以最長的為準；
                   樣式共用 components/common/navItem.ts */}
-              <nav className="inline-flex flex-col gap-2 flex-1">
+              <nav className="inline-flex flex-col gap-2 flex-1 max-md:flex-row max-md:w-full">
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
@@ -84,7 +84,7 @@ const ProfilePage: React.FC = () => {
                   </button>
                 ))}
                 {/* 登出：同上方選單樣式，放同一欄底部（inline-flex 讓它與上方選單同寬），緊貼 Footer 的 Profile 頭像上方 */}
-                <button onClick={handleLogout} className={`mt-auto ${navItemCls(false)}`}>
+                <button onClick={handleLogout} className={`mt-auto max-md:mt-0 max-md:ml-auto ${navItemCls(false)}`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
                   <span>{t('Log out', '登出')}</span>
                 </button>
@@ -92,7 +92,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* 右側：內容區域 */}
-            <div className="flex-1 pl-12 pr-6 overflow-y-auto">
+            <div className="flex-1 min-h-0 pl-12 pr-6 max-md:pl-0 max-md:pr-0 overflow-y-auto">
               <div id="content-area">
                 {/* 根據當前選擇的section渲染內容 */}
                 {currentSection === 'history' && <RentalHistorySection />}
@@ -428,7 +428,7 @@ const RentalHistorySection: React.FC = () => {
     const isOpen = openOrder === receipt.rentalNumber
     const toggle = () => setOpenOrder(isOpen ? null : receipt.rentalNumber)
     // icon 操作鈕：跟著卡片文字色（反白時變黑），不可用＝30% 透明
-    const iconBtnCls = `flex items-center ${BTN}`
+    const iconBtnCls = `flex items-center ${TAP} ${BTN}`
 
     return (
       <div
@@ -438,7 +438,7 @@ const RentalHistorySection: React.FC = () => {
         }`}
       >
         {/* 摘要列：點擊展開／收合；hover 或展開時整張白底黑字 */}
-        <div onClick={toggle} className="flex justify-between gap-6 p-6 cursor-pointer">
+        <div onClick={toggle} className="flex justify-between gap-6 p-6 cursor-pointer max-md:flex-col max-md:gap-3 max-md:p-4">
           {/* 左：單號 → 種類＋狀態 → 日期與押金 */}
           <div>
             <div className="font-english text-xl">{receipt.rentalNumber}</div>
@@ -454,15 +454,15 @@ const RentalHistorySection: React.FC = () => {
                 {t(statusInfo.en, statusInfo.zh)}
               </span>
             </div>
-            <div className="flex items-center gap-8 mt-4 text-md font-english">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-1 mt-4 text-md max-md:text-sm font-english">
               <span>{formatDateRange(receipt.rentalDates)}</span>
               <span>NT$ {receipt.totalDeposit.toLocaleString()}</span>
             </div>
           </div>
 
           {/* 右：下載／延期／修改＋展開 chevron；下方倒數（hover 反白時一律轉黑字） */}
-          <div className="flex flex-col items-end justify-between">
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col items-end justify-between max-md:flex-row-reverse max-md:items-center">
+            <div className="flex items-center gap-3 max-md:gap-6" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={() => setPrinting(receipt)}
@@ -502,7 +502,7 @@ const RentalHistorySection: React.FC = () => {
                 onClick={toggle}
                 aria-expanded={isOpen}
                 aria-label={t('Details', '明細')}
-                className={`flex items-center ${BTN}`}
+                className={iconBtnCls}
               >
                 <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
@@ -513,7 +513,7 @@ const RentalHistorySection: React.FC = () => {
 
         {/* 展開：訂單明細（往下展開動畫） */}
         <Collapse open={isOpen}>
-          <div className="mx-6 py-6 border-t border-gray-light">
+          <div className="mx-6 py-6 border-t border-gray-light max-md:mx-4 max-md:py-4">
             <OrderDetail receipt={receipt} />
           </div>
         </Collapse>
@@ -523,8 +523,8 @@ const RentalHistorySection: React.FC = () => {
 
   return (
     <div>
-      {/* 使用說明：訂單頁右上的按鈕，點擊開彈窗（同其他確認視窗外觀） */}
-      <div className="flex justify-end mb-6">
+      {/* 使用說明：訂單頁右上的按鈕，點擊開彈窗（同其他確認視窗外觀）；捲動時 sticky 黏在頂部，黑底＋pb 蓋住捲上來的訂單卡 */}
+      <div className="sticky top-0 z-10 bg-black flex justify-end pb-6">
         <button
           type="button"
           onClick={() => setGuideOpen(true)}
@@ -708,7 +708,7 @@ const ProfileDataSection: React.FC = () => {
       {/* 個人資料欄位 */}
       <div className="space-y-10">
         {/* 第一行：姓名和班級 */}
-        <div className="grid grid-cols-2 gap-24">
+        <div className="grid grid-cols-2 gap-24 max-md:grid-cols-1 max-md:gap-6">
           <div>
             <label className="text-gray-light text-xs block mb-2">{t('Name', '姓名')}</label>
             <p className="font-chinese text-white text-sm">{currentUser?.name || '阿志'}</p>
@@ -723,7 +723,7 @@ const ProfileDataSection: React.FC = () => {
         </div>
 
         {/* 第二行：帳號和密碼 */}
-        <div className="grid grid-cols-2 gap-24">
+        <div className="grid grid-cols-2 gap-24 max-md:grid-cols-1 max-md:gap-6">
           <div>
             <label className="text-gray-light text-xs block mb-2">{t('Student ID', '學號')}</label>
             <p className="font-english text-white text-sm">{currentUser?.studentId || 'A111144001'}</p>
@@ -754,7 +754,7 @@ const ProfileDataSection: React.FC = () => {
         </div>
 
         {/* 第三行：手機號碼和Email */}
-        <div className="grid grid-cols-2 gap-24">
+        <div className="grid grid-cols-2 gap-24 max-md:grid-cols-1 max-md:gap-6">
           <div>
             <label className="text-gray-light text-xs block mb-2">{t('Phone', '手機號碼')}</label>
             <div className="flex items-center gap-3">

@@ -22,7 +22,7 @@ import { useCartReserved } from '../services/equipmentService'
 import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
 import { getCurrentStudentId } from '../utils/authStorage'
 import { useT } from '../stores/langStore'
-import { useSiteContent } from '../services/contentService'
+import { useGuideDocUrl } from '../services/contentService'
 
 interface BookingDetailsData {
   reason: string
@@ -46,7 +46,7 @@ const parseGroupKey = (key: string): { category: string; startDate: string; endD
 
 const RentalListPage = () => {
   const t = useT()
-  const content = useSiteContent()
+  const guideDocUrl = useGuideDocUrl() // 使用教學第一個「連結」積木的網址
   const {
     cart,
     updateEquipmentQuantity,
@@ -287,22 +287,22 @@ const RentalListPage = () => {
   }
 
   return (
-    <div className="bg-black text-white h-screen overflow-hidden flex flex-col">
+    <div className="bg-black text-white h-dvh overflow-hidden flex flex-col">
       <Header />
 
       {/* 主要內容區塊 */}
-      <main className="flex-1 pt-20 overflow-hidden flex flex-col">
+      <main className="flex-1 pt-20 max-md:pt-16 overflow-hidden flex flex-col">
         {/* 返回上一頁 */}
-        <div className="container hidden md:block">
+        <div className="container">
           <BackButton />
         </div>
 
         {/* flex-1 而非 h-full：扣掉返回鈕高度，底部送出鈕才不會被裁掉 */}
         <div className="container flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* 左右分欄佈局 */}
-          <div className="flex gap-16 flex-1 overflow-hidden">
+          <div className="flex gap-16 flex-1 overflow-hidden max-lg:flex-col max-lg:gap-6 max-lg:overflow-y-auto">
             {/* 左邊：租借清單（剩餘寬度） */}
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden max-lg:flex-none max-lg:overflow-visible">
               {/* 頁面標題 */}
               <div className="mb-6 flex justify-between items-center flex-shrink-0">
                 <h1 className="font-english text-white text-xl">
@@ -331,7 +331,7 @@ const RentalListPage = () => {
               </div>
 
               {/* 設備列表 */}
-              <div className="flex-1 overflow-y-auto pb-8">
+              <div className="flex-1 overflow-y-auto pb-8 max-lg:overflow-visible max-lg:pb-0">
                 <CartList
                   cart={cart}
                   onQuantityChange={updateEquipmentQuantity}
@@ -348,9 +348,9 @@ const RentalListPage = () => {
             </div>
 
             {/* 右邊：租借摘要 (20%)：押金／提醒／檢查清單可捲動，同意條款＋送出固定在底部 */}
-            <div className="w-1/5 flex-shrink-0 pr-4 pb-8 flex flex-col">
+            <div className="w-1/5 flex-shrink-0 pr-4 pb-8 flex flex-col max-lg:w-full max-lg:pr-0">
               {/* 租借摘要內容 */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="flex-1 min-h-0 overflow-y-auto max-lg:overflow-visible">
                 {/* 押金標籤 */}
                 <div className="mb-2">
                   <div className="text-xs text-gray-light">
@@ -364,7 +364,7 @@ const RentalListPage = () => {
                   disabled={depositGroups.length === 0}
                   className={`group w-full flex items-center justify-between mb-4 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
                 >
-                  <div className="text-2xl font-english font-normal text-white">
+                  <div className="text-2xl max-xl:text-xl font-english font-normal text-white whitespace-nowrap">
                     NT$ {totalDeposit.toLocaleString()}
                   </div>
                   {depositGroups.length > 0 && (
@@ -539,7 +539,7 @@ const RentalListPage = () => {
                   <span className="text-xs text-white leading-tight">
                     <span>{t("I have read and agree to the department's equipment & space rental ", '我已閱讀並同意系上租借設備與空間的')}</span>
                     <a
-                      href={content('guide.doc_url').zh}
+                      href={guideDocUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline cursor-pointer hover:opacity-50"

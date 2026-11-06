@@ -200,8 +200,8 @@ const AdminSpaceMapPage: React.FC = () => {
           <DatePicker value={date} onChange={setDate} />
 
           {/* 選到的區塊：代號・區域＋該日期借用人。高度跟內容走；借用人太多超過右欄時只在面板內捲 */}
-          {/* 灰卡片（gray-dark，同上方日期框底色、圓角 16px）：全部白字（gray-dark 底上 gray-light 對比太低，2026-11-02） */}
-          <div className="min-h-0 flex flex-col bg-gray-dark text-white rounded-2xl p-4 text-xs">
+          {/* 灰卡片（gray-dark，同上方日期框底色、圓角 12px，地圖說明框那級）：全部白字（gray-dark 底上 gray-light 對比太低，2026-11-02） */}
+          <div className="min-h-0 flex flex-col bg-gray-dark text-white rounded-xl p-4 text-xs">
             <div className="min-h-0 overflow-y-auto">
               {!selected ? (
                 <p className="font-chinese">點地圖上的區塊查看借用人</p>

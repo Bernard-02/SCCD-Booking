@@ -3,7 +3,7 @@
  * 按照租借日期分組顯示購物車項目
  */
 
-import { BTN, BTN_OUTLINE, CHIP } from '@/components/common/btn'
+import { BTN, BTN_OUTLINE, CHIP, TAP } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
@@ -305,7 +305,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
           // 選取模式：整組 padding 緩動右移 36px，圓圈從左側淡入（絕對定位在讓出的空間）
           <div key={groupKey} className={`mb-8 transition-[padding] duration-300 ease-in-out ${selectMode ? 'pl-9' : 'pl-0'}`}>
             {/* 第一行：Checkbox（僅選取模式）+ 時間 + 押金 + Chevron */}
-            <div className="relative flex items-center gap-3">
+            <div className="relative flex items-center gap-3 max-md:flex-wrap max-md:gap-y-0">
               {/* Checkbox - 過期訂單也可以被選中用於刪除；invisible 讓隱藏時不能點也不能 tab 到 */}
               <button
                 onClick={() => {
@@ -329,12 +329,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
               </button>
 
               {/* 時間 */}
-              <h3 className={`font-english text-xl ${isExpired ? 'text-gray-mid' : 'text-white'}`}>
+              <h3 className={`font-english text-xl max-md:text-md max-md:flex-1 max-md:order-1 ${isExpired ? 'text-gray-mid' : 'text-white'}`}>
                 {formatDate(group.startDate)} - {formatDate(group.endDate)} ({getTotalItemCount()})
               </h3>
 
               {/* 押金（應用上限） */}
-              <span className={`font-english text-xl ml-auto ${isExpired ? 'text-gray-mid' : 'text-white'}`}>
+              <span className={`font-english text-xl ml-auto max-md:text-md max-md:ml-0 max-md:basis-full max-md:order-3 ${isExpired ? 'text-gray-mid' : 'text-white'}`}>
                 NT$ {groupDeposit.toLocaleString()}
               </span>
 
@@ -347,7 +347,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     toggleSpace(groupKey)
                   }
                 }}
-                className={`flex items-center justify-center ${BTN}`}
+                className={`flex items-center justify-center max-md:order-2 ${BTN}`}
               >
                 <span
                   className={`material-symbols-outlined transition-transform duration-300 text-xl ${isExpanded ? 'rotate-180' : ''} ${isExpired ? 'text-gray-mid' : 'text-white'}`}
@@ -359,7 +359,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
             </div>
 
             {/* 第二行：Tags + 填寫資訊按鈕 + Add 按鈕 */}
-            <div className="flex items-center gap-3 py-4">
+            <div className="flex flex-wrap items-center gap-3 py-4">
               {/* 類別標籤 (SPC 空間 / EQPT 設備) */}
               <span className={`${CHIP} bg-gray-dark ${isExpired ? 'text-gray-light' : 'text-white'}`}>
                 {t(categoryLabel.en, categoryLabel.zh)}
@@ -500,13 +500,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       renderedItems.push(
                         <div
                           key={areaGroupKey}
-                          className={`grid grid-cols-[80px_1fr_120px_40px] gap-6 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
+                          className={`grid grid-cols-[80px_1fr_120px_40px] max-md:grid-cols-[64px_1fr_auto] gap-6 max-md:gap-x-3 max-md:gap-y-1 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
                             isRemoving ? 'opacity-0' : 'opacity-100'
                           }`}
                         >
                           {/* 縮圖 */}
                           <div
-                            className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
+                            className="w-[80px] h-[80px] max-md:w-16 max-md:h-16 max-md:row-span-2 flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
                             onClick={(e) => handleImageClick(e, displayImage)}
                           >
                             <img
@@ -522,7 +522,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 押金（總和） */}
-                          <div className="font-english text-sm text-white text-center">
+                          <div className="font-english text-sm text-white text-center max-md:col-start-2 max-md:col-span-2 max-md:row-start-2 max-md:text-left">
                             NT$ {totalDeposit.toLocaleString()}
                           </div>
 
@@ -532,7 +532,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                               // 刪除該區域的所有區塊
                               blocks.forEach(block => handleRemoveItem(block.id, group.startDate, group.endDate))
                             }}
-                            className={`font-english text-sm text-white ${BTN}`}
+                            className={`font-english text-sm text-white max-md:col-start-3 max-md:row-start-1 max-md:justify-self-end ${TAP} ${BTN}`}
                             title={`移除 ${areaName} 所有區塊`}
                           >
                             ✕
@@ -548,13 +548,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                       renderedItems.push(
                         <div
                           key={item.id}
-                          className={`grid grid-cols-[80px_1fr_120px_40px] gap-6 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
+                          className={`grid grid-cols-[80px_1fr_120px_40px] max-md:grid-cols-[64px_1fr_auto] gap-6 max-md:gap-x-3 max-md:gap-y-1 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
                             isRemoving ? 'opacity-0' : 'opacity-100'
                           }`}
                         >
                           {/* 縮圖 */}
                           <div
-                            className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
+                            className="w-[80px] h-[80px] max-md:w-16 max-md:h-16 max-md:row-span-2 flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
                             onClick={(e) => handleImageClick(e, images[item.id] || item.image)}
                           >
                             <img
@@ -570,14 +570,14 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 押金 */}
-                          <div className="font-english text-sm text-white text-center">
+                          <div className="font-english text-sm text-white text-center max-md:col-start-2 max-md:col-span-2 max-md:row-start-2 max-md:text-left">
                             NT$ {item.deposit.toLocaleString()}
                           </div>
 
                           {/* 刪除按鈕 */}
                           <button
                             onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                            className={`font-english text-sm text-white ${BTN}`}
+                            className={`font-english text-sm text-white max-md:col-start-3 max-md:row-start-1 max-md:justify-self-end ${TAP} ${BTN}`}
                           >
                             ✕
                           </button>
@@ -610,13 +610,13 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     return (
                       <div
                         key={item.id}
-                        className={`grid grid-cols-[80px_1fr_140px_120px_40px] gap-6 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
+                        className={`grid grid-cols-[80px_1fr_140px_120px_40px] max-md:grid-cols-[64px_1fr_auto] gap-6 max-md:gap-x-3 max-md:gap-y-1 py-3 border-b border-gray-mid items-center transition-opacity duration-300 ${
                           isRemoving ? 'opacity-0' : 'opacity-100'
                         } ${isOutOfStock ? 'opacity-50' : ''}`}
                       >
                         {/* 縮圖 */}
                         <div
-                          className="w-[80px] h-[80px] flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
+                          className="w-[80px] h-[80px] max-md:w-16 max-md:h-16 max-md:row-span-2 flex-shrink-0 overflow-hidden cursor-pointer rounded-lg"
                           onClick={(e) => handleImageClick(e, images[item.id] || item.image)}
                         >
                           <img
@@ -645,11 +645,11 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                         </div>
 
                         {/* 數量調整 */}
-                        <div className="flex items-center justify-center gap-4">
+                        <div className="flex items-center justify-center gap-4 max-md:gap-0 max-md:justify-start max-md:col-start-2 max-md:row-start-2">
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity - 1)}
                             disabled={!canDecrement}
-                            className={`font-english text-sm text-white ${BTN}`}
+                            className={`font-english text-sm text-white max-md:w-11 max-md:h-11 ${BTN}`}
                           >
                             -
                           </button>
@@ -659,21 +659,21 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <button
                             onClick={() => onQuantityChange(item.id, item.quantity + 1)}
                             disabled={!canIncrement}
-                            className={`font-english text-sm text-white ${BTN}`}
+                            className={`font-english text-sm text-white max-md:w-11 max-md:h-11 ${BTN}`}
                           >
                             +
                           </button>
                         </div>
 
                         {/* 押金 */}
-                        <div className="font-english text-sm text-white text-center">
+                        <div className="font-english text-sm text-white text-center max-md:col-start-3 max-md:row-start-2 max-md:text-right">
                           NT$ {(item.deposit * item.quantity).toLocaleString()}
                         </div>
 
                         {/* 刪除按鈕 */}
                         <button
                           onClick={() => handleRemoveItem(item.id, group.startDate, group.endDate)}
-                          className={`font-english text-sm text-white ${BTN}`}
+                          className={`font-english text-sm text-white max-md:col-start-3 max-md:row-start-1 max-md:justify-self-end ${TAP} ${BTN}`}
                         >
                           ✕
                         </button>

@@ -45,6 +45,9 @@ const HomePage = () => {
   const [searchParams] = useSearchParams()
   const redirectUrl = searchParams.get('redirect_url')
   if (redirectUrl?.startsWith('/')) sessionStorage.setItem(REDIRECT_KEY, redirectUrl)
+  // 後台被 AdminLayout 導回來（別台登入／到期）：借錯誤槽提示，不然值班的人會以為壞了
+  const sessionNotice = searchParams.get('kicked') ? t('This account was signed in on another device, so you’ve been logged out here.', '帳號已在其他裝置登入，這台已登出')
+    : searchParams.get('expired') ? t('Your session has expired. Please log in again.', '登入已過期，請重新登入') : ''
 
   // 登入後導向：admin 進後台，其餘回到被擋下的頁面或型錄
   const landingPath = (role?: string) => {
@@ -169,7 +172,7 @@ const HomePage = () => {
                   {t('Continue with School Google Account', '使用學校 Google 帳號登入')}
                 </button>
                 {/* 錯誤預留槽（同密碼表單）；原因可能兩行，用 min-h */}
-                <p className="min-h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{googleError}</p>
+                <p className="min-h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{googleError || sessionNotice}</p>
                 <div className="flex justify-between items-center px-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -232,7 +235,7 @@ const HomePage = () => {
                     </span>
                   </button>
                 </div>
-                <p className="h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{passwordError}</p>
+                <p className="h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{passwordError || sessionNotice}</p>
               </div>
 
               {/* 記住我／忘記密碼 */}

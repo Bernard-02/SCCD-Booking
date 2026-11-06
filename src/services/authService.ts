@@ -10,7 +10,7 @@ import type { Student, LoginResult } from '../utils/authTypes'
 import { tr } from '../stores/langStore'
 
 // app 登入資料的閒置效期：30 天沒開 app 才過期（AuthContext 每次開啟把 loginTime 續成現在）；
-// Supabase 憑證由 refresh token 自動續期，過期時兩者一起登出
+// Supabase 憑證由 refresh token 自動續期，過期時兩者一起登出。admin 另有固定期限，見 authStorage.isLoginExpired
 const EXPIRES_IN = 30 * 24 * 60 * 60 * 1000
 
 interface StudentRow {
@@ -122,7 +122,46 @@ async function loadProfile(userId: string, token: string, provider: 'email' | 'g
 }
 
 export async function supabaseLogout(): Promise<void> {
-  await supabase.auth.signOut()
+  // local＝只登出這台，不動其他裝置的憑證（預設是 global）
+  await supabase.auth.signOut({ scope: 'local' })
+}
+
+/** 伺服器認定的角色：這個 session 被別台登入踢掉或到期時回 'anon'；離線查不到回 null */
+export async function fetchServerRole(): Promise<string | null> {
+  const { data } = await supabase.rpc('user_role')
+  return data
+}
+
+/** 後台 2FA 的下一步：已通過／輸入驗證碼／第一次綁定（QR） */
+export type MfaStep =
+  | { kind: 'passed' }
+  | { kind: 'verify'; factorId: string }
+  | { kind: 'enroll'; factorId: string; qrCode: string; secret: string }
+
+export async function getMfaStep(): Promise<MfaStep> {
+  const { data: aal, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  if (error) throw error
+  if (aal.currentLevel === 'aal2') return { kind: 'passed' }
+
+  const { data: factors, error: listError } = await supabase.auth.mfa.listFactors()
+  if (listError) throw listError
+  if (factors.totp[0]) return { kind: 'verify', factorId: factors.totp[0].id }
+
+  // 上次綁到一半留下的未驗證 factor 先清掉，再綁才不會撞名。已綁定後 server 不讓只過帳密的 session 新增，別人無法改綁
+  for (const f of factors.all.filter(f => f.status === 'unverified')) {
+    await supabase.auth.mfa.unenroll({ factorId: f.id })
+  }
+  const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
+  if (enrollError) throw enrollError
+  return { kind: 'enroll', factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret }
+}
+
+/** 驗證 6 位數碼（綁定與登入同一步）。通過才把其他裝置登出：後台同時只留一台，只知道密碼的人不能踢掉值班中的電腦 */
+export async function verifyMfa(factorId: string, code: string): Promise<boolean> {
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code })
+  if (error) return false
+  await supabase.auth.signOut({ scope: 'others' })
+  return true
 }
 
 // 即時查自己的 account_level（停權即時反映，不依賴登入時的快照）

@@ -245,7 +245,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
       onClick={onCancel}
     >
       <div
-        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-[800px] w-[90%] mx-4"
+        className="bg-gray-darker border border-gray-mid rounded-2xl max-w-[800px] w-[90%] mx-4 max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 標題和關閉按鈕 */}

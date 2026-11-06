@@ -4,7 +4,7 @@
  * 直接開網址、沒有站內上一頁時改回型錄，避免離開網站。
  */
 
-import { BTN } from '@/components/common/btn'
+import { BTN, TAP } from '@/components/common/btn'
 import { useNavigate } from 'react-router-dom'
 import { useT } from '../../stores/langStore'
 
@@ -15,7 +15,7 @@ const BackButton = () => {
   const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/catalog'))
 
   return (
-    <button type="button" onClick={goBack} aria-label={t('Back', '返回')} className={`inline-flex mb-6 text-white ${BTN}`}>
+    <button type="button" onClick={goBack} aria-label={t('Back', '返回')} className={`inline-flex ${TAP} mb-6 max-lg:-mb-2.5 text-white ${BTN}`}>
       <span className="material-symbols-outlined">arrow_back</span>
     </button>
   )

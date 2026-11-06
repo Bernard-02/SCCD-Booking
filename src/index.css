@@ -6,6 +6,9 @@
 /* Tailwind CSS v4 - 使用 @import 指令 */
 @import "tailwindcss";
 
+/* 清單列（EquipmentGrid／ClassroomList）塞不下表格時改卡片：看容器寬不看視窗，左欄多寬都準；父層要有 @container */
+@custom-variant card (@container (width < 940px));
+
 /* 全站粗體統一 600（semibold 視覺）：font-bold 不改名，直接重定義 token；字體只載 400/600 */
 @theme {
   --font-weight-bold: 600;
@@ -47,6 +50,20 @@
   --text-2xl--line-height: 1.25;
   --text-3xl: 4rem;
   --text-3xl--line-height: 1.2;
+}
+
+/* 手機字級（2026-11-06）：內文三階（12／14／16）手機照用，20px 以上的標題與數字往下收。
+   改這裡全站生效，元件不用寫手機字級；不放進 @layer，才蓋得過 @theme 的值 */
+@media (width < 48rem) {
+  :root {
+    --text-md: 1.125rem;  /* 18 */
+    --text-lg: 1.25rem;   /* 20 */
+    --text-xl: 1.5rem;    /* 24 */
+    --text-2xl: 1.75rem;  /* 28 */
+    --text-3xl: 2.5rem;   /* 40 */
+  }
+  /* iOS Safari 的輸入框小於 16px 時，聚焦會自動放大整頁 */
+  input, textarea { font-size: 1rem; }
 }
 
 /* 基礎樣式 - 必須在這裡定義，因為 @import 必須在最前面 */

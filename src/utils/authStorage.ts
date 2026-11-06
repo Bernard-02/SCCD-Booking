@@ -16,6 +16,13 @@ export interface LoginData {
   rememberMe: boolean
 }
 
+/** 後台帳號的登入期限（學會共用電腦）：從登入起算、不續期。server 端同值在 supabase/admin-session-limit.sql，改的話兩邊一起改 */
+export const ADMIN_SESSION_MS = 12 * 60 * 60 * 1000
+
+/** admin 看固定期限；其他人看閒置效期 expiresIn（loginTime 每次開 app 續）。這裡只負責到期登出，權限防線在 user_role() */
+export const isLoginExpired = (data: LoginData, now = Date.now()): boolean =>
+  now > data.loginTime + (data.student?.role === 'admin' ? ADMIN_SESSION_MS : data.expiresIn)
+
 /**
  * 從 localStorage→sessionStorage 讀取並解析登入資料。
  * 無資料或解析失敗回傳 null（不檢查過期、不清除——過期/清除邏輯由呼叫端各自決定）。

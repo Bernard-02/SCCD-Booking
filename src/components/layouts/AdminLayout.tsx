@@ -9,9 +9,11 @@ import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { autoImportHolidays } from '../../services/adminService'
+import { fetchServerRole } from '../../services/authService'
 import { navItemCls, NAV_ITEM } from '../common/navItem'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
 import { useLangStore, syncHtmlLang } from '../../stores/langStore'
+import { readLoginData, isLoginExpired } from '../../utils/authStorage'
 import { fetchMyNotifications, markAllNotificationsRead, type AppNotification } from '../../services/notificationsService'
 
 /** 給子頁（Outlet context）：通知頁讀清單、「全部已讀」 */
@@ -62,7 +64,17 @@ const AdminLayout: React.FC = () => {
   const [notifs, setNotifs] = useState<AppNotification[]>([])
   const loadNotifs = () => fetchMyNotifications().then(setNotifs).catch(() => {})
   useEffect(() => { void loadNotifs() }, [])
-  useAutoRefresh(() => { setNow(new Date()); void loadNotifs() })
+  useAutoRefresh(async () => {
+    // 分頁開著也要到期（共用電腦開過夜）：直接整頁重載，由 AuthContext 啟動時清憑證——
+    // 不等 logout()，signOut 在分頁暫停過後可能卡住不回，畫面就留著了
+    const login = readLoginData()
+    if (login && isLoginExpired(login)) { window.location.replace('/?expired=1'); return }
+    setNow(new Date())
+    void loadNotifs()
+    // 被別台登入踢掉：本機資料還在，要先 logout 清掉，不然重載又會判定已登入、跳回後台。離線查不到（null）不動作
+    const role = await fetchServerRole()
+    if (role && role !== 'admin') { await logout(); window.location.replace('/?kicked=1') }
+  })
   const unread = notifs.filter(n => !n.read).length
   // 通知頁的「全部已讀」鈕
   const markAllRead = () => {

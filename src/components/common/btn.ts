@@ -4,6 +4,8 @@
  * aria-disabled（仍可點、點了跳提示）的鈕沒有 :disabled，自己寫 'opacity-20 cursor-not-allowed'（見 EquipmentGrid 加入清單）。
  */
 export const BTN = 'cursor-pointer enabled:hover:opacity-50 disabled:cursor-not-allowed disabled:opacity-20'
+/** icon 鈕的觸控面積：24px icon 撐到 44px、負邊距抵銷，版面不變（CLAUDE.md RWD 標準：可點目標最小 44×44）。 */
+export const TAP = 'p-2.5 -m-2.5'
 /** 線框鈕（2026-11-02 定）：白線白字，hover 反白＝白底黑字（借「選中」的白底黑字語彙，所以只給動作型——點交／延期／新增／− ＋；
  *  toggle 的白底已代表選中，不用這個）；整顆變淡會像快停用。停用同 BTN 20%。<a> 沒有 :enabled，連結自己寫 hover:bg-white hover:text-black。 */
 export const BTN_OUTLINE = 'border border-white text-white cursor-pointer enabled:hover:bg-white enabled:hover:text-black disabled:cursor-not-allowed disabled:opacity-20'

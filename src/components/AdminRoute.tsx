@@ -1,11 +1,12 @@
 /**
- * 後台路由守衛：需登入且 role === 'admin' 才可進入。
+ * 後台路由守衛：需登入且 role === 'admin'，並通過 2FA（MfaGate）才可進入。
  * 真正的權限防線在 Supabase RLS（admin 才讀改得到全部資料）；此處僅為 UX，擋非 admin。
  */
 
 import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import MfaGate from './admin/MfaGate'
 
 interface AdminRouteProps {
   children: React.ReactNode
@@ -27,7 +28,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/" replace />
   }
 
-  return <>{children}</>
+  return <MfaGate>{children}</MfaGate>
 }
 
 export default AdminRoute

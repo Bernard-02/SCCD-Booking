@@ -4,7 +4,7 @@
  * 支援設備和空間各自獨立的日期選擇
  */
 
-import { BTN } from '@/components/common/btn'
+import { BTN, CHIP, TAP } from '@/components/common/btn'
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Calendar from './Calendar'
@@ -67,6 +67,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   const endDate = currentDates.endDate
   const bookingType = currentDates.bookingType
   const isMass = bookingType === 'mass-personal' || bookingType === 'mass-group'
+
+  // lg 以下：選完日期自動收起類型與按鈕，只留起訖日，高度讓給清單；按鈕可再展開
+  const [barOpen, setBarOpen] = useState(true)
+  const hasDates = !!startDate && !!endDate
+  useEffect(() => { if (hasDates) setBarOpen(false) }, [hasDates])
 
   const minSelectableDate = minStartDate(type, bookingType)
 
@@ -471,13 +476,13 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   }, [showExistingDates])
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
-      {/* 日曆區域 - 從 Bar 後面往上展開 */}
+    <div className="relative flex-shrink-0 z-20">
+      {/* 日曆區域 - 從 Bar 上緣往上展開 */}
       <div
-        className="bg-black overflow-hidden transition-all duration-500 ease-in-out relative"
+        className="absolute bottom-full left-0 right-0 bg-black overflow-hidden transition-all duration-500 ease-in-out"
         style={{
-          maxHeight: isExpanded ? 'calc(100vh - 5rem - 3.5rem)' : '0',
-          height: isExpanded ? 'calc(100vh - 5rem - 3.5rem)' : '0'
+          maxHeight: isExpanded ? 'calc(100dvh - 5rem - 3.5rem)' : '0',
+          height: isExpanded ? 'calc(100dvh - 5rem - 3.5rem)' : '0'
         }}
       >
         {/* X 按鈕 - 固定在右上角（header 下方），只在展開時顯示 */}
@@ -497,10 +502,10 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
         <div className="h-full flex flex-col justify-end">
           <div className="container flex gap-6">
             {/* 左側空白區域：20% */}
-            <div className="w-[20%] flex-shrink-0"></div>
+            <div className="w-[20%] flex-shrink-0 max-lg:hidden"></div>
 
             {/* 右側內容區域：80% */}
-            <div className="w-[80%]">
+            <div className="w-[80%] max-lg:w-full">
               <Calendar
                 startDate={startDate}
                 endDate={endDate}
@@ -516,22 +521,22 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
       {/* Bar 區域 - 固定在底部 */}
       <div className="bg-black container flex gap-6 pt-4 flex-shrink-0">
         {/* 左側空白區域：20% */}
-        <div className="w-[20%] flex-shrink-0"></div>
+        <div className="w-[20%] flex-shrink-0 max-lg:hidden"></div>
 
         {/* 右側內容區域：80% */}
-        {/* RWD：@container ＋ 右側按鈕在欄寬不足時改上下排列，而非被裁切
+        {/* RWD：@container ＋ 桌面欄寬不足時縮日期字級與間距；lg 以下兩列：類型＋按鈕／起訖日
             （不能用 overflow-x 捲動——會把 Exist Cart 彈出視窗一起裁掉）；
             flex-wrap 為更窄時的最後防線 */}
-        <div className="w-[80%] @container flex flex-wrap items-center justify-between gap-y-2 overflow-visible">
-          {/* 左邊群組：租借類型選擇、起租日、歸還日 */}
-          <div className="flex flex-wrap items-center gap-6 gap-y-2">
+        <div className="w-[80%] max-lg:w-full @container flex flex-wrap items-center justify-between gap-y-2 overflow-visible">
+          {/* 左邊群組：租借類型選擇、起租日、歸還日（手機 contents：子項直接參與外層排序） */}
+          <div className="max-lg:contents flex flex-wrap items-center gap-6 gap-y-2">
             {/* 第一組：租借類型選擇 */}
-            <div className="flex items-center gap-12 flex-shrink-0">
+            <div className={`flex items-center gap-12 flex-shrink-0 ${barOpen ? '' : 'max-lg:hidden'}`}>
               {/* 租借類型選擇 - 橫向排列 */}
-              <div className="flex items-center gap-8 flex-shrink-0">
+              <div className="flex items-center gap-8 max-md:gap-4 flex-shrink-0">
                 <button
                   onClick={() => handleBookingTypeChange('little')}
-                  className={`flex items-center gap-2 ${bookingType === 'little' ? 'cursor-pointer' : BTN}`}
+                  className={`flex items-center gap-2 max-lg:h-11 ${bookingType === 'little' ? 'cursor-pointer' : BTN}`}
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${littleStyles.radio}`}>
                     {bookingType === 'little' && (
@@ -545,7 +550,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
                 <button
                   onClick={() => handleBookingTypeChange(type === 'space' ? 'mass-group' : 'mass-personal')}
-                  className={`flex items-center gap-2 ${isMass ? 'cursor-pointer' : BTN}`}
+                  className={`flex items-center gap-2 max-lg:h-11 ${isMass ? 'cursor-pointer' : BTN}`}
                 >
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${massStyles.radio}`}>
                     {(isMass) && (
@@ -560,41 +565,57 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             </div>
 
             {/* 第二組：起租日 + 歸還日 */}
-            <div className="flex items-center gap-10 flex-shrink-0 ml-6">
+            <div className="flex items-center gap-10 lg:@max-[1040px]:gap-6 flex-shrink-0 ml-6 lg:@max-[1040px]:ml-2 max-lg:order-last max-lg:w-full max-lg:ml-0 max-lg:gap-3">
               {/* 起租日 - 可點擊開啟日曆 */}
               <div
-                className="flex items-center gap-8 flex-shrink-0 cursor-pointer hover:opacity-50"
+                className="flex items-center gap-8 lg:@max-[1040px]:gap-3 flex-shrink-0 cursor-pointer hover:opacity-50 max-lg:flex-col max-lg:items-start max-lg:gap-0 max-lg:flex-1"
                 onClick={handleStartDateClick}
               >
               <div className="flex flex-col">
                 <span className="text-xs text-gray-light leading-tight">{t('Start Date', '起租日')}</span>
               </div>
-              <span className="text-2xl font-english font-normal text-white">
+              <span className="text-2xl lg:@max-[1040px]:text-xl max-lg:text-md font-english font-normal text-white">
                 {formatDate(startDate)}
               </span>
             </div>
 
             {/* 歸還日 */}
-            <div className="flex items-center gap-8 flex-shrink-0">
+            <div className="flex items-center gap-8 lg:@max-[1040px]:gap-3 flex-shrink-0 max-lg:flex-col max-lg:items-start max-lg:gap-0 max-lg:flex-1">
               <div className="flex flex-col">
                 <span className="text-xs text-gray-light leading-tight">{t('End Date', '歸還日')}</span>
               </div>
-              <span className="text-2xl font-english font-normal text-white">
+              <span className="text-2xl lg:@max-[1040px]:text-xl max-lg:text-md font-english font-normal text-white">
                 {formatDate(endDate)}
               </span>
               </div>
+
+            {/* lg 以下：展開／收起類型與按鈕（內容在上方，收著時箭頭朝上）；收著時標出目前類型 */}
+            <button
+              type="button"
+              onClick={() => setBarOpen(o => !o)}
+              aria-expanded={barOpen}
+              aria-label={t('Booking options', '租借選項')}
+              className={`lg:hidden flex-shrink-0 flex items-center gap-2 text-white ${TAP} ${BTN}`}
+            >
+              {!barOpen && (
+                <span className={`${CHIP} bg-gray-dark`}>
+                  {type === 'space' ? (isMass ? t('Group', '團體') : t('Personal', '個人')) : (isMass ? t('Mass', '大量') : t('Light', '小量'))}
+                </span>
+              )}
+              <span className={`material-symbols-outlined transition-transform duration-300 ${barOpen ? 'rotate-180' : ''}`}>expand_less</span>
+            </button>
             </div>
           </div>
 
           {/* 右邊群組：操作按鈕 - Reset + Exist Cart */}
-          <div className="flex items-center gap-2 flex-shrink-0 relative ml-auto @max-[1040px]:flex-col @max-[1040px]:items-end @max-[1040px]:gap-1">
+          <div className={`flex items-center gap-2 flex-shrink-0 relative ml-auto ${barOpen ? '' : 'max-lg:hidden'}`}>
             {/* 重置：36px 灰底 icon 鈕（同工具鈕 BTN_TOOL 的灰底） */}
             <button
               disabled={!isResetEnabled}
               onClick={handleReset}
               aria-label={t('Reset', '重置')}
               title={t('Reset', '重置')}
-              className={`w-9 h-9 flex items-center justify-center rounded-lg bg-gray-dark text-white ${BTN}`}
+              className={`w-9 h-9 max-lg:w-11 max-lg:h-11 flex items-center justify-center rounded-lg bg-gray-dark text-white ${BTN}`}
             >
               <span className="material-symbols-outlined">restart_alt</span>
             </button>
@@ -603,7 +624,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
             <button
               onClick={() => setShowExistingDates(!showExistingDates)}
               disabled={existingCartDates.length === 0}
-              className={`existing-dates-btn flex items-center gap-2 pl-3 pr-4 py-2 rounded-lg bg-gray-dark text-white text-sm whitespace-nowrap ${showExistingDates ? 'cursor-pointer' : BTN}`}
+              className={`existing-dates-btn flex items-center gap-2 max-md:gap-1 pl-3 pr-4 max-md:pl-2 max-md:pr-2.5 py-2 max-lg:h-11 rounded-lg bg-gray-dark text-white text-sm whitespace-nowrap ${showExistingDates ? 'cursor-pointer' : BTN}`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>event_available</span>
               {t('Exist Cart', '已選日期')}
@@ -611,7 +632,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
             {/* 彈出視窗 - 在按鈕上方顯示 */}
             {showExistingDates && existingCartDates.length > 0 && (
-              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-darker border border-gray-mid rounded-2xl min-w-[360px] max-h-[400px] overflow-y-auto z-[100]">
+              <div className="existing-dates-popup absolute bottom-full right-0 mb-8 bg-gray-darker border border-gray-mid rounded-2xl min-w-[min(360px,calc(100vw-3rem))] max-h-[400px] overflow-y-auto z-[100]">
                 {/* 標題 */}
                 <div className="px-4 py-3 border-b border-gray-mid">
                   <span className="text-sm text-white">{t('Existing Cart Dates', '購物車已選日期')}</span>

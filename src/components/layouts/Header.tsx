@@ -1,10 +1,10 @@
 /**
  * Header 組件
- * 桌機：左 logo（回型錄）；右 Info（開 InfoDialog：教學／系學會／關於）、Cart、通知 三個 icon
+ * 左 logo（回型錄）；右 Info（開 InfoDialog：教學／系學會／關於）、Cart、通知 三個 icon
  * Profile 與外部連結在 Footer
  */
 
-import { BTN } from '@/components/common/btn'
+import { BTN, TAP } from '@/components/common/btn'
 import React from 'react'
 import NotificationPanel from '../common/NotificationPanel'
 import { Link, useLocation } from 'react-router-dom'
@@ -25,7 +25,6 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   const { pathname } = useLocation()
   const { cart } = useCart()
   const { isAuthenticated, currentUser } = useAuth()
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
   const [notificationMenuOpen, setNotificationMenuOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Notification[]>([])
   const [infoTab, setInfoTab] = React.useState<InfoTab | null>(null) // null＝InfoDialog 關閉
@@ -104,18 +103,18 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
       <header className="fixed top-0 left-0 right-0 bg-transparent header-main">
         <div className="container">
           <div className="flex justify-between items-center">
-            <Link to="/catalog" className="font-english font-bold text-white text-md">
+            <Link to="/catalog" className="font-english font-bold text-white text-md whitespace-nowrap">
               SCCDSA Booking
             </Link>
 
-            {/* 桌面版導航 - 如果 hideNavigation 為 true 則隱藏 */}
+            {/* 右側導航 - 如果 hideNavigation 為 true 則隱藏 */}
             {!hideNavigation && (
-              <nav className="flex items-center desktop-nav gap-6">
+              <nav className="flex items-center gap-6 max-md:gap-4">
                 {/* Info：開 InfoDialog（左分頁、右內容） */}
                 <button
                   type="button"
                   onClick={() => setInfoTab('guide')}
-                  className={`flex items-center text-white ${BTN}`}
+                  className={`flex items-center text-white ${TAP} ${BTN}`}
                   aria-label="Info"
                 >
                   <span className="material-symbols-outlined text-md">info</span>
@@ -124,12 +123,12 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                 {/* Cart：右上角數量徽章 */}
                 <Link
                   to="/cart"
-                  className={`relative flex items-center text-white ${pathname === '/cart' ? '' : 'hover:opacity-50'}`}
+                  className={`relative flex items-center text-white ${TAP} ${pathname === '/cart' ? '' : 'hover:opacity-50'}`}
                   aria-label={`${t('Cart', '清單')} (${cartCount})`}
                 >
                   <span className="material-symbols-outlined text-md">shopping_cart</span>
                   {cartCount > 0 && (
-                    <span className="font-english absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-white text-black text-2xs leading-4 text-center">
+                    <span className="font-english absolute top-1 right-0 min-w-4 h-4 px-1 rounded-full bg-white text-black text-2xs leading-4 text-center">
                       {cartCount}
                     </span>
                   )}
@@ -140,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   <Link
                     to="#"
                     onClick={handleNotificationClick}
-                    className={`relative flex items-center text-white ${notificationMenuOpen ? 'cursor-pointer' : BTN}`}
+                    className={`relative flex items-center text-white ${TAP} ${notificationMenuOpen ? 'cursor-pointer' : BTN}`}
                     aria-label="Notification"
                   >
                     <span className="material-symbols-outlined text-md">
@@ -148,7 +147,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                     </span>
                     {/* 全域紅點：只有在選單關閉且有未讀訊息時顯示 */}
                     {unreadCount > 0 && !notificationMenuOpen && (
-                      <span className="absolute top-0 right-0 bg-pink rounded-full w-2 h-2"></span>
+                      <span className="absolute top-2.5 right-2.5 bg-pink rounded-full w-2 h-2"></span>
                     )}
                   </Link>
 
@@ -165,116 +164,9 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
               </nav>
             )}
 
-            {/* 手機版導航 - 如果 hideNavigation 為 true 則隱藏 */}
-            {!hideNavigation && (
-              <nav className="flex items-center mobile-nav mobile-nav-gap">
-                <Link
-                  to="/cart"
-                  className="font-english font-bold uppercase text-white flex items-center"
-                >
-                  <div className="menu-item-wrapper">
-                    <span className="menu-text">
-                      ((<span id="mobile-cart-count">{cartCount}</span>) CART)
-                    </span>
-                    <span className="menu-text-hidden">
-                      ((<span className="mobile-cart-count-mirror">{cartCount}</span>) CART)
-                    </span>
-                  </div>
-                </Link>
-                <button
-                  id="mobile-menu-btn"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="font-english font-bold uppercase text-white flex items-center"
-                >
-                  <div className="menu-item-wrapper">
-                    <span className="menu-text">(MENU)</span>
-                    <span className="menu-text-hidden">(MENU)</span>
-                  </div>
-                </button>
-              </nav>
-            )}
           </div>
         </div>
       </header>
-
-      {/* 手機版選單 */}
-      <div className={`mobile-menu md:hidden ${mobileMenuOpen ? 'open' : ''}`} id="mobile-menu">
-        <div className="mobile-menu-content">
-          <div className="flex flex-col items-start menu-gap flex-grow">
-            <div className="menu-animate-enter">
-              <div className="menu-animate-enter-content menu-delay-1">
-                <Link
-                  to="/catalog"
-                  className="font-english font-bold uppercase text-white text-h3"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <div className="menu-item-wrapper">
-                    <span className="menu-text">(BOOKING)</span>
-                    <span className="menu-text-hidden">(BOOKING)</span>
-                  </div>
-                </Link>
-              </div>
-            </div>
-            <div className="menu-animate-enter">
-              <div className="menu-animate-enter-content menu-delay-2">
-                <Link
-                  to="/login"
-                  className="font-english font-bold uppercase text-white text-h3"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <div className="menu-item-wrapper">
-                    <span className="menu-text">(LOGIN)</span>
-                    <span className="menu-text-hidden">(LOGIN)</span>
-                  </div>
-                </Link>
-              </div>
-            </div>
-            <div className="menu-animate-enter">
-              <div className="menu-animate-enter-content menu-delay-3">
-                <a
-                  href="https://sccd.usc.edu.tw/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-english font-bold uppercase text-white text-h3"
-                >
-                  <div className="menu-item-wrapper">
-                    <span className="menu-text">(TO SCCD)</span>
-                    <span className="menu-text-hidden">(TO SCCD)</span>
-                  </div>
-                </a>
-              </div>
-            </div>
-            <div className="menu-animate-enter">
-              <div className="menu-animate-enter-content menu-delay-4">
-                <button
-                  type="button"
-                  className="font-english font-bold uppercase text-white text-h3"
-                  onClick={() => { setMobileMenuOpen(false); setInfoTab('about') }}
-                >
-                  <div className="menu-item-wrapper">
-                    <span className="menu-text">(ABOUT)</span>
-                    <span className="menu-text-hidden">(ABOUT)</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Copyright 在底部 */}
-          <div className="menu-animate-enter mobile-menu-content-bottom">
-            <div className="menu-animate-enter-content menu-delay-5">
-              <div className="copyright font-english font-bold text-white text-left text-xl">
-                <p>
-                  <span className="copyright-original">
-                    <span className="font-english uppercase">Copyright © SCCDSA</span>
-                    <span className="font-english"> All rights reserved.</span>
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Info lightbox：使用教學／系學會／關於 */}
       <InfoDialog tab={infoTab} onTabChange={setInfoTab} onClose={() => setInfoTab(null)} />

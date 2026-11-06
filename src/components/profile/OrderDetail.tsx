@@ -63,7 +63,8 @@ export const formatOrderTime = (iso?: string | null) => {
   return `${formatDate(iso)} ${d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`
 }
 
-const ROW = 'grid grid-cols-[56px_1fr_60px_100px] gap-4 py-3 border-b border-gray-light last:border-b-0 items-center text-sm'
+// 手機：名稱獨佔第一列，數量與金額排第二列
+const ROW = 'grid grid-cols-[56px_1fr_60px_100px] gap-4 max-md:grid-cols-[56px_1fr_auto] max-md:gap-y-1 max-md:[&>:first-child]:row-span-2 max-md:[&>:nth-child(2)]:col-span-2 max-md:[&>:nth-child(3)]:text-left py-3 border-b border-gray-light last:border-b-0 items-center text-sm'
 
 const Thumb: React.FC<{ src: string; alt: string }> = ({ src, alt }) => (
   <div className="w-14 h-14 overflow-hidden rounded-lg">
@@ -73,7 +74,7 @@ const Thumb: React.FC<{ src: string; alt: string }> = ({ src, alt }) => (
 
 // 分組標題列：名稱＋總數＋總押金（押金上限 5,000）
 const GroupHeader: React.FC<{ label: string; count: number; deposit: number }> = ({ label, count, deposit }) => (
-  <div className="grid grid-cols-[1fr_60px_100px] gap-4 pb-2 text-sm" style={{ fontWeight: 500 }}>
+  <div className="grid grid-cols-[1fr_60px_100px] max-md:grid-cols-[1fr_auto_auto] gap-4 pb-2 text-sm" style={{ fontWeight: 500 }}>
     <span>{label}</span>
     <span className="text-center font-english">{count}</span>
     <span className="font-english">NT$ {Math.min(deposit, 5000).toLocaleString()}</span>
@@ -101,7 +102,7 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
   ]
 
   return (
-    <div className="grid grid-cols-[2fr_3fr] gap-12">
+    <div className="grid grid-cols-[2fr_3fr] gap-12 max-lg:grid-cols-1 max-lg:gap-6">
       {/* 左：借用資訊 */}
       <dl className="space-y-4 text-sm">
         {info.map(([label, value, cls]) => (

@@ -464,7 +464,7 @@ const AdminHoursPage: React.FC = () => {
           </section>
 
           {/* ===== 右：值班時間（深灰卡片，和左邊月曆分開；表頭的 sticky 黑底在卡片裡改透明） ===== */}
-          <section className="w-[30rem] shrink-0 self-start bg-gray-darker rounded-2xl p-6">
+          <section className="w-[30rem] shrink-0 self-start bg-gray-dark rounded-2xl p-6">
             <div className="flex items-center justify-between gap-4 mb-6 h-9">
               <h2 className="text-sm text-white">值班時間</h2>
               {draft ? (

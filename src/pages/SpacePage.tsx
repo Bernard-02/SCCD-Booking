@@ -112,6 +112,7 @@ const SpacePage: React.FC = () => {
   const [hasProjectPermission, setHasProjectPermission] = useState<boolean>(pending?.permit ?? false)
   // 訪客按加入清單：帶去登入頁、登入後還原的選取
   const goLogin = () => navigate(loginPath('space', { main: selectedMainCategory, sub: selectedSubCategory, blocks: selectedBlocks, permit: hasProjectPermission }))
+  const [legendOpen, setLegendOpen] = useState(false) // lg 以下才有作用
   // 狀態篩選 - 添加 partial 狀態
   const [statusFilters, setStatusFilters] = useState<Set<'available' | 'unavailable' | 'partial'>>(
     new Set(['available', 'unavailable', 'partial'])
@@ -302,16 +303,18 @@ const SpacePage: React.FC = () => {
     return Math.min(total, 5000) // 上限 NT$5,000
   }
 
-  // 當前子分類尚可選取的區塊（該時段未被佔用、不在購物車）
-  const availableBlockIds = useMemo(() => {
+  // 當前子分類的所有區塊
+  const areaBlockIds = useMemo(() => {
     const targetAreas = selectedSubCategory ? AREA_MAPPING[selectedSubCategory] : undefined
     if (!targetAreas) return []
-    return Object.entries(spaceBlocks)
-      .filter(([id, data]) =>
-        targetAreas.includes(data.area) && !occupiedIds.includes(id) && !cartBlockIds.includes(id)
-      )
-      .map(([id]) => id)
-  }, [selectedSubCategory, cartBlockIds, spaceBlocks, occupiedIds])
+    return sortBlockIds(Object.keys(spaceBlocks).filter(id => targetAreas.includes(spaceBlocks[id].area)))
+  }, [selectedSubCategory, spaceBlocks])
+
+  // 當前子分類尚可選取的區塊（該時段未被佔用、不在購物車）
+  const availableBlockIds = useMemo(
+    () => areaBlockIds.filter(id => !occupiedIds.includes(id) && !cartBlockIds.includes(id)),
+    [areaBlockIds, cartBlockIds, occupiedIds]
+  )
 
   // 選中的區域整區都沒有開放中的格子（後台關閉，例：後陽台）→ 可檢視、不開放租借；資料載入前不判定
   const selectedAreaClosed = useMemo(() => {
@@ -489,6 +492,12 @@ const SpacePage: React.FC = () => {
   // 判斷編號區是否被選中（主分類是 NumberedArea）
   const isNumberedAreaSelected = selectedMainCategory === 'NumberedArea'
 
+  // 橘格（部分時段）：開選段 popup（地圖與格子清單共用）
+  const handlePartialClick = (id: string) => {
+    if (hasSelectedDates) setPartialBlock(id)
+    else showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error')
+  }
+
   // 排序選取的區塊 ID (A-Z, 1-10)
   const sortedSelectedBlocks = useMemo(() => {
     return sortBlockIds(selectedBlocks)
@@ -506,24 +515,36 @@ const SpacePage: React.FC = () => {
   const isAddBlocked = !selectedSubCategory || selectedBlocks.length === 0 || (hasCasePermitBlocks && !hasProjectPermission) || !hasSelectedDates || isSuspended
 
   return (
-    <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
+    <div className="bg-black text-white h-dvh flex flex-col overflow-hidden">
       <Header />
 
-      <main className="flex-1 pt-20 flex flex-col overflow-hidden relative">
-        <div className="container hidden md:flex flex-1 gap-6 overflow-hidden items-stretch pb-20">
+      <main className="flex-1 pt-20 max-lg:pt-16 flex flex-col overflow-hidden relative">
+        <div className="container flex flex-1 gap-6 overflow-hidden items-stretch pb-6 max-lg:flex-col max-lg:gap-3 max-lg:pb-3 max-lg:overflow-y-auto">
           {/* 左側欄位：20% */}
-          <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden relative">
+          <div className="w-[20%] max-lg:w-full flex-shrink-0 flex flex-col overflow-hidden relative">
             {/* 返回上一頁＋標題在箭頭下方 */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 max-lg:flex max-lg:items-center max-lg:gap-3">
               <BackButton />
-              <h1 className="text-white text-xl mb-6">{t('Space', '空間')}</h1>
+              <h1 className="text-white text-xl mb-6 max-lg:mb-0 max-lg:text-md">{t('Space', '空間')}</h1>
+              {/* lg 以下圖例收起來，這顆展開；有篩選時標粉點，收著也看得出來 */}
+              <button
+                type="button"
+                onClick={() => setLegendOpen(o => !o)}
+                aria-expanded={legendOpen}
+                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? 'cursor-pointer' : BTN}`}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>filter_list</span>
+                {t('Status', '狀態')}
+                {!legendOpen && statusFilters.size < 3 && <span className="w-2 h-2 rounded-full bg-pink" />}
+              </button>
             </div>
 
             {/* 側欄：主分類（icon＋膠囊，選中白底黑字，同 Profile 選單）；
                 子分類在主分類 icon 正下方拉一條直線縮排，選中為淡色膠囊。
                 inline-flex＝主分類與子分類區塊同寬（以最寬的為準） */}
-            <div className="flex-1 overflow-hidden">
-              <nav className="mt-8 inline-flex flex-col">
+            <div className="flex-1 overflow-hidden max-lg:flex-none">
+              {/* 手機：主分類同一列，子分類排到下一列橫向捲動 */}
+              <nav className="mt-8 max-lg:mt-3 inline-flex flex-col max-lg:flex max-lg:flex-row max-lg:flex-wrap max-lg:gap-x-1">
                 <button
                   onClick={() => {
                     setSelectedMainCategory('NumberedArea')
@@ -537,8 +558,8 @@ const SpacePage: React.FC = () => {
                 </button>
 
                 {/* 編號區子分類：只在編號區被選中時展開；直線＝主分類 icon 中心（pl-3 12px＋icon 半寬 10px） */}
-                <Collapse open={isNumberedAreaSelected}>
-                  <div className="mt-2 ml-[22px] pl-3 border-l border-gray-mid flex flex-col gap-1 py-1">
+                <div className="max-lg:order-last max-lg:w-full"><Collapse open={isNumberedAreaSelected}>
+                  <div className="mt-2 ml-[22px] pl-3 border-l border-gray-mid flex flex-col gap-1 py-1 max-lg:ml-0 max-lg:pl-0 max-lg:border-l-0 max-lg:flex-row max-lg:overflow-x-auto">
                     {numberedAreaCategories.map((category) => {
                       // 專案許可區使用黃色（選中＝淡黃底＋黃字，其餘子分類為淡白底）
                       const isCasePermit = category.id === 'CasePermitArea'
@@ -547,7 +568,7 @@ const SpacePage: React.FC = () => {
                         <button
                           key={category.id}
                           onClick={() => handleSubCategoryChange(isSelected ? null : category.id)}
-                          className={`${SUB_ITEM} ${
+                          className={`${SUB_ITEM} max-lg:shrink-0 max-lg:whitespace-nowrap ${
                             isSelected
                               ? (isCasePermit ? 'bg-gray-dark text-yellow' : 'bg-gray-dark text-white')
                               : 'text-gray-light hover:text-white'
@@ -559,14 +580,14 @@ const SpacePage: React.FC = () => {
                       )
                     })}
                   </div>
-                </Collapse>
+                </Collapse></div>
 
                 <button
                   onClick={() => {
                     setSelectedMainCategory('Classroom')
                     setSelectedBlocks([])
                   }}
-                  className={`mt-2 ${navItemCls(selectedMainCategory === 'Classroom')}`}
+                  className={`mt-2 max-lg:mt-0 ${navItemCls(selectedMainCategory === 'Classroom')}`}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>meeting_room</span>
                   <span>{t('Classroom', '教室')}</span>
@@ -576,8 +597,9 @@ const SpacePage: React.FC = () => {
 
             {/* 狀態篩選 Legend - 絕對定位在底部，只在 Classroom 選中時顯示 */}
             {selectedMainCategory === 'Classroom' && (
-              <div className="absolute bottom-0 left-0 right-0 flex-shrink-0">
-                <div className="flex flex-col gap-3">
+              <div className="absolute bottom-0 left-0 right-0 flex-shrink-0 max-lg:static">
+                <Collapse open={legendOpen} below="lg">
+                <div className="flex flex-col gap-3 max-lg:flex-row max-lg:flex-wrap max-lg:gap-x-4 max-lg:gap-y-1 max-lg:pt-3">
                   <button
                     onClick={() => toggleStatusFilter('available')}
                     className={`flex items-center gap-2 ${statusFilters.has('available') ? 'cursor-pointer' : BTN}`}
@@ -614,17 +636,18 @@ const SpacePage: React.FC = () => {
                     </span>
                   </button>
                 </div>
+                </Collapse>
               </div>
             )}
           </div>
 
           {/* 右側欄位：80% */}
-          <div className="w-[80%] min-w-0 flex-1 flex gap-12">
+          <div className="w-[80%] max-lg:w-full min-w-0 flex-1 flex gap-12 max-lg:flex-col max-lg:gap-4">
             {/* 編號區內容：常駐不卸載，只切 display（contents＝不影響原本 flex 版面）。
                 卸載會讓每次切回都重抓／重注入 SVG、重綁所有格子事件，卡住側欄展開動畫 */}
             <div className={isNumberedAreaSelected ? 'contents' : 'hidden'}>
                 {/* 左側：70% - 地圖區域 */}
-                <div className="relative w-[70%] h-full flex items-center justify-center overflow-hidden">
+                <div className="relative w-[70%] h-full flex items-center justify-center overflow-hidden max-lg:w-full max-lg:h-auto max-lg:aspect-[4/3] max-md:aspect-square max-lg:flex-shrink-0">
                   {/* 未開放區域提示：覆蓋在地圖上方置中；pointer-events-none 不擋地圖檢視 */}
                   {selectedAreaClosed && (
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex items-center gap-2 rounded-xl bg-black/80 pl-3 pr-4 py-3 text-sm text-white whitespace-nowrap">
@@ -640,7 +663,7 @@ const SpacePage: React.FC = () => {
                     cartBlocks={cartBlockIds}
                     rentedBlocks={rentedIds}
                     partialBlocks={partialIds}
-                    onPartialClick={id => (hasSelectedDates ? setPartialBlock(id) : showToast(t('Please select rental dates first.', '請先選擇租借日期'), 'error'))}
+                    onPartialClick={handlePartialClick}
                   />
                   {/* 部分時段：選一段再選取（空間日期改成那段） */}
                   {partialBlock && (
@@ -660,10 +683,11 @@ const SpacePage: React.FC = () => {
                 </div>
 
                 {/* 右側：30% - 借用資訊面板 */}
-                <div className="w-[30%] h-full flex flex-col">
+                <div className="w-[30%] h-full flex flex-col max-lg:w-full max-lg:h-auto">
                   {/* 狀態篩選 Legend - 可點擊 */}
                   {/* 顏色與 numbered-area.css 的 SVG 格子顏色一致 */}
-                  <div className="mb-6 flex flex-col gap-3 relative z-20">
+                  <Collapse open={legendOpen} below="lg">
+                  <div className="mb-6 flex flex-col gap-3 relative z-20 max-lg:mb-3 max-lg:flex-row max-lg:flex-wrap max-lg:gap-x-4 max-lg:gap-y-1">
                     <button
                       onClick={() => toggleStatusFilter('available')}
                       className={`flex items-center gap-2 ${statusFilters.has('available') ? 'cursor-pointer' : BTN}`}
@@ -711,6 +735,33 @@ const SpacePage: React.FC = () => {
                       </span>
                     </div>
                   </div>
+                  </Collapse>
+
+                  {/* lg 以下的格子清單：手機上地圖格子太小（玻璃牆最窄 2.4px）點不到；顏色與點擊同地圖（SpaceAreaMap） */}
+                  {areaBlockIds.length > 0 && (
+                    <div className="lg:hidden mb-6 flex flex-wrap gap-2">
+                      {areaBlockIds.map(id => {
+                        const inCart = cartBlockIds.includes(id)
+                        const rented = rentedIds.includes(id)
+                        const partial = partialIds.includes(id) && !inCart
+                        const selected = inCart || selectedBlocks.includes(id)
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            disabled={rented}
+                            aria-pressed={selected}
+                            onClick={() => (partial ? handlePartialClick(id) : handleBlockSelect(id))}
+                            className={`min-w-11 h-11 px-2 rounded-lg text-xs font-english text-black cursor-pointer disabled:cursor-not-allowed ${
+                              rented ? 'bg-pink' : partial ? 'bg-orange' : selected ? 'bg-green' : 'bg-green/50'
+                            }`}
+                          >
+                            {id}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   {/* 頂部區塊：選擇區塊 + 按鈕 */}
                   <div className="mb-6">

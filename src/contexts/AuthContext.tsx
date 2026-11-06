@@ -8,7 +8,7 @@ import type { Student, LoginResult } from '../utils/authTypes'
 import { tr } from '../stores/langStore'
 import { supabaseLogin, supabaseLogout, signInWithGoogle, finishGoogleLogin as finishGoogle } from '../services/authService'
 import { supabase, persistAuth } from '../services/supabase'
-import { readLoginData } from '../utils/authStorage'
+import { readLoginData, isLoginExpired } from '../utils/authStorage'
 import type { LoginData } from '../utils/authStorage'
 
 interface AuthContextType {
@@ -43,19 +43,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const data = readLoginData()
     if (!data) return null
 
-    // 檢查是否過期（閒置效期：loginTime＝最後一次開啟 app）；過期連 Supabase 憑證一起登出
+    // 檢查是否過期（學生閒置效期：loginTime＝最後一次開啟 app；admin 固定期限）；過期連 Supabase 憑證一起登出
     const now = Date.now()
-    const expiryTime = data.loginTime + data.expiresIn
 
-    if (now > expiryTime) {
+    if (isLoginExpired(data, now)) {
       clearStorage()
       supabaseLogout().catch(() => {})
       return null
     }
 
-    // 續期：寫回原本所在的 storage（記住我＝local，否則 session）
-    const storage = data.rememberMe ? localStorage : sessionStorage
-    storage.setItem(STORAGE_KEY, JSON.stringify({ ...data, loginTime: now }))
+    // 續期（admin 不續）：寫回原本所在的 storage（記住我＝local，否則 session）
+    if (data.student?.role !== 'admin') {
+      const storage = data.rememberMe ? localStorage : sessionStorage
+      storage.setItem(STORAGE_KEY, JSON.stringify({ ...data, loginTime: now }))
+    }
 
     return data.student
   }, [])

@@ -117,3 +117,9 @@
   
 }
 
+
+/* 右側滑入面板（後台文字內容的段落編輯） */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}

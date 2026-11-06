@@ -3,10 +3,11 @@
  * 對應原本的 equipment.html
  */
 
-import { BTN } from '@/components/common/btn'
+import { BTN, BTN_TOOL } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Header from '../components/layouts/Header'
+import Collapse from '../components/common/Collapse'
 import BackButton from '../components/common/BackButton'
 import { navItemCls } from '../components/common/navItem'
 import Footer from '../components/layouts/Footer'
@@ -58,6 +59,8 @@ const EquipmentPage: React.FC = () => {
     })
   }
 
+  const [legendOpen, setLegendOpen] = useState(false) // lg 以下才有作用
+
   // 分類列表：全部＋固定分類（與後台設備管理共用 EQUIPMENT_CATEGORIES）＋收藏
   const categories = [
     { en: 'All', zh: '全部', icon: 'apps' },
@@ -66,28 +69,39 @@ const EquipmentPage: React.FC = () => {
   ]
 
   return (
-    <div className="bg-black text-white h-screen flex flex-col overflow-hidden">
+    <div className="bg-black text-white h-dvh flex flex-col overflow-hidden">
       <Header />
 
-      <main className="flex-1 pt-20 flex flex-col overflow-hidden relative">
-        <div className="container hidden md:flex flex-1 gap-6 overflow-hidden items-stretch pb-20">
+      <main className="flex-1 pt-20 max-lg:pt-16 flex flex-col overflow-hidden relative">
+        <div className="container flex flex-1 gap-6 overflow-hidden items-stretch pb-6 max-lg:flex-col max-lg:gap-3 max-lg:pb-3">
           {/* 左側欄位：20% */}
-          <div className="w-[20%] flex-shrink-0 flex flex-col overflow-hidden">
+          <div className="w-[20%] max-lg:w-full flex-shrink-0 flex flex-col overflow-hidden">
             {/* 返回上一頁＋標題在箭頭下方 */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 max-lg:flex max-lg:items-center max-lg:gap-3">
               <BackButton />
-              <h1 className="text-white text-xl mb-6">{t('Equipment', '設備')}</h1>
+              <h1 className="text-white text-xl mb-6 max-lg:mb-0 max-lg:text-md">{t('Equipment', '設備')}</h1>
+              {/* lg 以下圖例收起來，這顆展開；有篩選時標粉點，收著也看得出來 */}
+              <button
+                type="button"
+                onClick={() => setLegendOpen(o => !o)}
+                aria-expanded={legendOpen}
+                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? 'cursor-pointer' : BTN}`}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>filter_list</span>
+                {t('Status', '狀態')}
+                {!legendOpen && statusFilters.size < 3 && <span className="w-2 h-2 rounded-full bg-pink" />}
+              </button>
             </div>
 
             {/* 下方區塊：分類 Filter + Legend */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-y-auto gap-6 max-lg:mt-3 max-lg:gap-0">
               {/* 分類 Filter - 頂部：膠囊選單（同空間頁／Profile），inline-flex＝各項同寬 */}
-              <nav className="inline-flex flex-col gap-1 flex-shrink-0 self-start">
+              <nav className="inline-flex flex-col gap-1 flex-shrink-0 self-start max-lg:flex-row max-lg:self-stretch max-lg:overflow-x-auto">
                 {categories.map((category) => (
                   <button
                     key={category.en}
                     onClick={() => setSelectedCategory(category.zh)}
-                    className={navItemCls(selectedCategory === category.zh)}
+                    className={`${navItemCls(selectedCategory === category.zh)} max-lg:shrink-0 max-lg:whitespace-nowrap`}
                   >
                     <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '20px' }}>
                       {category.icon}
@@ -98,11 +112,12 @@ const EquipmentPage: React.FC = () => {
               </nav>
 
               {/* 中間空白區域 - 自動填充 */}
-              <div className="flex-1"></div>
+              <div className="flex-1 max-lg:hidden"></div>
 
               {/* 狀態篩選 Legend - 底部 */}
               <div className="flex-shrink-0">
-                <div className="flex flex-col gap-3">
+                <Collapse open={legendOpen} below="lg">
+                <div className="flex flex-col gap-3 max-lg:flex-row max-lg:flex-wrap max-lg:gap-x-4 max-lg:gap-y-1 max-lg:pt-3">
                   <button
                     onClick={() => toggleStatusFilter('available')}
                     className={`flex items-center gap-2 ${BTN}`}
@@ -139,12 +154,13 @@ const EquipmentPage: React.FC = () => {
                     </span>
                   </button>
                 </div>
+                </Collapse>
               </div>
             </div>
           </div>
 
           {/* 右側欄位：80% - 可滾動 */}
-          <div className="w-[80%] min-w-0 overflow-y-auto flex-1">
+          <div className="w-[80%] max-lg:w-full min-w-0 overflow-y-auto flex-1">
             <EquipmentGrid
               selectedCategory={selectedCategory}
               statusFilters={statusFilters}

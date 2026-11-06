@@ -52,7 +52,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
 
   return (
     // 表格 RWD：同 EquipmentGrid——外層 overflow-x-auto ＋ min-w，視窗不夠寬時橫向捲動
-    <div className="w-full h-full flex flex-col pt-[60px] overflow-x-auto">
+    <div className="w-full h-full flex flex-col pt-[60px] max-lg:pt-0">
       {/* 全螢幕圖片檢視 */}
       {fullscreenImage && (
         <div
@@ -78,8 +78,10 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
         </div>
       )}
 
-      {/* 表頭 - 固定不滾動 - 始終顯示 */}
-      <div className="min-w-[900px] grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] items-center gap-6 pb-3 border-b border-gray-mid flex-shrink-0">
+      {/* @container 不放在外層：container 會變成 fixed 的定位基準，全螢幕圖片要留在外面 */}
+      <div className="@container flex-1 min-h-0 flex flex-col">
+      {/* 表頭 - 固定不滾動；卡片模式每格自帶標籤，不顯示 */}
+      <div className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] items-center gap-6 pb-3 border-b border-gray-mid flex-shrink-0 card:hidden">
         {/* 狀態指示器列 */}
         <div></div>
 
@@ -128,7 +130,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
 
       {classrooms.length > 0 ? (
         // 教室列表 - 可滾動
-        <div className="flex-1 overflow-y-auto min-w-[900px]">
+        <div className="flex-1 overflow-y-auto">
           {classrooms.map(classroom => {
             const inCart = isInCart(classroom.id)
             const occupied = occupiedIds.includes(classroom.id)
@@ -138,11 +140,11 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
             return (
               <div
                 key={classroom.id}
-                className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 py-3 border-b border-gray-mid items-center"
+                className="grid grid-cols-[6px_80px_1fr_100px_100px_100px_120px_80px] gap-6 card:grid-cols-[6px_64px_1fr_auto] card:gap-x-3 card:gap-y-2 py-3 border-b border-gray-mid items-center"
               >
                 {/* 狀態指示器 - 獨立的 grid 列 */}
                 <div
-                  className="h-full w-full"
+                  className="h-full w-full card:row-span-2"
                   style={{
                     backgroundColor: statusColor
                   }}
@@ -150,7 +152,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
 
                 {/* 教室圖片 */}
                 <div
-                  className="w-[80px] h-[80px] flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
+                  className="w-[80px] h-[80px] card:w-16 card:h-16 card:row-span-2 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg"
                   onClick={(e) => handleImageClick(e, classroom.image)}
                 >
                   <img
@@ -165,36 +167,41 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
                   {t(classroom.enName, classroom.name)}
                 </div>
 
+                {/* 數字欄：表格時 contents＝各佔一格；卡片時併一列（總數量收掉） */}
+                <div className="contents card:flex card:gap-6 card:col-start-3 card:row-start-2">
                 {/* 總數量 - 教室固定為 1 */}
-                <div className={`font-english text-sm text-center ${
+                <div className={`font-english text-sm text-center card:hidden ${
                   !isAvailable ? 'text-gray-mid' : 'text-white'
                 }`}>
                   1
                 </div>
 
                 {/* 可借數量 - 在購物車中或整段被佔為 0，否則為 1（部分時段橘字） */}
-                <div className={`font-english text-sm text-center ${
+                <div className={`font-english text-sm text-center card:text-left ${
                   !isAvailable ? 'text-gray-mid' : partial ? 'text-orange' : 'text-white'
                 }`}>
+                  <div className="hidden card:block text-2xs text-gray-light">{t('Available', '可借數量')}</div>
                   {isAvailable ? 1 : 0}
                 </div>
 
-                {/* 保留中數量 - 暫時顯示假數據 */}
-                <div className={`font-english text-sm text-center ${
+                {/* 保留中數量 - 暫時顯示假數據（卡片模式收掉） */}
+                <div className={`font-english text-sm text-center card:hidden ${
                   !isAvailable ? 'text-gray-mid' : 'text-white'
                 }`}>
                   0
                 </div>
 
                 {/* 押金 */}
-                <div className={`font-english text-sm text-center ${
+                <div className={`font-english text-sm text-center card:text-left ${
                   !isAvailable ? 'text-gray-mid' : 'text-white'
                 }`}>
+                  <div className="hidden card:block text-2xs text-gray-light">{t('Deposit', '押金')}</div>
                   NT$ {classroom.price.toLocaleString()}
+                </div>
                 </div>
 
                 {/* 加入清單：白底圓角購物車 icon；不可加時 50% 透明 */}
-                <div className="flex justify-center">
+                <div className="flex justify-center card:col-start-4 card:row-start-1 card:row-span-2 card:justify-end">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -202,7 +209,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
                     }}
                     disabled={!isAvailable || !hasSelectedDates}
                     aria-label={t('Add', '加入清單')}
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    className={`w-9 h-9 card:w-11 card:h-11 rounded-lg flex items-center justify-center ${
                       isAvailable && hasSelectedDates && !isSuspended
                         ? `bg-white text-black ${BTN}`
                         : 'bg-white text-black opacity-20 cursor-not-allowed'
@@ -220,6 +227,7 @@ const ClassroomList: React.FC<ClassroomListProps> = ({ classrooms, onAdd, occupi
           <p className="text-gray-light text-sm">{t('No Classroom Found', '找不到符合條件的教室')}</p>
         </div>
       )}
+      </div>
     </div>
   )
 }
