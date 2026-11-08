@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react'
 import CloseButton from '../common/CloseButton'
 import { Select } from '../admin/adminUi'
 import { createPortal } from 'react-dom'
-import { useEquipmentData, useBundles, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
+import { useEquipmentData, useBundles, useItemName, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
 import { calcBundles } from '../../utils/bundleUtils'
 import { EQUIPMENT_CATEGORIES } from '../../types/equipment'
 import { useT } from '../../stores/langStore'
@@ -42,6 +42,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
   rentalNumber, startDate, endDate, isMass, picked, depositPaid, lines, onConfirm, onCancel
 }) => {
   const t = useT()
+  const itemName = useItemName()
   const equipmentData = useEquipmentData()
   const bundles = useBundles()
   const [reserved, setReserved] = useState<Record<string, ReservedInfo>>({})
@@ -152,8 +153,8 @@ const ModifyOrderDialog: React.FC<Props> = ({
               const canDec = r.quantity > minQty(r) // 減到 0＝移除（取件後已點交的不可）
               return (
                 <div key={r.id} className={`${cols} py-3 border-b border-gray-mid`}>
-                  <span className="text-xs text-white font-chinese">
-                    {r.name}
+                  <span className="text-xs text-white">
+                    {itemName(r.id, r.name)}
                     {picked && r.held > 0 && (
                       <span className="text-gray-light ml-2">已取 {r.held}</span>
                     )}
@@ -192,7 +193,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
             options={groups.flatMap(g =>
               addable.filter(e => e.category === g).map(e => {
                 const n = available(e.id)
-                return { value: e.id, label: `${e.name}（${t('available', '可借')} ${n}）`, disabled: n <= 0, group: g }
+                return { value: e.id, label: `${itemName(e.id, e.name)}（${t('available', '可借')} ${n}）`, disabled: n <= 0, group: g }
               })
             )}
             onChange={addItem}
@@ -203,7 +204,7 @@ const ModifyOrderDialog: React.FC<Props> = ({
           <div className="mt-6 text-xs font-chinese flex justify-between">
             <span className={limitError ? '' : 'text-white'} style={limitError ? { color: 'var(--color-error)' } : undefined}>
               共 <span className="font-english">{total}</span> 件
-              {calc.sets.length > 0 && `（含 ${calc.sets.map(s => `${s.bundle.name} ×${s.count}`).join('、')}，整組算 1 件）`}
+              {calc.sets.length > 0 && `（含 ${calc.sets.map(s => `${itemName(s.bundle.id, s.bundle.name)} ×${s.count}`).join('、')}，整組算 1 件）`}
               {limitError && `（${limitError}）`}
             </span>
             <span className="text-gray-light">

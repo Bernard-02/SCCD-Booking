@@ -29,15 +29,18 @@ begin
     raise exception '僅待繳押金／租借中的訂單可取消（逾期單請走歸還＋罰款）';
   end if;
 
+  -- 已繳押金：對話框要求當場退還，這裡一併記錄，訂單頁「退押金」欄才不會又出現按鈕
   update public.orders
-    set status = 'canceled', canceled_by = p_handler
+    set status = 'canceled', canceled_by = p_handler,
+        refunded = case when status = 'in-progress' or deposit_paid_at is not null then deposit_total else refunded end,
+        refunded_by = case when status = 'in-progress' or deposit_paid_at is not null then p_handler else refunded_by end
     where id = v_order.id;
 
   insert into public.notifications (student_id, type, title, message, link)
   values (v_order.student_id, 'info', '訂單已取消',
           '訂單 ' || v_order.rental_number || ' 已由系學會協助取消'
           -- 已繳押金＝租借中，或大量設備預繳待取件（pending＋deposit_paid_at，見 mass-pickup.sql）
-          || case when v_order.status = 'in-progress' or v_order.deposit_paid_at is not null
+          || case when v_order.deposit_total > 0 and (v_order.status = 'in-progress' or v_order.deposit_paid_at is not null)
                   then '，押金 NT$ ' || v_order.deposit_total || ' 已退還' else '' end || '。', '/profile');
 end;
 $$;

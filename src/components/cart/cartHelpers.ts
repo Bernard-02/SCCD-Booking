@@ -40,13 +40,15 @@ export const formatYmd = (date: Date): string => {
 /** Date → 'YYYY-MM-DD'（同 timeUtils） */
 export { toDateKey } from '../../utils/timeUtils'
 
-export const AREA_NAME_MAP: Record<string, string> = {
-  'square': '中庭',
-  'corridor': '專案許可區',
-  'front-terrace': '前陽台',
-  'back-terrace': '後陽台',
-  'glass-wall': '玻璃牆',
-  'pillar': '柱子'
+/** space.area → 前台子分類 id（專案許可區含走廊與柱子）；區域名稱用 contentService.useAreaName 讀 */
+export const AREA_SUBCATEGORY: Record<string, string> = {
+  'square': 'Square',
+  'area-f': 'AreaF',
+  'corridor': 'CasePermitArea',
+  'front-terrace': 'FrontTerrace',
+  'back-terrace': 'BackTerrace',
+  'glass-wall': 'GlassWall',
+  'pillar': 'CasePermitArea'
 }
 
 // 區域示意圖（public/Images 實際有的檔）；前／後陽台沒有圖，退回 FALLBACK_BLOCK_IMAGE（後台清單則顯示 placeholder icon）
@@ -71,11 +73,11 @@ export const formatDate = (dateString: string): string => {
 
 /**
  * 由格子代號推導所屬區域（純函式，與 SVG 的地理配置綁定）
- * 規則：A-E=中庭（沒有 F 區）、G/H/J=專案許可區、K=前陽台、L=後陽台、
+ * 規則：A-E=中庭、F=F 區、G/H/J=專案許可區、K=前陽台、L=後陽台、
  *       Y=玻璃牆（Y4-Y7 例外屬專案許可區）、Z=柱子、A5xx=教室
  */
 const PREFIX_AREA_MAP: Record<string, string> = {
-  A: 'square', B: 'square', C: 'square', D: 'square', E: 'square',
+  A: 'square', B: 'square', C: 'square', D: 'square', E: 'square', F: 'area-f',
   G: 'corridor', H: 'corridor', J: 'corridor',
   K: 'front-terrace', L: 'back-terrace', Y: 'glass-wall', Z: 'pillar'
 }
@@ -84,11 +86,6 @@ export const getBlockArea = (blockId: string): string => {
   if (/^A5\d{2}$/.test(blockId)) return 'classroom'
   if (/^Y[4-7]$/.test(blockId)) return 'corridor'
   return PREFIX_AREA_MAP[blockId[0]] || 'unknown'
-}
-
-/** 取得區塊所屬區域的中文名稱 */
-export const getAreaName = (blockId: string): string => {
-  return AREA_NAME_MAP[getBlockArea(blockId)] || ''
 }
 
 /** 取得區塊對應的區域圖片 */

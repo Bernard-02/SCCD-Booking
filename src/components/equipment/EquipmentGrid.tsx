@@ -13,7 +13,7 @@ import { useBookmarkStore } from '../../stores/bookmarkStore'
 import { useCart, loginPath, takePendingSelection } from '../../hooks/useCart'
 import { useDateSelection } from '../../contexts/DateSelectionContext'
 import { useAuth } from '../../contexts/AuthContext'
-import { useEquipmentData, fetchEquipmentReserved, fetchEquipmentReservedDaily } from '../../services/equipmentService'
+import { useEquipmentData, useItemName, fetchEquipmentReserved, fetchEquipmentReservedDaily } from '../../services/equipmentService'
 import type { ReservedInfo } from '../../services/equipmentService'
 import { toDateKey, rescheduleCategory } from '../cart/cartHelpers'
 import { dayKeysBetween, fromDateKey } from '../../utils/timeUtils'
@@ -29,6 +29,7 @@ interface EquipmentGridProps {
 
 const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusFilters }) => {
   const t = useT()
+  const itemName = useItemName()
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([])
   // 數量允許暫存空字串：使用者可先清空再輸入，失焦時若無有效值會回到 1
@@ -276,7 +277,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       // 只看庫存其實夠（含其他組合用掉的），是被其他組合佔走才不夠
       const enoughIgnoringOthers = Math.floor((inGroup(c.equipmentId) + avail(c.equipmentId)) / c.quantity) > current
       return others.length > 0 && fits(c) <= current && enoughIgnoringOthers
-        ? [{ part: equipmentData[c.equipmentId].name, others: others.map(s => s.bundle.name) }]
+        ? [{ part: itemName(c.equipmentId, equipmentData[c.equipmentId].name), others: others.map(s => itemName(s.bundle.id, s.bundle.name)) }]
         : []
     })
     return { current, extra, blockedBy }
@@ -295,12 +296,12 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const bundleShortReason = (bundle: Bundle, room: ReturnType<typeof bundleRoom>) =>
     room.blockedBy.length > 0
       ? t(
-          `"${room.blockedBy[0].part}" is already used by "${room.blockedBy[0].others.join('", "')}" in your list, and there isn’t enough stock for "${bundle.name}" too. Please choose one of the two sets.`,
-          `「${room.blockedBy[0].part}」已用在清單裡的「${room.blockedBy[0].others.join('、')}」，庫存不夠再借「${bundle.name}」，只能二選一`
+          `"${room.blockedBy[0].part}" is already used by "${room.blockedBy[0].others.join('", "')}" in your list, and there isn’t enough stock for "${itemName(bundle.id, bundle.name)}" too. Please choose one of the two sets.`,
+          `「${room.blockedBy[0].part}」已用在清單裡的「${room.blockedBy[0].others.join('、')}」，庫存不夠再借「${itemName(bundle.id, bundle.name)}」，只能二選一`
         )
       : t(
-          `Not enough stock — you can add up to ${room.extra} more "${bundle.name}" set(s).`,
-          `庫存不足，「${bundle.name}」目前最多還能加 ${room.extra} 組`
+          `Not enough stock — you can add up to ${room.extra} more "${itemName(bundle.id, bundle.name)}" set(s).`,
+          `庫存不足，「${itemName(bundle.id, bundle.name)}」目前最多還能加 ${room.extra} 組`
         )
 
   // 該設備可選的組合（零件都在架上才列）
@@ -360,7 +361,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       showToast(bundleShortReason(bundle, room), 'error')
       return
     }
-    commitAdd(topUpItems(bundle, room.current + sets), `${bundle.name} ×${sets}`, resetId)
+    commitAdd(topUpItems(bundle, room.current + sets), `${itemName(bundle.id, bundle.name)} ×${sets}`, resetId)
   }
 
   const addBundle = () => {
@@ -398,7 +399,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
     // 檢查庫存
     if (quantity > availableQty) {
-      showToast(t(`Not enough stock — only ${availableQty} ${item.name} available.`, `庫存不足，${item.name} 剩餘可借數量：${availableQty}`), 'error')
+      showToast(t(`Not enough stock — only ${availableQty} ${itemName(item.id, item.name)} available.`, `庫存不足，${itemName(item.id, item.name)} 剩餘可借數量：${availableQty}`), 'error')
       return
     }
 
@@ -409,7 +410,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       return
     }
 
-    commitAdd([toCartItem(item, quantity)], `${item.name} x${quantity}`, item.id)
+    commitAdd([toCartItem(item, quantity)], `${itemName(item.id, item.name)} x${quantity}`, item.id)
   }
 
   // 部分時段 popup 確認：設備日期改成選的那段，清單裡的設備一起改日期（同一次 save），再加入這件
@@ -430,7 +431,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       showToast(result.reason || t('Couldn’t add to your list.', '無法加入清單'), 'error')
       return
     }
-    const label = `${b ? b.name : item.name} ×${quantity}`
+    const label = `${b ? itemName(b.id, b.name) : itemName(item.id, item.name)} ×${quantity}`
     showToast(hadOthers
       ? t(`Added ${label}. Equipment dates changed to ${startDate} – ${endDate}; the other equipment in your list was rechecked.`,
           `已加入 ${label}，設備日期改為 ${startDate} – ${endDate}，清單裡其他設備已重新檢查`)
@@ -475,8 +476,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       {partialItem && (
         <PartialDialog
           isOpen
-          title={`${modeBundle(partialItem.id)?.name ?? partialItem.name} ×${quantities[partialItem.id] || 1}：只有部分天數可借`}
-          titleEn={`${modeBundle(partialItem.id)?.name ?? partialItem.name} ×${quantities[partialItem.id] || 1}: only some days available`}
+          title={`${itemName(modeBundle(partialItem.id)?.id ?? partialItem.id, modeBundle(partialItem.id)?.name ?? partialItem.name)} ×${quantities[partialItem.id] || 1}：只有部分天數可借`}
+          titleEn={`${itemName(modeBundle(partialItem.id)?.id ?? partialItem.id, modeBundle(partialItem.id)?.name ?? partialItem.name)} ×${quantities[partialItem.id] || 1}: only some days available`}
           days={rangeDays}
           okDays={new Set(okDaysFor(partialItem.id))}
           what="equipment"
@@ -496,8 +497,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
             isOpen
             title="要整組借嗎？"
             titleEn="Borrow as a set?"
-            message={`「${item.name}」屬於「${bundle.name}」。整組借押金只算一組 NT$ ${bundle.deposit.toLocaleString()}，也只佔 1 件額度；系統會自動配好其他零件。`}
-            messageEn={`"${item.name}" is part of "${bundle.name}". A full set costs one deposit of NT$ ${bundle.deposit.toLocaleString()} and counts as 1 item; we'll add the other parts for you.`}
+            message={`「${itemName(item.id, item.name)}」屬於「${itemName(bundle.id, bundle.name)}」。整組借押金只算一組 NT$ ${bundle.deposit.toLocaleString()}，也只佔 1 件額度；系統會自動配好其他零件。`}
+            messageEn={`"${itemName(item.id, item.name)}" is part of "${itemName(bundle.id, bundle.name)}". A full set costs one deposit of NT$ ${bundle.deposit.toLocaleString()} and counts as 1 item; we'll add the other parts for you.`}
             confirmText="Add set"
             confirmTextZh="整組加入"
             onConfirm={addBundle}
@@ -507,7 +508,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
               <ul className="space-y-1">
                 {bundle.items.map(c => (
                   <li key={c.equipmentId} className="flex justify-between">
-                    <span>{equipmentData[c.equipmentId]?.name}</span>
+                    <span>{itemName(c.equipmentId, equipmentData[c.equipmentId]?.name ?? '')}</span>
                     <span className="font-english">×{c.quantity * sets}</span>
                   </li>
                 ))}
@@ -522,11 +523,11 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                 type="button"
                 onClick={() => {
                   setBundleOffer(null)
-                  commitAdd([toCartItem(item, quantity)], `${item.name} x${quantity}`, item.id)
+                  commitAdd([toCartItem(item, quantity)], `${itemName(item.id, item.name)} x${quantity}`, item.id)
                 }}
                 className={`text-gray-light underline underline-offset-4 ${BTN}`}
               >
-                {t(`Just add ${item.name} ×${quantity}`, `只加入「${item.name}」×${quantity}`)}
+                {t(`Just add ${itemName(item.id, item.name)} ×${quantity}`, `只加入「${itemName(item.id, item.name)}」×${quantity}`)}
               </button>
             </div>
           </ConfirmDialog>
@@ -683,10 +684,10 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   </div>
 
                   {/* 設備名稱＋（屬於組合時）單個／整組下拉 */}
-                  <div className={`font-chinese text-sm flex flex-col items-start gap-1 card:col-start-3 card:row-start-1 ${
+                  <div className={`text-sm flex flex-col items-start gap-1 card:col-start-3 card:row-start-1 ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
-                    {item.name}
+                    {itemName(item.id, item.name)}
                     {/* 全部／收藏底下混了各種分類，名稱下方標出分類 chip（純文字）；進到單一分類就不用 */}
                     {(selectedCategory === '全部' || selectedCategory === '收藏') && (() => {
                       const cat = EQUIPMENT_CATEGORIES.find(c => c.zh === item.category)
@@ -710,7 +711,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                           { value: '', label: t('Single', '單個') },
                           ...rowBundles.map(b => ({
                             value: b.id,
-                            label: t(`Set: ${b.name} (NT$ ${b.deposit.toLocaleString()} / set)`, `整組：${b.name}（押金 NT$ ${b.deposit.toLocaleString()}/組）`)
+                            label: t(`Set: ${itemName(b.id, b.name)} (NT$ ${b.deposit.toLocaleString()} / set)`, `整組：${itemName(b.id, b.name)}（押金 NT$ ${b.deposit.toLocaleString()}/組）`)
                           }))
                         ]}
                       />

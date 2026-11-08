@@ -71,6 +71,12 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         '交接當下請確認預約對象之狀況，建議拍照或錄影以避免爭議。',
         '不得代他人預約，不得私自更換預約對象，如需更換請洽系學會。',
         '大量／團體訂單需至少 10 件、填寫使用班級與負責老師；大量設備起租日須為至少 3 天後。',
+        '起租日最遠可選今天起 30 天內。',
+        '設備、空間各只能有一張未歸還的訂單：小量與大量、個人與團體不能並存，要等上一張歸還才能再借；部分歸還或部分延期拆出來的子單也算未歸還。',
+        '個人空間一個時段只能借一間教室，團體不在此限。',
+        '編號區、教室與系學會設備僅限已繳交系學會費者借用。',
+        '以老師名義借用：填借用資訊時選「老師名義」，填老師名稱並上傳有老師簽名的證明文件（JPG、PNG 或 PDF），免押金；送出後請於 24 小時內到系學會核對。',
+        '雷切機：一年級借用須上傳授課教師核可證明；每次使用時間由系學會現場確認，借用時請攜帶身分證件。',
         '全程遵守【空間與設備管理規章】；施工須全程遵守「施工規範」。'
       ].join('\n'),
       [
@@ -78,6 +84,12 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         'Check the condition together at handover — photos or videos are recommended to avoid disputes.',
         'No booking on behalf of others; contact the SA if the booked item needs to be changed.',
         'Bulk/group orders require at least 10 items plus the class and responsible teacher; bulk equipment must start at least 3 days ahead.',
+        'The start date can be at most 30 days from today.',
+        'You can have one unreturned equipment order and one unreturned space order at a time: light and bulk, or personal and group, can\’t overlap, and split orders from partial returns or extensions count as unreturned.',
+        'Personal bookings can include only one classroom per period; group bookings aren\’t limited.',
+        'Numbered areas, classrooms and SA equipment are for students who have paid the Student Association fee.',
+        'Booking under a teacher\’s name: choose it in the booking details, enter the teacher\’s name and upload a signed proof (JPG, PNG or PDF). No deposit is charged; bring the proof to the SA within 24 hours of submitting.',
+        'Laser cutter: first-year students must upload their course teacher\’s approval; the SA confirms usage time on site, and please bring your ID when borrowing.',
         'Follow the Space & Equipment Regulations at all times; construction work must follow the Construction Guidelines.'
       ].join('\n'))),
     sec('罰款', 'Penalties', blk('list',
@@ -85,42 +97,48 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         '未經預約使用系學會管理之空間或設備，罰款 200 元／次。',
         '歸還日 19:01 起算逾期：第 1 日罰 100 元，之後每日翻倍（週末及節假日不計），上限為押金總額。',
         '罰款達押金總額或逾期達 6 日者，視為未完成「清潔歸還」，將不得再使用預約系統。',
-        '輕微損壞視程度罰款或以學系清潔勞動服務抵扣；嚴重損壞須視程度罰款並全權承擔維修或換新費用。'
+        '輕微損壞視程度罰款或以學系清潔勞動服務抵扣；嚴重損壞須視程度罰款並全權承擔維修或換新費用。',
+        '損壞或遺失的罰款由系學會依狀況填寫，從押金扣除；超過押金的部分須另外繳交。'
       ].join('\n'),
       [
         'Using SA-managed spaces or equipment without a booking: NT$ 200 fine per instance.',
         'Late returns count from 19:01 on the return date: NT$ 100 on day 1, doubling daily (weekends and holidays excluded), capped at your total deposit.',
         'Reaching the deposit cap or being 6 days late counts as failing the "clean return" and bars you from the booking system.',
-        'Minor damage is fined by severity or offset by department cleaning service; severe damage also covers full repair or replacement costs.'
+        'Minor damage is fined by severity or offset by department cleaning service; severe damage also covers full repair or replacement costs.',
+        'Fines for damage or loss are set by the SA and taken from your deposit; anything above the deposit must be paid separately.'
       ].join('\n'))),
     sec('押金', 'Deposit', blk('list',
       [
         '押金限收現金、當面點清；空間類、設備類總額上限各 5,000 元，分開計算。',
         '空間：編號區每磚 1,000 元（後陽台 2,000 元）、教室每間 5,000 元。',
         '設備：個人預約每件 500 元、團體預約每次 5,000 元。',
-        '完成「清潔歸還」並經系學會確認後，全額退還押金。'
+        '老師名義借用免押金。',
+        '完成「清潔歸還」並經系學會確認後退還押金，有罰款時扣除罰款後退還。'
       ].join('\n'),
       [
         'Cash only, counted in person; deposits are capped at NT$ 5,000 for spaces and NT$ 5,000 for equipment, counted separately.',
         'Spaces: NT$ 1,000 per block in the numbered area (NT$ 2,000 for the back terrace); NT$ 5,000 per classroom.',
         'Equipment: NT$ 500 per item for personal bookings; NT$ 5,000 per group order.',
-        'The deposit is fully refunded after the "clean return" is confirmed by the SA.'
+        'Bookings under a teacher\’s name have no deposit.',
+        'The deposit is refunded after the "clean return" is confirmed by the SA, minus any fines.'
       ].join('\n'))),
     sec('預約流程', 'Booking Steps', blk('list',
       [
         '登入：使用學號登入 SCCDSA Booking。',
         '瀏覽型錄：進入「型錄」，選擇設備或空間。',
-        '選擇日期與數量：選擇借用日期與數量後加入清單。空間預約以 14 天為限（四年級、碩士班可至 30 天），設備以 30 天為限。',
+        '選擇日期與數量：選擇借用日期與數量後加入清單。空間預約以 14 天為限（四年級以上、碩士班可至 30 天），設備以 30 天為限（四年級以上不限）。',
         '確認並送出：在「清單」確認品項與日期，填寫借用資訊（大量／團體訂單須填寫使用班級與負責老師）後送出，取得收據編號。',
         '繳交押金：於開始使用日前攜帶收據至系學會繳交現金押金；繳交押金後預約才算成立，未繳交視為無效預約。',
+        '大量設備取件：取件日為起租日，不開放提前。取件日 19:00 前未取件，訂單自動取消、設備釋放，不算違規，押金請至系學會領回。取件時段遇到公休會發通知，請在通知或訂單頁改到起租日前的值班時段，沒改同樣自動取消；繳押金時段遇到公休會順延到隔天。',
         '歸還退押金：於歸還日 19:01（下班時間）前完成「清潔歸還」，憑收據取回全額押金。'
       ].join('\n'),
       [
         'Log in: Sign in with your student ID.',
         'Browse the catalog: Open Catalog and pick Equipment or Space.',
-        'Choose dates & quantity: Select dates and quantity, then add to cart. Space bookings are limited to 14 days (30 days for 4th-year and graduate students); equipment up to 30 days.',
+        'Choose dates & quantity: Select dates and quantity, then add to cart. Space bookings are limited to 14 days (30 days for 4th-year and above, and graduate students); equipment up to 30 days (no limit for 4th-year and above).',
         'Review & submit: Check your cart and fill in the booking details — bulk/group orders must include the class and responsible teacher — then submit to get a receipt.',
         'Pay the deposit: Pay the cash deposit at the SA before your start date — the booking only takes effect once the deposit is paid.',
+        'Bulk equipment pickup: pick up on your start date; early pickup isn\’t available. If you don\’t pick up by 19:00 that day, the order is canceled and the equipment released with no penalty — collect your deposit from the SA. If your pickup slot falls on a closure you\’ll be notified; move it to a staffed slot before your start date from the notification or your orders, or the order is canceled the same way. Deposit slots that fall on a closure move to the next day.',
         'Return & refund: Complete the "clean return" by 19:01 on the return date; show the receipt to get your full deposit back.'
       ].join('\n'))),
     sec('完整使用說明', 'Full Guide', blk('link',

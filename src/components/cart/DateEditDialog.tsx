@@ -10,8 +10,8 @@ import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
 import { formatYmd, toDateKey } from './cartHelpers'
 import { useAuth } from '../../contexts/AuthContext'
-import { isSeniorOrGraduate } from '../../utils/gradeUtils'
-import { minStartDate } from '../../utils/timeUtils'
+import { maxRentalDays } from '../../utils/gradeUtils'
+import { maxStartDate, minStartDate } from '../../utils/timeUtils'
 import { useT } from '../../stores/langStore'
 
 interface DateEditDialogProps {
@@ -35,8 +35,6 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
 }) => {
   const t = useT()
   const { currentUser } = useAuth()
-  // 空間上限：一般生 14 天，大四／碩士放寬 30 天（與 DatePickerBar 同規則）
-  const spaceMaxDays = isSeniorOrGraduate(currentUser?.year) ? 30 : 14
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
 
@@ -129,7 +127,8 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
             endDate={endDate}
             onDateSelect={handleDateSelect}
             minSelectableDate={minStartDate(category ?? 'equipment', bookingType)}
-            maxDays={category === 'space' ? spaceMaxDays : 30}
+            maxStartDate={maxStartDate(currentUser?.role)}
+            maxDays={maxRentalDays(category ?? 'equipment', currentUser?.year)}
             variant="dialog"
             originalStartDate={currentStartDate}
             originalEndDate={currentEndDate}

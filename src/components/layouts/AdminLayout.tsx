@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { autoImportHolidays } from '../../services/adminService'
-import { fetchServerRole } from '../../services/authService'
+import { fetchServerRole, signOutOtherDevices } from '../../services/authService'
 import { navItemCls, NAV_ITEM } from '../common/navItem'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
 import { useLangStore, syncHtmlLang } from '../../stores/langStore'
@@ -84,6 +84,8 @@ const AdminLayout: React.FC = () => {
 
   // 法定假日每年自動匯入一次（今年＋明年；已匯入就略過）——倒數／逾期計算靠它，掛在任何後台頁都會跑
   useEffect(() => { void autoImportHolidays() }, [])
+  // 後台同時只留一台：進來就把其他裝置登出（帳密、Google 都走這裡；開著 2FA 時過關才 mount 到這）
+  useEffect(() => { void signOutOtherDevices() }, [])
   // 後台只有中文：<html lang> 固定 zh-TW（EN 模式的全域英文字距才不會套到後台），離開時還原
   useEffect(() => {
     document.documentElement.lang = 'zh-TW'

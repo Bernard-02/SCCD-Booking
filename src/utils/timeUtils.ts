@@ -1,6 +1,6 @@
 /**
  * 時間計算工具
- * 公休日 = 週六日 ＋ closed_dates 資料表的臨時公休日（由 fetchClosedDates 取得）
+ * 公休日 = 週六日 ＋ closed_dates 資料表的整天公休（由 fetchClosedDates 取得；只休一班見下方 closedKey）
  * 「24 工作時未繳押金 → 已取消」的權威判定在資料庫端
  * （supabase/auto-cancel.sql 的 business_hours_since ＋ pg_cron），
  * 這裡是同邏輯的顯示用版本，讓排程掃描間隔內的 UI 也即時正確。
@@ -26,7 +26,44 @@ export const minStartDate = (category: 'equipment' | 'space', bookingType: strin
   return d
 }
 
-/** 是否為公休日（週六日或臨時公休） */
+/** 最遠可選起租日：今天＋30 天，四種類型相同，只有系秘不受限（學會決議 2026-11-06；server 端 submit_orders 同檢查） */
+export const maxStartDate = (role?: string): Date | undefined => {
+  if (role === 'staff') return undefined
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 30)
+  return d
+}
+
+// 公休時段（closed_dates.shift，supabase/rules-2026-11.sql）：公休集合裡，整天＝日期本身，只休一班＝'日期:noon'／'日期:evening'。
+// 整天同週末；只休一班當天仍算營業日，只拿掉那班的值班時段，只休晚班另外讓當天的 19:00 歸還順延
+export type ClosedShift = 'all' | 'noon' | 'evening'
+export const closedKey = (day: string, shift: ClosedShift = 'all') => (shift === 'all' ? day : `${day}:${shift}`)
+/** 值班時段（或開始時間）屬於哪一班：15:00 前算午班（server 端 slot_closed 同規則） */
+export const shiftOfSlot = (slot: string): Exclude<ClosedShift, 'all'> => (slot.slice(0, 5) < '15:00' ? 'noon' : 'evening')
+/** 這個時段有沒有碰到公休 */
+export const slotClosed = (date: string, slot: string, closed: ReadonlySet<string>) =>
+  closed.has(date) || closed.has(closedKey(date, shiftOfSlot(slot)))
+
+/**
+ * 休息日區間 → 一天一列：第一天從開始班、最後一天到結束班，中間整天；午班到晚班＝整天。
+ * 週末本來就不營業，不列。開始晚班、結束午班的同一天是不合理的區間，由呼叫端先擋。
+ */
+export const closedRangeRows = (
+  start: string,
+  end: string,
+  startShift: Exclude<ClosedShift, 'all'>,
+  endShift: Exclude<ClosedShift, 'all'>
+): { day: string; shift: ClosedShift }[] =>
+  dayKeysBetween(fromDateKey(start), fromDateKey(end))
+    .filter(day => ![0, 6].includes(fromDateKey(day).getDay()))
+    .map(day => {
+      const from = day === start ? startShift : 'noon'
+      const to = day === end ? endShift : 'evening'
+      return { day, shift: from === to ? from : 'all' }
+    })
+
+/** 是否為公休日（週六日或整天公休） */
 export const isOffDay = (date: Date, closedDates: ReadonlySet<string>): boolean => {
   const day = date.getDay()
   return day === 0 || day === 6 || closedDates.has(toDateKey(date))
@@ -75,12 +112,19 @@ export const addBusinessMs = (from: Date, ms: number, closedDates: ReadonlySet<s
   return t
 }
 
-/** 繳押金剩餘毫秒數（負值 = 已逾時） */
+/**
+ * 繳押金剩餘毫秒數（負值 = 已逾時）。depositEnd＝選的繳押金時段結束時間：時段結束前都不算逾時，
+ * 公休順延後的時段可能超過 24 工作時（server 端 cancel_expired_pending 同規則）
+ */
 export const pendingMsRemaining = (
   createdAt: string,
   now: Date,
-  closedDates: ReadonlySet<string>
-): number => PENDING_LIMIT_MS - businessMsBetween(new Date(createdAt), now, closedDates)
+  closedDates: ReadonlySet<string>,
+  depositEnd?: Date | null
+): number => Math.max(
+  PENDING_LIMIT_MS - businessMsBetween(new Date(createdAt), now, closedDates),
+  depositEnd ? depositEnd.getTime() - now.getTime() : -Infinity
+)
 
 /**
  * 訂單顯示狀態：資料庫 status 為準；
@@ -90,15 +134,16 @@ export const displayOrderStatus = (
   status: OrderStatus | undefined,
   createdAt: string,
   closedDates: ReadonlySet<string>,
-  now: Date = new Date()
+  now: Date = new Date(),
+  depositEnd?: Date | null
 ): OrderStatus => {
   if (status && status !== 'pending') return status
-  return pendingMsRemaining(createdAt, now, closedDates) <= 0 ? 'canceled' : 'pending'
+  return pendingMsRemaining(createdAt, now, closedDates, depositEnd) <= 0 ? 'canceled' : 'pending'
 }
 
 /**
  * 有效歸還期限：歸還日 19:00（系學會最後營業時間）；
- * 歸還日撞週末／臨時公休則順延到下一個營業日。超過即逾期（19:01 起算）。
+ * 歸還日撞週末、整天公休或晚班公休（沒有 19:00 的收件）則順延到下一個營業日。超過即逾期（19:01 起算）。
  * 資料庫端同邏輯在 auto-overdue.sql 的 next_business_day。
  */
 export const effectiveReturnDeadline = (
@@ -107,25 +152,23 @@ export const effectiveReturnDeadline = (
 ): Date => {
   const d = new Date(endDate)
   d.setHours(0, 0, 0, 0)
-  while (isOffDay(d, closedDates)) d.setDate(d.getDate() + 1)
+  while (isOffDay(d, closedDates) || closedDates.has(closedKey(toDateKey(d), 'evening'))) d.setDate(d.getDate() + 1)
   d.setHours(19, 0, 0, 0)
   return d
 }
 
 /**
- * 新增公休日 day 對一張訂單的影響（後台通知受影響同學用）：
- * pickup＝取件日剛好公休；newDue＝歸還期限因此順延後的日期（沒變為 null，含週末連鎖順延）。
- * closedAfter 為「已含 day」的公休日集合。
+ * 新增公休 added（closedKey）後，一張訂單的歸還期限順延到哪天（沒變為 null，含週末連鎖順延）。
+ * closedAfter 為「已含 added」的公休集合。後台通知受影響同學用。
  */
 export const closedDayImpact = (
-  order: { start_date: string; end_date: string },
-  day: string,
+  order: { end_date: string },
+  added: readonly string[],
   closedAfter: ReadonlySet<string>
-): { pickup: boolean; newDue: string | null } => {
-  const before = new Set([...closedAfter].filter(d => d !== day))
+): string | null => {
+  const before = new Set([...closedAfter].filter(d => !added.includes(d)))
   const due = effectiveReturnDeadline(order.end_date, closedAfter)
-  const changed = due.getTime() !== effectiveReturnDeadline(order.end_date, before).getTime()
-  return { pickup: order.start_date === day, newDue: changed ? toDateKey(due) : null }
+  return due.getTime() !== effectiveReturnDeadline(order.end_date, before).getTime() ? toDateKey(due) : null
 }
 
 /**
@@ -202,7 +245,7 @@ export const dutySlotOptions = (
         const [s, e] = [d.start_time.slice(0, 5), d.end_time.slice(0, 5)]
         const start = new Date(`${date}T${s}`)
         const end = new Date(`${date}T${e}`)
-        if (end > from && start <= until) out.push({ date, slot: `${s}-${e}` })
+        if (end > from && start <= until && !slotClosed(date, s, closedDates)) out.push({ date, slot: `${s}-${e}` })
       })
   }
   return out
@@ -256,7 +299,8 @@ export const SUSPENSION_OVERDUE_DAYS = 6
 
 /**
  * 逾期累計罰款：第 1 日 100 元、每日翻倍累計（100+200+400…），上限為押金總額。
- * 此為顯示用試算，最終金額由後台於歸還時確認寫入 orders.penalty_total。
+ * 此為顯示用試算，最終金額由學會於歸還時填寫（可超過押金，含損壞、遺失）寫入 orders.penalty_total。
+ * 押金 0 的單（老師名義、系秘、大量單的子單）沒有押金當上限，試算以押金上限 5,000 為上限。
  */
 export const overduePenalty = (
   endDate: string,
@@ -266,7 +310,7 @@ export const overduePenalty = (
 ): number => {
   const days = overdueBusinessDays(endDate, closedDates, now)
   if (days <= 0) return 0
-  return Math.min(100 * (2 ** days - 1), depositTotal)
+  return Math.min(100 * (2 ** days - 1), depositTotal || 5000)
 }
 
 // ---- 部分時段可借用（2026-11-02；資料 supabase/partial-availability.sql，UI components/common/PartialDialog.tsx） ----

@@ -101,7 +101,7 @@
       SQL 在 supabase/penalty-and-grades.sql，已執行）
 - [x] 營業時間通知（2026-10-02，`AdminHoursPage`）：公休日分類（活動／大總評／其他，`closed_dates.kind`，supabase/closed-date-kinds.sql 已執行），新增時自動發全站公告 template（不另設手寫公告頁；網頁版進通知鈴鐺標「公告」，一人一列寫 notifications type `announcement`，日後做 App 可在 insert 掛 webhook 推播）；法定假日進後台時自動匯入（`autoImportHolidays`，今年＋明年各一次，刪除＝照常營業不補回），與寒暑假封鎖同列「假期」。另：新增公休日／寒暑假封鎖時自動通知受影響訂單（`notifyClosedDateAffected`／`notifyBlackoutAffected`）。
 - **公告兩邊同步**（2026-10-02 定案）：Facebook 與系統全站通知**同一則公告兩邊都發**，不是互相取代
-  （2026-07 原定「公告只走 Facebook、系統不做」已改）。計算面不變：系統只需知道「整天不開」＝公休日／寒暑假封鎖，營業「時段」調動不影響任何計算——倒數與逾期皆以整天計，唯一時間點是歸還死線 19:00）
+  （2026-07 原定「公告只走 Facebook、系統不做」已改）；Facebook 由學會自己發，不經過系統（2026-11-07）。倒數與逾期以整天計，只休一班的日子照算，唯一時間點是歸還死線 19:00
 - [x] **助教直借（`staff` 角色）** server 端（情境 10）：`submit_orders` 對 staff 免押金、送出即 in-progress；
       封鎖期不擋 staff（原有）。前端數量上限對 staff 未豁免（遇到需求再放寬）；staff 帳號在 Studio 建（同 admin 流程）
 - [x] **學校 Google 登入＋封閉名單**（2026-10-24／25）：學生按「使用學校 Google 帳號登入」→ 跳回首頁 `finishGoogleLogin` 撈 profile；
@@ -147,10 +147,25 @@
 - [x] 同類型限一單（2026-09-30 新規則，2026-10-02 實作兩層）：小量設備／大量設備／個人空間／團體空間四格——
       購物車同類別一張（`useCart` 擋類型＋時段、舊購物車結帳擋、日期列點衝突類型當下提示）；
       **server 端 `submit_orders` 擋同類型未歸還單**（僅 student；orders-rpc.sql 已重貼 2026-10-03）
-- [ ] **與學會討論待定規則**（清單見 [sa-discussion.md](./sa-discussion.md)）：大量取件細節、遠期單範圍、
-      同類型一單的算法、公休公告措辭、一時段一間教室、四年級／碩士天數上限、團體空間免押金、以老師名義押證件（後台標示押金／證件／兩者）。開會後依決議改程式＋rental-rules
-- [ ] 遠期單阻擋（方向定案 2026-09-30）：起租日最遠可選範圍**待 Bernard 與學會討論定細則**
-      （rental-rules 待確認 #4）——定案後改日曆可選範圍＋server 端擋
+- [x] **與學會討論待定規則**（清單見 [sa-discussion.md](./sa-discussion.md)）：2026-11-06 全部決議，2026-11-07 補細則。下面幾條 2026-11-07 實作，SQL 見 `supabase/rules-2026-11.sql` 檔頭的執行順序，規則已同步 rental-rules／order-lifecycle
+- [x] 已繳押金沒來取件自動取消：取件日 19:00 過後取消、釋放佔用，不算違規；押金留紀錄，後台訂單頁「退押金」欄與「待退押金」分頁結清（`admin_refund_deposit`）
+- [x] 不開放提前取件：`admin_mark_paid` 擋，後台「同時取件」與「取件」鈕到取件日才能用
+- [x] 遠期單阻擋：起租日最遠今天起 30 天內，四種類型相同，只有系秘不受限；大量「今天＋3」維持
+- [x] 一類別一張單：設備、空間各只能有一種類型未歸還，系秘也受限；§6 舊的重複下單檢查已刪
+- [x] 公休撞取件日：`orders.pickup_date`＋`change_my_pickup`，通知上有「修改取件日」鈕、Profile 訂單卡也有；沒改照常自動取消；繳押金時段順延到隔天；只有大量設備
+- [x] 公休可選時段：`closed_dates.shift`（整天／午班／晚班），休息日可跨多天、選開始與結束時段（2026-11-07 Bernard 加）
+- [x] 個人空間一間教室改明文檢查；團體可以借一間以上（2026-11-07 Bernard 定）
+- [x] 設備天數上限依年級：大四、大五、大六不限，碩士與其他 30 天（`gradeUtils.maxRentalDays`）
+- [x] grade 慣例加大五、大六：`gradeUtils`、`orders-rpc.sql`、trigger、年級篩選；9/1 升級到大六為止，已畢業不升，未啟用的登記也跟著升
+- [x] 系學會費：`students.dues_paid`，沒繳擋送單；匯入帶入，後台可改、可批次標
+- [x] 匯入班級與會費：Excel 填「日媒四乙」「碩媒一甲」，優先於學號推算
+- [x] 罰款由學會填：歸還視窗一律有罰款欄，可超過押金，從押金扣，超過＝退 0、差額學會自己收
+- [x] 雷切機一年級要上傳核可證明，押金照收；每次 2 小時、證件由學會現場看
+- [x] 設備、組合、教室的英文名稱（2026-11-07，supabase/item-en-names.sql）：後台可編輯，EN 模式的型錄、清單、訂單明細顯示，空白退回中文。設備先帶入第一版翻譯，待學會校對。延期視窗的品項名仍是中文
+- [ ] 會員管理加「已畢業」分頁（2026-11-06 Bernard 考慮中）：取代工具列的「已畢業」切換，方便找回誤標的人（恢復在學現行已可做）
+- [x] 以老師名義借用（2026-11-06 決議，取代押證件方案）：四種類型都適用，借用資訊選個人／老師名義，老師名義填老師名稱＋上傳證明（JPG／PNG／PDF）、押金歸零、不押證件，
+      後台訂單頁「名義」欄看名稱與檔案。押金歸零由 `submit_orders` 驗證，證明檔放私有 bucket `proofs`（只有本人與 admin 能讀）。押金上限不放寬
+- [x] F 區（2026-11-07 確認細節）：SVG 的 E1–E6 每格原本是中庭一塊加走廊長條一塊，長條獨立成 F1–F6（`#A5NF001`–`006`），押金 1,000；中庭的 E1–E6 與 E7–E11 不動
 - [x] Order 頁使用說明補「現金交易不找零」（2026-10-03，畫面＋PDF 收據兩處）
 - [x] **訪客瀏覽**（2026-10-20；2026-10-31 改導登入）：登入頁「訪客登入」→ 型錄；UI 全保留、可選日期看可借數量，
       按加入清單才擋——導去登入頁（`useCart.loginPath`，帶 `redirect_url`），登入後回原頁並還原選取
@@ -168,7 +183,7 @@
 - [x] **後台登入期限（2026-11-06）**：admin 登入起算固定 12 小時、不續期（後台在學會共用電腦上用），前端到期導回登入頁、
       server 端 `user_role()` 同步失效（supabase/admin-session-limit.sql，待執行）；登出改 `scope: 'local'`，只登出這台。
       **2FA**：帳密或 Google 登入後還要輸入驗證器 App 的 6 位數驗證碼（Supabase TOTP，免費；`MfaGate`），`user_role()` 要求 `aal2`。
-      後台同時只留一台：通過 2FA 才把其他裝置登出（`signOut({ scope: 'others' })`，免費方案可用），舊裝置一分鐘內導回登入頁並提示。
+      後台同時只留一台：進後台就把其他裝置登出（`signOut({ scope: 'others' })`，免費方案可用），舊裝置一分鐘內導回登入頁並提示。
       不做「擋新登入」（上一台忘了登出，下一班就進不去）；兩台同時值班會互踢，這是刻意的取捨
 - [ ] Tech debt：拆大檔（2026-11-01：`ProfilePage` 800、`CartList` 765、`SpacePage` 751、`EquipmentGrid` 736、`DatePickerBar` 717、`RentalListPage` 606 行）、
       `DateSelectionContext`（406 行）拆成設備／空間兩個、CSS 雙軌漸進遷移（舊 `css/*.css` 剩 1,120 行，九個檔都還在 main.tsx 載入）
@@ -196,7 +211,7 @@
 ### 後台：桌面 RWD（待人工確認：後台有 2FA，自動截圖進不去）
 
 - [ ] 最窄到 1280px 不出現頁面級橫向卷軸，後台各頁逐頁檢查（2026-11-06 的自動截圖停在 2FA 畫面，尚未真的驗過）
-- [ ] 訂單頁操作欄已固定在右側（`sticky right-0`），未實測：確認表頭同時黏住、整列 hover 底色一致
+- [ ] 訂單頁操作區（收押金／歸還／退押金／操作四欄，2026-11-07 名義移到收押金前）已固定在右側、左邊一條線分開，未實測：確認表頭同時黏住、四欄之間沒有重疊或縫、整列 hover 底色一致
 - [ ] 會員頁 `min-w-[1200px]` 要不要固定欄位：等實際用起來再決定
 
 ### 前台第一步：RWD（2026-11-06 完成）
@@ -255,15 +270,19 @@ icon 鈕 aria-label 約 75 處、登入頁錯誤訊息 aria-live——但核心�
 
 ## 階段 6：部署上線
 
-- [ ] Hosting：**維持 Vercel**（`vercel.json` 已設好）＋環境變數管理（Supabase URL／anon key）
-- [ ] 正式資料填入：真實學號名單（會員管理 Excel 匯入＝預先登記 `login_allowlist`）、設備清單與庫存、空間資料
+- [ ] Hosting：**維持 Vercel**（`vercel.json` 已設好）＋環境變數管理（Supabase URL／anon key）；用免費 `vercel.app` 網址，不買網域、不做 Google 品牌審核（2026-11-07 定：系上內部用，登入畫面顯示 supabase 網址可接受）
+- [ ] 正式資料填入：真實學號名單（會員管理 Excel 匯入＝預先登記 `login_allowlist`）、設備清單與庫存、空間資料（先做 E1–E6 改 F 區）
 - [ ] **Google 登入一次性設定**：Google Cloud OAuth 用戶端＋Supabase Auth Google provider＋Redirect URLs（步驟 docs/google-login-setup.md）；
-      完成後 `HomePage` 的 `PASSWORD_MODE_DEFAULT` 改回 false，實測 gm／gm1／gm2 三個網域、未登記帳號被擋、LINE／IG 內建瀏覽器提示
-- [ ] **後台改用學會 Gmail 登入**（2026-11-06 定，等 Gmail 申請好，不做一人一帳號）：同一組 Gmail 也是上面 Google Cloud 專案的擁有者；學生各用自己的學校帳號，不靠它。
+      實測 gm／gm1／gm2 三個網域、未登記帳號被擋、LINE／IG 內建瀏覽器提示
+- [ ] 上線時 `HomePage` 的 `PASSWORD_MODE_DEFAULT` 改回 false。Google 同意畫面維持 Testing 即可：只要 email、姓名等基本權限時，Google 不限 Test users，
+      不用 Publish，也不用為此做隱私權頁（2026-11-07 查證，學校帳號未列 Test users 實測可登入）
+- [ ] **後台改用學會 Gmail 登入**（2026-11-06 定，不做一人一帳號；2026-11-07 定 Google Cloud 先用 Bernard 個人 Gmail 建，後台不接個人 Gmail、先用學號密碼，學會 Gmail 申請好再照文件「轉給學會 Gmail」轉過去）：同一組 Gmail 也是上面 Google Cloud 專案的擁有者；學生各用自己的學校帳號，不靠它。
       步驟見 docs/google-login-setup.md「後台用學會 Gmail 登入」：`sccdsa` 的 email 換成 Gmail，實測 Google 登入接到同一個帳號（`handle_new_user` trigger 只收學校網域，被當新帳號會擋下）。
       學號密碼保留當備援，兩條路都要過 2FA，所以共用電腦留著 Google 登入狀態也不會一鍵進後台；換屆清單在同一份文件「交接」。
       上線時一起做（2026-11-06 定，開發期不分帳號）：另一案是 Gmail 建新管理員帳號、`sccdsa` 留給開發者測試（Supabase 後台手動新增＋SQL 設管理員，不用改 trigger），上線時再選；
       值班的人一起重新綁定 2FA（docs/google-login-setup.md「交接」）
+- [ ] **上線前決定要不要開回後台 2FA**（2026-11-07 先關閉，只留同時一台）：關閉期間後台只靠帳密，共用電腦留著 Google 登入狀態可一鍵進後台，知道密碼的人也踢得掉值班中的電腦。
+      開回來的步驟見 `supabase/admin-session-limit.sql` 開頭；綁定要在驗證器 App 裡掃（iPhone 相機會跳到「密碼」App，不會出現驗證碼）
 - [x] 字型自架（2026-10 底）：Inter／Noto Sans TC 改 `@fontsource` 套件、Material Symbols 只留 FILL 軸 woff2 放 `public/fonts`
       （index.html 內嵌 @font-face＋`icons-ready` 旗標，字型到齊前 icon 文字不露出），`vercel.json` 給 `/fonts` 一年快取
 - [ ] 自訂 SMTP（Supabase Auth → SMTP Settings）：內建寄信只寄得到專案團隊成員信箱且每小時限量，學生收不到忘記密碼信；Redirect URLs 加正式網域 `/reset-password`

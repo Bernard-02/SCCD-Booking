@@ -16,7 +16,7 @@ import { inputCls, iconFillBtn, tableTh as th, tableTd as td, Select, FormDialog
 import { EQUIPMENT_CATEGORIES } from '../../types/equipment'
 
 // 一組押金預設 500（規則：整組借只收一份單件押金），admin 可改
-const EMPTY: BundleFields = { name: '', deposit: 500, items: [] }
+const EMPTY: BundleFields = { name: '', en_name: '', deposit: 500, items: [] }
 
 const BundleManager: React.FC<{
   equipment: AdminEquipment[]
@@ -52,7 +52,7 @@ const BundleManager: React.FC<{
   const byId = Object.fromEntries(equipment.map(e => [e.id, e]))
   const nameOf = (id: string) => byId[id]?.name ?? '（已刪除的設備）'
   const q = search.trim().toLowerCase()
-  const visible = q ? bundles.filter(b => b.name.toLowerCase().includes(q) || b.items.some(i => nameOf(i.equipmentId).toLowerCase().includes(q))) : bundles
+  const visible = q ? bundles.filter(b => b.name.toLowerCase().includes(q) || (b.en_name ?? '').toLowerCase().includes(q) || b.items.some(i => nameOf(i.equipmentId).toLowerCase().includes(q))) : bundles
   // 單件合計：同一組照單件押金算的話要多少，方便和組合押金比較
   const itemsTotal = (f: BundleFields) => f.items.reduce((s, i) => s + (byId[i.equipmentId]?.deposit ?? 0) * i.quantity, 0)
 
@@ -80,7 +80,7 @@ const BundleManager: React.FC<{
     const err = validate(editing.f)
     if (err) { showToast(err); return }
     setBusy(true)
-    const res = await saveBundle(editing.id, { ...editing.f, name: editing.f.name.trim() })
+    const res = await saveBundle(editing.id, { ...editing.f, name: editing.f.name.trim(), en_name: editing.f.en_name?.trim() || null })
     if (!res.ok) { setBusy(false); showToast(res.message ?? '儲存失敗'); return }
     // 新選的圖片在組合存好後才上傳（新增時要先有 id）
     const id = editing.id ?? res.id
@@ -131,7 +131,10 @@ const BundleManager: React.FC<{
                 <div className="flex items-center gap-3">
                   {/* 沒圖＝灰底組合 icon（不沿用設備的預設圖） */}
                   <Thumb src={r.image_url ? imageSrc(r.image_url) : null} alt={r.name} icon="inventory_2" />
-                  <span className="font-chinese">{r.name}</span>
+                  <div>
+                    <div className="font-chinese">{r.name}</div>
+                    {r.en_name && <div className="font-english text-gray-light">{r.en_name}</div>}
+                  </div>
                 </div>
               </td>
               <td className="px-3 py-3 font-chinese text-gray-light border-b border-gray-mid">
@@ -142,7 +145,7 @@ const BundleManager: React.FC<{
               <td className={`${td} text-center`}>
                 <div className="inline-flex items-center gap-3">
                   <button
-                    onClick={() => setEditing({ id: r.id, f: { name: r.name, deposit: r.deposit, items: r.items }, imageUrl: r.image_url })}
+                    onClick={() => setEditing({ id: r.id, f: { name: r.name, en_name: r.en_name, deposit: r.deposit, items: r.items }, imageUrl: r.image_url })}
                     title="修改" aria-label="修改" className={iconFillBtn}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
@@ -188,12 +191,18 @@ const BundleManager: React.FC<{
                   placeholder="例：木桌組" className={`${inputCls} w-full font-chinese`} autoFocus
                 />
               </Field>
+              <Field zh="英文名稱">
+                <input
+                  type="text" value={editing.f.en_name ?? ''} onChange={e => setF({ en_name: e.target.value })}
+                  placeholder="空白＝英文介面顯示中文名稱" className={`${inputCls} w-full font-english`}
+                />
+              </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field zh="押金/組">
                   <NumberInput value={editing.f.deposit} onChange={n => setF({ deposit: n })} step={50} />
                 </Field>
                 <Field zh="單件合計">
-                  <span className={`${inputCls} w-full font-english text-gray-light border-transparent px-0`}>
+                  <span className={`${inputCls} w-full font-english text-gray-light border-transparent !px-0`}>
                     NT$ {itemsTotal(editing.f).toLocaleString()}
                   </span>
                 </Field>

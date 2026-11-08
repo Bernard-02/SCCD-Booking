@@ -24,7 +24,7 @@ src/
     cart/                       # CartList、DateEditDialog
     common/                     # Toast、ConfirmDialog、BookingDetailsDialog
     space/                      # ClassroomList、SpaceAreaMap
-    profile/                    # ExtendDialog
+    profile/                    # ExtendDialog、ChangePickupDialog（公休改取件日）
     admin/                      # 後台共用 UI 語彙（adminUi）、OrderActionDialog、MfaGate（2FA 關卡）
   contexts/                     # AuthContext、DateSelectionContext
   hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
@@ -70,8 +70,8 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **過期**：閒置效期 30 天——每次開 app 把 `loginTime` 續成現在，`loginTime + expiresIn < now` 才過期，過期連 Supabase 一起登出；
   app 資料在但 Supabase 憑證已沒了也視為登出。**admin 例外**（2026-11-06，後台在學會共用電腦上用）：登入起算固定 12 小時、不續期，分頁開著也會到期
   （`authStorage.isLoginExpired`＋`AdminLayout` 每分鐘檢查，導回 `/?expired=1` 顯示提示）；真正的防線在 `user_role()`（`supabase/admin-session-limit.sql`，看 `auth.sessions.created_at`）。
-  **後台 2FA**：帳密或 Google 登入後由 `AdminRoute` 的 `components/admin/MfaGate` 接手（Supabase TOTP，免費；第一次顯示 QR 綁定，之後輸入 6 位數驗證碼），`user_role()` 要求 JWT `aal2`，只過第一步拿不到後台權限。
-  **後台同時只留一台**：通過 2FA 才把其他裝置登出（`verifyMfa` 的 `signOut({ scope: 'others' })`，只知道密碼的人踢不掉值班中的電腦），舊裝置由 `AdminLayout` 每分鐘查 `user_role` 發現、導回 `/?kicked=1`。
+  **後台 2FA**（2026-11-07 先關閉：`AdminRoute` 的 `MFA_ENABLED`＋`supabase/admin-session-limit.sql` 的 aal 那行，上線前決定要不要開回來，見 roadmap）：帳密或 Google 登入後由 `AdminRoute` 的 `components/admin/MfaGate` 接手（Supabase TOTP，免費；第一次顯示 QR 綁定，之後輸入 6 位數驗證碼），`user_role()` 要求 JWT `aal2`，只過第一步拿不到後台權限。
+  **後台同時只留一台**：進後台就把其他裝置登出（`AdminLayout` 呼叫 `signOutOtherDevices`；開著 2FA 時過關才進得來，只知道密碼的人踢不掉值班中的電腦，關閉期間踢得掉），舊裝置由 `AdminLayout` 每分鐘查 `user_role` 發現、導回 `/?kicked=1`。
   踢舊的、不擋新的：擋新登入的話上一台忘了登出，下一班就進不去。登出用 `scope: 'local'` 只登出這台。後台帳號改用學會 Gmail 登入、換屆交接見 `docs/google-login-setup.md`
 - **登入實作**（2026-10-24 改學校 Google 帳號）：學生按「使用學校 Google 帳號登入」→ `signInWithGoogle` 導去 Google →
   跳回首頁由 `HomePage` 呼叫 `AuthContext.finishGoogleLogin` 撈 profile；資格在 DB trigger 把關（`supabase/google-login.sql`：
@@ -111,14 +111,14 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 整體現況（2026-07）：**階段 1 後端接線已完成**——登入（學號→email→Auth）、訂單（`submit_orders` RPC transaction）、庫存扣減、空間佔用、通知、延期全部走 **Supabase**（Auth + PostgreSQL + RLS）。資料庫端 SQL 在 `supabase/`（schema、seed、auth-setup、orders-rpc），前端統一走 `src/services/`（supabase client、equipment、space、orders、notifications、auth）。環境變數 `.env`（範本 `.env.example`）。
 
-**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
+**改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號、會費、一類別一張）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。plpgsql 的 `if` 條件裡 `case` 要加括號，不然第一個 `then` 會被當成 if 的 then。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
 - **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）／通知（2026-11-02 從左上鈴鐺改成獨立頁 `/admin/notifications`：清單由 AdminLayout 抓、Outlet context 傳入，標題右「全部已讀」鈕；側欄 icon 有未讀粉紅點）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／文字內容〔2026-11-02 加、11-03 段落化：使用教學／系學會＝段落清單拖曳排序＋右側滑入面板改標題與積木（`site_sections` 表，`supabase/site-sections.sql`，整頁一次儲存）；關於／聯絡方式／延期規則仍是固定欄位（`site_content`），清空＝回內建〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
   後台通知（2026-11-02）：學生送單／改品項／延期／取消由 `orders` trigger 發給 admin（`supabase/admin-notifications.sql`），
   側欄鈴鐺（`NotificationPanel` 與前台共用）點一則跳 `/admin/orders?student=學號`。
-- **階段 3 規則補完**：原四項已完成（2026-09）——空間 30 天大四／碩士例外、A508 限大二以上、重複下單 server 端、寒暑假封鎖（server 擋單＋前端日曆灰化）；之後補的延期不得延入封鎖期、同類型限一單、修改已送出設備單也已完成。剩遠期單阻擋（待學會定細則）。grade 慣例見 rental-rules.md「年級限制」。
+- **階段 3 規則補完**：已完成。2026-11-07 落地學會決議（`supabase/rules-2026-11.sql`，執行順序在檔頭）：起租日最遠 30 天、一類別一張、設備天數依年級（大五大六）、已繳未取件自動取消＋退押金、公休改取件日、公休分時段、老師名義與證明檔（私有 bucket `proofs`）、系學會費、罰款由學會填、F 區。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
-- **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。
+- **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。公休集合（`fetchClosedDates`）裡，整天＝日期、只休一班＝`日期:noon`／`日期:evening`（`timeUtils.closedKey`）。
 - **部分時段可借用**（2026-11-02）：設備卡（含整組，看零件逐日）／地圖格／教室依「你選的區間逐日夠不夠」分綠／橘／粉（設備看卡片上填的數量，最好的一天可借幾件＝數量上限；同類型有未歸還單時日期列會清掉已存的日期），橘的點加入開 `components/common/PartialDialog`
   選一段（依日期順序、預設第一段），該類日期改成那段、清單同類品項一起改（同類型限一單，不開第二張）。SQL：`partial-availability.sql`（兩支逐日 RPC；沒執行時前端自動退回整段判定）。
 - **階段 5 RWD 與手機版**：前台 RWD 與手機版面 2026-11-06 完成（Equipment／Space／RentalList／Profile、導覽、日期列、地圖格子清單），待實機驗收；後台只做桌面 RWD，不做手機版，1280px 待人工確認。標準見下方「手機版（RWD）標準」，清單見 roadmap.md。
@@ -151,6 +151,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - 註解以繁體中文為主，符合既有慣例。
 - **前台文字中英分開**：不要再寫「Login 登入」並列，一律 `const t = useT()` 後 `{t('Login', '登入')}`（也可傳 JSX）；
   Footer 的 language icon 切換、預設中文。後台 `/admin` 與 PDF 收據不切換。
+  設備、組合、教室的名稱用 `useItemName()`（`equipmentService`，依 id 查 `en_name`，空白退回中文）：訂單與購物車存的是中文名快照，不要直接顯示 `item.name`。
 - **提示文字（Toast、ConfirmDialog、alert、錯誤訊息）一律中英兩版、各自維護**（2026-10-23 定）：
   元件內用 `t(英, 中)`、ConfirmDialog 的 `messageEn`；hook／service／事件裡用 `tr(英, 中)`（`stores/langStore`，讀當下語言）。
   SQL `raise exception` 維持中文，英文在 `utils/serverErrors.ts` 對照——**新增或修改學生會看到的 server 錯誤時，那裡要一起加英文**。

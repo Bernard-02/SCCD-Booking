@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import type { CartItem, Equipment, EquipmentData } from '../types/equipment'
 import type { Bundle } from '../utils/bundleUtils'
+import { useT } from '../stores/langStore'
 import { AREA_IMAGE_MAP, FALLBACK_BLOCK_IMAGE } from '../components/cart/cartHelpers'
 
 interface EquipmentRow {
@@ -67,6 +68,31 @@ export const useItemImages = (): Record<string, string> => {
     return () => { mounted = false }
   }, [])
   return images
+}
+
+/**
+ * 設備、組合、教室的英文名稱（後台可改，supabase/item-en-names.sql）：id → en_name，不分上下架，舊單也查得到。
+ * 訂單與購物車存的是中文名快照，所以顯示時用 id 查，改名後全站跟著變。模組層快取同圖片。
+ */
+let namesPromise: Promise<Record<string, string>> | null = null
+const loadItemNames = () => (namesPromise ??= Promise.all([
+  supabase.from('equipment').select('id, en_name'),
+  supabase.from('equipment_bundles').select('id, en_name'),
+  supabase.from('space').select('id, en_name')
+]).then(([e, b, s]) => Object.fromEntries(
+  [...(e.data ?? []), ...(b.data ?? []), ...(s.data ?? [])].filter(r => r.en_name).map(r => [r.id, r.en_name as string])
+)))
+
+/** 依目前語言顯示品項名稱：EN 模式用英文名，沒填退回中文（EN 模式看到中文＝提醒要補） */
+export const useItemName = (): ((id: string, zh: string) => string) => {
+  const t = useT()
+  const [names, setNames] = useState<Record<string, string>>({})
+  useEffect(() => {
+    let mounted = true
+    void loadItemNames().then(m => { if (mounted) setNames(m) })
+    return () => { mounted = false }
+  }, [])
+  return (id, zh) => t(names[id] || zh, zh)
 }
 
 /**

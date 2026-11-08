@@ -18,6 +18,10 @@ import {
   closedDayImpact,
   addBusinessMs,
   dutySlotOptions,
+  closedKey,
+  closedRangeRows,
+  maxStartDate,
+  slotClosed,
   PENDING_LIMIT_MS
 } from './timeUtils'
 
@@ -162,28 +166,98 @@ describe('isOnDuty', () => {
   })
 })
 
-describe('closedDayImpact（新增公休日 → 通知受影響訂單）', () => {
-  const order = (start_date: string, end_date: string) => ({ start_date, end_date })
+describe('closedDayImpact（新增公休 → 歸還期限順延）', () => {
+  const end = (end_date: string) => ({ end_date })
 
   it('歸還日當天公休 → 順延到隔天營業日', () => {
     // 週二歸還、週二公休 → 週三
-    expect(closedDayImpact(order('2026-07-13', '2026-07-14'), '2026-07-14', new Set(['2026-07-14'])))
-      .toEqual({ pickup: false, newDue: '2026-07-15' })
+    expect(closedDayImpact(end('2026-07-14'), ['2026-07-14'], new Set(['2026-07-14']))).toBe('2026-07-15')
   })
 
   it('週末連鎖：週六歸還本已順延到週一，週一再公休 → 週二', () => {
-    expect(closedDayImpact(order('2026-07-13', '2026-07-18'), '2026-07-20', new Set(['2026-07-20'])))
-      .toEqual({ pickup: false, newDue: '2026-07-21' })
+    expect(closedDayImpact(end('2026-07-18'), ['2026-07-20'], new Set(['2026-07-20']))).toBe('2026-07-21')
   })
 
-  it('取件日公休；歸還日不受影響', () => {
-    expect(closedDayImpact(order('2026-07-14', '2026-07-16'), '2026-07-14', new Set(['2026-07-14'])))
-      .toEqual({ pickup: true, newDue: null })
+  it('公休日落在租借期間中間 → 不順延', () => {
+    expect(closedDayImpact(end('2026-07-17'), ['2026-07-15'], new Set(['2026-07-15']))).toBeNull()
   })
 
-  it('公休日落在租借期間中間 → 不通知', () => {
-    expect(closedDayImpact(order('2026-07-13', '2026-07-17'), '2026-07-15', new Set(['2026-07-15'])))
-      .toEqual({ pickup: false, newDue: null })
+  it('一次新增多天：連續公休一起順延', () => {
+    const added = ['2026-07-14', '2026-07-15']
+    expect(closedDayImpact(end('2026-07-14'), added, new Set(added))).toBe('2026-07-16')
+  })
+
+  it('只休晚班：當天沒有 19:00 的收件 → 順延；只休午班不影響', () => {
+    const evening = closedKey('2026-07-14', 'evening')
+    const noon = closedKey('2026-07-14', 'noon')
+    expect(closedDayImpact(end('2026-07-14'), [evening], new Set([evening]))).toBe('2026-07-15')
+    expect(closedDayImpact(end('2026-07-14'), [noon], new Set([noon]))).toBeNull()
+  })
+})
+
+describe('公休時段', () => {
+  it('slotClosed：整天擋所有班；只休一班只擋那班', () => {
+    const noon = new Set([closedKey('2026-07-14', 'noon')])
+    expect(slotClosed('2026-07-14', '12:00-13:00', noon)).toBe(true)
+    expect(slotClosed('2026-07-14', '17:00-19:00', noon)).toBe(false)
+    expect(slotClosed('2026-07-14', '17:00-19:00', new Set(['2026-07-14']))).toBe(true)
+  })
+
+  it('只休一班的日子不暫停倒數', () => {
+    const start = new Date(2026, 6, 14, 10, 0) // 週二
+    const end = new Date(2026, 6, 15, 10, 0)
+    expect(businessMsBetween(start, end, new Set([closedKey('2026-07-14', 'noon')]))).toBe(24 * HOUR)
+  })
+
+  it('closedRangeRows：單天＝午班到晚班整天、同一班只休那班', () => {
+    expect(closedRangeRows('2026-07-14', '2026-07-14', 'noon', 'evening')).toEqual([{ day: '2026-07-14', shift: 'all' }])
+    expect(closedRangeRows('2026-07-14', '2026-07-14', 'noon', 'noon')).toEqual([{ day: '2026-07-14', shift: 'noon' }])
+    expect(closedRangeRows('2026-07-14', '2026-07-14', 'evening', 'evening')).toEqual([{ day: '2026-07-14', shift: 'evening' }])
+  })
+
+  it('closedRangeRows：跨多天從第一天開始班到最後一天結束班，週末不列', () => {
+    expect(closedRangeRows('2026-07-16', '2026-07-21', 'evening', 'noon')).toEqual([
+      { day: '2026-07-16', shift: 'evening' }, // 週四晚班起
+      { day: '2026-07-17', shift: 'all' },
+      { day: '2026-07-20', shift: 'all' },
+      { day: '2026-07-21', shift: 'noon' }     // 週二午班止
+    ])
+    expect(closedRangeRows('2026-07-18', '2026-07-19', 'noon', 'evening')).toEqual([])
+  })
+
+  it('dutySlotOptions 跳過公休的那一班', () => {
+    const duties = [
+      { weekday: 2, start_time: '12:00:00', end_time: '13:00:00' },
+      { weekday: 2, start_time: '17:00:00', end_time: '19:00:00' }
+    ]
+    const opts = dutySlotOptions(duties, new Date('2026-07-14T00:00'), new Date('2026-07-14T23:59'), new Set([closedKey('2026-07-14', 'noon')]))
+    expect(opts).toEqual([{ date: '2026-07-14', slot: '17:00-19:00' }])
+  })
+})
+
+describe('起租日上限與押金 0 的單', () => {
+  it('maxStartDate：今天＋30 天，系秘不受限', () => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() + 30)
+    expect(maxStartDate('student')).toEqual(d)
+    expect(maxStartDate(undefined)).toEqual(d)
+    expect(maxStartDate('staff')).toBeUndefined()
+  })
+
+  it('繳押金時段結束前不算逾時（公休順延超過 24 工作時）', () => {
+    const created = new Date(2026, 6, 13, 10, 0).toISOString() // 週一 10:00
+    const now = new Date(2026, 6, 15, 10, 0)                   // 週三 10:00，24 工作時已過
+    const slot = new Date(2026, 6, 15, 13, 0)
+    expect(pendingMsRemaining(created, now, NONE)).toBeLessThan(0)
+    expect(pendingMsRemaining(created, now, NONE, slot)).toBe(3 * HOUR)
+    expect(displayOrderStatus('pending', created, NONE, now)).toBe('canceled')
+    expect(displayOrderStatus('pending', created, NONE, now, slot)).toBe('pending')
+  })
+
+  it('押金 0 的單試算以 5,000 為上限（老師名義沒有押金當上限）', () => {
+    const now = new Date(2026, 6, 28, 12, 0)
+    expect(overduePenalty('2026-07-17', 0, NONE, now)).toBe(5000)
   })
 })
 

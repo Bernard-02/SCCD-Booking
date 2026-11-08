@@ -168,7 +168,7 @@ export const useCart = () => {
 
   // 同類別一次一張訂單（2026-10-02，rental-rules §5＋新規則 7）：購物車內設備、空間各最多一張——
   // 類型擇一（設備小量／大量、空間個人／團體），時段也只能一個（學會規定上一張歸還才能開下一張；
-  // 送單時 submit_orders 另擋同類型未歸還單）。設備與空間可同時存在，送單時自動拆成兩張訂單
+  // 送單時 submit_orders 另擋同類別未歸還單）。設備與空間可同時存在，送單時自動拆成兩張訂單
   const checkBookingTypeConflict = useCallback(
     (newItem: CartItem, base: CartItem[] = cart): { allowed: boolean; reason?: string } => {
       const isEquipment = newItem.category === 'equipment'
@@ -283,7 +283,7 @@ export const useCart = () => {
     [cart, saveCart, checkDepositLimit, checkBookingTypeConflict, checkLittleBookingLimit, isSuspended, isAuthenticated]
   )
 
-  // 部分時段可借：同一類（設備／空間）的品項全部改成新起訖（同類型限一單，不開第二張）；
+  // 部分時段可借：同一類（設備／空間）的品項全部改成新起訖（同類別限一單，不開第二張）；
   // 空間頁選格用，設備頁改用 addToCart 的 base 參數一次做完（改日期＋加入同一次 save）
   const rescheduleCart = useCallback(
     (category: 'equipment' | 'space', startDate: string, endDate: string) =>

@@ -10,21 +10,17 @@ import { createPortal } from 'react-dom'
 import type { CartItem, BookingType } from '../../types/equipment'
 import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
-import { useItemImages } from '../../services/equipmentService'
+import { useItemImages, useItemName } from '../../services/equipmentService'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
-import BookingDetailsDialog from '../common/BookingDetailsDialog'
+import BookingDetailsDialog, { type BookingDetailsData } from '../common/BookingDetailsDialog'
 import DateEditDialog from './DateEditDialog'
 import { useDateGroups, type DateGroup } from './useDateGroups'
-import { formatDate, getAreaName, getBlockArea, getBlockImage, sortBlockIds, readCart, writeCart } from './cartHelpers'
+import { formatDate, getBlockArea, getBlockImage, sortBlockIds, readCart, writeCart } from './cartHelpers'
+import { useAreaName } from '../../services/contentService'
 import { useT } from '../../stores/langStore'
 import Collapse from '../common/Collapse'
 import { calcBundles, type Bundle } from '../../utils/bundleUtils'
-
-interface BookingDetailsData {
-  reason: string
-  className?: string
-  teacher?: string
-}
+import { isSophomoreOrAbove } from '../../utils/gradeUtils'
 
 interface CartListProps {
   cart: CartItem[]
@@ -43,8 +39,10 @@ interface CartListProps {
 
 const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveItem, bookingDetails, onBookingDetailsChange, expiredDateKeys = [], selectedGroups: externalSelectedGroups, onSelectedGroupsChange, selectMode = false, getReserved = () => 0 }) => {
   const t = useT()
+  const itemName = useItemName()
+  const areaLabel = useAreaName()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, currentUser } = useAuth()
   const { getOriginalQuantity, getCartQuantity, bundles } = useCart()
   // 加入購物車時存的是當下的圖片網址；顯示一律用後台最新的（含已下架／關閉的）
   const images = useItemImages()
@@ -253,7 +251,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
         // 計算該組的押金（設備套用組合：湊滿一組只收一組；應用上限）
         const bundleCalc = group.category === 'equipment' ? calcBundles(group.items, bundles) : null
         const rawDeposit = bundleCalc ? bundleCalc.deposit : group.items.reduce((sum: number, item: CartItem) => sum + item.deposit, 0)
-        const groupDeposit = Math.min(rawDeposit, 5000)
+        const groupDeposit = bookingDetails[groupKey]?.asTeacher ? 0 : Math.min(rawDeposit, 5000) // 老師名義免押金；上限不放寬，新增鈕照 rawDeposit 判斷
 
         // 取得該組的租借類型
         const bookingType = group.items.length > 0 ? (group.items[0].bookingType || 'little') : 'little'
@@ -381,7 +379,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                   <div key={s.bundle.id} className={`${CHIP} !pl-1.5 gap-1 border`} style={{ borderColor: color }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color }}>inventory_2</span>
                     <span className="whitespace-nowrap" style={{ color }}>
-                      {s.bundle.name} ×{s.count}
+                      {itemName(s.bundle.id, s.bundle.name)} ×{s.count}
                       {short.length > 0 && `：${short.map(i => i.name).join('、')}${t(' out of stock', '庫存不足')}`}
                     </span>
                     {short.length > 0 && (
@@ -488,7 +486,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                     Object.entries(blocksByArea).forEach(([area, blocks]) => {
                       if (blocks.length === 0) return
 
-                      const areaName = getAreaName(blocks[0].id)
+                      const areaName = areaLabel(area)
                       const displayImage = images[blocks[0].id] || getBlockImage(blocks[0].id)
                       const blockIds = sortBlockIds(blocks.map(b => b.id))
                       const totalDeposit = blocks.reduce((sum, b) => sum + b.deposit, 0)
@@ -565,8 +563,8 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱 */}
-                          <div className="font-chinese text-sm text-white">
-                            {item.name}
+                          <div className="text-sm text-white">
+                            {itemName(item.id, item.name)}
                           </div>
 
                           {/* 押金 */}
@@ -628,8 +626,8 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
                         {/* 名稱和庫存狀態 */}
                         <div className="flex flex-col gap-1">
-                          <div className="font-chinese text-sm text-white">
-                            {item.name}
+                          <div className="text-sm text-white">
+                            {itemName(item.id, item.name)}
                           </div>
                           {/* 只在完全缺貨（灰色狀態）時顯示錯誤訊息 */}
                           {isOutOfStock && (
@@ -724,6 +722,12 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
           // 大量設備單：起租日＝取件日，對話框據此列繳押金／取件時段
           const g = dateGroups.find(g => `${g.category}_${g.startDate}_${g.endDate}` === currentEditingGroup)
           return g?.category === 'equipment' && currentBookingType === 'mass-personal' ? g.startDate : undefined
+        })()}
+        needsProof={(() => {
+          // 雷切機一年級要授課教師核可（年級空白從嚴，同 A508；server 端 submit_orders 同檢查）
+          const g = dateGroups.find(g => `${g.category}_${g.startDate}_${g.endDate}` === currentEditingGroup)
+          return !!g?.items.some(i => i.name.includes('雷切')) &&
+            (currentUser?.role ?? 'student') === 'student' && !isSophomoreOrAbove(currentUser?.year)
         })()}
         initialData={currentEditingGroup ? bookingDetails[currentEditingGroup] : undefined}
         onConfirm={(data) => {

@@ -8,6 +8,9 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import MfaGate from './admin/MfaGate'
 
+// 2FA 開關（2026-11-07 先關閉，要與 SQL 一起切換）：開回來的步驟見 supabase/admin-session-limit.sql 開頭
+const MFA_ENABLED = false
+
 interface AdminRouteProps {
   children: React.ReactNode
 }
@@ -28,7 +31,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/" replace />
   }
 
-  return <MfaGate>{children}</MfaGate>
+  return MFA_ENABLED ? <MfaGate>{children}</MfaGate> : <>{children}</>
 }
 
 export default AdminRoute

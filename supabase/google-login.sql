@@ -1,6 +1,6 @@
 -- SCCD Booking — 學校 Google 帳號登入（2026-10-24 Bernard 定）
 -- ※ 2026-10-25 起 handle_new_user 以 members-v2.sql 為準（封閉名單：只有後台登記過的才能登入，規則 2 的自動放行取消）；
---   本檔仍要先跑（建表、policy），之後再跑 members-v2.sql 覆蓋 trigger。
+--   本檔不用再跑（members-v2.sql 自己建表）；重跑會蓋掉封閉名單，要跑的話接著再跑一次 members-v2.sql。
 -- 使用方式：SQL Editor 貼上執行一次（可重複執行）。Google Cloud／Supabase 的一次性設定見 docs/google-login-setup.md，
 -- 做完前端的 Google 登入鈕才會通。
 --

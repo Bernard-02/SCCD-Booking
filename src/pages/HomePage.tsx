@@ -8,7 +8,7 @@
 import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth, GOOGLE_PENDING_KEY } from '../contexts/AuthContext'
 import { requestPasswordReset } from '../services/authService'
 import { useT } from '../stores/langStore'
 import ConfirmDialog from '../components/common/ConfirmDialog'
@@ -42,6 +42,8 @@ const HomePage = () => {
   const t = useT()
   const [passwordMode, setPasswordMode] = useState(PASSWORD_MODE_DEFAULT) // 學號＋密碼表單
   const [googleError, setGoogleError] = useState('')
+  // 剛從 Google 跳回來：處理完之前不畫登入頁，不然登入成功時會閃一下
+  const [finishing, setFinishing] = useState(() => sessionStorage.getItem(GOOGLE_PENDING_KEY) !== null)
   const [searchParams] = useSearchParams()
   const redirectUrl = searchParams.get('redirect_url')
   if (redirectUrl?.startsWith('/')) sessionStorage.setItem(REDIRECT_KEY, redirectUrl)
@@ -101,8 +103,10 @@ const HomePage = () => {
     finishGoogleLogin().then(result => {
       if (!result) return
       window.history.replaceState(null, '', window.location.pathname)
-      if (result.success) navigate(landingPath(result.student?.role), { replace: true })
-      else if (result.message) setGoogleError(result.message)
+      if (result.success) { navigate(landingPath(result.student?.role), { replace: true }); return }
+      // 錯誤槽在 Google 模式，停在密碼表單會看不到被擋的原因
+      if (result.message) { setPasswordMode(false); setGoogleError(result.message) }
+      setFinishing(false)
     })
   }, [])
 
@@ -148,6 +152,8 @@ const HomePage = () => {
   // 輸入框共用樣式：錯誤時改紅框（ring-inset 避免被 float-up-container 的 overflow 裁掉）
   const inputClass = (hasError: string) =>
     `font-english w-full h-14 px-6 rounded-2xl bg-gray-darker text-sm text-white placeholder:text-white/50 outline-none ring-inset focus:ring-1 focus:ring-white ${hasError ? 'ring-1 ring-error' : ''}`
+
+  if (finishing) return <div className="bg-black min-h-screen" />
 
   return (
     <div className="bg-black text-white min-h-screen flex items-center py-16">

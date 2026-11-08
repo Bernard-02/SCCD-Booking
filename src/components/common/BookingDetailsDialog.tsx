@@ -1,6 +1,8 @@
 /**
  * BookingDetailsDialog 組件
  * 用於填寫借用資訊（使用原因、班級、負責老師等）
+ * 四種類型都能選「老師名義」：填老師名稱＋上傳證明文件，押金歸零（server 端 submit_orders 驗證）。
+ * needsProof＝雷切機一年級：個人借也要上傳授課教師核可，押金照收。檔案符不符合由學會看，系統只收檔。
  * 大量設備另選「繳押金時段」與「取件時段」（rental-rules 新規則 3，mass-pickup.sql）：
  *   選項＝系學會值班時段；取件限起租日當天，繳押金限送單後 24 工作時內且不晚於取件（可同一時段＝同時進行）。
  */
@@ -10,7 +12,7 @@ import CloseButton from './CloseButton'
 import { Select } from '../admin/adminUi'
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { fetchClosedDates, fetchDutySlots } from '../../services/ordersService'
+import { fetchClosedDates, fetchDutySlots, uploadProof, PROOF_ACCEPT } from '../../services/ordersService'
 import {
   addBusinessMs, dutySlotOptions, slotStart, slotLabel, toDateKey, PENDING_LIMIT_MS, type DutySlot
 } from '../../utils/timeUtils'
@@ -23,6 +25,9 @@ export interface BookingDetailsData {
   depositDate?: string  // 大量設備：繳押金日 'YYYY-MM-DD'
   depositSlot?: string  // 'HH:MM-HH:MM'
   pickupSlot?: string   // 取件時段（日期＝起租日）
+  asTeacher?: boolean   // 老師名義
+  proofPath?: string    // 證明文件（bucket proofs）
+  proofName?: string    // 原檔名，重新打開對話框時顯示
 }
 
 interface BookingDetailsDialogProps {
@@ -30,6 +35,8 @@ interface BookingDetailsDialogProps {
   bookingType: 'little' | 'mass-personal' | 'mass-group'
   /** 大量設備單的起租日（＝取件日）；有值才顯示時段選單 */
   pickupDate?: string
+  /** 這張單要授課教師核可（雷切機一年級） */
+  needsProof?: boolean
   initialData?: BookingDetailsData
   onConfirm: (data: BookingDetailsData) => void
   onCancel: () => void
@@ -39,6 +46,7 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   isOpen,
   bookingType,
   pickupDate,
+  needsProof = false,
   initialData,
   onConfirm,
   onCancel
@@ -51,8 +59,14 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   const [deposit, setDeposit] = useState('') // 'YYYY-MM-DD HH:MM-HH:MM'
   const [duties, setDuties] = useState<DutySlot[] | null>(null)
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set())
+  const [asTeacher, setAsTeacher] = useState(false)
+  const [proof, setProof] = useState<{ path: string; name: string } | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [proofError, setProofError] = useState('')
 
   const isMassBooking = bookingType === 'mass-personal' || bookingType === 'mass-group'
+  const showTeacher = isMassBooking || asTeacher
+  const showProof = asTeacher || needsProof
 
   // 初始化或更新表單資料
   useEffect(() => {
@@ -62,6 +76,9 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
       setTeacher(initialData?.teacher || '')
       setPickupSlot(initialData?.pickupSlot || '')
       setDeposit(initialData?.depositDate ? `${initialData.depositDate} ${initialData.depositSlot}` : '')
+      setAsTeacher(!!initialData?.asTeacher)
+      setProof(initialData?.proofPath ? { path: initialData.proofPath, name: initialData.proofName ?? '' } : null)
+      setProofError('')
     }
   }, [isOpen, initialData])
 
@@ -86,6 +103,15 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   // 已選的時段不在目前選項內（換了取件時段、或時間已過）→ 視為未選
   const depositValid = depositOptions.some(o => `${o.date} ${o.slot}` === deposit)
   const pickupValid = pickupOptions.some(o => o.slot === pickupSlot)
+
+  const pickProof = async (file: File) => {
+    setUploading(true)
+    setProofError('')
+    const res = await uploadProof(file)
+    setUploading(false)
+    if (res.path) setProof({ path: res.path, name: file.name })
+    else setProofError(res.message ?? '')
+  }
 
   // 按 ESC 鍵關閉
   useEffect(() => {
@@ -135,7 +161,9 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
     onConfirm({
       reason: reason.trim(),
       className: isMassBooking ? className.trim() : undefined,
-      teacher: isMassBooking ? teacher.trim() : undefined,
+      teacher: showTeacher ? teacher.trim() : undefined,
+      asTeacher,
+      ...(showProof ? { proofPath: proof?.path, proofName: proof?.name } : {}),
       ...(pickupDate ? { depositDate, depositSlot, pickupSlot } : {})
     })
   }
@@ -143,7 +171,10 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
   // 檢查是否可以提交
   const isValid =
     reason.trim() !== '' &&
-    (!isMassBooking || (className.trim() !== '' && teacher.trim() !== '')) &&
+    (!isMassBooking || className.trim() !== '') &&
+    (!showTeacher || teacher.trim() !== '') &&
+    (!showProof || !!proof) &&
+    !uploading &&
     (!pickupDate || (pickupValid && depositValid))
 
   const slotHint = (text: string) => (
@@ -186,39 +217,86 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
             />
           </div>
 
-          {/* 大量訂單才需要填寫班級和老師 */}
-          {isMassBooking && (
-            <>
-              {/* 使用班級 */}
-              <div>
-                <label className="block mb-2">
-                  <span className="text-xs text-white">{t('Class', '使用班級')}</span>
-                  <span className="text-error ml-1">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={className}
-                  onChange={(e) => setClassName(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
-                  placeholder={t('Please fill in the class', '請填寫使用班級')}
-                />
-              </div>
+          {/* 借用名義：老師名義押金歸零，四種類型都能選 */}
+          <div>
+            <label className="block mb-2 text-xs text-white">{t('Book as', '借用名義')}</label>
+            <Select
+              value={asTeacher ? 'teacher' : 'personal'}
+              onChange={v => setAsTeacher(v === 'teacher')}
+              options={[
+                { value: 'personal', label: t('Personal', '個人借') },
+                { value: 'teacher', label: t('Under a teacher’s name', '老師名義') }
+              ]}
+              className="w-full"
+              aria-label={t('Book as', '借用名義')}
+            />
+            {asTeacher && (
+              <p className="mt-2 text-2xs text-gray-light">
+                {t('No deposit. After submitting, bring the proof to the SA within 24 hrs.', '免押金。送出後請於 24 小時內到系學會核對證明文件。')}
+              </p>
+            )}
+          </div>
 
-              {/* 負責老師 */}
-              <div>
-                <label className="block mb-2">
-                  <span className="text-xs text-white">{t('Teacher', '負責老師（若個人用就填個人）')}</span>
-                  <span className="text-error ml-1">*</span>
-                </label>
+          {/* 大量訂單才需要填寫班級 */}
+          {isMassBooking && (
+            <div>
+              <label className="block mb-2">
+                <span className="text-xs text-white">{t('Class', '使用班級')}</span>
+                <span className="text-error ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
+                placeholder={t('Please fill in the class', '請填寫使用班級')}
+              />
+            </div>
+          )}
+
+          {/* 老師：大量訂單的負責老師，或老師名義的老師名稱 */}
+          {showTeacher && (
+            <div>
+              <label className="block mb-2">
+                <span className="text-xs text-white">
+                  {asTeacher ? t('Teacher’s name', '老師名稱') : t('Teacher', '負責老師（若個人用就填個人）')}
+                </span>
+                <span className="text-error ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={teacher}
+                onChange={(e) => setTeacher(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
+                placeholder={asTeacher ? t('Please fill in the teacher’s name', '請填寫老師名稱') : t('Please fill in the teacher in charge', '請填寫負責老師')}
+              />
+            </div>
+          )}
+
+          {/* 證明文件：老師名義要老師簽名；雷切機一年級要授課教師核可 */}
+          {showProof && (
+            <div>
+              <label className="block mb-2">
+                <span className="text-xs text-white">
+                  {asTeacher ? t('Proof with the teacher’s signature', '證明文件（需有老師簽名）') : t('Course teacher’s approval', '授課教師核可證明（一年級借雷切機）')}
+                </span>
+                <span className="text-error ml-1">*</span>
+              </label>
+              <label className={`flex items-center gap-2 pl-2 pr-3 py-2 border border-dashed border-gray-mid rounded-lg text-xs text-white min-w-0 ${uploading ? 'cursor-wait' : `cursor-pointer ${BTN}`}`}>
+                <span className="material-symbols-outlined shrink-0" style={{ fontSize: '18px' }} aria-hidden="true">upload_file</span>
+                <span className="truncate">
+                  {uploading ? t('Uploading…', '上傳中…') : proof ? (proof.name || t('Uploaded', '已上傳')) : t('Choose a JPG, PNG or PDF', '選擇 JPG、PNG 或 PDF')}
+                </span>
                 <input
-                  type="text"
-                  value={teacher}
-                  onChange={(e) => setTeacher(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
-                  placeholder={t('Please fill in the teacher in charge', '請填寫負責老師')}
+                  type="file"
+                  accept={PROOF_ACCEPT}
+                  className="sr-only"
+                  disabled={uploading}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) void pickProof(f); e.target.value = '' }}
                 />
-              </div>
-            </>
+              </label>
+              {proofError && slotHint(proofError)}
+            </div>
           )}
 
           {/* 大量設備：取件時段（起租日）＋繳押金時段（24 工作時內、不晚於取件；同一時段＝同時進行） */}

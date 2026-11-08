@@ -1,8 +1,8 @@
 /**
  * 後台 · 營業時間——規則與說明見 docs/admin-hours.md（週六日固定不營業）
  * 左：「假期 & 休息日」月曆（同前台日曆的大數字單月）整合 closed_dates（休息日＝黃、法定假日＝藍，自動匯入）與
- *   rental_blackouts（寒暑假＝灰）。點日期＝開在日期右側的小視窗：沒東西→新增休息日（日期唯讀、原因、其他才有說明欄）；
- *   已有→顯示內容可刪除。標題右「新增」下拉：休息日＝點月曆日期；寒暑假＝點起訖日（綠），下拉處變「確定」。
+ *   rental_blackouts（寒暑假＝灰）。點日期＝開在日期右側的小視窗：沒東西→新增休息日（開始／結束時段、原因，其他才有說明欄）；
+ *   已有→顯示內容可刪除。標題右「新增」下拉：休息日＝點起訖日（綠）→「確定」後選開始／結束時段與原因，可跨多天；寒暑假＝點起訖日，「確定」直接新增。
  * 右：值班時間表（staff_duties）：週一～五 × 午班／晚班（SHIFTS 寫死），每格 1～3 人（系學會名單）；
  *   按編輯才能改，確定一次寫入差異（移除的刪、新增的加），之後鎖定。
  * 休息日／法定假日：倒數與逾期跳過、歸還順延；新增休息日自動發公告＋通知受影響訂單。封鎖：擋新單、前台日曆灰化。
@@ -12,12 +12,12 @@ import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import CloseButton from '../components/common/CloseButton'
 import {
-  listClosedDates, addClosedDate, deleteClosedDate, listBlackouts, addBlackout, deleteBlackout,
-  notifyClosedDateAffected, notifyBlackoutAffected, announceClosedDate, autoImportHolidays, CLOSED_KIND_ZH,
+  listClosedDates, addClosedDates, deleteClosedDate, listBlackouts, addBlackout, deleteBlackout,
+  notifyClosedAffected, notifyBlackoutAffected, announceClosed, autoImportHolidays, CLOSED_KIND_ZH,
   listStaff, addStaffDuty, deleteStaffDuties, updateStaffDuties
 } from '../services/adminService'
 import type { ClosedDate, ClosedKind, Blackout, StaffMember } from '../services/adminService'
-import { toDateKey } from '../utils/timeUtils'
+import { closedRangeRows, shiftOfSlot, toDateKey } from '../utils/timeUtils'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import {
@@ -33,14 +33,19 @@ const SHIFTS = [
   { key: 'evening', zh: '晚班', start: '17:00', end: '19:00' }
 ] as const
 type ShiftKey = typeof SHIFTS[number]['key']
-const shiftOf = (startTime: string): ShiftKey => (startTime.slice(0, 5) < '15:00' ? 'noon' : 'evening')
+const SHIFT_OPTIONS = SHIFTS.map(s => ({ value: s.key as ShiftKey, label: s.zh }))
+const shiftZh = (key: string | undefined) => SHIFTS.find(s => s.key === key)?.zh
 const cellKey = (weekday: number, shift: ShiftKey) => `${weekday}|${shift}`
 const MAX_PER_SHIFT = 3
 
-// 月曆顏色：休息日黃、法定假日藍（cyan，2026-11-02 從 error 粉紅改）、寒暑假灰（同前台不可選的灰）、寒暑假選取中綠（同前台起訖日）
-const COLOR = { closed: 'var(--color-yellow)', holiday: 'var(--color-cyan)', blackout: 'var(--color-gray-mid)', range: 'var(--color-green)' }
+// 月曆顏色：休息日黃、法定假日藍（cyan，2026-11-02 從 error 粉紅改）、寒暑假灰（同前台不可選的灰）、週末淺灰（固定不營業，跟平日分開）、區間選取中綠（同前台起訖日）
+const COLOR = { closed: 'var(--color-yellow)', holiday: 'var(--color-cyan)', blackout: 'var(--color-gray-mid)', weekend: 'var(--color-gray-light)', range: 'var(--color-green)' }
+const isWeekendCol = (i: number) => i % 7 === 0 || i % 7 === 6 // 月曆第幾格：週日、週六兩欄
 const KIND_OPTIONS: ClosedKind[] = ['activity', 'review', 'other']
-const fmtDay = (key: string) => `${key.replace(/-/g, '/')}（週${WD[new Date(`${key}T00:00:00`).getDay()]}）`
+const fmtDay = (key: string) => `${key.replace(/-/g, '/')}（${WD[new Date(`${key}T00:00:00`).getDay()]}）`
+
+const FORM_EMPTY: { kind: ClosedKind; reason: string; startShift: ShiftKey; endShift: ShiftKey } =
+  { kind: 'activity', reason: '', startShift: 'noon', endShift: 'evening' }
 
 type Mode = 'idle' | 'closed' | 'blackout'
 type Grid = Record<string, number[]> // cellKey → staff_members.id（編輯中 0＝尚未選）
@@ -61,8 +66,9 @@ const AdminHoursPage: React.FC = () => {
   const [range, setRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null }) // 寒暑假起訖
   const [hover, setHover] = useState<string | null>(null)
   // 日期小視窗：開在被點的格子右側（靠右的格子改開左側）
-  const [pop, setPop] = useState<{ day: string; left: number; top: number; flip: boolean } | null>(null)
-  const [form, setForm] = useState<{ kind: ClosedKind; reason: string }>({ kind: 'activity', reason: '' })
+  // end＝「新增 › 休息日」選的區間（一定開新增表單）；沒有＝點單一天
+  const [pop, setPop] = useState<{ day: string; end?: string; left: number; top: number; flip: boolean } | null>(null)
+  const [form, setForm] = useState(FORM_EMPTY)
   const calRef = useRef<HTMLDivElement>(null)
   const popRef = useRef<HTMLDivElement>(null)
 
@@ -96,6 +102,16 @@ const AdminHoursPage: React.FC = () => {
 
   const exitMode = () => { setMode('idle'); setRange({ start: null, end: null }) }
 
+  const openPop = (day: string, el: Element | null | undefined, end?: string) => {
+    const cal = calRef.current
+    if (!cal) return
+    const r = el?.getBoundingClientRect() // 起日不在目前這個月就沒有格子，開在月曆左上
+    const cr = cal.getBoundingClientRect()
+    const flip = !!r && r.left - cr.left > cr.width * 0.6
+    setPop({ day, end, flip, left: !r ? 0 : flip ? r.left - cr.left - 8 : r.right - cr.left + 8, top: r ? r.top - cr.top : 0 })
+    setForm(FORM_EMPTY)
+  }
+
   // 寒暑假起訖也可以直接 key：接受 2026/10/26、2026-10-26、20261026；打完一個合法日期就套用並翻到那個月
   const [typed, setTyped] = useState<{ start: string; end: string }>({ start: '', end: '' })
   const parseTyped = (v: string): string | null => {
@@ -118,39 +134,39 @@ const AdminHoursPage: React.FC = () => {
   useEffect(() => { setTyped({ start: range.start?.replace(/-/g, '/') ?? '', end: range.end?.replace(/-/g, '/') ?? '' }) }, [range])
 
   const onDayClick = (key: string, el: HTMLElement) => {
-    if (mode === 'blackout') {
+    if (mode !== 'idle') {
       // 第一下起日、第二下訖日（早於起日＝重選起日）
       if (!range.start || range.end) setRange({ start: key, end: null })
       else setRange(key >= range.start ? { start: range.start, end: key } : { start: key, end: null })
       return
     }
-    const cal = calRef.current
-    if (!cal) return
-    const r = el.getBoundingClientRect(), cr = cal.getBoundingClientRect()
-    const flip = r.left - cr.left > cr.width * 0.6
-    setPop({ day: key, left: flip ? r.left - cr.left - 8 : r.right - cr.left + 8, top: r.top - cr.top, flip })
-    setForm({ kind: 'activity', reason: '' })
-    if (mode === 'closed') setMode('idle')
+    openPop(key, el)
   }
 
   const handleAddClosed = async () => {
     if (!pop) return
-    const day = pop.day
-    if (form.kind === 'other' && !form.reason.trim()) { showToast('請填寫休息原因'); return }
-    const reasonText = form.kind === 'other' ? form.reason.trim() : CLOSED_KIND_ZH[form.kind]
+    const start = pop.day, end = pop.end ?? pop.day
+    const { kind, startShift, endShift } = form
+    if (kind === 'other' && !form.reason.trim()) { showToast('請填寫休息原因'); return }
+    if (start === end && startShift === 'evening' && endShift === 'noon') { showToast('結束時段不能早於開始時段'); return }
+    const rows = closedRangeRows(start, end, startShift, endShift)
+    if (rows.length === 0) { showToast('這段都是週末，本來就不營業'); return }
+    const reasonText = kind === 'other' ? form.reason.trim() : CLOSED_KIND_ZH[kind]
+    const when = start === end ? start : `${start} ～ ${end}`
     setBusy(true)
-    const res = await addClosedDate(day, form.kind, form.kind === 'other' ? reasonText : null)
+    const res = await addClosedDates(rows, kind, kind === 'other' ? reasonText : null)
     if (!res.ok) { setBusy(false); showToast(res.message ?? '新增失敗'); return }
-    // 今天以後的休息日：自動發全站公告 template＋通知受影響訂單（補登過去的日期不發）
-    if (day >= toDateKey(new Date())) {
-      const [a, n] = await Promise.all([announceClosedDate(day, reasonText), notifyClosedDateAffected(day, reasonText)])
-      if (!a.ok || !n.ok) showToast(`已新增休息日 ${day}，但${!a.ok ? '全站公告' : '受影響訂單通知'}發送失敗：${(!a.ok ? a : n).message}`)
-      else showToast(`已新增休息日 ${day}，已發全站公告（Facebook 請同步發布）${n.count > 0 ? `，並通知 ${n.count} 筆受影響的訂單` : ''}`, 'success')
+    // 今天以後的休息日：自動發全站公告 template＋處理受影響訂單（補登過去的日期不發）
+    if (end >= toDateKey(new Date())) {
+      const [a, n] = await Promise.all([announceClosed(start, end, startShift, endShift, reasonText), notifyClosedAffected(rows, when, reasonText)])
+      if (!a.ok || !n.ok) showToast(`已新增休息日 ${when}，但${!a.ok ? '全站公告' : '受影響訂單通知'}發送失敗：${(!a.ok ? a : n).message}`)
+      else showToast(`已新增休息日 ${when}，已發全站公告${n.count > 0 ? `，並通知 ${n.count} 筆受影響的訂單` : ''}`, 'success')
     } else {
-      showToast(`已補登休息日 ${day}`, 'success')
+      showToast(`已補登休息日 ${when}`, 'success')
     }
     setBusy(false)
     setPop(null)
+    exitMode()
     await load()
   }
 
@@ -207,7 +223,7 @@ const AdminHoursPage: React.FC = () => {
   // 同前台日曆：大數字、Inter 粗體、靠左；hover 數字上滑由 booking.css 的 .cursor-pointer 規則處理
   const cellCls = "text-left text-[2.5rem] font-bold font-english tracking-tighter leading-none py-1 min-w-0"
   const inRange = (key: string) => {
-    if (mode !== 'blackout' || !range.start) return false
+    if (mode === 'idle' || !range.start) return false
     const end = range.end ?? (hover && hover >= range.start ? hover : range.start)
     return key >= range.start && key <= end
   }
@@ -217,7 +233,7 @@ const AdminHoursPage: React.FC = () => {
     if (n < 1 || n > daysInMonth) { cells.push(<div key={`e${i}`} className={cellCls} aria-hidden />); continue }
     const key = toDateKey(new Date(year, m, n))
     const c = closedByDay.get(key), b = blackoutOf(key)
-    const color = inRange(key) ? COLOR.range : c ? (c.kind === 'holiday' ? COLOR.holiday : COLOR.closed) : b ? COLOR.blackout : 'white'
+    const color = inRange(key) ? COLOR.range : c ? (c.kind === 'holiday' ? COLOR.holiday : COLOR.closed) : b ? COLOR.blackout : isWeekendCol(i) ? COLOR.weekend : 'white'
     cells.push(
       <div
         key={key}
@@ -227,7 +243,7 @@ const AdminHoursPage: React.FC = () => {
         onClick={e => onDayClick(key, e.currentTarget)}
         onMouseEnter={() => setHover(key)}
         onMouseLeave={() => setHover(null)}
-        title={c ? (c.kind === 'holiday' ? `法定假日：${c.reason ?? ''}` : `休息日：${c.reason ?? CLOSED_KIND_ZH[c.kind ?? 'other']}`) : b ? `寒暑假 ${b.start_date} ～ ${b.end_date}` : undefined}
+        title={c ? (c.kind === 'holiday' ? `法定假日：${c.reason ?? ''}` : `休息日：${c.reason ?? CLOSED_KIND_ZH[c.kind ?? 'other']}${shiftZh(c.shift) ? `（${shiftZh(c.shift)}）` : ''}`) : b ? `寒暑假 ${b.start_date} ～ ${b.end_date}` : undefined}
       >
         <div className="date-number-wrapper">
           <span className="date-number-text">{n}</span>
@@ -240,8 +256,8 @@ const AdminHoursPage: React.FC = () => {
   }
 
   // 小視窗內容：那天有什麼就顯示什麼，沒有＝新增休息日。標題列右上：垃圾桶（有東西才有）＋X 關閉
-  const popDay = pop ? closedByDay.get(pop.day) : undefined
-  const popBlackout = pop ? blackoutOf(pop.day) : undefined
+  const popDay = pop && !pop.end ? closedByDay.get(pop.day) : undefined
+  const popBlackout = pop && !pop.end ? blackoutOf(pop.day) : undefined
   const iconBtnCls = `flex items-center text-gray-light ${BTN}`
   const popHeader = (title: string, onDelete?: () => void) => (
     <div className="flex items-center justify-between gap-4">
@@ -262,7 +278,7 @@ const AdminHoursPage: React.FC = () => {
     const g: Grid = {}
     for (const w of WEEKDAYS) for (const s of SHIFTS) g[cellKey(w, s.key)] = []
     for (const st of staff) for (const d of st.duties) {
-      const k = cellKey(d.weekday, shiftOf(d.start_time))
+      const k = cellKey(d.weekday, shiftOfSlot(d.start_time))
       if (k in g && !g[k].includes(st.id)) g[k].push(st.id)
     }
     return g
@@ -283,7 +299,7 @@ const AdminHoursPage: React.FC = () => {
       // 既有列（一人一筆）：不在名單的刪、同一人重複的只留一筆
       const seen = new Set<number>()
       for (const st of staff) for (const d of st.duties) {
-        if (d.weekday !== w || shiftOf(d.start_time) !== s.key) continue
+        if (d.weekday !== w || shiftOfSlot(d.start_time) !== s.key) continue
         if (!desired.includes(st.id) || seen.has(st.id)) toDelete.push(d.id)
         else if (d.start_time.slice(0, 5) !== s.start || d.end_time.slice(0, 5) !== s.end) toFix[s.key].push(d.id)
         seen.add(st.id)
@@ -319,7 +335,7 @@ const AdminHoursPage: React.FC = () => {
           <section className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-4 mb-6 h-9">
               <h2 className="text-sm text-white">假期 &amp; 休息日</h2>
-              {mode === 'blackout' ? (
+              {mode !== 'idle' ? (
                 <div className="flex items-center gap-2">
                   {/* 起訖日：同前台日期列顯示兩個日期，可點月曆也可直接 key */}
                   {(['start', 'end'] as const).map(which => (
@@ -339,19 +355,14 @@ const AdminHoursPage: React.FC = () => {
                     取消
                   </button>
                   <button
-                    onClick={handleConfirmBlackout}
+                    onClick={() => {
+                      if (mode === 'blackout') void handleConfirmBlackout()
+                      else if (range.start) openPop(range.start, calRef.current?.querySelector(`[data-date="${range.start}"]`), range.end ?? range.start)
+                    }}
                     disabled={!range.end || busy}
                     className={`${toolBtn(true)} px-3 font-chinese`}
                   >
                     確定
-                  </button>
-                </div>
-              ) : mode === 'closed' ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-light font-chinese mr-1">點月曆日期新增休息日</span>
-                  <button onClick={exitMode} className={textBtn(false)}>
-                    <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">undo</span>
-                    取消
                   </button>
                 </div>
               ) : (
@@ -388,7 +399,7 @@ const AdminHoursPage: React.FC = () => {
             {/* 月曆本體：relative 讓日期小視窗以格子位置定位 */}
             <div ref={calRef} className="relative">
               <div className="grid grid-cols-7 w-full">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i} className={`${cellCls} text-white`}>{d}</div>)}
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <div key={i} className={cellCls} style={{ color: isWeekendCol(i) ? COLOR.weekend : 'white' }}>{d}</div>)}
               </div>
               <div className="grid grid-cols-7 w-full" style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}>
                 {cells}
@@ -407,6 +418,7 @@ const AdminHoursPage: React.FC = () => {
                         <span className="font-english text-white">{fmtDay(popDay.day)}</span>
                         <span className="text-gray-light">
                           {popDay.kind === 'holiday' ? popDay.reason : `${CLOSED_KIND_ZH[popDay.kind ?? 'other']}${popDay.reason ? `・${popDay.reason}` : ''}`}
+                          {shiftZh(popDay.shift) ? `（只休${shiftZh(popDay.shift)}）` : ''}
                         </span>
                       </div>
                     </>
@@ -419,8 +431,29 @@ const AdminHoursPage: React.FC = () => {
                     <>
                       {popHeader('新增休息日')}
                       <Field zh="日期">
-                        <span className={`${inputCls} w-full font-english text-gray-light border-transparent px-0`}>{fmtDay(pop.day)}</span>
+                        <span className={`${inputCls} w-full font-english text-gray-light border-transparent !px-0`}>
+                          {fmtDay(pop.day)}{pop.end && pop.end !== pop.day ? ` ～ ${fmtDay(pop.end)}` : ''}
+                        </span>
                       </Field>
+                      {/* 午班到晚班＝全天；同一班＝只休那班；跨多天＝從第一天的開始班休到最後一天的結束班 */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field zh="開始時段">
+                          <Select<ShiftKey>
+                            value={form.startShift}
+                            onChange={startShift => setForm(f => ({ ...f, startShift }))}
+                            options={SHIFT_OPTIONS}
+                            className="font-chinese w-full"
+                          />
+                        </Field>
+                        <Field zh="結束時段">
+                          <Select<ShiftKey>
+                            value={form.endShift}
+                            onChange={endShift => setForm(f => ({ ...f, endShift }))}
+                            options={SHIFT_OPTIONS}
+                            className="font-chinese w-full"
+                          />
+                        </Field>
+                      </div>
                       <Field zh="原因" required>
                         <Select<ClosedKind>
                           value={form.kind}
@@ -455,7 +488,7 @@ const AdminHoursPage: React.FC = () => {
 
             {/* 圖例 */}
             <div className="flex flex-wrap gap-5 mt-4 text-xs font-chinese text-white">
-              {[['休息日', COLOR.closed], ['法定假日', COLOR.holiday], ['寒暑假', COLOR.blackout]].map(([zh, color]) => (
+              {[['休息日', COLOR.closed], ['法定假日', COLOR.holiday], ['寒暑假', COLOR.blackout], ['週末', COLOR.weekend]].map(([zh, color]) => (
                 <span key={zh} className="flex items-center gap-2">
                   <span className="inline-block w-3 h-3" style={{ backgroundColor: color }} />{zh}
                 </span>

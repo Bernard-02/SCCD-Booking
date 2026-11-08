@@ -6,12 +6,13 @@
 
 import { BTN, CHIP, TAP } from '@/components/common/btn'
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
 import ExtendDialog from '../components/profile/ExtendDialog'
 import ModifyOrderDialog, { type ModifyLine } from '../components/profile/ModifyOrderDialog'
+import ChangePickupDialog from '../components/profile/ChangePickupDialog'
 import EditProfileDialog from '../components/profile/EditProfileDialog'
 import OrderDetail, { formatDateRange } from '../components/profile/OrderDetail'
 import type { Receipt, OrderStatus } from '../components/profile/OrderDetail'
@@ -21,12 +22,12 @@ import { navItemCls } from '../components/common/navItem'
 import Toast from '../components/common/Toast'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { changePassword, updateMyPhone } from '../services/authService'
-import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder } from '../services/ordersService'
+import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder, changeMyPickup } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadItemImages } from '../services/equipmentService'
 import { classLabel } from '../utils/gradeUtils'
 import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
-import { slotLabel, pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
+import { slotClosed, slotEnd, slotLabel, pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
 import { useSuspension } from '../hooks/useSuspension'
 import { useT } from '../stores/langStore'
 
@@ -109,6 +110,8 @@ const ProfilePage: React.FC = () => {
 }
 
 // 工作時計算與訂單狀態判定統一在 utils/timeUtils.ts
+const pickupDayOf = (r: Receipt) => r.pickupDate ?? r.rentalDates[0]
+const depositEndOf = (r: Receipt) => (r.depositDate && r.depositSlot ? slotEnd(r.depositDate, r.depositSlot) : null)
 
 // 使用說明（訂單頁右上；PDF 收據另有一份中英並列）
 const USER_GUIDE = [
@@ -125,6 +128,8 @@ const RentalHistorySection: React.FC = () => {
   const location = useLocation()
   const [allReceipts, setAllReceipts] = useState<Receipt[]>([])
   const [modifying, setModifying] = useState<Receipt | null>(null) // 修改訂單（情境 3）
+  const [changingPickup, setChangingPickup] = useState<Receipt | null>(null) // 公休改取件日
+  const [searchParams, setSearchParams] = useSearchParams()
   const [now, setNow] = useState(new Date()) // 用於倒數計時更新
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set()) // 臨時公休日
   const [isExtendDialogOpen, setIsExtendDialogOpen] = useState(false)
@@ -168,7 +173,7 @@ const RentalHistorySection: React.FC = () => {
           name: item.name,
           category: item.item_type as Receipt['items'][number]['category'],
           quantity: item.quantity,
-          deposit: item.deposit,
+          deposit: order.as_teacher ? 0 : item.deposit, // 老師名義不顯示押金金額，免得以為還要繳
           startDate: order.start_date,
           endDate: order.end_date,
           image: itemImage(item),
@@ -184,7 +189,11 @@ const RentalHistorySection: React.FC = () => {
         depositDate: order.deposit_date,
         depositSlot: order.deposit_slot,
         pickupSlot: order.pickup_slot,
-        itemsUpdatedAt: order.items_updated_at
+        pickupDate: order.pickup_date,
+        itemsUpdatedAt: order.items_updated_at,
+        asTeacher: order.as_teacher,
+        teacher: order.teacher,
+        refunded: order.refunded
       }))
 
       setAllReceipts(receipts)
@@ -198,7 +207,7 @@ const RentalHistorySection: React.FC = () => {
     fetchClosedDates().then(setClosedDates)
   }, [loadOrders])
 
-  // 從日期列「修改訂單」跳過來（同類型已有未歸還單）：訂單載入後直接開修改視窗，只開一次
+  // 從日期列「修改訂單」跳過來（同類別已有未歸還單）：訂單載入後直接開修改視窗，只開一次
   const editTarget = (location.state as { editOrder?: string } | null)?.editOrder
   useEffect(() => {
     if (!editTarget) return
@@ -207,6 +216,25 @@ const RentalHistorySection: React.FC = () => {
     setModifying(r)
     navigate(location.pathname, { replace: true, state: null })
   }, [editTarget, allReceipts, navigate, location.pathname])
+
+  // 從通知的「修改取件日」跳過來（/profile?pickup=單號）：訂單載入後直接開視窗，只開一次
+  const pickupTarget = searchParams.get('pickup')
+  useEffect(() => {
+    if (!pickupTarget) return
+    const r = allReceipts.find(x => x.rentalNumber === pickupTarget)
+    if (!r) return
+    setChangingPickup(r)
+    setSearchParams({}, { replace: true })
+  }, [pickupTarget, allReceipts, setSearchParams])
+
+  const handleConfirmPickup = async (date: string, slot: string) => {
+    if (!changingPickup) return null
+    const res = await changeMyPickup(changingPickup.rentalNumber, date, slot)
+    if (!res.ok) return res.message ?? t('Couldn’t change the pickup date. Please try again.', '修改失敗，請再試一次')
+    setChangingPickup(null)
+    await loadOrders()
+    return null
+  }
 
   // 儲存修改：失敗回傳原因由對話框顯示（視窗保留，內容不丟）
   const handleConfirmModify = async (items: { item_id: string; quantity: number }[]) => {
@@ -319,7 +347,7 @@ const RentalHistorySection: React.FC = () => {
   // 渲染倒數計時
   const renderCountdown = (receipt: Receipt, status: OrderStatus) => {
     // 大量設備：已繳押金待取件 → 顯示取件時段；尚未繳 → 倒數下方附預約的繳押金／取件時段
-    const pickupText = receipt.pickupSlot ? slotLabel({ date: receipt.rentalDates[0], slot: receipt.pickupSlot }) : ''
+    const pickupText = receipt.pickupSlot ? slotLabel({ date: pickupDayOf(receipt), slot: receipt.pickupSlot }) : ''
     if (status === 'pending' && receipt.depositPaidAt) {
       return (
         <div className="text-right mt-2">
@@ -331,7 +359,7 @@ const RentalHistorySection: React.FC = () => {
     }
     if (status === 'pending') {
       // Pending: 24 工作時倒數（排除週末與臨時公休日）
-      const msRemaining = pendingMsRemaining(receipt.createdAt, now, closedDates)
+      const msRemaining = pendingMsRemaining(receipt.createdAt, now, closedDates, depositEndOf(receipt))
 
       if (msRemaining <= 0) return null // 已過期，狀態會變為 canceled
 
@@ -343,7 +371,7 @@ const RentalHistorySection: React.FC = () => {
       return (
         <div className="text-right mt-2">
           <span className="font-english text-sm text-yellow">
-            {t('Expires in', '距離繳交押金')} {hoursRemaining} hrs
+            {receipt.asTeacher ? t('Bring your proof in', '距離核對證明') : t('Expires in', '距離繳交押金')} {hoursRemaining} hrs
             {isPaused && <span className="ml-2 text-gray-light">(Paused)</span>}
           </span>
           {receipt.depositDate && receipt.depositSlot && (
@@ -412,7 +440,9 @@ const RentalHistorySection: React.FC = () => {
     // 顯示狀態：資料庫為準；pending 額外做逾時判定（cron 掃描前的即時顯示）
     // 已預繳押金待取件不走 24 工作時逾時判定（不會被自動取消）
     const awaitingPickup = receipt.status === 'pending' && !!receipt.depositPaidAt
-    const status = awaitingPickup ? 'pending' : displayOrderStatus(receipt.status, receipt.createdAt, closedDates, now)
+    const status = awaitingPickup ? 'pending' : displayOrderStatus(receipt.status, receipt.createdAt, closedDates, now, depositEndOf(receipt))
+    // 公休撞到取件時段：要改取件日，沒改取件日 19:00 後自動取消
+    const pickupBlocked = status === 'pending' && !!receipt.pickupSlot && slotClosed(pickupDayOf(receipt), receipt.pickupSlot, closedDates)
 
     const statusInfo = awaitingPickup ? AWAITING_PICKUP_META : getStatusInfo(status)
     // 可延期＝租借中、未延期過、且未逾「前三天」期限
@@ -497,6 +527,17 @@ const RentalHistorySection: React.FC = () => {
                   <span className="material-symbols-outlined">edit</span>
                 </button>
               )}
+              {pickupBlocked && (
+                <button
+                  type="button"
+                  onClick={() => setChangingPickup(receipt)}
+                  aria-label={t('Change pickup date', '修改取件日')}
+                  title={t('Change pickup date', '修改取件日')}
+                  className={iconBtnCls}
+                >
+                  <span className="material-symbols-outlined">event_repeat</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={toggle}
@@ -507,7 +548,14 @@ const RentalHistorySection: React.FC = () => {
                 <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
             </div>
-            <div className={isOpen ? '[&_*]:!text-black' : 'group-hover:[&_*]:!text-black'}>{renderCountdown(receipt, status)}</div>
+            <div className={isOpen ? '[&_*]:!text-black' : 'group-hover:[&_*]:!text-black'}>
+              {renderCountdown(receipt, status)}
+              {pickupBlocked && (
+                <div className="text-right mt-1 text-xs text-error">
+                  {t('Your pickup slot falls on a closure. Change it, or the order will be canceled.', '取件時段遇到公休，請修改取件日，沒改會自動取消')}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -560,6 +608,15 @@ const RentalHistorySection: React.FC = () => {
         <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
           <OrderReceipt ref={receiptRef} receipt={printing} />
         </div>
+      )}
+
+      {changingPickup && (
+        <ChangePickupDialog
+          rentalNumber={changingPickup.rentalNumber}
+          startDate={changingPickup.rentalDates[0]}
+          onConfirm={handleConfirmPickup}
+          onCancel={() => setChangingPickup(null)}
+        />
       )}
 
       {/* 修改訂單對話框（情境 3） */}

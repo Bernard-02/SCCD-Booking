@@ -11,6 +11,7 @@ export interface SpaceBlock {
   area: string   // square / corridor / front-terrace / back-terrace / glass-wall / pillar / classroom
   deposit: number
   name: string | null
+  en_name?: string | null   // 教室英文名稱（後台可改，supabase/item-en-names.sql）
   image_url?: string | null // 教室圖（後台上傳；null＝沿用 /Images/{id}.webp）
 }
 
@@ -37,7 +38,7 @@ export const loadSpaceBlocks = (): Promise<SpaceBlocksMap> => {
       cache = Object.fromEntries(
         rows.filter(row => row.is_active).map(row => [
           row.id,
-          { area: row.area, deposit: row.deposit, name: row.name, image_url: row.image_url }
+          { area: row.area, deposit: row.deposit, name: row.name, en_name: row.en_name, image_url: row.image_url }
         ])
       )
       closedIds = new Set(rows.filter(row => !row.is_active).map(row => row.id))

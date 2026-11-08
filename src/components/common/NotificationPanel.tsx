@@ -2,10 +2,12 @@
  * 通知下拉面板（前台 Header 鈴鐺）：標題列＋X、清單（公告 chip、未讀紅點、日期與相對時間）。
  * 定位交給呼叫端（className／style）。清單本體 NotificationList 另外 export 給後台「通知」頁整頁用。
  * onSelect 給了且該則有 link → 整列是按鈕（後台點了跳頁）。zhOnly＝後台：不隨前台語言切換。
+ * 公休撞到取件時段的通知（link 帶 pickup=單號）多一顆「修改取件日」：帶去 Profile 直接開修改視窗。
  */
 
-import { CHIP } from '@/components/common/btn'
+import { BTN_OUTLINE, CHIP } from '@/components/common/btn'
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import CloseButton from './CloseButton'
 import type { AppNotification } from '../../services/notificationsService'
 import { useT } from '../../stores/langStore'
@@ -26,9 +28,11 @@ const useZh = (zhOnly?: boolean) => {
 export const NotificationList: React.FC<{
   items: AppNotification[]
   onSelect?: (n: AppNotification) => void
+  onAction?: () => void
   zhOnly?: boolean
-}> = ({ items, onSelect, zhOnly }) => {
+}> = ({ items, onSelect, onAction, zhOnly }) => {
   const t = useZh(zhOnly)
+  const navigate = useNavigate()
 
   // 剛剛／3分鐘前／3小時前／3天前
   const timeAgo = (ts: number) => {
@@ -49,6 +53,15 @@ export const NotificationList: React.FC<{
         </p>
         {!n.read && <span className="mt-2 w-2 h-2 shrink-0 bg-pink rounded-full" />}
       </div>
+      {n.link?.includes('pickup=') && (
+        <button
+          type="button"
+          onClick={() => { navigate(n.link!); onAction?.() }}
+          className={`mb-2 px-3 py-1 rounded-lg text-xs ${BTN_OUTLINE}`}
+        >
+          {t('Change pickup date', '修改取件日')}
+        </button>
+      )}
       <div className="flex justify-between items-end">
         <span className="font-english text-gray-light text-xs">{formatDate(n.timestamp)}</span>
         <span className="font-english text-gray-light text-xs">{timeAgo(n.timestamp)}</span>
@@ -97,7 +110,7 @@ const NotificationPanel: React.FC<{
         <CloseButton onClick={onClose} label={t('Close', '關閉')} />
       </div>
       <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-        <NotificationList items={items} onSelect={onSelect} zhOnly={zhOnly} />
+        <NotificationList items={items} onSelect={onSelect} onAction={onClose} zhOnly={zhOnly} />
       </div>
     </div>
   )

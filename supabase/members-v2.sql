@@ -73,19 +73,20 @@ begin
   -- 只有符合規則的學號才推年級（例外名單的學號格式不一，substr 轉數字會炸）
   v_n := case when v_sid ~ '^A\d{3}(141|144)\d{3}$' then v_ay - substr(v_sid, 2, 3)::int + 1 end;
 
-  insert into public.students (id, email, student_id, name, grade, class_name, role, is_transfer)
+  insert into public.students (id, email, student_id, name, grade, class_name, role, is_transfer, dues_paid)
   values (
     new.id,
     lower(new.email),
     coalesce(v_pre.student_id, v_sid), -- 用 Email 對到的登記：以登記的學號為準
     -- 登記有填姓名就用登記的，否則用 Google 帳號名字
     coalesce(nullif(trim(v_pre.name), ''), new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name', ''),
-    -- 延畢（第 5 年以上）算大四；例外名單的學號格式不一，年級留空由學會補
-    -- ponytail: 9/1 前就登入的準新生（第 0 年）也留空——填大一會被 9/1 升級多跳一級；空白＝規則從嚴當大一，開學後學會補
-    case when v_n >= 1 then '大' || (array['一', '二', '三', '四'])[least(v_n, 4)] end,
-    case substr(v_sid, 5, 3) when '141' then '甲' when '144' then '乙' end,
+    -- 名單有填班級就用名單的（碩士、轉學生由學號推不準）；沒填才由學號推，第 6 年以上算大六
+    -- ponytail: 9/1 前就登入的準新生（第 0 年）留空——填大一會被 9/1 升級多跳一級；空白＝規則從嚴當大一，開學後學會補
+    coalesce(v_pre.grade, case when v_n >= 1 then '大' || (array['一', '二', '三', '四', '五', '六'])[least(v_n, 6)] end),
+    coalesce(v_pre.class_name, case substr(v_sid, 5, 3) when '141' then '甲' when '144' then '乙' end),
     coalesce(v_pre.role, 'student'),
-    coalesce(v_pre.is_transfer, false)
+    coalesce(v_pre.is_transfer, false),
+    coalesce(v_pre.dues_paid, false)
   );
   -- 登記為系學會：順便加進經手人名單
   if coalesce(v_pre.is_sa, false) then

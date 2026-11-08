@@ -13,15 +13,13 @@ import { cartGroupKey } from '../types/equipment'
 import type { CartItem } from '../types/equipment'
 import { tr } from '../stores/langStore'
 import { serverErrorText } from '../utils/serverErrors'
+import type { BookingDetailsData } from '../components/common/BookingDetailsDialog'
 
 interface UseOrderSubmissionArgs {
   cart: CartItem[]
   clearCart: () => void
   // 借用資訊，依 cartGroupKey 為 key（與下方分組相同）
-  bookingDetails?: Record<string, {
-    reason?: string; className?: string; teacher?: string
-    depositDate?: string; depositSlot?: string; pickupSlot?: string // 大量設備預選時段
-  }>
+  bookingDetails?: Record<string, BookingDetailsData>
 }
 
 export interface SubmitResult {
@@ -79,6 +77,8 @@ export const useOrderSubmission = ({ cart, clearCart, bookingDetails = {} }: Use
         deposit_date: details?.depositDate ?? null,
         deposit_slot: details?.depositSlot ?? null,
         pickup_slot: details?.pickupSlot ?? null,
+        as_teacher: details?.asTeacher ?? false,
+        proof_path: details?.proofPath ?? null,
         items: items.map(item => ({
           item_type: item.category === 'equipment' ? 'equipment' : item.category, // space-block / classroom 原樣
           item_id: item.id,

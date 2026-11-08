@@ -11,17 +11,9 @@ import { cartGroupKey } from '../types/equipment'
 import { slotEnd } from '../utils/timeUtils'
 import type { CartItem } from '../types/equipment'
 import { calcBundles, type Bundle } from '../utils/bundleUtils'
+import type { BookingDetailsData } from '../components/common/BookingDetailsDialog'
 
 const NO_BUNDLES: Bundle[] = []
-
-interface BookingDetailsData {
-  reason: string
-  className?: string
-  teacher?: string
-  depositDate?: string
-  depositSlot?: string
-  pickupSlot?: string
-}
 
 interface BaseResult {
   valid: boolean

@@ -8,9 +8,10 @@
 
 import React from 'react'
 import { CHIP } from '@/components/common/btn'
-import { getAreaName, getBlockArea, getBlockImage, sortBlockIds } from '../cart/cartHelpers'
+import { getBlockArea, getBlockImage, sortBlockIds } from '../cart/cartHelpers'
+import { useAreaName } from '../../services/contentService'
 import { useT } from '../../stores/langStore'
-import { useBundles, useItemImages } from '../../services/equipmentService'
+import { useBundles, useItemImages, useItemName } from '../../services/equipmentService'
 import { splitIntoSets } from '../../utils/bundleUtils'
 
 export interface ReceiptItem {
@@ -44,7 +45,11 @@ export interface Receipt {
   depositDate?: string | null
   depositSlot?: string | null
   pickupSlot?: string | null
+  pickupDate?: string | null     // 公休改過的取件日；沒有＝起租日
   itemsUpdatedAt?: string | null // 學生最後一次改品項（收據印出，對照紙本新舊）
+  asTeacher?: boolean            // 老師名義：押金 0
+  teacher?: string | null
+  refunded?: number | null       // 已退押金
 }
 
 export const formatDate = (s: string) =>
@@ -83,6 +88,8 @@ const GroupHeader: React.FC<{ label: string; count: number; deposit: number }> =
 
 const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
   const t = useT()
+  const itemName = useItemName()
+  const areaName = useAreaName()
   const images = useItemImages() // 編號區格子優先用後台上傳的圖（第一格），沒有退回區域示意圖
   const equipment = receipt.items.filter(i => i.category === 'equipment')
   const equipmentSets = splitIntoSets(equipment, useBundles())
@@ -98,7 +105,9 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
   const info: [string, string, string][] = [
     [t('Order Time', '送單時間'), formatOrderTime(receipt.createdAt), 'font-english'],
     ...(receipt.itemsUpdatedAt ? [[t('Updated', '最後修改'), formatOrderTime(receipt.itemsUpdatedAt), 'font-english'] as [string, string, string]] : []),
-    ...(receipt.reason ? [[t('Reason', '使用原因'), receipt.reason, 'font-chinese'] as [string, string, string]] : [])
+    ...(receipt.reason ? [[t('Reason', '使用原因'), receipt.reason, 'font-chinese'] as [string, string, string]] : []),
+    ...(receipt.asTeacher ? [[t('Teacher', '老師名義'), receipt.teacher ?? '', 'font-chinese'] as [string, string, string]] : []),
+    ...(receipt.refunded != null ? [[t('Refunded', '已退押金'), `NT$ ${receipt.refunded.toLocaleString()}`, 'font-english'] as [string, string, string]] : [])
   ]
 
   return (
@@ -130,9 +139,9 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
                 <div key={bundle.id} className={ROW}>
                   <Thumb src={first?.image ?? ''} alt={bundle.name} />
                   <div>
-                    {bundle.name}
+                    {itemName(bundle.id, bundle.name)}
                     <div className="text-2xs opacity-50">
-                      {bundle.items.map(c => `${equipment.find(i => i.id === c.equipmentId)?.name ?? ''} ×${c.quantity * count}`).join('、')}
+                      {bundle.items.map(c => `${itemName(c.equipmentId, equipment.find(i => i.id === c.equipmentId)?.name ?? '')} ×${c.quantity * count}`).join('、')}
                     </div>
                   </div>
                   <div className="text-center"><span className="font-english">{count}</span> {t('set', '組')}</div>
@@ -144,7 +153,7 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
               <div key={`${item.id}-${idx}`} className={ROW}>
                 <Thumb src={item.image} alt={item.name} />
                 <div>
-                  {item.name}
+                  {itemName(item.id, item.name)}
                   {/* 修改訂單（情境 3）：取件後新增待點交／送單後改過 */}
                   {item.pickupPending
                     ? <span className={`${CHIP} ml-2 bg-yellow text-black`}>待點交</span>
@@ -168,8 +177,8 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
               const blockIds = sortBlockIds(blocks.map(b => b.id))
               return (
                 <div key={area} className={ROW}>
-                  <Thumb src={images[blocks[0].id] || getBlockImage(blocks[0].id)} alt={getAreaName(blocks[0].id)} />
-                  <div>{getAreaName(blocks[0].id)}（{blockIds.join('、')}）</div>
+                  <Thumb src={images[blocks[0].id] || getBlockImage(blocks[0].id)} alt={areaName(area)} />
+                  <div>{areaName(area)}（{blockIds.join('、')}）</div>
                   <div className="text-center font-english">{blocks.length}</div>
                   <div className="font-english">NT$ {blocks.reduce((s, b) => s + b.deposit, 0).toLocaleString()}</div>
                 </div>
@@ -178,7 +187,7 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
             {classrooms.map((item, idx) => (
               <div key={`${item.id}-${idx}`} className={ROW}>
                 <Thumb src={item.image} alt={item.name} />
-                <div>{item.name}</div>
+                <div>{itemName(item.id, item.name)}</div>
                 <div className="text-center font-english">1</div>
                 <div className="font-english">NT$ {item.deposit.toLocaleString()}</div>
               </div>

@@ -54,7 +54,7 @@ $$;
 create table public.equipment (
   id text primary key,                      -- '{分頁slug}-{名稱hash}'，由 seed 產生
   name text not null,
-  en_name text,                             -- 英文名稱（前台暫不渲染，之後在 Table Editor 補）
+  en_name text,                             -- 英文名稱（EN 模式顯示，空白退回中文；後台設備管理可改）
   category text not null,                   -- 大類（Excel 分頁）：線材/工具/延長線/視聽類/燈具/畫板/展桌/展台/機具/搖頭燈
   sub_category text,                        -- 子類別（如「視源線 - HDMI」「推車」）
   location text,                            -- 存放地點（如「A503 - 設備區」）
@@ -71,6 +71,7 @@ create table public.space (
   id text primary key,                      -- 前端 SVG 的格子代號：'A1'…'L6'、'Z9'、'A503'
   venue_code text unique,                   -- 官方編號（Platform Venues）：'#A5NA001'、'#A5CA003'
   name text,                                -- 顯示名稱（教室用「A503 教室」，區塊同 id）
+  en_name text,                             -- 教室英文名稱（EN 模式顯示；後台空間管理可改）
   area text not null,                       -- square / corridor(專案許可區) / front-terrace / back-terrace / glass-wall / pillar / classroom
   deposit int not null default 1000,        -- 後陽台 2000、教室 5000、其餘 1000
   is_active boolean not null default true

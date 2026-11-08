@@ -9,12 +9,14 @@ import { BTN } from '@/components/common/btn'
 import React, { useState } from 'react'
 import { addAllowlist } from '../../services/adminService'
 import { parseMemberRows, IDENTITY_ZH_LIST, type ImportRow } from '../../utils/memberImport'
+import { classLabel } from '../../utils/gradeUtils'
 import { FormDialog } from './adminUi'
 
 const TEMPLATE = [
-  ['學號', '姓名', 'Email', '身份', '職稱'],
-  ['A113144001', '王小明', 'a113144001@gm.usc.edu.tw', '學生', ''],
-  ['A112141002', '李小華', '', '系學會', '會長']
+  ['學號', '姓名', 'Email', '班級', '會費', '身份', '職稱'],
+  ['A113144001', '王小明', 'a113144001@gm.usc.edu.tw', '日媒三乙', '已繳', '學生', ''],
+  ['A112141002', '李小華', '', '日媒四甲', '已繳', '系學會', '會長'],
+  ['M114144001', '陳小美', 'm114144001@gm.usc.edu.tw', '碩媒一甲', '未繳', '學生', '']
 ]
 const IDENTITY_ZH = { student: '學生', transfer: '轉學生', sa: '系學會', secretary: '系秘' } as const
 const cellCls = 'px-2 py-1.5 border-b border-gray-mid whitespace-nowrap'
@@ -60,6 +62,7 @@ const MemberImportDialog: React.FC<{
     setBusy(true)
     const res = await addAllowlist(valid.map(r => ({
       student_id: r.sid, note: null, name: r.name, email: r.email,
+      grade: r.grade, class_name: r.class_name, dues_paid: r.dues_paid,
       role: r.identity === 'secretary' ? 'staff' : 'student',
       is_transfer: r.identity === 'transfer',
       is_sa: r.identity === 'sa',
@@ -81,8 +84,9 @@ const MemberImportDialog: React.FC<{
       wide
     >
       <p className="text-xs text-gray-light font-chinese leading-6">
-        Excel（.xlsx）第一列是表頭，認「學號、姓名、Email、身份、職稱」，順序不拘、其他欄略過。
-        身份填 {IDENTITY_ZH_LIST}，空白＝學生；Email 空白＝學號@gm.usc.edu.tw；班級由學號自動判斷。
+        Excel（.xlsx）第一列是表頭，認「學號、姓名、Email、班級、會費、身份、職稱」，順序不拘、其他欄略過。
+        身份填 {IDENTITY_ZH_LIST}，空白＝學生；Email 空白＝學號@gm.usc.edu.tw；班級填「日媒四乙」「碩媒一甲」，空白＝由學號推；
+        會費填 已繳／未繳，空白＝未繳（沒繳不能送單）。
         已登記未啟用的學號以檔案為準更新，已有帳號的跳過。
         <button type="button" onClick={downloadTemplate} className={`ml-2 text-white underline ${BTN}`}>下載範本</button>
       </p>
@@ -116,6 +120,8 @@ const MemberImportDialog: React.FC<{
                   <th className={`${cellCls} font-normal`}>學號</th>
                   <th className={`${cellCls} font-normal`}>姓名</th>
                   <th className={`${cellCls} font-normal font-english`}>Email</th>
+                  <th className={`${cellCls} font-normal`}>班級</th>
+                  <th className={`${cellCls} font-normal`}>會費</th>
                   <th className={`${cellCls} font-normal`}>身份</th>
                   <th className={`${cellCls} font-normal`}>問題</th>
                 </tr>
@@ -127,6 +133,8 @@ const MemberImportDialog: React.FC<{
                     <td className={`${cellCls} font-english`}>{r.sid || '—'}</td>
                     <td className={`${cellCls} font-chinese`}>{r.name || '—'}</td>
                     <td className={`${cellCls} font-english`}>{r.email || '—'}</td>
+                    <td className={`${cellCls} font-chinese`}>{classLabel(r.grade, r.class_name) || '由學號推'}</td>
+                    <td className={`${cellCls} font-chinese`}>{r.dues_paid ? '已繳' : '未繳'}</td>
                     <td className={`${cellCls} font-chinese`}>{IDENTITY_ZH[r.identity]}{r.identity === 'sa' && r.position ? `・${r.position}` : ''}</td>
                     <td className={`${cellCls} font-chinese`} style={r.error ? { color: 'var(--color-error)' } : undefined}>{r.error ?? ''}</td>
                   </tr>

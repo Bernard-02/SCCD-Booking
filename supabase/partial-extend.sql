@@ -65,7 +65,7 @@ $$;
 -- 已還品項留原單（結案、寫罰款與經手人）；未還品項拆子單（沿原歸還日、沿用 has_extended 與狀態，
 -- 續走逾期／罰款／延期／停權流程）。押金：小單→子單＝未還品項小計、原單 refunded＝退還現金；
 -- 大量單→押金不拆（子單 0、全數歸還後一次退，refunded 留空由人工結）。
--- ponytail: 大量單子單 deposit_total = 0，前端罰款 cap 顯示會以 0 計——大單部分歸還後逾期屬罕見案例，人工把關。
+-- 罰款由學會填（逾期、損壞、遺失，2026-11-07 Bernard 定）：從押金扣，超過押金＝退 0，差額學會自己收。
 drop function if exists public.admin_mark_returned_partial(text, bigint[], integer, text); -- 舊簽名（未帶繳清旗標）
 create or replace function public.admin_mark_returned_partial(
   p_rental_number text, p_item_ids bigint[], p_penalty int default 0, p_handler text default null,
@@ -116,7 +116,9 @@ begin
   if v_selected = v_total_items then
     update public.orders
       set status = 'returned', penalty_total = p_penalty, returned_by = p_handler,
-          penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end
+          penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end,
+          refunded = greatest(deposit_total - p_penalty, 0),
+          refunded_by = p_handler
       where id = v_order.id;
     insert into public.notifications (student_id, type, title, message, link)
     values (v_order.student_id, 'success', '已歸還',
@@ -140,24 +142,25 @@ begin
 
   insert into public.orders
     (rental_number, student_id, start_date, end_date, booking_type, status,
-     deposit_total, has_extended, parent_order_id, reason, class_name, teacher)
+     deposit_total, has_extended, parent_order_id, reason, class_name, teacher, as_teacher, proof_path)
   values
     (v_child_number, v_order.student_id, v_order.start_date, v_order.end_date, v_order.booking_type,
      v_order.status, v_child_dep, v_order.has_extended, v_root_id,
-     v_order.reason, v_order.class_name, v_order.teacher)
+     v_order.reason, v_order.class_name, v_order.teacher, v_order.as_teacher, v_order.proof_path)
   returning id into v_child_id;
 
   update public.order_items set order_id = v_child_id
     where order_id = v_order.id and not (id = any(p_item_ids));
 
-  -- 原單結案：罰款、經手人；小單記退還現金（實收 − 子單押金），大量單留空（全還才退，人工結）
+  -- 原單結案：罰款、經手人；小單記退還現金（實收 − 子單押金 − 罰款），大量單留空（全還才退，人工結）
   update public.orders
     set status = 'returned',
         penalty_total = p_penalty,
         returned_by = p_handler,
         penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end,
         refunded = case when v_order.booking_type = 'little'
-                        then v_order.deposit_total - v_child_dep else null end
+                        then greatest(v_order.deposit_total - v_child_dep - p_penalty, 0) else null end,
+        refunded_by = case when v_order.booking_type = 'little' then p_handler end
     where id = v_order.id;
 
   insert into public.notifications (student_id, type, title, message, link)
@@ -306,10 +309,11 @@ begin
 
   insert into public.orders
     (rental_number, student_id, start_date, end_date, booking_type, status,
-     deposit_total, has_extended, parent_order_id, reason, class_name, teacher)
+     deposit_total, has_extended, parent_order_id, reason, class_name, teacher, as_teacher, proof_path)
   values
     (v_child_number, v_order.student_id, v_order.start_date, v_new_end, v_order.booking_type,
-     'in-progress', v_child_dep, true, v_root_id, v_order.reason, v_order.class_name, v_order.teacher)
+     'in-progress', v_child_dep, true, v_root_id, v_order.reason, v_order.class_name, v_order.teacher,
+     v_order.as_teacher, v_order.proof_path)
   returning id into v_child_id;
 
   update public.order_items set order_id = v_child_id where id = any(p_item_ids);

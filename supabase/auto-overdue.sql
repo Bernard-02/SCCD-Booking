@@ -11,7 +11,8 @@
 alter table public.orders add column if not exists penalty_total int;
 
 -- ---------- 2. 有效歸還期限的日期 ----------
--- 從 p_day 起往後找第一個營業日（含 p_day 本身）；週六日與 closed_dates 順延。
+-- 從 p_day 起往後找第一個能收歸還的營業日（含 p_day 本身）；週六日與整天公休順延，
+-- 只休晚班的日子沒有 19:00 的收件也順延（只休午班的不影響）。
 -- ponytail: 最多往後找 30 天，連休超過 30 天不在系上現實範圍內
 create or replace function public.next_business_day(p_day date)
 returns date
@@ -22,7 +23,7 @@ as $$
   select g.d::date
   from generate_series(p_day, p_day + 30, interval '1 day') g(d)
   where extract(isodow from g.d) not in (6, 7)
-    and not exists (select 1 from public.closed_dates c where c.day = g.d::date)
+    and not exists (select 1 from public.closed_dates c where c.day = g.d::date and c.shift in ('all', 'evening'))
   order by 1
   limit 1
 $$;

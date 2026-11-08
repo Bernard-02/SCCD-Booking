@@ -55,9 +55,6 @@ export const orderKindMeta = (o: Pick<OrderRow, 'booking_type' | 'order_items'>)
 export const AWAITING_PICKUP_META = { en: 'Paid', zh: '待取件', color: 'var(--color-orange)' }
 export const isAwaitingPickup = (o: Pick<OrderRow, 'status' | 'deposit_paid_at'>) =>
   o.status === 'pending' && !!o.deposit_paid_at
-/** 已預繳但起租日（＝取件日）已過仍未取件 → 後台提醒，學會手動處理 */
-export const isPickupLate = (o: Pick<OrderRow, 'status' | 'deposit_paid_at' | 'start_date'>, todayKey: string) =>
-  isAwaitingPickup(o) && o.start_date < todayKey
 
 /** 狀態標籤（與 Profile 訂單列表的標籤同一份 markup）；awaitingPickup＝已繳押金待取件 */
 export const StatusChip: React.FC<{ status: OrderStatus; awaitingPickup?: boolean }> = ({ status, awaitingPickup }) => {

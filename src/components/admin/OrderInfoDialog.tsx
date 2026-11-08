@@ -1,10 +1,10 @@
 /**
  * 後台：修改訂單借用資訊——學生打錯字時由後台代改，學生端不可改。
  * 可改欄位同前台送單時填的（BookingDetailsDialog，rental-rules §9）：
- *   小量＝只有原因；大量-個人／大量-團體＝原因＋班級＋老師，三項必填。
+ *   小量＝只有原因（老師名義再加老師）；大量-個人／大量-團體＝原因＋班級＋老師，三項必填。
  *   大量設備且仍待取件（status pending）另可改取件時段；還沒收押金的再加繳押金時段（2026-11-02 加）。
- *   選項同前台：取件＝起租日當天的值班時段；繳押金＝現在起、送單後 24 工作時內、不晚於取件。原本存的時段已過期時仍列在最上面（標「原」），只改原因不用被迫換時段。
- * 小量單只送 reason，不碰 class_name／teacher；沒顯示的時段欄位也不送。
+ *   選項同前台：取件＝取件日當天的值班時段；繳押金＝現在起、送單後 24 工作時內、不晚於取件。原本存的時段已過期時仍列在最上面（標「原」），只改原因不用被迫換時段。
+ * 沒顯示的欄位不送。
  * 樣式沿用 OrderActionDialog。
  */
 
@@ -29,6 +29,7 @@ const field =
 
 const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => {
   const isMass = order.booking_type !== 'little'
+  const hasTeacher = isMass || order.as_teacher
   const [reason, setReason] = useState(order.reason ?? '')
   const [className, setClassName] = useState(order.class_name ?? '')
   const [teacher, setTeacher] = useState(order.teacher ?? '')
@@ -46,11 +47,12 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
   }, [hasPickup])
 
   const now = new Date()
-  const dayEnd = new Date(`${order.start_date}T23:59`)
-  const pickupOptions = duties ? dutySlotOptions(duties, new Date(`${order.start_date}T00:00`), dayEnd, closedDates) : []
+  const pickupDay = order.pickup_date ?? order.start_date
+  const dayEnd = new Date(`${pickupDay}T23:59`)
+  const pickupOptions = duties ? dutySlotOptions(duties, new Date(`${pickupDay}T00:00`), dayEnd, closedDates) : []
   const depositUntil = new Date(Math.min(
     addBusinessMs(new Date(order.created_at), PENDING_LIMIT_MS, closedDates).getTime(),
-    (pickupSlot ? slotStart(order.start_date, pickupSlot) : dayEnd).getTime()
+    (pickupSlot ? slotStart(pickupDay, pickupSlot) : dayEnd).getTime()
   ))
   const depositOptions = duties ? dutySlotOptions(duties, now, depositUntil, closedDates) : []
   // 原本存的時段不在選項內（時間已過）→ 仍列在最上面標「原」
@@ -59,7 +61,7 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
   const pickupSelect = withOriginal(
     pickupOptions.map(o => ({ value: o.slot, label: slotLabel(o) })),
     order.pickup_slot ?? '',
-    order.pickup_slot ? slotLabel({ date: order.start_date, slot: order.pickup_slot }) : ''
+    order.pickup_slot ? slotLabel({ date: pickupDay, slot: order.pickup_slot }) : ''
   )
   const depositSelect = withOriginal(
     depositOptions.map(o => ({ value: `${o.date} ${o.slot}`, label: slotLabel(o) })),
@@ -74,7 +76,7 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
   }, [onCancel])
 
   const canSave =
-    !busy && reason.trim() !== '' && (!isMass || (className.trim() !== '' && teacher.trim() !== '')) &&
+    !busy && reason.trim() !== '' && (!isMass || className.trim() !== '') && (!hasTeacher || teacher.trim() !== '') &&
     (!hasPickup || pickupSelect.some(o => o.value === pickupSlot)) &&
     (!hasDeposit || depositSelect.some(o => o.value === deposit))
 
@@ -87,9 +89,9 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
 
   const save = () => {
     if (!canSave) return
-    const info: OrderInfo = isMass
-      ? { reason: reason.trim(), class_name: className.trim(), teacher: teacher.trim() }
-      : { reason: reason.trim() }
+    const info: OrderInfo = { reason: reason.trim() }
+    if (isMass) info.class_name = className.trim()
+    if (hasTeacher) info.teacher = teacher.trim()
     if (hasPickup) info.pickup_slot = pickupSlot
     if (hasDeposit) { const [d, s] = deposit.split(' '); info.deposit_date = d; info.deposit_slot = s }
     onSave(info)
@@ -120,20 +122,20 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
             <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} className={`${field} resize-none`} />
           </label>
           {isMass && (
-            <>
-              <label className="flex flex-col gap-1.5">
-                {label('使用班級', true)}
-                <input type="text" value={className} onChange={e => setClassName(e.target.value)} className={field} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                {label('負責老師', true)}
-                <input type="text" value={teacher} onChange={e => setTeacher(e.target.value)} className={field} />
-              </label>
-            </>
+            <label className="flex flex-col gap-1.5">
+              {label('使用班級', true)}
+              <input type="text" value={className} onChange={e => setClassName(e.target.value)} className={field} />
+            </label>
+          )}
+          {hasTeacher && (
+            <label className="flex flex-col gap-1.5">
+              {label(order.as_teacher ? '老師名稱' : '負責老師', true)}
+              <input type="text" value={teacher} onChange={e => setTeacher(e.target.value)} className={field} />
+            </label>
           )}
           {hasPickup && (
             <div className="flex flex-col gap-1.5">
-              {label('取件時段（起租日當天的值班時段）', true)}
+              {label('取件時段（取件日當天的值班時段）', true)}
               <Select
                 value={pickupSlot}
                 onChange={setPickupSlot}
@@ -143,7 +145,7 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
                 aria-label="取件時段"
               />
               {duties && pickupOptions.length === 0 && (
-                <span className="text-2xs font-chinese" style={{ color: 'var(--color-error)' }}>起租日沒有值班時段（公休或未排班）</span>
+                <span className="text-2xs font-chinese" style={{ color: 'var(--color-error)' }}>取件日沒有值班時段（公休或未排班）</span>
               )}
             </div>
           )}

@@ -2,7 +2,8 @@
  * 後台 · 設備管理（設定段）
  * 版面同訂單頁：標題列右側＝新增設備／新增組合（開對話框）；計數分頁 設備／組合；搜尋列（左搜尋、右選取模式＋分類／狀態篩選）；
  * 表格（表頭可單欄排序）。選取模式同購物車：出現勾選欄、表頭全選；勾選的列切開關＝套用到所有勾選（批次上／下架）。
- * 設備新增／修改走同一個對話框（左圖右表單：圖片、名稱、分類、總量、押金）；圖片在對話框裡換（按確定才上傳，取消即丟棄）。
+ * 設備新增／修改走同一個對話框（左圖右表單：圖片、名稱、英文名稱、分類、總量、押金）；圖片在對話框裡換（按確定才上傳，取消即丟棄）。
+ * 英文名稱給前台 EN 模式用，空白退回中文，表格顯示在中文名下方。
  * 上架狀態＝開關（下架先確認、上架直接切；軟性，is_active 不實刪）。
  * 只填總量——可借數由訂單佔用即時算，不用手動維護在庫（見 adminService withStock）。
  * 前台只撈 is_active=true：下架即從學生端消失（重新整理生效），歷史訂單不受影響（order_items 冗餘存名稱）。
@@ -25,7 +26,7 @@ import type { Sort } from '../components/admin/adminUi'
 import { EQUIPMENT_CATEGORIES } from '../types/equipment'
 import BundleManager from '../components/admin/BundleManager'
 
-const EMPTY: EquipmentFields = { name: '', category: '', original_quantity: 0, deposit: 0 }
+const EMPTY: EquipmentFields = { name: '', en_name: '', category: '', original_quantity: 0, deposit: 0 }
 const TABS = [{ key: 'equipment', zh: '設備' }, { key: 'bundle', zh: '組合' }] as const
 type Tab = typeof TABS[number]['key']
 type StatusFilter = 'all' | 'active' | 'inactive'
@@ -63,7 +64,7 @@ const AdminEquipmentPage: React.FC = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return rows.filter(r =>
-      (!q || r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q)) &&
+      (!q || r.name.toLowerCase().includes(q) || (r.en_name ?? '').toLowerCase().includes(q) || r.category.toLowerCase().includes(q)) &&
       (category === 'all' || r.category === category) &&
       (status === 'all' || r.is_active === (status === 'active'))
     )
@@ -91,7 +92,7 @@ const AdminEquipmentPage: React.FC = () => {
     setDialog(null)
   }
   const openDialog = (r?: AdminEquipment) => setDialog(r
-    ? { id: r.id, f: { name: r.name, category: r.category, original_quantity: r.original_quantity, deposit: r.deposit }, imageUrl: r.image_url }
+    ? { id: r.id, f: { name: r.name, en_name: r.en_name, category: r.category, original_quantity: r.original_quantity, deposit: r.deposit }, imageUrl: r.image_url }
     : { id: null, f: EMPTY, imageUrl: null })
   const setF = (patch: Partial<EquipmentFields>) => setDialog(d => (d ? { ...d, f: { ...d.f, ...patch } } : d))
   const pickImage = (file: File) => setDialog(d => {
@@ -102,7 +103,7 @@ const AdminEquipmentPage: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!dialog) return
-    const f = { ...dialog.f, name: dialog.f.name.trim(), category: dialog.f.category.trim() }
+    const f = { ...dialog.f, name: dialog.f.name.trim(), en_name: dialog.f.en_name?.trim() || null, category: dialog.f.category.trim() }
     const err = validate(f)
     if (err) { showToast(err); return }
     setBusy(true)
@@ -267,7 +268,10 @@ const AdminEquipmentPage: React.FC = () => {
                         <div className={`flex items-center gap-3 ${dim}`}>
                           {/* 沒上傳過圖＝灰底相機 icon（不沿用前台的預設延長線圖） */}
                           <Thumb src={r.image_url ? imageSrc(r.image_url) : null} alt={r.name} icon="photo_camera" />
-                          <span className="font-chinese">{r.name}</span>
+                          <div>
+                            <div className="font-chinese">{r.name}</div>
+                            {r.en_name && <div className="font-english text-gray-light">{r.en_name}</div>}
+                          </div>
                         </div>
                       </td>
                       <td className={`${td} font-chinese`}><span className={dim}>{r.category}</span></td>
@@ -329,6 +333,13 @@ const AdminEquipmentPage: React.FC = () => {
                 <input
                   type="text" value={dialog.f.name} onChange={e => setF({ name: e.target.value })}
                   className={`${inputCls} w-full font-chinese`} autoFocus
+                />
+              </Field>
+              <Field zh="英文名稱">
+                <input
+                  type="text" value={dialog.f.en_name ?? ''} onChange={e => setF({ en_name: e.target.value })}
+                  placeholder="空白＝英文介面顯示中文名稱"
+                  className={`${inputCls} w-full font-english`}
                 />
               </Field>
               {/* 分類只能選固定清單（前台篩選靠完全相符）；舊資料若有清單外的值仍列出，避免開修改就被默默改掉 */}

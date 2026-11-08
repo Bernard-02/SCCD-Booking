@@ -6,6 +6,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { resolveContent, type Bilingual } from '../data/siteContent'
+import { AREA_SUBCATEGORY } from '../components/cart/cartHelpers'
+import { useT } from '../stores/langStore'
 import { DEFAULT_SECTIONS, resolveSection, type Block, type SectionPage, type SiteSection } from '../data/siteSections'
 
 type Rows = Record<string, Bilingual>
@@ -54,6 +56,16 @@ export function useSiteContent() {
     return () => { listeners.delete(setRows) }
   }, [])
   return useCallback((key: string) => resolveContent(key, rows?.[key]), [rows])
+}
+
+/** 編號區區域的 site_content key：吃 space.area（'square'）或子分類 id（'Square'） */
+export const areaKey = (area: string) => `area.${AREA_SUBCATEGORY[area] ?? area}`
+
+/** 編號區區域名稱，依目前語言（英文在後台空間管理可改，空白＝內建） */
+export function useAreaName() {
+  const text = useSiteContent()
+  const t = useT()
+  return useCallback((area: string) => { const n = text(areaKey(area)); return t(n.en, n.zh) }, [text, t])
 }
 
 // =============================================================

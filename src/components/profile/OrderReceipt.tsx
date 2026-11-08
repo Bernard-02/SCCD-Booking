@@ -66,7 +66,10 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div>
           <p className="text-xs text-black mb-1 font-bold">Order Type 訂單種類</p>
-          <p className="text-sm font-bold">{bookingTypeLabel(receipt.items[0]?.bookingType, receipt.items[0]?.category === 'equipment')}</p>
+          <p className="text-sm font-bold">
+            {bookingTypeLabel(receipt.items[0]?.bookingType, receipt.items[0]?.category === 'equipment')}
+            {receipt.asTeacher && `（老師名義：${receipt.teacher ?? ''}）`}
+          </p>
         </div>
         <div>
           <p className="text-xs text-black mb-1 font-bold">Reason 使用原因</p>

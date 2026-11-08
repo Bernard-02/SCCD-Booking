@@ -17,6 +17,8 @@ interface CalendarProps {
   onDateSelect: (startDate: Date | null, endDate: Date | null) => void
   isMobile?: boolean
   minSelectableDate?: Date
+  /** 最遠可選的起租日；歸還日不受限，由 maxDays 管 */
+  maxStartDate?: Date
   maxDays?: number
   variant?: 'default' | 'dialog' | 'compact' // compact＝後台篩選的下拉月曆：小字、單月（搭配 isMobile）、翻月不受今天限制
   originalStartDate?: string
@@ -60,6 +62,7 @@ const Calendar: React.FC<CalendarProps> = ({
   onDateSelect,
   isMobile: isMobileProp = false,
   minSelectableDate,
+  maxStartDate,
   maxDays = 30,
   variant = 'default',
   originalStartDate,
@@ -217,6 +220,8 @@ const Calendar: React.FC<CalendarProps> = ({
             const baseDate = startDate
             const daysDifference = Math.ceil((currentDateOnly.getTime() - baseDate!.getTime()) / (1000 * 60 * 60 * 24))
             isOutOfRange = daysDifference > maxDays
+          } else if (maxStartDate) {
+            isOutOfRange = currentDateOnly > maxStartDate
           }
 
           const isToday = currentDateOnly.getTime() === today.getTime()

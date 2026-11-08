@@ -42,9 +42,20 @@ end;
 $$;
 
 -- ---------- 3. 學年升級（pg_cron 每年 9/1 自動；情境 12，2026-09-26 改為自動）----------
--- grade 慣例（同 gradeUtils.ts）：'1'-'4' 或「大一」-「大四」、碩士「碩一」「碩二」。
--- 大四／碩二不動（畢業班處理待細定，帳號留存由人工清理）；grade 未填不動。
--- 個別學生調整（延畢、休學）過渡期在 Studio 改 grade，之後併入後台帳號管理。
+-- grade 慣例（同 gradeUtils.ts）：'1'-'6' 或「大一」-「大六」、碩士「碩一」「碩二」。
+-- 升到大六／碩二為止；已畢業（手動標記）不升，還沒登入過的登記（login_allowlist）也跟著升；grade 未填不動。
+create or replace function public.next_grade(g text)
+returns text
+language sql
+immutable
+as $$
+  select case g
+    when '1' then '2' when '2' then '3' when '3' then '4' when '4' then '5' when '5' then '6'
+    when '大一' then '大二' when '大二' then '大三' when '大三' then '大四' when '大四' then '大五' when '大五' then '大六'
+    when '碩一' then '碩二'
+    else g
+  end
+$$;
 
 -- 核心（無權限檢查）：只給 pg_cron 與下方 admin 包裝呼叫，撤銷 API 端執行權
 create or replace function public.promote_grades_core()
@@ -56,20 +67,18 @@ declare
   v_count int;
 begin
   update public.students
-    set grade = case grade
-      when '1' then '2'
-      when '2' then '3'
-      when '3' then '4'
-      when '大一' then '大二'
-      when '大二' then '大三'
-      when '大三' then '大四'
-      when '碩一' then '碩二'
-      else grade
-    end
+    set grade = public.next_grade(grade)
     where role = 'student'
-      and grade in ('1', '2', '3', '大一', '大二', '大三', '碩一');
+      and not graduated
+      and grade <> public.next_grade(grade);
 
   get diagnostics v_count = row_count;
+
+  update public.login_allowlist a
+    set grade = public.next_grade(a.grade)
+    where a.grade <> public.next_grade(a.grade)
+      and not exists (select 1 from public.students s where upper(s.student_id) = upper(a.student_id));
+
   return v_count;
 end;
 $$;

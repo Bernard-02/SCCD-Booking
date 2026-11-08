@@ -12,6 +12,7 @@ import Header from '../components/layouts/Header'
 import BackButton from '../components/common/BackButton'
 import Footer from '../components/layouts/Footer'
 import CartList from '../components/cart/CartList'
+import type { BookingDetailsData } from '../components/common/BookingDetailsDialog'
 import { useCart } from '../hooks/useCart'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useCartValidation } from '../hooks/useCartValidation'
@@ -23,12 +24,6 @@ import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
 import { getCurrentStudentId } from '../utils/authStorage'
 import { useT } from '../stores/langStore'
 import { useGuideDocUrl } from '../services/contentService'
-
-interface BookingDetailsData {
-  reason: string
-  className?: string
-  teacher?: string
-}
 
 // 借用資訊同購物車依學號分開存（sccd_booking_details_{學號}）；訪客不存
 const detailsKey = () => {
@@ -135,7 +130,7 @@ const RentalListPage = () => {
       .map(items => ({
         startDate: items[0].startDate,
         endDate: items[0].endDate,
-        deposit: Math.min(
+        deposit: bookingDetails[cartGroupKey(items[0])]?.asTeacher ? 0 : Math.min( // 老師名義免押金
           items[0].category === 'equipment'
             ? calcBundles(items, bundles).deposit
             : items.reduce((s, i) => s + i.deposit, 0),

@@ -61,7 +61,10 @@ const MfaGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {step?.kind === 'enroll' && (
           <>
             <p className="mt-3 text-sm text-gray-light">
-              第一次使用要先綁定。請用手機的驗證器 App（例如 Google Authenticator）掃描 QR code，要值班的人請在這一步一起掃。
+              第一次使用要先綁定。請先安裝 Google Authenticator，打開 App 按「＋」掃描 QR code。不要用 iPhone 相機直接掃，會跳到內建的「密碼」App，不會出現驗證碼。
+            </p>
+            <p className="mt-2 text-sm text-gray-light">
+              要值班的人請在這一步一起掃：按確認後 QR code 不會再顯示；重新整理會換一組，之前掃的就失效。
             </p>
             <img src={step.qrCode} alt="兩步驟驗證綁定用的 QR code" className="mt-5 w-48 h-48 self-center rounded-xl bg-white p-2" />
             <p className="mt-3 text-2xs text-gray-light">

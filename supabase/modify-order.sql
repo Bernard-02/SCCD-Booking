@@ -153,12 +153,12 @@ begin
       and (not v_picked or oi.pickup_pending)
       and not exists (select 1 from jsonb_array_elements(p_items) i where i ->> 'item_id' = oi.item_id);
 
-  -- 尚未繳押金：依最新品項重算（同 submit_orders：套用組合、cap 5,000、staff 免押金）；已繳的差額由學會現場處理
+  -- 尚未繳押金：依最新品項重算（同 submit_orders：套用組合、cap 5,000、staff 與老師名義免押金）；已繳的差額由學會現場處理
   update public.orders
     set items_updated_at = now(),
         deposit_total = case
           when status = 'pending' and deposit_paid_at is null then
-            case when public.user_role() = 'staff' then 0
+            case when public.user_role() = 'staff' or as_teacher then 0
                  else least((select o_deposit from public.equipment_bundle_calc(p_items)), 5000)
             end
           else deposit_total

@@ -1,6 +1,6 @@
 -- SCCD Booking — 情境 1：逾時未繳押金自動取消（order-lifecycle.md 定案 2026-07-14）
 -- 規則：pending 訂單超過「24 工作時」未繳押金 → 自動改 canceled、釋放佔用、發通知。
--- 工作時 = 排除週六日與 closed_dates 的臨時公休日（整天不倒數）。
+-- 工作時 = 排除週六日與 closed_dates 的整天公休（整天不倒數；只休午班或晚班的日子照算，shift 見 rules-2026-11.sql）。
 -- 使用方式：SQL Editor 貼上執行一次（可重複執行）。
 
 -- ---------- 1. 臨時公休日 ----------
@@ -10,6 +10,7 @@ create table if not exists public.closed_dates (
   reason text
 );
 
+alter table public.closed_dates add column if not exists shift text not null default 'all'; -- 公休時段，見 rules-2026-11.sql
 alter table public.closed_dates enable row level security;
 
 drop policy if exists "closed_dates: public read" on public.closed_dates;
@@ -37,7 +38,7 @@ as $$
     select g.d::date as day
     from bounds, generate_series(bounds.t0::date, bounds.t1::date, interval '1 day') g(d)
     where extract(isodow from g.d) in (6, 7)
-       or exists (select 1 from public.closed_dates c where c.day = g.d::date)
+       or exists (select 1 from public.closed_dates c where c.day = g.d::date and c.shift = 'all')
   ),
   off_secs as (
     select coalesce(sum(extract(epoch from
@@ -54,6 +55,8 @@ $$;
 -- ---------- 3. 自動取消 ----------
 -- 把逾時的 pending 改成 canceled（佔用查詢只認 pending/in-progress/overdue，
 -- 改完即釋放庫存與空間），並發「訂單已取消」通知。回傳取消筆數。
+-- 已繳押金沒來取件（2026-11-06 學會決議）：取件日 19:00（最後營業時間）過了就取消、釋放設備，不算違規；
+-- 取件日碰到公休學生沒改也一樣（2026-11-07 Bernard 定）。押金留紀錄，後台「退押金」結清。
 create or replace function public.cancel_expired_pending()
 returns integer
 language plpgsql
@@ -61,13 +64,17 @@ security definer set search_path = public
 as $$
 declare
   v_count integer;
+  v_order public.orders%rowtype;
 begin
   with expired as (
     update public.orders
        set status = 'canceled'
      where status = 'pending'
-       and deposit_paid_at is null -- 大量設備已預繳、待取件的不取消（mass-pickup.sql）
+       and deposit_paid_at is null -- 已繳待取件走下面那段
        and public.business_hours_since(created_at) > 24
+       -- 選了繳押金時段的，時段結束前不取消：公休順延後的時段可能超過 24 工作時（同前端 pendingMsRemaining）
+       and (deposit_slot is null or deposit_date is null
+            or (now() at time zone 'Asia/Taipei') > deposit_date + right(deposit_slot, 5)::time)
      returning rental_number, student_id
   )
   insert into public.notifications (student_id, type, title, message, link)
@@ -77,6 +84,27 @@ begin
   from expired;
 
   get diagnostics v_count = row_count;
+
+  for v_order in
+    update public.orders
+       set status = 'canceled'
+     where status = 'pending'
+       and deposit_paid_at is not null
+       and (now() at time zone 'Asia/Taipei') > coalesce(pickup_date, start_date) + time '19:00'
+     returning *
+  loop
+    insert into public.notifications (student_id, type, title, message, link)
+    values (v_order.student_id, 'warning', '訂單已取消',
+            '訂單 ' || v_order.rental_number || ' 因未於取件日前來取件已自動取消'
+            || case when v_order.deposit_total > 0 then '，押金請至系學會領回' else '' end || '。',
+            '/profile');
+    perform public.notify_admins('warning', '未取件已取消',
+      '訂單 ' || v_order.rental_number || ' 沒來取件，已自動取消'
+      || case when v_order.deposit_total > 0 then '，押金 NT$ ' || v_order.deposit_total || ' 待退還' else '' end || '。',
+      '/admin/orders?student=' || (select student_id from public.students where id = v_order.student_id));
+    v_count := v_count + 1;
+  end loop;
+
   return v_count;
 end;
 $$;

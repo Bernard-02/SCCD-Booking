@@ -156,12 +156,15 @@ export async function getMfaStep(): Promise<MfaStep> {
   return { kind: 'enroll', factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret }
 }
 
-/** 驗證 6 位數碼（綁定與登入同一步）。通過才把其他裝置登出：後台同時只留一台，只知道密碼的人不能踢掉值班中的電腦 */
+/** 驗證 6 位數碼（綁定與登入同一步） */
 export async function verifyMfa(factorId: string, code: string): Promise<boolean> {
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code })
-  if (error) return false
+  return !error
+}
+
+/** 後台同時只留一台：把這個帳號其他裝置的 session 刪掉，這台不受影響。踢舊的、不擋新的 */
+export async function signOutOtherDevices(): Promise<void> {
   await supabase.auth.signOut({ scope: 'others' })
-  return true
 }
 
 // 即時查自己的 account_level（停權即時反映，不依賴登入時的快照）

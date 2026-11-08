@@ -16,6 +16,7 @@ import {
 } from '../services/adminService'
 import type { AdminSpace } from '../services/adminService'
 import { AREA_IMAGE_MAP } from '../components/cart/cartHelpers'
+import { areaKey, saveSiteContent, useSiteContent } from '../services/contentService'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import {
@@ -29,6 +30,7 @@ const AREA_META: Record<string, { zh: string }> = {
   'back-terrace': { zh: '後陽台' },
   'front-terrace': { zh: '前陽台' },
   square: { zh: '中庭' },
+  'area-f': { zh: 'F 區' },
   'glass-wall': { zh: '玻璃牆' },
   corridor: { zh: '專案許可區' },
   pillar: { zh: '專案許可區（柱）' }
@@ -65,8 +67,8 @@ const classroomImage = (r: AdminSpace) => imageSrc(r.image_url, `/Images/${r.id}
 const ntd = (n: number) => `NT$ ${n.toLocaleString()}`
 const toggled = (s: Set<string>, k: string) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n }
 
-// 修改對話框：教室＝名稱＋押金＋圖（file／preview＝這次選的新圖，按確定才上傳）；area 有值＝從群組列開的整區押金
-type Dialog = { space: AdminSpace; name: string; deposit: number; area?: string; file?: File; preview?: string }
+// 修改對話框：教室＝名稱＋英文名稱＋押金＋圖（file／preview＝這次選的新圖，按確定才上傳）；area 有值＝從群組列開的整區押金
+type Dialog = { space: AdminSpace; name: string; enName: string; deposit: number; area?: string; file?: File; preview?: string }
 
 const AdminSpacesPage: React.FC = () => {
   const [rows, setRows] = useState<AdminSpace[]>([])
@@ -84,6 +86,8 @@ const AdminSpacesPage: React.FC = () => {
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast, toastElement } = useToast()
+  // 區域英文名稱存在 site_content（area.* key，內建在 data/siteContent.ts），前台 EN 模式的分類、地圖、清單都讀它
+  const text = useSiteContent()
 
   const load = () => listSpacesAdmin()
     .then(r => { setRows(r); setLoadError(null) })
@@ -101,7 +105,7 @@ const AdminSpacesPage: React.FC = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return (tab === 'classroom' ? classrooms : blocks).filter(r =>
-      (!q || r.id.toLowerCase().includes(q) || (r.name ?? '').toLowerCase().includes(q) || areaZh(r.area).includes(q)) &&
+      (!q || r.id.toLowerCase().includes(q) || (r.name ?? '').toLowerCase().includes(q) || (r.en_name ?? '').toLowerCase().includes(q) || areaZh(r.area).includes(q)) &&
       (status === 'all' || r.is_active === (status === 'active'))
     )
   }, [tab, classrooms, blocks, search, status])
@@ -181,8 +185,8 @@ const AdminSpacesPage: React.FC = () => {
     if (dialog?.preview) URL.revokeObjectURL(dialog.preview)
     setDialog(null)
   }
-  const openDialog = (r: AdminSpace) => setDialog({ space: r, name: r.name ?? r.id, deposit: r.deposit })
-  const openAreaDialog = (area: string, g: AdminSpace[]) => setDialog({ space: g[0], name: '', deposit: g[0].deposit, area })
+  const openDialog = (r: AdminSpace) => setDialog({ space: r, name: r.name ?? r.id, enName: r.en_name ?? '', deposit: r.deposit })
+  const openAreaDialog = (area: string, g: AdminSpace[]) => setDialog({ space: g[0], name: '', enName: text(areaKey(area)).en, deposit: g[0].deposit, area })
   const pickImage = (file: File) => setDialog(d => {
     if (!d) return d
     if (d.preview) URL.revokeObjectURL(d.preview)
@@ -196,7 +200,10 @@ const AdminSpacesPage: React.FC = () => {
     const name = dialog.name.trim()
     if (isClassroom && !name) { showToast('請輸入名稱'); return }
     setBusy(true)
-    const res = area ? await updateAreaDeposit(area, dialog.deposit) : await updateSpace(r.id, { name, deposit: dialog.deposit })
+    // 區域：押金整區一起改，英文名稱存 site_content（中文留空＝用內建，英文空白＝回內建英文）
+    const res = area
+      ? await updateAreaDeposit(area, dialog.deposit).then(d => (d.ok ? saveSiteContent(areaKey(area), '', dialog.enName.trim()) : d))
+      : await updateSpace(r.id, { name, en_name: dialog.enName.trim() || null, deposit: dialog.deposit })
     if (!res.ok) { setBusy(false); showToast(res.message ?? '儲存失敗'); return }
     const up = dialog.file ? await uploadImage('space', r.id, dialog.file) : { ok: true as const }
     setBusy(false)
@@ -226,7 +233,13 @@ const AdminSpacesPage: React.FC = () => {
         <td className={td}>
           <div className={`h-10 flex items-center gap-3 ${nested ? 'pl-20' : ''} ${dim}`}>
             {!nested && <Thumb src={classroomImage(r)} alt={r.name ?? r.id} icon="meeting_room" />}
-            <span className={nested ? 'font-english' : 'font-chinese'}>{nested ? r.id : (r.name || r.id)}</span>
+            {nested ? <span className="font-english">{r.id}</span> : (
+              // 教室：英文名稱顯示在中文名下方（同設備管理），空白＝英文介面顯示中文
+              <div>
+                <div className="font-chinese">{r.name || r.id}</div>
+                {r.en_name && <div className="font-english text-gray-light">{r.en_name}</div>}
+              </div>
+            )}
           </div>
         </td>
         <td className={`${td} font-english text-center`}><span className={dim}>{ntd(r.deposit)}</span></td>
@@ -275,6 +288,7 @@ const AdminSpacesPage: React.FC = () => {
               {/* 該區示意圖，同前台購物車／訂單頁（前／後陽台沒有＝灰底 icon） */}
               <Thumb src={AREA_IMAGE_MAP[area] ?? null} alt={areaZh(area)} icon="map" />
               <span className="font-chinese ml-1">{areaZh(area)}</span>
+              <span className="font-english text-gray-light">{text(areaKey(area)).en}</span>
               {/* 格數徽章：同上方 CountTabs 的計數樣式，但直接貼在黑底上，底色提亮到 20% 才看得到 */}
               <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english bg-white/20">{g.length}</span>
             </button>
@@ -289,7 +303,7 @@ const AdminSpacesPage: React.FC = () => {
             </span>
           </td>
           <td className={`${td} text-center`} onClick={stop}>
-            <button onClick={() => openAreaDialog(area, g)} title="修改押金" aria-label="修改押金" className={iconFillBtn}>
+            <button onClick={() => openAreaDialog(area, g)} title="修改" aria-label="修改" className={iconFillBtn}>
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
             </button>
           </td>
@@ -361,7 +375,7 @@ const AdminSpacesPage: React.FC = () => {
         </>
       )}
 
-      {/* 修改：教室＝左圖右表單（名稱＋押金）；整區＝只有押金 */}
+      {/* 修改：教室＝左圖右表單（名稱＋英文名稱＋押金）；整區＝只有押金 */}
       {dialog && (
         <FormDialog
           title={dialog.area ? `修改 ${areaZh(dialog.area)}` : '修改教室'}
@@ -372,9 +386,19 @@ const AdminSpacesPage: React.FC = () => {
           wide={!dialog.area}
         >
           {dialog.area ? (
-            <Field zh={`押金（整區 ${areaCount} 格一起改）`}>
-              <NumberInput value={dialog.deposit} onChange={n => setDialog(d => (d ? { ...d, deposit: n } : d))} step={100} />
-            </Field>
+            <div className="flex flex-col gap-4">
+              {/* 專案許可區的走廊與柱子共用同一個名稱 */}
+              <Field zh={dialog.area === 'corridor' || dialog.area === 'pillar' ? '英文名稱（走廊與柱子共用）' : '英文名稱'}>
+                <input
+                  type="text" value={dialog.enName} onChange={e => setDialog(d => (d ? { ...d, enName: e.target.value } : d))}
+                  placeholder="空白＝內建英文名稱"
+                  className={`${inputCls} w-full font-english`} autoFocus
+                />
+              </Field>
+              <Field zh={`押金（整區 ${areaCount} 格一起改）`}>
+                <NumberInput value={dialog.deposit} onChange={n => setDialog(d => (d ? { ...d, deposit: n } : d))} step={100} />
+              </Field>
+            </div>
           ) : (
             <div className="flex gap-8">
               <div className="shrink-0">
@@ -391,6 +415,13 @@ const AdminSpacesPage: React.FC = () => {
                   <input
                     type="text" value={dialog.name} onChange={e => setDialog(d => (d ? { ...d, name: e.target.value } : d))}
                     className={`${inputCls} w-full font-chinese`} autoFocus
+                  />
+                </Field>
+                <Field zh="英文名稱">
+                  <input
+                    type="text" value={dialog.enName} onChange={e => setDialog(d => (d ? { ...d, enName: e.target.value } : d))}
+                    placeholder={`空白＝${dialog.space.id} Classroom`}
+                    className={`${inputCls} w-full font-english`}
                   />
                 </Field>
                 <Field zh="押金">

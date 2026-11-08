@@ -8,8 +8,8 @@
  */
 
 import { supabase, fetchAllRows } from './supabase'
-import { closedDayImpact, toDateKey } from '../utils/timeUtils'
-import { invalidateClosedDates } from './ordersService'
+import { closedDayImpact, closedKey, dutySlotOptions, fromDateKey, slotClosed, slotLabel, slotStart, toDateKey, type ClosedShift } from '../utils/timeUtils'
+import { fetchClosedDates, fetchDutySlots, invalidateClosedDates } from './ordersService'
 
 // 不營業日類別（supabase/closed-date-kinds.sql）：學會自己的公休三種＋自動匯入的法定假日。
 // 四種對計算的效果都一樣（同週末：倒數／逾期跳過、歸還期限順延），差別只在後台分區與是否發公告。
@@ -17,7 +17,7 @@ export type ClosedKind = 'activity' | 'review' | 'other' | 'holiday'
 export const CLOSED_KIND_ZH: Record<ClosedKind, string> = {
   activity: '活動', review: '大總評', other: '其他', holiday: '法定假日'
 }
-export interface ClosedDate { day: string; reason: string | null; kind?: ClosedKind } // kind：SQL 執行前不存在
+export interface ClosedDate { day: string; reason: string | null; kind?: ClosedKind; shift?: ClosedShift } // kind、shift：SQL 執行前不存在
 export interface Blackout { id: number; start_date: string; end_date: string; reason: string | null }
 
 export interface StaffDuty { id: number; weekday: number; start_time: string; end_time: string }
@@ -116,14 +116,15 @@ export interface Member {
   grade: string | null
   class_name: string | null
   phone: string | null
-  role: 'student' | 'staff' | 'admin' // staff＝系秘（同助教）
+  role: 'student' | 'staff' | 'admin' // staff＝系秘（助教用學生帳號借，2026-11-07）
   account_level: number // 5＝停權
   on_leave?: boolean // 休學：擋新借（members.sql 執行前不存在）
   is_transfer?: boolean // 轉學生：純標記
   graduated?: boolean // 已畢業：不能登入（有未歸還訂單者例外）、不能送新單；手動標記
+  dues_paid?: boolean // 系學會費：沒繳不能送單（rules-2026-11.sql）
 }
 
-export type MemberFields = Pick<Member, 'grade' | 'class_name' | 'role' | 'on_leave' | 'is_transfer' | 'graduated'>
+export type MemberFields = Pick<Member, 'grade' | 'class_name' | 'role' | 'on_leave' | 'is_transfer' | 'graduated' | 'dues_paid'>
 
 // 畢業生帳號不刪，累積會破千：分段抓（fetchAllRows）
 export async function listMembers(): Promise<Member[]> {
@@ -142,7 +143,7 @@ export async function updateMember(id: string, fields: MemberFields): Promise<{ 
 /** 批次更新（會員頁選取模式：休學／恢復在學／設為身份） */
 export async function updateMembersMany(
   ids: string[],
-  fields: Partial<Pick<Member, 'on_leave' | 'graduated' | 'role' | 'is_transfer'>>
+  fields: Partial<Pick<Member, 'on_leave' | 'graduated' | 'role' | 'is_transfer' | 'dues_paid'>>
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('students').update(fields).in('id', ids)
   if (error) return { ok: false, message: error.message }
@@ -153,6 +154,13 @@ export async function updateMembersMany(
 /** 解除停權（account_level 5 → 0；繳清／老師通融，supabase/admin-actions.sql） */
 export async function unsuspendStudent(studentId: string): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_unsuspend_student', { p_student_id: studentId })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 刪除帳號＋登記（沒有訂單的才能刪，supabase/admin-delete-member.sql） */
+export async function deleteMember(id: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_delete_member', { p_id: id })
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
@@ -169,6 +177,9 @@ export interface AllowEntry {
   is_transfer?: boolean
   is_sa?: boolean
   position?: string | null
+  grade?: string | null      // 名單的班級（「日媒四乙」拆成 grade＋class_name）；空的由學號推
+  class_name?: string | null
+  dues_paid?: boolean
 }
 
 export async function listAllowlist(): Promise<AllowEntry[]> {
@@ -220,38 +231,72 @@ export async function broadcastNotification(message: string): Promise<NotifyResu
 }
 
 // 受影響的訂單＝待繳押金／租借中（逾期單的天數本來就跳過公休，不另通知）
+interface ActiveOrder {
+  student_id: string; rental_number: string; status: string; start_date: string; end_date: string
+  pickup_date: string | null; pickup_slot: string | null
+  deposit_date: string | null; deposit_slot: string | null; deposit_paid_at: string | null
+}
 async function fetchActiveOrders() {
-  return fetchAllRows<{ student_id: string; rental_number: string; start_date: string; end_date: string }>((from, to) =>
+  return fetchAllRows<ActiveOrder>((from, to) =>
     supabase
       .from('orders')
-      .select('student_id, rental_number, start_date, end_date')
+      .select('student_id, rental_number, status, start_date, end_date, pickup_date, pickup_slot, deposit_date, deposit_slot, deposit_paid_at')
       .in('status', ['pending', 'in-progress'])
       .order('id')
       .range(from, to)
   )
 }
 
-/** 新增公休日後通知受影響訂單：取件日剛好公休、或歸還期限因此順延（新期限同 effectiveReturnDeadline） */
-export async function notifyClosedDateAffected(day: string, reason: string): Promise<NotifyResult> {
-  if (day < toDateKey(new Date())) return { ok: true, count: 0 } // 補登過去的公休日不通知
+/**
+ * 新增公休後處理受影響的訂單（2026-11-07 Bernard 定）：
+ * - 大量設備的取件時段碰到公休：通知附「修改取件日」（連結 /profile?pickup=單號），沒改的話取件日 19:00 後自動取消
+ * - 還沒繳押金的繳押金時段碰到公休：順延到隔天的值班時段，晚於取件就併到取件時段（取件不得早於繳押金）
+ * - 歸還期限順延（新期限同 effectiveReturnDeadline）
+ * when＝通知裡的日期文字；rows＝closedRangeRows 的結果。補登過去的日子不處理
+ */
+export async function notifyClosedAffected(
+  rows: { day: string; shift: ClosedShift }[],
+  when: string,
+  reason: string
+): Promise<NotifyResult> {
+  const added = rows.filter(r => r.day >= toDateKey(new Date())).map(r => closedKey(r.day, r.shift))
+  if (added.length === 0) return { ok: true, count: 0 }
   try {
-    const [orders, closed] = await Promise.all([fetchActiveOrders(), listClosedDates()])
-    const after = new Set(closed.map(c => c.day))
-    const label = `${day} 系學會公休${reason ? `（${reason}）` : ''}`
-    const rows: NewNotification[] = []
+    const [orders, closed, duties] = await Promise.all([fetchActiveOrders(), fetchClosedDates(), fetchDutySlots()])
+    const addedSet = new Set(added)
+    const label = `${when} 系學會公休${reason ? `（${reason}）` : ''}`
+    const out: NewNotification[] = []
     for (const o of orders) {
-      const { pickup, newDue } = closedDayImpact(o, day, after)
       const parts: string[] = []
-      if (pickup) parts.push('原定當天取件，請與系學會確認取件時間')
+      const pickupDay = o.pickup_date ?? o.start_date
+      const pickupHit = o.status === 'pending' && !!o.pickup_slot && slotClosed(pickupDay, o.pickup_slot, addedSet)
+      if (pickupHit) parts.push('取件時段遇到公休，請修改取件日，沒改的話訂單會在取件日 19:00 後自動取消')
+      if (o.status === 'pending' && !o.deposit_paid_at && o.deposit_date && o.deposit_slot && slotClosed(o.deposit_date, o.deposit_slot, addedSet)) {
+        const from = fromDateKey(o.deposit_date)
+        from.setDate(from.getDate() + 1)
+        const until = new Date(from)
+        until.setDate(until.getDate() + 14)
+        let next = dutySlotOptions(duties, from, until, closed)[0]
+        if (next && o.pickup_slot && !pickupHit && slotStart(next.date, next.slot) > slotStart(pickupDay, o.pickup_slot)) {
+          next = { date: pickupDay, slot: o.pickup_slot }
+        }
+        if (next) {
+          const { error } = await supabase.from('orders').update({ deposit_date: next.date, deposit_slot: next.slot }).eq('rental_number', o.rental_number)
+          if (error) throw error
+          parts.push(`繳押金時段順延至 ${slotLabel(next)}`)
+        }
+      }
+      const newDue = closedDayImpact(o, added, closed)
       if (newDue) parts.push(`歸還期限順延至 ${newDue} 19:00`)
       if (parts.length > 0) {
-        rows.push({
+        out.push({
           student_id: o.student_id, type: 'warning', title: '公休異動',
-          message: `${label}，您的訂單 ${o.rental_number} ${parts.join('；')}。`, link: '/profile'
+          message: `${label}，您的訂單 ${o.rental_number} ${parts.join('；')}。`,
+          link: pickupHit ? `/profile?pickup=${encodeURIComponent(o.rental_number)}` : '/profile'
         })
       }
     }
-    return insertNotifications(rows)
+    return insertNotifications(out)
   } catch (e) {
     return { ok: false, message: (e as Error).message, count: 0 }
   }
@@ -272,11 +317,22 @@ export async function notifyBlackoutAffected(start: string, end: string, reason:
   }
 }
 
-/** 公休日全站公告（template，不另外手寫）：「10/16（週五）系學會因大總評公休，…」 */
-export async function announceClosedDate(day: string, reasonText: string): Promise<NotifyResult> {
-  const d = new Date(`${day}T00:00:00`)
-  const date = `${d.getMonth() + 1}/${d.getDate()}（週${'日一二三四五六'[d.getDay()]}）`
-  return broadcastNotification(`${date}系學會因${reasonText}公休，當天不提供借用與歸還服務。`)
+const SHIFT_ZH = { noon: '午班', evening: '晚班' }
+/** 公休全站公告（template，不另外手寫）：「10/16（週五）系學會因大總評公休，…」；只休一班或跨多天時標出時段 */
+export async function announceClosed(
+  start: string, end: string, startShift: keyof typeof SHIFT_ZH, endShift: keyof typeof SHIFT_ZH, reasonText: string
+): Promise<NotifyResult> {
+  const label = (key: string) => {
+    const d = new Date(`${key}T00:00:00`)
+    return `${d.getMonth() + 1}/${d.getDate()}（週${'日一二三四五六'[d.getDay()]}）`
+  }
+  if (start === end) {
+    const shift = startShift === endShift ? SHIFT_ZH[startShift] : ''
+    return broadcastNotification(`${label(start)}${shift}系學會因${reasonText}公休，${shift ? '該時段' : '當天'}不提供借用與歸還服務。`)
+  }
+  const from = startShift === 'evening' ? '晚班' : ''
+  const to = endShift === 'noon' ? '午班' : ''
+  return broadcastNotification(`${label(start)}${from}至${label(end)}${to}系學會因${reasonText}公休，期間不提供借用與歸還服務。`)
 }
 
 // ---- 公休日／法定假日（closed_dates）----
@@ -287,8 +343,11 @@ export async function listClosedDates(): Promise<ClosedDate[]> {
   return (data ?? []) as ClosedDate[]
 }
 
-export async function addClosedDate(day: string, kind: ClosedKind, reason: string | null): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.from('closed_dates').insert({ day, kind, reason })
+/** 一次新增多天；區間裡已有的日子（法定假日、之前的休息日）保留原本那筆 */
+export async function addClosedDates(
+  rows: { day: string; shift: ClosedShift }[], kind: ClosedKind, reason: string | null
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('closed_dates').upsert(rows.map(r => ({ ...r, kind, reason })), { onConflict: 'day', ignoreDuplicates: true })
   if (error) return { ok: false, message: error.message }
   invalidateClosedDates()
   return { ok: true }
@@ -389,6 +448,7 @@ export async function deleteBlackout(id: number): Promise<{ ok: boolean; message
 export interface AdminEquipment {
   id: string
   name: string
+  en_name: string | null
   category: string
   sub_category: string | null
   location: string | null
@@ -401,7 +461,7 @@ export interface AdminEquipment {
 export async function listEquipmentAdmin(): Promise<AdminEquipment[]> {
   const { data, error } = await supabase
     .from('equipment')
-    .select('id, name, category, sub_category, location, original_quantity, deposit, image_url, is_active')
+    .select('id, name, en_name, category, sub_category, location, original_quantity, deposit, image_url, is_active')
     .order('category')
     .order('id')
   if (error) throw error
@@ -410,6 +470,7 @@ export async function listEquipmentAdmin(): Promise<AdminEquipment[]> {
 
 export interface EquipmentFields {
   name: string
+  en_name: string | null
   category: string
   original_quantity: number
   deposit: number
@@ -457,6 +518,7 @@ export async function setEquipmentActiveMany(ids: string[], active: boolean): Pr
 
 export interface BundleFields {
   name: string
+  en_name: string | null
   deposit: number
   items: { equipmentId: string; quantity: number }[]
 }
@@ -465,21 +527,23 @@ export interface BundleFields {
 export type AdminBundle = BundleFields & { id: string; image_url: string | null }
 
 export async function listBundlesAdmin(): Promise<AdminBundle[]> {
+  // select('*')：en_name 欄位的 SQL 尚未執行時也不會整頁讀取失敗
   const { data, error } = await supabase
     .from('equipment_bundles')
-    .select('id, name, deposit, image_url, equipment_bundle_items(equipment_id, quantity)')
+    .select('*, equipment_bundle_items(equipment_id, quantity)')
     .order('created_at')
   if (error) throw error
   return (data ?? []).map(b => ({
     id: b.id,
     name: b.name,
+    en_name: b.en_name ?? null,
     deposit: b.deposit,
     image_url: b.image_url ?? null,
-    items: (b.equipment_bundle_items ?? []).map(i => ({ equipmentId: i.equipment_id, quantity: i.quantity }))
+    items: (b.equipment_bundle_items ?? []).map((i: { equipment_id: string; quantity: number }) => ({ equipmentId: i.equipment_id, quantity: i.quantity }))
   }))
 }
 
-/** id＝null 新增；組合與品項一次寫完（admin_save_bundle RPC，不會只存一半）。回傳組合 id（新增後上傳圖片用） */
+/** id＝null 新增；組合與品項一次寫完（admin_save_bundle RPC，不會只存一半），英文名稱接著寫。回傳組合 id（新增後上傳圖片用） */
 export async function saveBundle(id: string | null, f: BundleFields): Promise<{ ok: boolean; message?: string; id?: string }> {
   const { data, error } = await supabase.rpc('admin_save_bundle', {
     p_id: id,
@@ -488,7 +552,10 @@ export async function saveBundle(id: string | null, f: BundleFields): Promise<{ 
     p_items: f.items.map(i => ({ equipment_id: i.equipmentId, quantity: i.quantity }))
   })
   if (error) return { ok: false, message: error.message }
-  return { ok: true, id: (data as string | null) ?? id ?? undefined }
+  const savedId = (data as string | null) ?? id ?? undefined
+  const { error: nameError } = await supabase.from('equipment_bundles').update({ en_name: f.en_name }).eq('id', savedId)
+  if (nameError) return { ok: false, message: nameError.message }
+  return { ok: true, id: savedId }
 }
 
 export async function deleteBundle(id: string): Promise<{ ok: boolean; message?: string }> {
@@ -501,6 +568,7 @@ export async function deleteBundle(id: string): Promise<{ ok: boolean; message?:
 export interface AdminSpace {
   id: string
   name: string | null
+  en_name?: string | null // supabase/item-en-names.sql 加的欄位
   area: string
   deposit: number
   image_url?: string | null // supabase/space-edit-images.sql 加的欄位
@@ -531,8 +599,8 @@ export async function setSpaceActiveMany(ids: string[], active: boolean): Promis
   return { ok: true }
 }
 
-/** 教室：名稱＋押金（前台 SpacePage 以 space 表為準） */
-export async function updateSpace(id: string, fields: { name: string; deposit: number }): Promise<{ ok: boolean; message?: string }> {
+/** 教室：名稱＋英文名稱＋押金（前台 SpacePage 以 space 表為準） */
+export async function updateSpace(id: string, fields: { name: string; en_name: string | null; deposit: number }): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('space').update(fields).eq('id', id)
   if (error) return { ok: false, message: error.message }
   return { ok: true }

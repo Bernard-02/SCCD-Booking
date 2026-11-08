@@ -22,8 +22,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { isSophomoreOrAbove } from '../utils/gradeUtils'
 import { sortBlockIds } from '../components/cart/cartHelpers'
 import { useT } from '../stores/langStore'
+import { useAreaName } from '../services/contentService'
 import Collapse from '../components/common/Collapse'
-import { navItemCls } from '../components/common/navItem'
+import { NAV_HOVER, navItemCls } from '../components/common/navItem'
 
 // 子分類項目（主分類用共用的 navItemCls）：icon 那側 padding 少 4px，一般字重
 const SUB_ITEM = 'flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg text-sm text-left cursor-pointer'
@@ -31,6 +32,7 @@ const SUB_ITEM = 'flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg text-sm te
 // 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
 const AREA_MAPPING: Record<string, string[]> = {
   'Square': ['square'],
+  'AreaF': ['area-f'],
   'FrontTerrace': ['front-terrace'],
   'BackTerrace': ['back-terrace'],
   'GlassWall': ['glass-wall'],
@@ -39,6 +41,7 @@ const AREA_MAPPING: Record<string, string[]> = {
 
 const SpacePage: React.FC = () => {
   const t = useT()
+  const areaName = useAreaName()
   const { cart, addToCart, removeFromCart, rescheduleCart, isSuspended } = useCart()
   const { getCurrentSpaceDates, setSpaceDates } = useDateSelection()
   const { currentUser, isAuthenticated } = useAuth()
@@ -137,6 +140,7 @@ const SpacePage: React.FC = () => {
       // Area 到 SubCategory 的映射
       const areaToSubCategoryMap: Record<string, string> = {
         'square': 'Square',
+        'area-f': 'AreaF',
         'front-terrace': 'FrontTerrace',
         'back-terrace': 'BackTerrace',
         'glass-wall': 'GlassWall',
@@ -175,14 +179,14 @@ const SpacePage: React.FC = () => {
       .map(item => item.id)
   }, [cart])
 
-  // 教室資料：名稱／押金／圖片以 space 表為準（後台空間管理可改），載入前沿用預設值
+  // 教室資料：名稱／英文名稱／押金／圖片以 space 表為準（後台空間管理可改），載入前沿用預設值
   const classroomData = [
     { id: 'A503', name: 'A503 教室', enName: 'A503 Classroom', price: 5000, image: '/Images/A503.webp' },
     { id: 'A507', name: 'A507 教室', enName: 'A507 Classroom', price: 5000, image: '/Images/A507.webp' },
     { id: 'A508', name: 'A508 教室', enName: 'A508 Classroom', price: 5000, image: '/Images/A508.webp' },
   ].map(c => {
     const db = spaceBlocks[c.id]
-    return db ? { ...c, name: db.name || c.name, price: db.deposit, image: db.image_url || c.image } : c
+    return db ? { ...c, name: db.name || c.name, enName: db.en_name || c.enName, price: db.deposit, image: db.image_url || c.image } : c
   })
 
   // 檢查教室是否在購物車中
@@ -429,11 +433,12 @@ const SpacePage: React.FC = () => {
 
   // A5F 編號區子分類
   const numberedAreaCategories = [
-    { id: 'Square', en: 'Square', zh: '中庭', icon: 'yard' },
-    { id: 'FrontTerrace', en: 'Front Terrace', zh: '前陽台', icon: 'balcony' },
-    { id: 'BackTerrace', en: 'Back Terrace', zh: '後陽台', icon: 'balcony' },
-    { id: 'GlassWall', en: 'Glass Wall', zh: '玻璃牆', icon: 'window' },
-    { id: 'CasePermitArea', en: 'Case Permit Area', zh: '專案許可區', icon: 'verified' }
+    { id: 'Square', icon: 'yard' },
+    { id: 'AreaF', icon: 'view_week' },
+    { id: 'FrontTerrace', icon: 'balcony' },
+    { id: 'BackTerrace', icon: 'balcony' },
+    { id: 'GlassWall', icon: 'window' },
+    { id: 'CasePermitArea', icon: 'verified' }
   ]
 
   // 處理教室加入
@@ -571,11 +576,11 @@ const SpacePage: React.FC = () => {
                           className={`${SUB_ITEM} max-lg:shrink-0 max-lg:whitespace-nowrap ${
                             isSelected
                               ? (isCasePermit ? 'bg-gray-dark text-yellow' : 'bg-gray-dark text-white')
-                              : 'text-gray-light hover:text-white'
+                              : `text-gray-light ${NAV_HOVER}`
                           }`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{category.icon}</span>
-                          <span>{t(category.en, category.zh)}</span>
+                          <span>{areaName(category.id)}</span>
                         </button>
                       )
                     })}

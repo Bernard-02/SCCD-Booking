@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const STORAGE_KEY = 'sccd_login_data'
 // Google 登入進行中（sessionStorage，值＝記住我 '1'／'0'）：導去 Google 再跳回來，靠它記住勾選並辨認「剛從 Google 回來」
 // （重設密碼信點進來也是「有憑證、沒 app 資料」，不能只看 session）
-const GOOGLE_PENDING_KEY = 'sccd_google_pending'
+export const GOOGLE_PENDING_KEY = 'sccd_google_pending'
 
 // Props for AuthProvider
 interface AuthProviderProps {

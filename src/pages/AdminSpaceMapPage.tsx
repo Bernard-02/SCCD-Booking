@@ -18,6 +18,7 @@ import { toDateKey } from '../utils/timeUtils'
 
 const AREA_META: Record<string, string> = {
   square: '中庭',
+  'area-f': 'F 區',
   corridor: '專案許可區',
   pillar: '專案許可區（柱）',
   'front-terrace': '前陽台',

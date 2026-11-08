@@ -8,43 +8,38 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useSpaceBlocks, useClosedSpaceIds } from '../../services/spaceService'
 import { useT } from '../../stores/langStore'
+import { useAreaName } from '../../services/contentService'
+import { AREA_SUBCATEGORY as areaToSubCategory } from '../cart/cartHelpers'
 
 // --- CONSTANTS ---
 
 
 // 區域對應 (大區塊)
-const areaMapping: Record<string, { name: string; english: string; deposit: number; key: string; subCategoryId: string }> = {
-  'Square': { name: '中庭', english: 'Square', deposit: 1000, key: 'square', subCategoryId: 'Square' },
-  'Corridor': { name: '專案許可區', english: 'Case Permit Area', deposit: 1000, key: 'corridor', subCategoryId: 'CasePermitArea' },
-  'Front_Terrace': { name: '前陽台', english: 'Front Terrace', deposit: 1000, key: 'front-terrace', subCategoryId: 'FrontTerrace' },
-  'Back_Terrace': { name: '後陽台', english: 'Back Terrace', deposit: 2000, key: 'back-terrace', subCategoryId: 'BackTerrace' },
-  'Glass_Wall': { name: '玻璃牆', english: 'Glass Wall', deposit: 1000, key: 'glass-wall', subCategoryId: 'GlassWall' },
-  'Pillar': { name: '專案許可區', english: 'Case Permit Area', deposit: 1000, key: 'pillar', subCategoryId: 'CasePermitArea' },
-  'Glass_Wall_Y4-Y7': { name: '專案許可區', english: 'Case Permit Area', deposit: 1000, key: 'corridor', subCategoryId: 'CasePermitArea' } // Y4–Y7 在 DB 屬 corridor
+const areaMapping: Record<string, { deposit: number; key: string; subCategoryId: string }> = {
+  'Square': { deposit: 1000, key: 'square', subCategoryId: 'Square' },
+  'Area_F': { deposit: 1000, key: 'area-f', subCategoryId: 'AreaF' },
+  'Corridor': { deposit: 1000, key: 'corridor', subCategoryId: 'CasePermitArea' },
+  'Front_Terrace': { deposit: 1000, key: 'front-terrace', subCategoryId: 'FrontTerrace' },
+  'Back_Terrace': { deposit: 2000, key: 'back-terrace', subCategoryId: 'BackTerrace' },
+  'Glass_Wall': { deposit: 1000, key: 'glass-wall', subCategoryId: 'GlassWall' },
+  'Pillar': { deposit: 1000, key: 'pillar', subCategoryId: 'CasePermitArea' },
+  'Glass_Wall_Y4-Y7': { deposit: 1000, key: 'corridor', subCategoryId: 'CasePermitArea' } // Y4–Y7 在 DB 屬 corridor
 };
 
 // 子分類對應
 const subCategoryToAreaKey: Record<string, string> = {
   'Square': 'square',
+  'AreaF': 'area-f',
   'FrontTerrace': 'front-terrace',
   'BackTerrace': 'back-terrace',
   'GlassWall': 'glass-wall',
   'CasePermitArea': 'case-permit'
 };
 
-// 區塊的 area 值對應到 subCategoryId
-const areaToSubCategory: Record<string, string> = {
-  'square': 'Square',
-  'corridor': 'CasePermitArea',
-  'front-terrace': 'FrontTerrace',
-  'back-terrace': 'BackTerrace',
-  'glass-wall': 'GlassWall',
-  'pillar': 'CasePermitArea'
-};
-
 // 縮放配置
 const zoomConfigs: Record<string, { scale: number; translateX: number; translateY: number }> = {
   'square': { scale: 1.8, translateX: 7, translateY: 25 },
+  'area-f': { scale: 1.8, translateX: -5, translateY: 25 },
   'front-terrace': { scale: 2, translateX: -16, translateY: -30 },
   'back-terrace': { scale: 2.3, translateX: 25, translateY: 10 },
   'glass-wall': { scale: 1, translateX: 0, translateY: -2 },
@@ -57,8 +52,7 @@ interface TooltipInfo {
   visible: boolean;
   x: number;
   y: number;
-  name: string;
-  english: string;
+  subCategoryId: string; // 區域名稱用它查（後台可改英文）
   deposit: number;
   closed: boolean; // 整區未開放
 }
@@ -87,6 +81,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
   onPartialClick
 }) => {
   const t = useT()
+  const areaName = useAreaName()
   // 區塊定義（id → 區域）來自 Supabase space_blocks；佔用狀態由 rentedBlocks prop 傳入
   const blocksData = useSpaceBlocks();
   const closedIds = useClosedSpaceIds();
@@ -95,7 +90,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
   const [tooltip, setTooltip] = useState<TooltipInfo>({
-    visible: false, x: 0, y: 0, name: '', english: '', deposit: 0, closed: false
+    visible: false, x: 0, y: 0, subCategoryId: '', deposit: 0, closed: false
   });
   const eventListenersRef = useRef<Array<{ element: Element; type: string; handler: (e: Event) => void }>>([]);
 
@@ -346,7 +341,7 @@ const SpaceAreaMap: React.FC<SpaceAreaMapProps> = ({
           style={{ left: tooltip.x + 16, top: tooltip.y + 16 }}
         >
           <p className="text-white text-sm font-normal mb-2">
-            {t(tooltip.english, tooltip.name)}
+            {areaName(tooltip.subCategoryId)}
           </p>
           <div className="flex justify-between items-center mb-1">
             <span className="text-gray-light text-xs">{t('Deposit/Pcs', '押金/塊')}</span>

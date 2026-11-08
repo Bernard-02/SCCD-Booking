@@ -24,7 +24,11 @@ declare
   v_grade text;
   v_sophomore_up boolean; -- 大二以上（含碩士）；grade 未填從嚴視為大一
   v_is_equip boolean;     -- 本單為設備單（分單後一張單全設備或全空間）
-  v_open text;            -- 同類型未歸還單的單號（同類型限一單）
+  v_open text;            -- 同類別未歸還單的單號（設備、空間各限一張）
+  v_open_type text;       -- 該單的 booking_type（錯誤訊息用）
+  v_senior boolean;       -- 大四以上（含延畢的大五、大六）：設備不限天數
+  v_as_teacher boolean;   -- 老師名義（押金歸零）
+  v_proof text;           -- 證明文件路徑（bucket proofs）
   v_today date := (now() at time zone 'Asia/Taipei')::date;
   v_total int;            -- 本單件數（設備算數量、整組算 1；空間每格 1）
   v_dep int;              -- 單價（從資料表讀，不信任前端）
@@ -52,14 +56,19 @@ begin
   ) then
     raise exception '有未繳清的逾期罰款，請先至系學會繳清後再預約';
   end if;
+  -- 系學會費（2026-11-07）：只看學生；系秘、admin 不用繳
+  if public.user_role() = 'student' and not (select dues_paid from public.students where id = v_uid) then
+    raise exception '尚未繳交系學會費，請先至系學會繳交後再預約';
+  end if;
   if p_orders is null or jsonb_array_length(p_orders) = 0 then
     raise exception '沒有可送出的訂單';
   end if;
 
-  -- 年級慣例：'2'/'3'/'4' 或含「大二/大三/大四/碩」字樣視為大二以上，其餘（含未填）從嚴視為大一
+  -- 年級慣例：'2'–'6' 或含「大二…大六／碩」字樣視為大二以上，其餘（含未填）從嚴視為大一
   select grade into v_grade from public.students where id = v_uid;
-  v_sophomore_up := coalesce(v_grade, '') ~ '^[234]$'
-                 or coalesce(v_grade, '') ~ '(大二|大三|大四|碩)';
+  v_sophomore_up := coalesce(v_grade, '') ~ '^[2-6]$'
+                 or coalesce(v_grade, '') ~ '(大二|大三|大四|大五|大六|碩)';
+  v_senior := coalesce(v_grade, '') ~ '^[4-6]$' or coalesce(v_grade, '') ~ '(大四|大五|大六)';
 
   for v_order in select * from jsonb_array_elements(p_orders) loop
     -- 寒暑假封鎖（情境 11-a）：學生的租借區間與任一封鎖區間重疊即擋；admin／staff 不受限。
@@ -111,49 +120,63 @@ begin
        and (v_order ->> 'start_date')::date < v_today + 3 then
       raise exception '大量設備需於 3 天前預約';
     end if;
-    -- 天數上限同前端 Calendar（迄日－起日）：設備 30、空間 14（大四／碩士 30，同 gradeUtils.isSeniorOrGraduate）
-    if (v_order ->> 'end_date')::date - (v_order ->> 'start_date')::date >
-       case when v_is_equip or coalesce(v_grade, '') ~ '^4$' or coalesce(v_grade, '') ~ '(大四|碩)'
-            then 30 else 14 end then
+    -- 起租日最遠今天起 30 天（2026-11-06 學會決議），四種類型相同，只有系秘不受限；同前端 timeUtils.maxStartDate
+    if public.user_role() <> 'staff' and (v_order ->> 'start_date')::date > v_today + 30 then
+      raise exception '起租日最遠只能選今天起 30 天內';
+    end if;
+    -- 天數上限（迄日－起日）同 gradeUtils.maxRentalDays：設備 30，大四以上不限；空間 14，大四以上與碩士 30
+    if not (v_is_equip and v_senior)
+       and (v_order ->> 'end_date')::date - (v_order ->> 'start_date')::date >
+           (case when v_is_equip or v_senior or coalesce(v_grade, '') ~ '碩' then 30 else 14 end) then
       raise exception '租借天數超過上限';
     end if;
-
-    -- 重複下單檢查（rental-rules §6，原僅前端）：同一時段同類別（設備／空間）僅能有一張小量訂單
-    if v_order ->> 'booking_type' = 'little' and exists (
-      select 1 from public.orders o
-      where o.student_id = v_uid
-        and o.booking_type = 'little'
-        and o.status in ('pending', 'in-progress', 'overdue')
-        and o.start_date = (v_order ->> 'start_date')::date
-        and o.end_date = (v_order ->> 'end_date')::date
-        and exists (select 1 from public.order_items oi
-                    where oi.order_id = o.id and oi.item_type = 'equipment') = v_is_equip
-    ) then
-      raise exception '該時段已有一張%訂單（同一時段同類僅能有一張）',
-        case when v_is_equip then '小量設備' else '個人空間' end;
+    -- 個人空間一個時段一間教室（2026-11-07 Bernard 定，團體可以借一間以上）：明文檢查，教室押金改了也擋得住
+    if not v_is_equip and v_order ->> 'booking_type' = 'little'
+       and (select count(*) from jsonb_array_elements(v_order -> 'items') i where i ->> 'item_type' = 'classroom') > 1 then
+      raise exception '個人空間一個時段只能借一間教室';
     end if;
 
-    -- 同類型限一單（rental-rules 新規則 7，2026-10-02 實作）：學會規定上一張歸還後才能開下一張。
-    -- 同類型＝小量設備／大量設備／個人空間／團體空間四格；未歸還＝pending／in-progress／overdue
+    -- 老師名義（2026-11-06 學會決議，四種類型都能選）：要老師名稱＋證明文件，押金在下面歸零。
+    -- 檔案內容由學會看，系統只確認是本人上傳的檔案
+    v_as_teacher := coalesce((v_order ->> 'as_teacher')::boolean, false);
+    v_proof := nullif(v_order ->> 'proof_path', '');
+    if v_proof is not null and (
+      split_part(v_proof, '/', 1) <> v_uid::text
+      or not exists (select 1 from storage.objects o where o.bucket_id = 'proofs' and o.name = v_proof)
+    ) then
+      raise exception '證明文件不存在，請重新上傳';
+    end if;
+    if v_as_teacher and (v_proof is null or coalesce(trim(v_order ->> 'teacher'), '') = '') then
+      raise exception '老師名義需填老師名稱並上傳證明文件';
+    end if;
+    -- 雷切機一年級要授課教師核可（2026-11-07 Bernard 定）：上傳證明，押金照收；每次 2 小時由學會現場看
+    if public.user_role() = 'student' and not v_sophomore_up and v_proof is null and exists (
+      select 1 from jsonb_array_elements(v_order -> 'items') i
+      join public.equipment e on e.id = i ->> 'item_id'
+      where e.name like '%雷切%'
+    ) then
+      raise exception '一年級借雷切機需上傳授課教師核可證明';
+    end if;
+
+    -- 一類別一張（2026-11-06 學會決議，取代 rental-rules 新規則 7 的四格）：設備、空間各只能有一張未歸還，
+    -- 小量與大量、個人與團體不能並存；系秘也受限。未歸還＝pending／in-progress／overdue
     -- （returned／canceled 才算結案，含拆單的子單）。同次送出的多張單也會互擋（前一張已寫入本 transaction）。
-    -- 僅擋 student（系秘／助教直借不受限）；購物車層 useCart 另擋同類別第二個時段（UX）。
-    if public.user_role() = 'student' then
-      select o.rental_number into v_open
-        from public.orders o
-        where o.student_id = v_uid
-          and o.status in ('pending', 'in-progress', 'overdue')
-          and (o.booking_type = 'little') = (v_order ->> 'booking_type' = 'little')
-          and exists (select 1 from public.order_items oi
-                      where oi.order_id = o.id and oi.item_type = 'equipment') = v_is_equip
-        limit 1;
-      if v_open is not null then
-        raise exception '您已有一張未歸還的%訂單（%），需歸還後才能再借同類型',
-          case when v_is_equip
-            then case when v_order ->> 'booking_type' = 'little' then '小量設備' else '大量設備' end
-            else case when v_order ->> 'booking_type' = 'little' then '個人空間' else '團體空間' end
-          end,
-          v_open;
-      end if;
+    -- 購物車層 useCart 另擋同類別第二個時段（UX）。
+    select o.rental_number, o.booking_type into v_open, v_open_type
+      from public.orders o
+      where o.student_id = v_uid
+        and o.status in ('pending', 'in-progress', 'overdue')
+        and exists (select 1 from public.order_items oi
+                    where oi.order_id = o.id and oi.item_type = 'equipment') = v_is_equip
+      limit 1;
+    if v_open is not null then
+      raise exception '您已有一張未歸還的%訂單（%），需歸還後才能再借%',
+        case when v_is_equip
+          then case when v_open_type = 'little' then '小量設備' else '大量設備' end
+          else case when v_open_type = 'little' then '個人空間' else '團體空間' end
+        end,
+        v_open,
+        case when v_is_equip then '設備' else '空間' end;
     end if;
 
     -- 大量設備預選繳押金／取件時段（新規則 3，見 mass-pickup.sql）。
@@ -243,8 +266,9 @@ begin
     v_equip_dep := least(v_equip_dep, 5000);
     v_space_dep := least(v_space_dep, 5000);
 
-    -- 助教直借（情境 10，2026-09-26 實作）：staff 免押金、送出即 in-progress（免審核）；仍守先來後到
-    if public.user_role() = 'staff' then
+    -- 系秘直借（情境 10，2026-09-26 實作）：staff 免押金、送出即 in-progress（免審核）；仍守先來後到。
+    -- 老師名義也免押金，但照走待繳押金流程：學生到學會核對證明，學會按收押金（0 元），不符就取消訂單
+    if public.user_role() = 'staff' or v_as_teacher then
       v_equip_dep := 0;
       v_space_dep := 0;
     end if;
@@ -258,7 +282,8 @@ begin
 
     insert into public.orders
       (rental_number, student_id, start_date, end_date, booking_type, status,
-       deposit_total, reason, class_name, teacher, deposit_date, deposit_slot, pickup_slot)
+       deposit_total, reason, class_name, teacher, deposit_date, deposit_slot, pickup_slot,
+       as_teacher, proof_path)
     values
       (v_rental, v_uid,
        (v_order ->> 'start_date')::date, (v_order ->> 'end_date')::date,
@@ -266,7 +291,8 @@ begin
        case when public.user_role() = 'staff' then 'in-progress' else 'pending' end,
        v_equip_dep + v_space_dep,
        v_order ->> 'reason', v_order ->> 'class_name', v_order ->> 'teacher',
-       (v_order ->> 'deposit_date')::date, v_order ->> 'deposit_slot', v_order ->> 'pickup_slot')
+       (v_order ->> 'deposit_date')::date, v_order ->> 'deposit_slot', v_order ->> 'pickup_slot',
+       v_as_teacher, v_proof)
     returning id into v_order_id;
 
     insert into public.order_items (order_id, item_type, item_id, name, quantity, deposit)
@@ -283,7 +309,9 @@ begin
     insert into public.notifications (student_id, type, title, message, link)
     values (v_uid, 'success', '預約成功',
             case when public.user_role() = 'staff'
-              then '訂單 ' || v_rental || ' 已成立（助教直借，免押金）。'
+              then '訂單 ' || v_rental || ' 已成立（系秘直借，免押金）。'
+              when v_as_teacher
+              then '訂單 ' || v_rental || ' 已送出，請於 24 小時內至系學會核對證明文件。'
               else '訂單 ' || v_rental || ' 已送出，請於 24 小時內繳交押金。' end, '/profile');
 
     v_numbers := v_numbers || v_rental;
@@ -324,6 +352,11 @@ begin
   if not p_pickup and v_order.deposit_paid_at is not null then
     raise exception '此訂單已收過押金，請改按「取件」';
   end if;
+  -- 不開放提前取件（2026-11-06 學會決議）：有預選取件時段的單到取件日才能取；一般訂單繳押金當下取件不受影響
+  if p_pickup and v_order.pickup_slot is not null
+     and coalesce(v_order.pickup_date, v_order.start_date) > (now() at time zone 'Asia/Taipei')::date then
+    raise exception '還沒到取件日，只能先收押金';
+  end if;
   if p_deposit_total < 0 then
     raise exception '押金金額不可為負';
   end if;
@@ -344,7 +377,7 @@ begin
           case when p_pickup then
                  case when v_order.deposit_paid_at is null then ' 押金已收並完成取件，租借開始。'
                       else ' 已完成取件，租借開始。' end
-               else ' 押金已收，請於 ' || to_char(v_order.start_date, 'MM/DD') || ' '
+               else ' 押金已收，請於 ' || to_char(coalesce(v_order.pickup_date, v_order.start_date), 'MM/DD') || ' '
                     || coalesce(v_order.pickup_slot, '值班時段') || ' 取件。' end,
           '/profile');
 end;

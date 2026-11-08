@@ -1,7 +1,7 @@
 /**
  * 後台 · 會員管理（設定段）——規則、欄位與身份／狀態定義見 docs/admin-members.md
  * 版面同設備管理：計數分頁 全部／學生／系學會；標題列右側「＋ 新增會員」「匯入」；搜尋列（搜尋、年級、租借狀態篩選）；
- * 表格（選取模式同設備頁：按「選取」出現勾選欄；勾選的列身份／狀態欄變下拉，改一個套用到全部勾選；表頭可排序）；修改走對話框（班級不在後台改）。
+ * 表格（選取模式同設備頁：按「選取」出現勾選欄；勾選的列身份／狀態欄變下拉，改一個套用到全部勾選；會費用工具列按鈕批次標；表頭可排序）；修改走對話框（班級不在後台改）。
  * 已畢業預設隱藏（工具列「已畢業」切換），還有未完成的單的例外會列。
  * 新增會員＝預先登記 login_allowlist（清單顯示「未啟用」），本人第一次 Google 登入時 trigger 套用登記的姓名／身份
  * （members-v2.sql）。租借歷史改到訂單頁看：「總租借」數字可點，帶學號過去當篩選（搜尋列旁顯示學生 chip）。
@@ -13,14 +13,14 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   listMembers, updateMember, updateMembersMany, listStaff, addStaffBulk, updateStaffPosition, deleteStaff, deleteStaffMany,
-  unsuspendStudent, listAllowlist, addAllowlist, removeAllowlist
+  unsuspendStudent, deleteMember, listAllowlist, addAllowlist, removeAllowlist
 } from '../services/adminService'
 import type { Member, StaffMember, AllowEntry } from '../services/adminService'
 import { fetchAllOrders } from '../services/ordersService'
 import type { AdminOrderRow } from '../services/ordersService'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
-import { classLabel } from '../utils/gradeUtils'
+import { classLabel, parseClassLabel } from '../utils/gradeUtils'
 import MemberImportDialog from '../components/admin/MemberImportDialog'
 import {
   PageTitle, inputCls, textBtn, toolBtn, iconFillBtn, SearchBox, CountTabs, SelectControls, tableTh as th, tableTd as td,
@@ -55,11 +55,11 @@ const RENTAL_FILTERS: { value: Rental | 'all'; label: string }[] = [
   { value: 'all', label: '全部租借狀態' },
   ...(Object.keys(RENTAL_META) as Rental[]).map(k => ({ value: k, label: RENTAL_META[k].zh }))
 ]
-// 年級篩選固定六級＋其他（空白或格式外的，人少）；grade 舊格式 '1'-'4' 視同大一～大四（同 gradeUtils 慣例）
-const GRADE_ORDER = ['大一', '大二', '大三', '大四', '碩一', '碩二']
+// 年級篩選固定八級＋其他（空白或格式外的，人少）；grade 舊格式 '1'-'6' 視同大一～大六（同 gradeUtils 慣例）
+const GRADE_ORDER = ['大一', '大二', '大三', '大四', '大五', '大六', '碩一', '碩二']
 const normGrade = (g: string | null): string => {
   const v = (g ?? '').trim()
-  if (/^[1-4]$/.test(v)) return `大${['一', '二', '三', '四'][Number(v) - 1]}`
+  if (/^[1-6]$/.test(v)) return `大${['一', '二', '三', '四', '五', '六'][Number(v) - 1]}`
   return GRADE_ORDER.includes(v) ? v : 'other'
 }
 
@@ -84,6 +84,7 @@ interface Row {
   rental: Rental
   rentalLabel: string
   orders: number
+  dues: boolean
 }
 
 const Chip: React.FC<{ meta: { color: string }; children: React.ReactNode }> = ({ meta, children }) => (
@@ -91,11 +92,13 @@ const Chip: React.FC<{ meta: { color: string }; children: React.ReactNode }> = (
 )
 
 // 唯讀欄位（同輸入框高度，無框）
-const readOnly = `${inputCls} w-full text-gray-light border-transparent px-0`
+const readOnly = `${inputCls} w-full text-gray-light border-transparent !px-0`
 
-type EditDialog = { row: Row; identity: Identity; position: string; status: 'active' | 'on_leave' | 'graduated' }
-type NewDialog = { sid: string; name: string; email: string; emailTouched: boolean; identity: Exclude<Identity, 'admin'>; position: string }
-const NEW_EMPTY: NewDialog = { sid: '', name: '', email: '', emailTouched: false, identity: 'student', position: '' }
+type EditDialog = { row: Row; identity: Identity; position: string; status: 'active' | 'on_leave' | 'graduated'; dues: boolean }
+// original：修改未啟用的登記時，原本的學號（沒有＝新增）
+type NewDialog = { sid: string; name: string; email: string; emailTouched: boolean; identity: Exclude<Identity, 'admin'>; position: string; classText: string; dues: boolean; original?: string }
+const NEW_EMPTY: NewDialog = { sid: '', name: '', email: '', emailTouched: false, identity: 'student', position: '', classText: '', dues: false }
+const DUES_OPTIONS = [{ value: 'paid', label: '已繳' }, { value: 'unpaid', label: '未繳' }]
 const emailFor = (sid: string) => (sid ? `${sid.toLowerCase()}@gm.usc.edu.tw` : '')
 
 const AdminMembersPage: React.FC = () => {
@@ -169,7 +172,7 @@ const AdminMembersPage: React.FC = () => {
         phone: m.phone,
         identity, position: sa?.position ?? '',
         status: m.graduated ? 'graduated' : m.on_leave ? 'on_leave' : violation ? 'violation' : 'active',
-        rental, rentalLabel, orders: os.length
+        rental, rentalLabel, orders: os.length, dues: !!m.dues_paid
       }
     })
     // 預先登記但本人還沒登入過的：未啟用（已建帳號的登記列只是紀錄，不重複列）
@@ -179,10 +182,10 @@ const AdminMembersPage: React.FC = () => {
       .map((e): Row => ({
         key: `pending:${e.student_id}`, member: null, entry: e,
         student_id: e.student_id, name: e.name ?? '', email: e.email ?? '',
-        classText: '', grade: null, phone: null,
+        classText: classLabel(e.grade, e.class_name), grade: e.grade ?? null, phone: null,
         identity: e.role === 'admin' ? 'admin' : e.role === 'staff' ? 'secretary' : e.is_sa ? 'sa' : e.is_transfer ? 'transfer' : 'student',
         position: e.position ?? '',
-        status: 'pending', rental: 'ok', rentalLabel: '—', orders: 0
+        status: 'pending', rental: 'ok', rentalLabel: '—', orders: 0, dues: !!e.dues_paid
       }))
     return [...real, ...pending]
   }, [members, ordersBy, staffBySid, allowlist])
@@ -219,7 +222,7 @@ const AdminMembersPage: React.FC = () => {
   const exitSelect = () => { setSelectMode(false); setSelected(new Set()) }
   useEffect(exitSelect, [tab])
 
-  const bulk = async (zh: string, fields: { on_leave?: boolean; graduated?: boolean }) => {
+  const bulk = async (zh: string, fields: { on_leave?: boolean; graduated?: boolean; dues_paid?: boolean }) => {
     const ids = selectable.filter(r => selected.has(r.key)).map(r => r.key)
     if (ids.length === 0) return
     const ok = await confirm({ title: zh, message: `將選取的 ${ids.length} 位${zh}？`, confirmTextZh: '確定', variant: fields.graduated || fields.on_leave ? 'danger' : 'default' })
@@ -279,7 +282,8 @@ const AdminMembersPage: React.FC = () => {
     row,
     identity: row.identity,
     position: row.position,
-    status: row.status === 'graduated' ? 'graduated' : row.status === 'on_leave' ? 'on_leave' : 'active'
+    status: row.status === 'graduated' ? 'graduated' : row.status === 'on_leave' ? 'on_leave' : 'active',
+    dues: row.dues
   })
 
   const handleSaveEdit = async () => {
@@ -311,7 +315,7 @@ const AdminMembersPage: React.FC = () => {
 
     setBusy(true)
     try {
-      const results = [await updateMember(m.id, { role, on_leave: onLeave, is_transfer: isTransfer, graduated, grade: m.grade, class_name: m.class_name })]
+      const results = [await updateMember(m.id, { role, on_leave: onLeave, is_transfer: isTransfer, graduated, grade: m.grade, class_name: m.class_name, dues_paid: edit.dues })]
       if (toSa && !saRow) results.push(await addStaffBulk([{ student_id: m.id, position }]))
       else if (toSa && saRow.position !== position) results.push(await updateStaffPosition(saRow.id, position))
       else if (!isAdmin && !toSa && saRow) results.push(await deleteStaff(saRow.id))
@@ -340,7 +344,25 @@ const AdminMembersPage: React.FC = () => {
     await load()
   }
 
+  // 沒有訂單的帳號才能刪（key 錯、測試用）；有訂單的要留紀錄，server 端同樣擋
+  const handleDeleteMember = async (m: Member) => {
+    const ok = await confirm({ title: '刪除帳號', message: `刪除 ${m.name}（${m.student_id}）的帳號和登記？要重新登記才能再登入。`, confirmTextZh: '刪除', variant: 'danger' })
+    if (!ok) return
+    const res = await deleteMember(m.id)
+    if (!res.ok) { showToast(res.message ?? '刪除失敗'); return }
+    showToast(`已刪除 ${m.student_id} 的帳號`, 'success')
+    setEdit(null)
+    await load()
+  }
+
   // ---- 新增會員＝預先登記 ----
+  const openPending = (row: Row) => setDraft({
+    sid: row.student_id, name: row.name, email: row.email, emailTouched: true,
+    // ponytail: 後台與匯入都建不出 admin 登記，不另處理
+    identity: row.identity === 'admin' ? 'student' : row.identity,
+    position: row.position, classText: row.classText, dues: row.dues, original: row.student_id
+  })
+
   const handleAdd = async () => {
     if (!draft) return
     const sid = draft.sid.trim().toUpperCase()
@@ -348,27 +370,35 @@ const AdminMembersPage: React.FC = () => {
     if (!sid) { showToast('請輸入學號'); return }
     if (!/^\S+@\S+\.\S+$/.test(email)) { showToast('Email 格式不正確'); return }
     if (members.some(m => m.student_id.toUpperCase() === sid)) { showToast('此學號已有帳號'); return }
+    const klass = parseClassLabel(draft.classText)
+    if (!klass) { showToast('班級格式不正確（例：日媒四乙、碩媒一甲）'); return }
     setBusy(true)
-    const res = await addAllowlist([{
+    let res = await addAllowlist([{
       student_id: sid, note: null, name: draft.name.trim(), email,
+      grade: klass.grade, class_name: klass.class_name, dues_paid: draft.dues,
       role: draft.identity === 'secretary' ? 'staff' : 'student',
       is_transfer: draft.identity === 'transfer',
       is_sa: draft.identity === 'sa',
       position: draft.identity === 'sa' ? draft.position.trim() : null
     }])
+    // 改學號＝換主鍵：新的寫好才刪舊的
+    if (res.ok && draft.original && draft.original !== sid) res = await removeAllowlist(draft.original)
     setBusy(false)
-    if (!res.ok) { showToast(res.message ?? '新增失敗'); return }
-    showToast(`已登記 ${sid}，本人第一次登入後即啟用`, 'success')
+    if (!res.ok) { showToast(res.message ?? '儲存失敗'); return }
+    showToast(draft.original ? `已更新 ${sid} 的登記` : `已登記 ${sid}，本人第一次登入後即啟用`, 'success')
     setDraft(null)
     await load()
   }
 
-  const handleRemovePending = async (row: Row) => {
-    const ok = await confirm({ title: '刪除登記', message: `刪除 ${row.student_id}${row.name ? `（${row.name}）` : ''} 的預先登記？`, confirmTextZh: '刪除', variant: 'danger' })
+  const handleRemovePending = async () => {
+    if (!draft?.original) return
+    const sid = draft.original
+    const ok = await confirm({ title: '刪除登記', message: `刪除 ${sid}${draft.name ? `（${draft.name}）` : ''} 的預先登記？`, confirmTextZh: '刪除', variant: 'danger' })
     if (!ok) return
-    const res = await removeAllowlist(row.student_id)
+    const res = await removeAllowlist(sid)
     if (!res.ok) { showToast(res.message ?? '刪除失敗'); return }
-    showToast(`已刪除 ${row.student_id} 的登記`, 'success')
+    showToast(`已刪除 ${sid} 的登記`, 'success')
+    setDraft(null)
     await load()
   }
 
@@ -397,7 +427,10 @@ const AdminMembersPage: React.FC = () => {
           count={selectedCount}
           onEnter={() => setSelectMode(true)}
           onExit={exitSelect}
-          actions={[]}
+          actions={[
+            { zh: '標記已繳會費', onClick: () => void bulk('標記已繳會費', { dues_paid: true }) },
+            { zh: '標記未繳會費', onClick: () => void bulk('標記未繳會費', { dues_paid: false }) }
+          ]}
         />
         <button
           onClick={() => setShowGraduated(v => !v)}
@@ -435,7 +468,7 @@ const AdminMembersPage: React.FC = () => {
         <>
           <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
             {/* border-separate：表頭 sticky 時底線才跟著走；欄位多，min-w 讓窄視窗橫向捲而不壓欄 */}
-            <table className="w-full min-w-[1200px] text-xs border-separate border-spacing-0">
+            <table className="w-full min-w-[1280px] text-xs border-separate border-spacing-0">
               <thead>
                 <tr className="text-left text-gray-light">
                   {selectMode && (
@@ -450,6 +483,7 @@ const AdminMembersPage: React.FC = () => {
                   <th className={`${th} w-32`}>手機號碼</th>
                   <th className={`${th} w-32`}>身份</th>
                   <th className={`${th} w-24`}>狀態</th>
+                  <th className={`${th} w-20`}>會費</th>
                   <th className={`${th} w-36`}>租借狀態</th>
                   <SortTh zh="總租借" field="orders" className="w-24 text-center" {...sortProps} />
                   <th className={`${th} w-20 text-center`}>操作</th>
@@ -499,6 +533,11 @@ const AdminMembersPage: React.FC = () => {
                         />
                       ) : <Chip meta={STATUS_META[r.status]}>{STATUS_META[r.status].zh}</Chip>}
                     </td>
+                    <td className={`${td} font-chinese`}>
+                      {r.identity === 'student' || r.identity === 'transfer' || r.identity === 'sa'
+                        ? (r.dues ? '已繳' : <span style={{ color: 'var(--color-error)' }}>未繳</span>)
+                        : <span className="text-gray-mid">—</span>}
+                    </td>
                     <td className={td}>
                       {r.member ? <Chip meta={RENTAL_META[r.rental]}>{r.rentalLabel}</Chip> : <span className="text-gray-mid">—</span>}
                     </td>
@@ -515,15 +554,9 @@ const AdminMembersPage: React.FC = () => {
                       ) : <span className="text-gray-mid">—</span>}
                     </td>
                     <td className={`${td} text-center`}>
-                      {r.member ? (
-                        <button onClick={() => openEdit(r)} title="修改" aria-label="修改" className={iconFillBtn}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
-                        </button>
-                      ) : (
-                        <button onClick={() => handleRemovePending(r)} title="刪除登記" aria-label="刪除登記" className={iconFillBtn}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                        </button>
-                      )}
+                      <button onClick={() => (r.member ? openEdit(r) : openPending(r))} title="修改" aria-label="修改" className={iconFillBtn}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -572,6 +605,14 @@ const AdminMembersPage: React.FC = () => {
                 className="font-chinese w-full"
               />
             </Field>
+            <Field zh="系學會費">
+              <Select
+                value={edit.dues ? 'paid' : 'unpaid'}
+                onChange={v => setEdit(e => (e ? { ...e, dues: v === 'paid' } : e))}
+                options={DUES_OPTIONS}
+                className="font-chinese w-full"
+              />
+            </Field>
             {edit.identity === 'sa' && (
               <Field zh="職位">
                 <input
@@ -587,13 +628,19 @@ const AdminMembersPage: React.FC = () => {
                 <button onClick={() => handleUnsuspend(edit.row.member!)} className={`${toolBtn(false)} px-3 font-chinese`}>解除停權</button>
               </div>
             )}
+            {edit.row.identity !== 'admin' && (
+              <div className="col-span-2 flex items-center justify-between gap-4 text-xs font-chinese">
+                <span className="text-gray-light">{edit.row.orders > 0 ? '有訂單紀錄，不能刪除帳號' : '沒有訂單紀錄，可以刪除帳號'}</span>
+                <button disabled={edit.row.orders > 0} onClick={() => handleDeleteMember(edit.row.member!)} className={`${toolBtn(false)} px-3 font-chinese`}>刪除帳號</button>
+              </div>
+            )}
           </div>
         </FormDialog>
       )}
 
-      {/* 新增會員＝預先登記；Email 依學號自動帶，可改 */}
+      {/* 新增會員＝預先登記；Email 依學號自動帶，可改。未啟用的登記也用這個對話框修改或刪除 */}
       {draft && (
-        <FormDialog title="新增會員" confirmZh="新增" busy={busy} onConfirm={handleAdd} onCancel={() => setDraft(null)}>
+        <FormDialog title={draft.original ? '修改登記' : '新增會員'} confirmZh={draft.original ? '確定修改' : '新增'} busy={busy} onConfirm={handleAdd} onCancel={() => setDraft(null)}>
           <Field zh="學號" required>
             <input
               value={draft.sid} autoFocus placeholder="A111144001"
@@ -614,6 +661,21 @@ const AdminMembersPage: React.FC = () => {
               className={`${inputCls} w-full font-english`}
             />
           </Field>
+          <Field zh="班級">
+            <input
+              value={draft.classText} placeholder="日媒四乙、碩媒一甲；空白＝由學號推"
+              onChange={e => setDraft(d => (d ? { ...d, classText: e.target.value } : d))}
+              className={`${inputCls} w-full font-chinese`}
+            />
+          </Field>
+          <Field zh="系學會費">
+            <Select
+              value={draft.dues ? 'paid' : 'unpaid'}
+              onChange={v => setDraft(d => (d ? { ...d, dues: v === 'paid' } : d))}
+              options={DUES_OPTIONS}
+              className="font-chinese w-full"
+            />
+          </Field>
           <Field zh="身份">
             <Select<NewDialog['identity']>
               value={draft.identity}
@@ -628,6 +690,9 @@ const AdminMembersPage: React.FC = () => {
             </Field>
           )}
           <p className="text-2xs text-gray-mid font-chinese">帳號在本人第一次用學校 Google 帳號登入時建立，登記前顯示為「未啟用」。</p>
+          {draft.original && (
+            <button onClick={handleRemovePending} className={`${toolBtn(false)} px-3 self-start font-chinese`}>刪除登記</button>
+          )}
         </FormDialog>
       )}
 

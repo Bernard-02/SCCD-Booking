@@ -1,7 +1,7 @@
 /**
  * Server 錯誤原因的英文版（SQL 的 raise exception 維持中文，學生端切到 EN 時在這裡對照）。
  * 新增或修改 SQL 的錯誤訊息時，這裡要一起加英文；對不到的照原文（中文）顯示。
- * 範圍：學生會看到的 RPC——submit_orders、modify_my_order、extend_my_order_partial、extend_check。
+ * 範圍：學生會看到的 RPC——submit_orders、modify_my_order、change_my_pickup、extend_my_order_partial、extend_check。
  */
 
 import { tr } from '../stores/langStore'
@@ -33,6 +33,16 @@ const EXACT: Record<string, string> = {
   '繳押金日期需介於今天與起租日之間，請重新選擇時段': 'The deposit date must be between today and the start date. Please choose another slot.',
   '所選租借期間為寒暑假封鎖期，暫不開放租借': 'The selected period falls in the winter/summer break, when rentals are closed.',
   'A508 教室僅限大二以上（含碩士）借用': 'Classroom A508 is only available to second-year students and above (including master’s students).',
+  '尚未繳交系學會費，請先至系學會繳交後再預約': 'You haven’t paid the Student Association fee yet. Please pay it at the SA before booking.',
+  '起租日最遠只能選今天起 30 天內': 'The start date can be at most 30 days from today.',
+  '個人空間一個時段只能借一間教室': 'Personal bookings can include only one classroom per period.',
+  '證明文件不存在，請重新上傳': 'The proof file could not be found. Please upload it again.',
+  '老師名義需填老師名稱並上傳證明文件': 'Booking under a teacher’s name needs the teacher’s name and a proof document.',
+  '一年級借雷切機需上傳授課教師核可證明': 'First-year students need to upload their course teacher’s approval to book the laser cutter.',
+  '僅待取件的大量設備訂單可改取件日': 'Only mass equipment orders that are awaiting pickup can change the pickup date.',
+  '目前的取件時段沒有公休，不用改取件日': 'Your pickup slot isn’t affected by a closure, so it doesn’t need changing.',
+  '取件日需介於今天與起租日之間': 'The pickup date must be between today and the start date.',
+  '這個時段沒有值班，請重新選擇': 'That slot isn’t staffed. Please choose another one.',
   '帳號已停權（未完成清潔歸還），無法送出預約，請聯絡系學會': 'Your account is suspended (clean return not completed), so you can’t submit bookings. Please contact the SA.',
   '帳號已停權（未完成清潔歸還），無法修改訂單，請聯絡系學會': 'Your account is suspended (clean return not completed), so you can’t edit orders. Please contact the SA.',
   '帳號已停用（已畢業），無法送出預約': 'Your account has been deactivated (graduated) and can’t submit bookings.',
@@ -63,8 +73,7 @@ const PATTERNS: [RegExp, (...m: string[]) => string][] = [
   [/^大量／團體訂單需滿 10 件（目前 (\d+) 件）$/, q => `Mass and group orders need at least 10 items (currently ${q}).`],
   [/^設備不存在：(.+)$/, n => `Equipment not found: ${n}`],
   [/^空間不存在：(.+)$/, n => `Space not found: ${n}`],
-  [/^您已有一張未歸還的(.+)訂單（(.+)），需歸還後才能再借同類型$/, (ty, no) => `You have an unreturned ${typeEn(ty)} order (${no}). Return it before booking the same type again.`],
-  [/^該時段已有一張(.+)訂單（同一時段同類僅能有一張）$/, ty => `You already have a ${typeEn(ty)} order for these dates (only one per type per period).`],
+  [/^您已有一張未歸還的(.+)訂單（(.+)），需歸還後才能再借(設備|空間)$/, (ty, no, cat) => `You have an unreturned ${typeEn(ty)} order (${no}). Return it before booking ${cat === '設備' ? 'equipment' : 'spaces'} again.`],
   [/^無法延期：「(.+)」於延長期間已被其他訂單預約$/, n => `Can’t extend: ${names(n)} ${n.includes('」、「') ? 'are' : 'is'} booked by another order during the extension.`]
 ]
 

@@ -7,7 +7,7 @@
 -- 使用方式：SQL Editor 貼上執行一次（可重複執行）。
 
 -- ---------- 1. 逾期營業日天數 ----------
--- 從有效歸還期限（next_business_day(end_date)）的隔日起算到今天，週六日與臨時公休不計。
+-- 從有效歸還期限（next_business_day(end_date)）的隔日起算到今天，週六日與整天公休不計（只休一班的日子照算）。
 -- 前端 timeUtils.overdueBusinessDays 為同邏輯的顯示用版本。
 create or replace function public.overdue_business_days(p_end date)
 returns integer
@@ -22,7 +22,7 @@ as $$
          interval '1 day'
        ) g(d)
   where extract(isodow from g.d) not in (6, 7)
-    and not exists (select 1 from public.closed_dates c where c.day = g.d::date)
+    and not exists (select 1 from public.closed_dates c where c.day = g.d::date and c.shift = 'all')
 $$;
 
 -- ---------- 2. 自動停權 ----------

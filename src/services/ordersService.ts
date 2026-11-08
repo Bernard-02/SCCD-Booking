@@ -6,9 +6,10 @@
 import { useEffect, useState } from 'react'
 import { supabase, fetchAllRows } from './supabase'
 import type { BookingType } from '../types/equipment'
-import { dutyHoursText, type DutySlot } from '../utils/timeUtils'
+import { closedKey, dutyHoursText, type ClosedShift, type DutySlot } from '../utils/timeUtils'
 import { calcBundles, type Bundle } from '../utils/bundleUtils'
 import { serverErrorText } from '../utils/serverErrors'
+import { tr } from '../stores/langStore'
 
 export type OrderStatus = 'pending' | 'in-progress' | 'overdue' | 'returned' | 'canceled'
 
@@ -44,7 +45,11 @@ export interface OrderRow {
   deposit_date: string | null
   deposit_slot: string | null    // 'HH:MM-HH:MM'
   pickup_slot: string | null
+  pickup_date: string | null     // 公休改過的取件日（rules-2026-11.sql）；null＝起租日
   deposit_paid_at: string | null // 已收押金；status 仍為 pending ＝ 已繳待取件
+  as_teacher: boolean            // 老師名義：押金 0，老師名稱存 teacher
+  proof_path: string | null      // 證明文件（bucket proofs）；老師名義、雷切機一年級的核可
+  refunded: number | null        // 已退押金（null＝還沒結；有罰款時是扣完退的）
   items_updated_at: string | null // 學生最後一次改品項（收據／PDF 印出，對照紙本新舊）
   order_items: OrderItemRow[]
 }
@@ -65,6 +70,7 @@ export interface AdminOrderRow extends OrderRow {
   paid_by: string | null      // 收押金經手幹部（姓名快照）
   picked_up_by: string | null // 取件經手幹部（大量設備先繳後取時才與 paid_by 不同）
   returned_by: string | null  // 歸還經手幹部（姓名快照）
+  refunded_by: string | null  // 退押金經手幹部（姓名快照）
   students: { student_id: string; name: string } | null
 }
 
@@ -84,7 +90,7 @@ export async function fetchAllOrders(): Promise<AdminOrderRow[]> {
 }
 
 /**
- * 系學會臨時公休日（週六日以外），繳押金 24 工作時倒數會跳過這些日期。
+ * 系學會公休（週六日以外），繳押金 24 工作時倒數會跳過整天公休。只休一班的存成 '日期:noon'（見 timeUtils.closedKey）。
  * 讀取失敗時退回空集合（只排除週末），不擋頁面。
  */
 let closedDatesCache: Set<string> | null = null
@@ -92,12 +98,13 @@ let closedDatesCache: Set<string> | null = null
 export const invalidateClosedDates = () => { closedDatesCache = null }
 export async function fetchClosedDates(): Promise<Set<string>> {
   if (closedDatesCache) return closedDatesCache
-  const { data, error } = await supabase.from('closed_dates').select('day')
+  // select('*')：shift 欄位的 SQL 尚未執行時也能讀（視為整天）
+  const { data, error } = await supabase.from('closed_dates').select('*')
   if (error) {
     console.error('讀取公休日失敗:', error.message)
     return new Set()
   }
-  closedDatesCache = new Set((data ?? []).map(row => row.day as string))
+  closedDatesCache = new Set((data ?? []).map(row => closedKey(row.day as string, row.shift as ClosedShift | undefined)))
   return closedDatesCache
 }
 
@@ -216,6 +223,19 @@ export async function adminMarkReturnedPartial(
   return { ok: true }
 }
 
+/** 後台：退押金（已繳押金的取消單、拆單全還後人工結的大量單；rules-2026-11.sql） */
+export async function adminRefundDeposit(
+  rentalNumber: string,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_refund_deposit', {
+    p_rental_number: rentalNumber,
+    p_handler: handler
+  })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
 /** 後台：代取消（pending／in-progress → canceled；in-progress 退押金為現場人工動作） */
 export async function adminCancelOrder(
   rentalNumber: string,
@@ -314,6 +334,48 @@ export async function modifyMyOrder(
   })
   if (error) return { ok: false, message: serverErrorText(error.message) }
   return { ok: true }
+}
+
+/** 學生改取件時段：只有目前的時段碰到公休才能改（rules-2026-11.sql change_my_pickup） */
+export async function changeMyPickup(
+  rentalNumber: string,
+  date: string,
+  slot: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('change_my_pickup', {
+    p_rental_number: rentalNumber,
+    p_date: date,
+    p_slot: slot
+  })
+  if (error) return { ok: false, message: serverErrorText(error.message) }
+  return { ok: true }
+}
+
+// ---- 證明文件（私有 bucket proofs，路徑 {uid}/…，本人與 admin 讀得到；rules-2026-11.sql）----
+export const PROOF_ACCEPT = '.jpg,.jpeg,.png,.pdf'
+const PROOF_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+
+/** 上傳證明文件，回傳路徑（送單時帶給 submit_orders）。訂單沒送出的話檔案留著（ponytail: 量很小，吃緊再清） */
+export async function uploadProof(file: File): Promise<{ path?: string; message?: string }> {
+  if (!PROOF_TYPES.includes(file.type)) return { message: tr('Only JPG, PNG or PDF files are accepted.', '只接受 JPG、PNG 或 PDF') }
+  if (file.size > 10 * 1024 * 1024) return { message: tr('The file must be under 10 MB.', '檔案需小於 10MB') }
+  const { data } = await supabase.auth.getSession()
+  const uid = data.session?.user.id
+  if (!uid) return { message: tr('Please log in first.', '請先登入') }
+  const path = `${uid}/${Date.now().toString(36)}.${file.name.split('.').pop()?.toLowerCase() ?? 'pdf'}`
+  const { error } = await supabase.storage.from('proofs').upload(path, file, { contentType: file.type })
+  if (error) return { message: error.message }
+  return { path }
+}
+
+/** 私有 bucket 要簽短效網址才能開 */
+export async function proofUrl(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage.from('proofs').createSignedUrl(path, 300)
+  if (error) {
+    console.error('讀取證明文件失敗:', error.message)
+    return null
+  }
+  return data.signedUrl
 }
 
 /** 後台：點交取件後新增的品項，記錄現場計算後的押金總額（modify-order.sql） */

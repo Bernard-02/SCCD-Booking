@@ -2,22 +2,23 @@
  * 後台 · 訂單全覽（搜尋 + 租借時間／狀態／種類篩選 + 點表頭單欄排序 + 收押金／歸還）
  * 樣式沿用前台 Profile：狀態標籤語彙與顏色同 getStatusInfo、按鈕同 Extend 樣式。
  * 「收押金」「歸還」兩欄＝每張單都會走的兩步（2026-10-26）：還沒做是按鈕、做完顯示經手人，一眼看出走到哪、誰經手；
- * 其餘動作（點交／延期／取消訂單）在最右「操作」欄。所有動作都走 OrderActionDialog，必選值班經手人
- * （寫入 paid_by / picked_up_by / returned_by 供追溯）。
- * 搜尋列下方四個分類按鈕（2026-10-24）：全部／待繳押金／待取件／待歸還，各附筆數；點了切換下方表格內容。
+ * 其餘動作（點交／延期／取消訂單）在最右「操作」欄，釘在右邊，欄位再多往右捲都看得到。所有動作都走 OrderActionDialog，必選值班經手人
+ * （寫入 paid_by / picked_up_by / returned_by / refunded_by 供追溯）。
+ * 「名義」欄＝個人或老師名義＋證明檔；「退押金」欄＝退了多少與經手人，已繳押金的取消單在這裡按退押金（2026-11-07）。
+ * 搜尋列下方五個分類按鈕：全部／待繳押金／待取件／待歸還／待退押金，各附筆數；點了切換下方表格內容。
  * 待歸還＝使用中＋未完成歸還（都是要收回來的）；已歸還／已取消只在「全部」裡看（搜尋得到）。
  */
 
 import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, fetchClosedDates } from '../services/ordersService'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, adminRefundDeposit, fetchClosedDates, proofUrl } from '../services/ordersService'
 import type { AdminOrderRow, OrderInfo } from '../services/ordersService'
 import { listStaff } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
-import { overduePenalty, overdueBusinessDays, pendingMsRemaining, isOnDuty, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
+import { overduePenalty, overdueBusinessDays, pendingMsRemaining, isOnDuty, slotEnd, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
 import { ADMIN_HANDLER_KEY } from '../utils/storageKeys'
-import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, textBtn, SearchBox, CountTabs, SortTh, toggleSort, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup, isPickupLate } from '../components/admin/adminUi'
+import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, textBtn, SearchBox, CountTabs, SortTh, toggleSort, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup } from '../components/admin/adminUi'
 import type { Sort } from '../components/admin/adminUi'
 import OrderActionDialog, { type AdminActionMode } from '../components/admin/OrderActionDialog'
 import OrderInfoDialog from '../components/admin/OrderInfoDialog'
@@ -33,7 +34,7 @@ const fmtDateTime = (iso: string) => {
 // 可排序欄位（Notion 式：每一欄都能點表頭排序）
 type SortField =
   | 'rental_number' | 'name' | 'student_id' | 'booking_type' | 'start_date'
-  | 'deposit_total' | 'status' | 'items' | 'reason' | 'paid_by' | 'returned_by'
+  | 'deposit_total' | 'status' | 'items' | 'reason' | 'paid_by' | 'returned_by' | 'as_teacher' | 'refunded'
 const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
   switch (f) {
     case 'name': return o.students?.name ?? ''
@@ -44,6 +45,8 @@ const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
     case 'paid_by': return o.paid_by ?? ''
     case 'returned_by': return o.returned_by ?? ''
     case 'booking_type': return orderKind(o)
+    case 'as_teacher': return o.as_teacher ? o.teacher ?? '' : ''
+    case 'refunded': return o.refunded ?? -1
     default: return (o[f] ?? '') as string
   }
 }
@@ -60,28 +63,38 @@ const COLUMNS: { field: SortField; zh: string; w?: string }[] = [
   { field: 'status', zh: '狀態', w: 'w-32' },
   { field: 'deposit_total', zh: '押金', w: 'w-28' },
   { field: 'reason', zh: '原因', w: 'w-40' },
+  { field: 'as_teacher', zh: '名義', w: 'w-28' },
   { field: 'paid_by', zh: '收押金', w: 'w-28' },
-  { field: 'returned_by', zh: '歸還', w: 'w-28' }
+  { field: 'returned_by', zh: '歸還', w: 'w-28' },
+  { field: 'refunded', zh: '退押金', w: 'w-28' }
 ]
 
 // 搜尋列下方的分類按鈕：篩選條件＋筆數。待繳押金＝pending 未繳；待取件＝大量設備已繳待取（isAwaitingPickup）；
-// 待歸還＝使用中＋未完成歸還
-type TabKey = 'all' | 'deposit' | 'pickup' | 'return'
+// 待歸還＝使用中＋未完成歸還；待退押金＝已繳押金但取消（含沒來取件自動取消），或拆單全還後人工結的大量單
+const awaitingRefund = (o: AdminOrderRow) =>
+  (o.status === 'canceled' || o.status === 'returned') && !!o.deposit_paid_at && o.deposit_total > 0 && o.refunded == null
+type TabKey = 'all' | 'deposit' | 'pickup' | 'return' | 'refund'
 const TABS: { key: TabKey; zh: string; match: (o: AdminOrderRow) => boolean }[] = [
   { key: 'all', zh: '全部', match: () => true },
   { key: 'deposit', zh: '待繳押金', match: o => o.status === 'pending' && !o.deposit_paid_at },
   { key: 'pickup', zh: '待取件', match: isAwaitingPickup },
-  { key: 'return', zh: '待歸還', match: o => o.status === 'in-progress' || o.status === 'overdue' }
+  { key: 'return', zh: '待歸還', match: o => o.status === 'in-progress' || o.status === 'overdue' },
+  { key: 'refund', zh: '待退押金', match: awaitingRefund }
 ]
 
 // 表頭／儲存格樣式共用 adminUi 的 tableTh／tableTd（表頭 sticky、底線畫在儲存格上）
 const th = tableTh
 const td = tableTd
+// 操作區（收押金／歸還／退押金／操作）釘在右邊，左邊一條線跟捲過去的內容分開。sticky 要實色底蓋住捲過去的欄，
+// hover 用同色漸層疊上去，才跟整列 white/10 一致。right＝右邊各欄寬加總（w-28＝7rem、操作 w-40＝10rem），改欄寬要一起改
+const pinTd = 'sticky bg-black group-hover:bg-linear-to-r group-hover:from-white/10 group-hover:to-white/10'
+const PIN: Partial<Record<SortField, string>> = { paid_by: 'right-96 border-l', returned_by: 'right-68', refunded: 'right-40' }
 
 // 每欄的儲存格渲染：依 COLUMNS 順序查表（closed＝公休日，倒數／逾期天數用；act＝開操作對話框、busy＝處理中的單號）
 type CellCtx = {
   closed: ReadonlySet<string>
   editInfo: (o: AdminOrderRow) => void
+  openProof: (o: AdminOrderRow) => void
   act: (o: AdminOrderRow, mode: AdminActionMode) => void
   busy: string | null
 }
@@ -97,14 +110,21 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
   student_id: o => <td key="student_id" className={`${td} text-gray-light font-english`}>{o.students?.student_id ?? ''}</td>,
   booking_type: o => <td key="booking_type" className={`${td} font-chinese`}>{orderKindMeta(o).zh}</td>,
   start_date: o => <td key="start_date" className={`${td} font-english`}>{fmtDate(o.start_date)}–{fmtDate(o.end_date)}</td>,
-  deposit_total: o => <td key="deposit_total" className={`${td} font-english`}>NT$ {o.deposit_total.toLocaleString()}</td>,
-  // 大量設備預選時段：待繳押金時列出預約的繳押金／取件時段；已繳待取件逾起租日 → 紅字提醒（學會手動處理）。
+  deposit_total: o => (
+    <td key="deposit_total" className={`${td} font-english`}>
+      NT$ {o.deposit_total.toLocaleString()}
+      {(o.penalty_total ?? 0) > 0 && (
+        <div className="mt-1" style={{ color: 'var(--color-error)' }}><span className="font-chinese">罰</span> NT$ {o.penalty_total!.toLocaleString()}</div>
+      )}
+    </td>
+  ),
+  // 大量設備預選時段：待繳押金時列出預約的繳押金／取件時段；取件日 19:00 沒來由排程自動取消。
   // 待繳押金另顯示 24 工作時倒數、逾期顯示逾期營業日（原總覽頁的提醒）
   status: (o, { closed }) => (
     <td key="status" className={`px-3 py-3 ${rowLine}`}>
       <StatusChip status={o.status} awaitingPickup={isAwaitingPickup(o)} />
       {o.status === 'pending' && !o.deposit_paid_at && (() => {
-        const ms = pendingMsRemaining(o.created_at, new Date(), closed)
+        const ms = pendingMsRemaining(o.created_at, new Date(), closed, o.deposit_date && o.deposit_slot ? slotEnd(o.deposit_date, o.deposit_slot) : null)
         return ms > 0
           ? <div className="mt-1 font-chinese" style={{ color: 'var(--color-yellow)' }}>剩 {Math.ceil(ms / 3_600_000)} 小時</div>
           : <div className="mt-1 font-chinese text-gray-mid">已逾時，將自動取消</div>
@@ -122,11 +142,8 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
           {!o.deposit_paid_at && o.deposit_date && o.deposit_slot && (
             <div>繳 {slotLabel({ date: o.deposit_date, slot: o.deposit_slot })}</div>
           )}
-          <div>取 {slotLabel({ date: o.start_date, slot: o.pickup_slot })}</div>
+          <div>取 {slotLabel({ date: o.pickup_date ?? o.start_date, slot: o.pickup_slot })}</div>
         </div>
-      )}
-      {isPickupLate(o, toDateKey(new Date())) && (
-        <div className="mt-1 font-chinese" style={{ color: 'var(--color-error)' }}>逾時未取件</div>
       )}
     </td>
   ),
@@ -164,21 +181,22 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
   ),
   // 收押金：待繳＝「收押金」鈕；收完顯示經手人。大量設備先繳後取：收完接「取件」鈕（情境 2），取完經手人不同時多一行「取 某人」
   paid_by: (o, ctx) => (
-    <td key="paid_by" className={`${td} font-chinese`}>
+    <td key="paid_by" className={`${td} ${pinTd} ${PIN.paid_by} font-chinese`}>
       {o.status === 'pending' && !o.deposit_paid_at ? actBtn(o, ctx, 'paid', '收押金')
         : !o.paid_by ? actBtn(o, ctx, 'paid', '收押金', false)
         : (
           <div className="leading-5">
             <div>{o.paid_by}</div>
             {o.picked_up_by && o.picked_up_by !== o.paid_by && <div><span className="text-gray-light">取</span> {o.picked_up_by}</div>}
-            {isAwaitingPickup(o) && <div className="mt-1">{actBtn(o, ctx, 'pickup', '取件')}</div>}
+            {/* 不開放提前取件：到取件日才能按 */}
+            {isAwaitingPickup(o) && <div className="mt-1">{actBtn(o, ctx, 'pickup', '取件', (o.pickup_date ?? o.start_date) <= toDateKey(new Date()))}</div>}
           </div>
         )}
     </td>
   ),
   // 歸還：借用中／逾期＝「歸還」鈕（逾期含罰款確認）；還完顯示經手人，欠繳罰款再接「收罰款」鈕（收清才解除擋單）
   returned_by: (o, ctx) => (
-    <td key="returned_by" className={`${td} font-chinese`}>
+    <td key="returned_by" className={`${td} ${pinTd} ${PIN.returned_by} font-chinese`}>
       {o.status === 'in-progress' || o.status === 'overdue' ? actBtn(o, ctx, 'return', '歸還')
         : !o.returned_by ? actBtn(o, ctx, 'return', '歸還', false)
         : (
@@ -189,6 +207,21 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
             )}
           </div>
         )}
+    </td>
+  ),
+  // 名義：個人／老師名義；有證明檔（老師名義、雷切機一年級）多一個鈕開檔案，符不符合由學會看
+  as_teacher: (o, { openProof }) => (
+    <td key="as_teacher" className={`${td} font-chinese`}>
+      <div>{o.as_teacher ? <>老師・{o.teacher}</> : <span className="text-gray-light">個人</span>}</div>
+      {o.proof_path && <button onClick={() => openProof(o)} className={`mt-1 ${actionBtn}`}>證明</button>}
+    </td>
+  ),
+  // 退押金：退完顯示金額與經手人；待退＝按鈕
+  refunded: (o, ctx) => (
+    <td key="refunded" className={`${td} ${pinTd} ${PIN.refunded} font-english`}>
+      {o.refunded != null
+        ? <div className="leading-5">NT$ {o.refunded.toLocaleString()}{o.refunded_by && <div className="font-chinese text-gray-light">{o.refunded_by}</div>}</div>
+        : awaitingRefund(o) ? actBtn(o, ctx, 'refund', '退押金') : <span className="text-gray-mid">—</span>}
     </td>
   )
 }
@@ -258,7 +291,9 @@ const AdminOrdersPage: React.FC = () => {
             ? await adminCancelOrder(order.rental_number, handler)
             : mode === 'extend'
               ? await adminExtendOrder(order.rental_number, days, handler)
-              : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler, penaltyPaid)
+              : mode === 'refund'
+                ? await adminRefundDeposit(order.rental_number, handler)
+                : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler, penaltyPaid)
     setBusy(null)
     if (!res.ok) { showToast(res.message ?? '操作失敗'); return }
     const rn = order.rental_number
@@ -271,11 +306,20 @@ const AdminOrdersPage: React.FC = () => {
       : mode === 'penalty' ? `已收罰款 ${rn}`
       : mode === 'cancel' ? `已取消 ${rn}`
       : mode === 'extend' ? `已將 ${rn} 延期 ${days} 天`
+      : mode === 'refund' ? `已退 ${rn} 的押金`
       : itemIds.length < order.order_items.length ? `已部分歸還 ${rn}，未還品項已拆成子單續租${penaltyNote}`
       : `已完成歸還 ${rn}${penaltyNote}`,
       'success'
     )
     await load()
+  }
+
+  // 證明檔在私有 bucket，開的時候才簽短效網址；先開分頁再填網址，不然 await 之後會被瀏覽器當彈窗擋掉
+  const openProof = async (o: AdminOrderRow) => {
+    const tab = window.open('', '_blank')
+    const url = await proofUrl(o.proof_path!)
+    if (url && tab) tab.location.href = url
+    else { tab?.close(); showToast('讀取證明文件失敗') }
   }
 
   // 修改借用資訊（軟性欄位）：失敗時對話框保留，內容不丟
@@ -307,6 +351,7 @@ const AdminOrdersPage: React.FC = () => {
         o.students?.student_id ?? '',
         itemsSummary(o),
         o.reason ?? '',
+        o.teacher ?? '',
         o.paid_by ?? '',
         o.returned_by ?? ''
       ].some(v => v.toLowerCase().includes(q))
@@ -336,7 +381,7 @@ const AdminOrdersPage: React.FC = () => {
   const sortProps = { sort, onSort: (f: SortField) => setSort(s => toggleSort(s, f)) }
 
   const hasRange = !!(range.from || range.to)
-  const cellCtx: CellCtx = { closed: closedDates, editInfo: setInfoOrder, act: (order, mode) => setAction({ order, mode }), busy }
+  const cellCtx: CellCtx = { closed: closedDates, editInfo: setInfoOrder, openProof: o => void openProof(o), act: (order, mode) => setAction({ order, mode }), busy }
 
   return (
     // 撐滿內容區（AdminLayout main 固定 h-screen）：標題／工具列／分頁固定，只有表格區捲動
@@ -407,11 +452,11 @@ const AdminOrdersPage: React.FC = () => {
 
       {!loading && !error && (
         <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
-          {/* min-w＝固定欄總和（1248px）＋品項至少 170px：塞不下時橫向捲動，不然 Chrome 會按比例壓縮所有欄、表頭又會跳 */}
-          <table className="w-full min-w-[1420px] text-xs border-separate border-spacing-0">
+          {/* min-w＝固定欄總和（1472px）＋品項至少 170px：塞不下時橫向捲動，不然 Chrome 會按比例壓縮所有欄、表頭又會跳 */}
+          <table className="w-full min-w-[1644px] text-xs border-separate border-spacing-0">
             <thead>
               <tr className="text-left text-gray-light">
-                {COLUMNS.map(col => <SortTh key={col.field} zh={col.zh} field={col.field} className={col.w ?? ''} {...sortProps} />)}
+                {COLUMNS.map(col => <SortTh key={col.field} zh={col.zh} field={col.field} className={`${col.w ?? ''} ${PIN[col.field] ? `${PIN[col.field]} z-20` : ''}`} {...sortProps} />)}
                 <th className={`${th} w-40 right-0 z-20`}>操作</th>
               </tr>
             </thead>
@@ -419,8 +464,7 @@ const AdminOrdersPage: React.FC = () => {
               {pageRows.map(o => (
                 <tr key={o.id} className="group hover:bg-white/10">
                   {COLUMNS.map(c => CELL[c.field](o, cellCtx))}
-                  {/* sticky 要實色底蓋住捲過去的欄；hover 用同色漸層疊上去，才跟整列 white/10 一致 */}
-                  <td className={`${td} sticky right-0 bg-black group-hover:bg-linear-to-r group-hover:from-white/10 group-hover:to-white/10`}>
+                  <td className={`${td} ${pinTd} right-0`}>
                     {(() => {
                       // 收押金／取件／歸還／收罰款在各自的欄；這裡是其餘動作（情境 9／13）：
                       // 學生取件後新增設備 → 前面多一個「點交」；處理中由收押金／歸還欄顯示，這裡留白
