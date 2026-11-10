@@ -126,9 +126,12 @@ export async function supabaseLogout(): Promise<void> {
   await supabase.auth.signOut({ scope: 'local' })
 }
 
-/** 伺服器認定的角色：這個 session 被別台登入踢掉或到期時回 'anon'；離線查不到回 null */
-export async function fetchServerRole(): Promise<string | null> {
-  const { data } = await supabase.rpc('user_role')
+/** 後台權限（operator-access.sql）：admin＝最高權限、operator＝學會成員、expired＝學會成員但這次登入滿 12 小時、none＝沒有 */
+export type BackendAccess = 'admin' | 'operator' | 'expired' | 'none'
+
+/** 離線查不到回 null */
+export async function fetchBackendAccess(): Promise<BackendAccess | null> {
+  const { data } = await supabase.rpc('backend_access')
   return data
 }
 
@@ -162,11 +165,6 @@ export async function verifyMfa(factorId: string, code: string): Promise<boolean
   return !error
 }
 
-/** 後台同時只留一台：把這個帳號其他裝置的 session 刪掉，這台不受影響。踢舊的、不擋新的 */
-export async function signOutOtherDevices(): Promise<void> {
-  await supabase.auth.signOut({ scope: 'others' })
-}
-
 // 即時查自己的 account_level（停權即時反映，不依賴登入時的快照）
 // ponytail: 60 秒模組層快取，多個元件同掛載不重複打；未登入或失敗回 null 由呼叫端退回快照
 let levelCache: { value: number; at: number } | null = null
@@ -182,29 +180,6 @@ export async function fetchMyAccountLevel(): Promise<number | null> {
   if (error || !data) return null
   levelCache = { value: data.account_level, at: Date.now() }
   return data.account_level
-}
-
-/** 忘記密碼：以學號寄送重設信，回傳遮罩後的 email 供 UI 顯示 */
-export async function requestPasswordReset(
-  studentId: string
-): Promise<{ ok: boolean; maskedEmail?: string; message?: string }> {
-  const { data: email } = await supabase.rpc('email_for_student', { sid: studentId })
-  if (!email) return { ok: false, message: tr('Student ID not found', '查無此學號') }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`
-  })
-  if (error) return { ok: false, message: tr('Failed to send. Please try again later.', '寄送失敗，請稍後再試') }
-
-  const [local, domain] = String(email).split('@')
-  return { ok: true, maskedEmail: `${local.slice(0, 3)}***@${domain}` }
-}
-
-/** 重設密碼頁：使用者點信中連結進來後，設定新密碼 */
-export async function updatePassword(newPassword: string): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.auth.updateUser({ password: newPassword })
-  if (error) return { ok: false, message: error.message }
-  return { ok: true }
 }
 
 /** 修改密碼（Profile 頁）：先以目前密碼重新驗證，再更新 */

@@ -1,11 +1,12 @@
 /**
- * 後台路由守衛：需登入且 role === 'admin'，並通過 2FA（MfaGate）才可進入。
- * 真正的權限防線在 Supabase RLS（admin 才讀改得到全部資料）；此處僅為 UX，擋非 admin。
+ * 後台路由守衛：最高權限（role === 'admin'，要過 2FA）或學會成員（值班頁，operator-access.sql）才可進入。
+ * 真正的權限防線在 Supabase（RLS 與值班 RPC）；此處僅為 UX。
  */
 
-import React from 'react'
-import { Navigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { fetchBackendAccess, type BackendAccess } from '../services/authService'
 import MfaGate from './admin/MfaGate'
 
 // 2FA 開關（2026-11-07 先關閉，要與 SQL 一起切換）：開回來的步驟見 supabase/admin-session-limit.sql 開頭
@@ -16,9 +17,20 @@ interface AdminRouteProps {
 }
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { currentUser, isLoading } = useAuth()
+  const { currentUser, isLoading, logout } = useAuth()
+  const isAdmin = currentUser?.role === 'admin'
+  // 學會成員的 role 還是 student，要問 server；null＝還沒問到
+  const [access, setAccess] = useState<BackendAccess | null>(null)
+  useEffect(() => {
+    if (!currentUser || isAdmin) return
+    void fetchBackendAccess().then(async a => {
+      // 這次登入滿 12 小時：重新登入才有後台權限，登入後回到後台
+      if (a === 'expired') { await logout(); window.location.replace('/?expired=1&redirect_url=/admin/orders'); return }
+      setAccess(a ?? 'none')
+    })
+  }, [currentUser, isAdmin])
 
-  if (isLoading) {
+  if (isLoading || (currentUser && !isAdmin && access === null)) {
     return (
       <div className="bg-black text-white min-h-screen flex items-center justify-center">
         <div className="text-xs text-gray-light font-chinese">正在驗證權限…</div>
@@ -26,12 +38,18 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     )
   }
 
-  // 未登入或非 admin 一律導回首頁（不透露後台存在）
-  if (!currentUser || currentUser.role !== 'admin') {
+  // 未登入或沒有後台權限一律導回首頁（不透露後台存在）
+  if (!currentUser || (!isAdmin && access !== 'operator')) {
     return <Navigate to="/" replace />
   }
 
-  return MFA_ENABLED ? <MfaGate>{children}</MfaGate> : <>{children}</>
+  return MFA_ENABLED && isAdmin ? <MfaGate>{children}</MfaGate> : <>{children}</>
+}
+
+/** 「設定」各頁只有最高權限：學會成員打網址進來導回訂單（寫入另有 RLS 擋） */
+export const AdminOnly: React.FC = () => {
+  const { currentUser } = useAuth()
+  return currentUser?.role === 'admin' ? <Outlet /> : <Navigate to="/admin/orders" replace />
 }
 
 export default AdminRoute

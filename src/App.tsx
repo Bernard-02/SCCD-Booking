@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { DateSelectionProvider } from './contexts/DateSelectionContext'
 import ProtectedRoute from './components/ProtectedRoute'
-import AdminRoute from './components/AdminRoute'
+import AdminRoute, { AdminOnly } from './components/AdminRoute'
 
 // 首頁同步載入，避免初次進站出現載入畫面
 import HomePage from './pages/HomePage'
@@ -18,7 +18,6 @@ const SpacePage = lazy(() => import('./pages/SpacePage'))
 const RentalListPage = lazy(() => import('./pages/RentalListPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
 const AdminHoursPage = lazy(() => import('./pages/AdminHoursPage'))
@@ -46,8 +45,6 @@ function App() {
                 {/* 首頁 - 登入頁面 */}
                 <Route path="/" element={<HomePage />} />
 
-                {/* 忘記密碼：重設信連結的落地頁 */}
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                 {/* 租借流程 */}
                 <Route path="/catalog" element={<BookingResourcesPage />} />
@@ -65,7 +62,7 @@ function App() {
                   }
                 />
 
-                {/* 後台（僅 admin）：側欄外框 + 各分區 */}
+                {/* 後台：側欄外框 + 各分區；值班三頁最高權限與學會成員都能用，其餘（設定）只有最高權限 */}
                 <Route
                   path="/admin"
                   element={
@@ -77,13 +74,15 @@ function App() {
                   {/* 總覽已拿掉（2026-10-24），/admin 直接進訂單 */}
                   <Route index element={<Navigate to="orders" replace />} />
                   <Route path="orders" element={<AdminOrdersPage />} />
-                  <Route path="hours" element={<AdminHoursPage />} />
-                  <Route path="members" element={<AdminMembersPage />} />
-                  <Route path="equipment" element={<AdminEquipmentPage />} />
-                  <Route path="spaces" element={<AdminSpacesPage />} />
                   <Route path="space-map" element={<AdminSpaceMapPage />} />
                   <Route path="notifications" element={<AdminNotificationsPage />} />
-                  <Route path="content" element={<AdminContentPage />} />
+                  <Route element={<AdminOnly />}>
+                    <Route path="hours" element={<AdminHoursPage />} />
+                    <Route path="members" element={<AdminMembersPage />} />
+                    <Route path="equipment" element={<AdminEquipmentPage />} />
+                    <Route path="spaces" element={<AdminSpacesPage />} />
+                    <Route path="content" element={<AdminContentPage />} />
+                  </Route>
                 </Route>
 
                 {/* 404 重定向到首頁 */}

@@ -2,9 +2,9 @@
  * 後台 · 營業時間——規則與說明見 docs/admin-hours.md（週六日固定不營業）
  * 左：「假期 & 休息日」月曆（同前台日曆的大數字單月）整合 closed_dates（休息日＝黃、法定假日＝藍，自動匯入）與
  *   rental_blackouts（寒暑假＝灰）。點日期＝開在日期右側的小視窗：沒東西→新增休息日（開始／結束時段、原因，其他才有說明欄）；
- *   已有→顯示內容可刪除。標題右「新增」下拉：休息日＝點起訖日（綠）→「確定」後選開始／結束時段與原因，可跨多天；寒暑假＝點起訖日，「確定」直接新增。
- * 右：值班時間表（staff_duties）：週一～五 × 午班／晚班（SHIFTS 寫死），每格 1～3 人（系學會名單）；
- *   按編輯才能改，確定一次寫入差異（移除的刪、新增的加），之後鎖定。
+ *   已有→顯示內容可刪除（連續的休息日可一次刪整段）。標題右「新增」下拉：休息日＝點起訖日（綠）→「確定」後選開始／結束時段與原因，可跨多天；寒暑假＝點起訖日，「確定」直接新增。
+ * 右：值班時間表（staff_duties）：週一～五 × 午班／晚班（SHIFTS 寫死），每格 1～5 人（系學會名單，還沒啟用的也能排）；
+ *   按編輯才能改，確定一次寫入差異（移除的刪、新增的加），之後鎖定。編輯中同一班不能選重複的人；拖把手到任一班的任意位置，那裡會出現虛線 slot，放開＝放在那裡（同一班也能調順序，順序＝duty id 先後）。
  * 休息日／法定假日：倒數與逾期跳過、歸還順延；新增休息日自動發公告＋通知受影響訂單。封鎖：擋新單、前台日曆灰化。
  */
 
@@ -12,12 +12,12 @@ import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import CloseButton from '../components/common/CloseButton'
 import {
-  listClosedDates, addClosedDates, deleteClosedDate, listBlackouts, addBlackout, deleteBlackout,
+  listClosedDates, addClosedDates, deleteClosedDates, listBlackouts, addBlackout, deleteBlackout,
   notifyClosedAffected, notifyBlackoutAffected, announceClosed, autoImportHolidays, CLOSED_KIND_ZH,
-  listStaff, addStaffDuty, deleteStaffDuties, updateStaffDuties
+  listStaff, addStaffDuties, deleteStaffDuties, updateStaffDuties, reassignStaffDuty
 } from '../services/adminService'
 import type { ClosedDate, ClosedKind, Blackout, StaffMember } from '../services/adminService'
-import { closedRangeRows, shiftOfSlot, toDateKey } from '../utils/timeUtils'
+import { closedRangeRows, closedRun, shiftOfSlot, toDateKey } from '../utils/timeUtils'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import {
@@ -36,10 +36,10 @@ type ShiftKey = typeof SHIFTS[number]['key']
 const SHIFT_OPTIONS = SHIFTS.map(s => ({ value: s.key as ShiftKey, label: s.zh }))
 const shiftZh = (key: string | undefined) => SHIFTS.find(s => s.key === key)?.zh
 const cellKey = (weekday: number, shift: ShiftKey) => `${weekday}|${shift}`
-const MAX_PER_SHIFT = 3
+const MAX_PER_SHIFT = 5
 
-// 月曆顏色：休息日黃、法定假日藍（cyan，2026-11-02 從 error 粉紅改）、寒暑假灰（同前台不可選的灰）、週末淺灰（固定不營業，跟平日分開）、區間選取中綠（同前台起訖日）
-const COLOR = { closed: 'var(--color-yellow)', holiday: 'var(--color-cyan)', blackout: 'var(--color-gray-mid)', weekend: 'var(--color-gray-light)', range: 'var(--color-green)' }
+// 月曆顏色：休息日黃、法定假日藍（cyan，2026-11-02 從 error 粉紅改）、寒暑假灰（同前台不可選的灰）、週末淺灰（固定不營業，跟平日分開）、區間選取中與今天綠（區間同前台起訖日）
+const COLOR = { closed: 'var(--color-yellow)', holiday: 'var(--color-cyan)', blackout: 'var(--color-gray-mid)', weekend: 'var(--color-gray-light)', range: 'var(--color-green)', today: 'var(--color-green)' }
 const isWeekendCol = (i: number) => i % 7 === 0 || i % 7 === 6 // 月曆第幾格：週日、週六兩欄
 const KIND_OPTIONS: ClosedKind[] = ['activity', 'review', 'other']
 const fmtDay = (key: string) => `${key.replace(/-/g, '/')}（${WD[new Date(`${key}T00:00:00`).getDay()]}）`
@@ -49,6 +49,34 @@ const FORM_EMPTY: { kind: ClosedKind; reason: string; startShift: ShiftKey; endS
 
 type Mode = 'idle' | 'closed' | 'blackout'
 type Grid = Record<string, number[]> // cellKey → staff_members.id（編輯中 0＝尚未選）
+type Slot = { k: string; i: number } // 值班表的一列：哪一班的第幾位
+
+/** 拖曳搬人放得下去嗎：同一班永遠可以（調順序）；搬到別班要對方沒有這個人、還沒滿（空列不算人） */
+export const canMoveDuty = (g: Grid, from: Slot, toKey: string) =>
+  from.k === toKey || (!g[toKey].includes(g[from.k][from.i]) && g[toKey].filter(id => id > 0).length < MAX_PER_SHIFT)
+/** 把人放到 toKey 的第 at 位（at＝該班有選人的列裡，slot 上面有幾列）；該班的空列一併收掉，原本那班空了留一列可選 */
+export const moveDuty = (g: Grid, from: Slot, toKey: string, at: number): Grid => {
+  const who = g[from.k][from.i]
+  const people = g[toKey].filter(id => id > 0)
+  const placed = [...people.slice(0, at).filter(id => id !== who), who, ...people.slice(at).filter(id => id !== who)]
+  const left = g[from.k].filter((_, i) => i !== from.i)
+  return { ...g, [from.k]: left.length ? left : [0], [toKey]: placed } // 同一班時後面的 toKey 蓋掉 from.k
+}
+/** 游標在這班的第幾個位置：第一個中線在游標下方的列之前，都不是就排最後 */
+const slotIndex = (cell: Element, y: number) => {
+  const rows = Array.from(cell.querySelectorAll('[data-duty-row]'))
+  const hit = rows.findIndex(r => { const b = r.getBoundingClientRect(); return y < b.top + b.height / 2 })
+  return hit < 0 ? rows.length : hit
+}
+/**
+ * 一班的存檔差異。資料表沒有排序欄位，同一班的順序＝duty id 由小到大（rows 要先排好），
+ * 所以依序把現有列改成要的人，多的刪、少的加在最後，id 不動順序就留得住。
+ */
+export const dutyDiff = (rows: { id: number; staffId: number }[], desired: number[]) => ({
+  reassign: rows.slice(0, desired.length).flatMap((r, j) => (r.staffId === desired[j] ? [] : [{ id: r.id, staffId: desired[j] }])),
+  remove: rows.slice(desired.length).map(r => r.id),
+  add: desired.slice(rows.length)
+})
 
 const AdminHoursPage: React.FC = () => {
   const { confirm, ConfirmDialog } = useConfirmDialog()
@@ -74,6 +102,21 @@ const AdminHoursPage: React.FC = () => {
 
   // ---- 值班 ----
   const [draft, setDraft] = useState<Grid | null>(null) // null＝鎖定（非編輯）
+  const [dragFrom, setDragFrom] = useState<Slot | null>(null)
+  const [dragOver, setDragOver] = useState<{ k: string; at: number } | null>(null) // 游標在哪一班的第幾個位置
+  const endDrag = () => { setDragFrom(null); setDragOver(null) }
+  const startDrag = (e: React.DragEvent, from: Slot, name: string) => {
+    setDragFrom(from)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', name)
+    // 跟著游標的半透明 chip（不設的話瀏覽器只拖那個小把手）：元素要在 DOM 裡才擷取得到，放畫面外、擷取完拿掉
+    const ghost = document.createElement('div')
+    ghost.textContent = name
+    ghost.className = `${toolBtn(true)} fixed -top-24 left-0 inline-flex items-center px-3 font-chinese opacity-50`
+    document.body.append(ghost)
+    e.dataTransfer.setDragImage(ghost, 16, 18)
+    setTimeout(() => ghost.remove())
+  }
 
   const load = () => Promise.all([listClosedDates(), listBlackouts(), listStaff()])
     .then(([c, b, s]) => { setClosed(c); setBlackouts(b); setStaff(s); setLoadError(null) })
@@ -170,20 +213,23 @@ const AdminHoursPage: React.FC = () => {
     await load()
   }
 
-  const handleDeleteClosed = async (c: ClosedDate) => {
+  // days：單獨一天，或連續的一整段（closedRun）
+  const handleDeleteClosed = async (days: ClosedDate[]) => {
     setPop(null) // 先關小視窗再開確認框
+    const c = days[0]
     const holiday = c.kind === 'holiday'
+    const when = days.length > 1 ? `${c.day} ～ ${days[days.length - 1].day}（共 ${days.length} 天）` : c.day
     const ok = await confirm({
       title: holiday ? '刪除法定假日' : '刪除休息日',
       message: holiday
         ? `刪除 ${c.day}（${c.reason}）？刪除＝學會當天照常營業，之後不會再被自動補回。`
-        : `刪除休息日 ${c.day}？（已發出的公告不會收回）`,
+        : `刪除休息日 ${when}？（已發出的公告不會收回）`,
       confirmTextZh: '刪除', variant: 'danger'
     })
     if (!ok) return
-    const res = await deleteClosedDate(c.day)
+    const res = await deleteClosedDates(days.map(d => d.day))
     if (!res.ok) { showToast(res.message ?? '刪除失敗'); return }
-    showToast(`已刪除 ${c.day}${holiday ? '，當天照常營業' : ''}`, 'success')
+    showToast(`已刪除 ${when}${holiday ? '，當天照常營業' : ''}`, 'success')
     setPop(null)
     await load()
   }
@@ -233,7 +279,7 @@ const AdminHoursPage: React.FC = () => {
     if (n < 1 || n > daysInMonth) { cells.push(<div key={`e${i}`} className={cellCls} aria-hidden />); continue }
     const key = toDateKey(new Date(year, m, n))
     const c = closedByDay.get(key), b = blackoutOf(key)
-    const color = inRange(key) ? COLOR.range : c ? (c.kind === 'holiday' ? COLOR.holiday : COLOR.closed) : b ? COLOR.blackout : isWeekendCol(i) ? COLOR.weekend : 'white'
+    const color = inRange(key) ? COLOR.range : c ? (c.kind === 'holiday' ? COLOR.holiday : COLOR.closed) : b ? COLOR.blackout : key === todayKey ? COLOR.today : isWeekendCol(i) ? COLOR.weekend : 'white'
     cells.push(
       <div
         key={key}
@@ -258,13 +304,14 @@ const AdminHoursPage: React.FC = () => {
   // 小視窗內容：那天有什麼就顯示什麼，沒有＝新增休息日。標題列右上：垃圾桶（有東西才有）＋X 關閉
   const popDay = pop && !pop.end ? closedByDay.get(pop.day) : undefined
   const popBlackout = pop && !pop.end ? blackoutOf(pop.day) : undefined
+  const popRun = popDay ? closedRun(closed, popDay.day) : [] // 超過一天才有「刪除整段」
   const iconBtnCls = `flex items-center text-gray-light ${BTN}`
-  const popHeader = (title: string, onDelete?: () => void) => (
+  const popHeader = (title: string, onDelete?: () => void, deleteLabel = '刪除') => (
     <div className="flex items-center justify-between gap-4">
       <h3 className="text-sm text-white">{title}</h3>
       <div className="flex items-center gap-2">
         {onDelete && (
-          <button onClick={onDelete} title="刪除" aria-label="刪除" className={iconBtnCls}>
+          <button onClick={onDelete} title={deleteLabel} aria-label={deleteLabel} className={iconBtnCls}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
           </button>
         )}
@@ -274,15 +321,16 @@ const AdminHoursPage: React.FC = () => {
   )
 
   // ---- 值班表 ----
+  // 每一筆值班，依 id 排好（同一班的順序就是 id 先後）
+  const dutyRows = useMemo(() => staff
+    .flatMap(st => st.duties.map(d => ({ ...d, staffId: st.id, k: cellKey(d.weekday, shiftOfSlot(d.start_time)) })))
+    .sort((a, b) => a.id - b.id), [staff])
   const current = useMemo(() => {
     const g: Grid = {}
     for (const w of WEEKDAYS) for (const s of SHIFTS) g[cellKey(w, s.key)] = []
-    for (const st of staff) for (const d of st.duties) {
-      const k = cellKey(d.weekday, shiftOfSlot(d.start_time))
-      if (k in g && !g[k].includes(st.id)) g[k].push(st.id)
-    }
+    for (const r of dutyRows) if (r.k in g && !g[r.k].includes(r.staffId)) g[r.k].push(r.staffId)
     return g
-  }, [staff])
+  }, [dutyRows])
   const nameOf = (id: number) => staff.find(s => s.id === id)?.name ?? '—'
   const staffOptions = staff.map(s => ({ value: s.id, label: s.name }))
   const setCell = (k: string, ids: number[]) => setDraft(d => (d ? { ...d, [k]: ids } : d))
@@ -290,27 +338,26 @@ const AdminHoursPage: React.FC = () => {
   const handleSaveDuties = async () => {
     if (!draft) return
     const toDelete: number[] = []
-    const toAdd: { staffId: number; weekday: number; shift: typeof SHIFTS[number] }[] = []
+    const toReassign: { id: number; staffId: number }[] = []
+    const toAdd: { staffId: number; weekday: number; start: string; end: string }[] = []
     const toFix: Record<ShiftKey, number[]> = { noon: [], evening: [] } // 保留的列但時間和班表不同（例：舊晚班 18:00 結束）→ 改成班表時間
     for (const w of WEEKDAYS) for (const s of SHIFTS) {
       const k = cellKey(w, s.key)
       const desired = [...new Set(draft[k].filter(id => id > 0))]
       if (desired.length === 0) { showToast(`週${WD[w]}${s.zh}至少要排一人`); return }
-      // 既有列（一人一筆）：不在名單的刪、同一人重複的只留一筆
-      const seen = new Set<number>()
-      for (const st of staff) for (const d of st.duties) {
-        if (d.weekday !== w || shiftOfSlot(d.start_time) !== s.key) continue
-        if (!desired.includes(st.id) || seen.has(st.id)) toDelete.push(d.id)
-        else if (d.start_time.slice(0, 5) !== s.start || d.end_time.slice(0, 5) !== s.end) toFix[s.key].push(d.id)
-        seen.add(st.id)
-      }
-      for (const id of desired) if (!seen.has(id)) toAdd.push({ staffId: id, weekday: w, shift: s })
+      const rows = dutyRows.filter(r => r.k === k)
+      const diff = dutyDiff(rows, desired)
+      toDelete.push(...diff.remove)
+      toReassign.push(...diff.reassign)
+      toAdd.push(...diff.add.map(staffId => ({ staffId, weekday: w, start: s.start, end: s.end })))
+      for (const r of rows.slice(0, desired.length)) if (r.start_time.slice(0, 5) !== s.start || r.end_time.slice(0, 5) !== s.end) toFix[s.key].push(r.id)
     }
     setBusy(true)
     const results = [
       toDelete.length > 0 ? await deleteStaffDuties(toDelete) : { ok: true },
       ...(await Promise.all(SHIFTS.filter(sh => toFix[sh.key].length > 0).map(sh => updateStaffDuties(toFix[sh.key], sh.start, sh.end)))),
-      ...(await Promise.all(toAdd.map(a => addStaffDuty(a.staffId, a.weekday, a.shift.start, a.shift.end))))
+      ...(await Promise.all(toReassign.map(r => reassignStaffDuty(r.id, r.staffId)))),
+      toAdd.length > 0 ? await addStaffDuties(toAdd) : { ok: true }
     ]
     setBusy(false)
     const failed = results.find(r => !r.ok)
@@ -413,7 +460,7 @@ const AdminHoursPage: React.FC = () => {
                 >
                   {popDay ? (
                     <>
-                      {popHeader(popDay.kind === 'holiday' ? '法定假日' : '休息日', () => handleDeleteClosed(popDay))}
+                      {popHeader(popDay.kind === 'holiday' ? '法定假日' : '休息日', () => handleDeleteClosed([popDay]), popRun.length > 1 ? '只刪這天' : '刪除')}
                       <div className="flex flex-col gap-1 font-chinese">
                         <span className="font-english text-white">{fmtDay(popDay.day)}</span>
                         <span className="text-gray-light">
@@ -421,6 +468,17 @@ const AdminHoursPage: React.FC = () => {
                           {shiftZh(popDay.shift) ? `（只休${shiftZh(popDay.shift)}）` : ''}
                         </span>
                       </div>
+                      {popRun.length > 1 && (
+                        <>
+                          <div className="flex flex-col gap-1 font-chinese">
+                            <span className="text-gray-light">連續 <span className="font-english">{popRun.length}</span> 個休息日</span>
+                            <span className="font-english text-white">{fmtDay(popRun[0].day)} ～ {fmtDay(popRun[popRun.length - 1].day)}</span>
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={() => handleDeleteClosed(popRun)} className={`text-white ${BTN}`}>刪除整段</button>
+                          </div>
+                        </>
+                      )}
                     </>
                   ) : popBlackout ? (
                     <>
@@ -496,9 +554,9 @@ const AdminHoursPage: React.FC = () => {
             </div>
           </section>
 
-          {/* ===== 右：值班時間（深灰卡片，和左邊月曆分開；表頭的 sticky 黑底在卡片裡改透明） ===== */}
-          <section className="w-[30rem] shrink-0 self-start bg-gray-dark rounded-2xl p-6">
-            <div className="flex items-center justify-between gap-4 mb-6 h-9">
+          {/* ===== 右：值班時間（深灰卡片，和左邊月曆分開）：高度不超過內容區，標題列固定、只有表格在卡片裡捲動，左邊月曆不會跟著動 ===== */}
+          <section className="w-[32rem] shrink-0 self-start sticky top-0 max-h-full flex flex-col bg-gray-dark rounded-2xl p-6">
+            <div className="flex items-center justify-between gap-4 mb-6 h-9 shrink-0">
               <h2 className="text-sm text-white">值班時間</h2>
               {draft ? (
                 <div className="flex items-center gap-2">
@@ -524,13 +582,15 @@ const AdminHoursPage: React.FC = () => {
               )}
             </div>
 
-            {/* table-fixed：兩個班欄平分卡片寬度，下拉用 flex-1 縮放，不會撐破卡片 */}
+            {/* 捲軸從表頭下面開始：軌道上方留表頭的高度（h-12，兩邊要一起改） */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar [&::-webkit-scrollbar-track]:mt-12">
+            {/* table-fixed：兩個班欄平分卡片寬度，下拉用 flex-1 縮放，不會撐破卡片；sticky 表頭用卡片的實色底，捲過去的內容才不會透出來 */}
             <table className="w-full table-fixed text-xs border-separate border-spacing-0">
               <thead>
                 <tr className="text-left text-gray-light">
-                  <th className={`${th} !bg-transparent w-14`}>日期</th>
+                  <th className={`${th} !bg-gray-dark h-12 w-14`}>日期</th>
                   {SHIFTS.map(s => (
-                    <th key={s.key} className={`${th} !bg-transparent`}>
+                    <th key={s.key} className={`${th} !bg-gray-dark h-12`}>
                       {s.zh} <span className="font-english opacity-70">{s.start}–{s.end}</span>
                     </th>
                   ))}
@@ -538,22 +598,55 @@ const AdminHoursPage: React.FC = () => {
               </thead>
               <tbody>
                 {WEEKDAYS.map(w => (
-                  <tr key={w}>
+                  <tr key={w} className="[&:last-child>td]:border-b-0">{/* 最後一列（週五）下面不畫線 */}
                     {/* 編輯中：文字置中對齊第一列下拉（h-9） */}
                     <td className={`${td} font-chinese align-top`}><div className={draft ? 'h-9 flex items-center' : ''}>週{WD[w]}</div></td>
                     {SHIFTS.map(s => {
                       const k = cellKey(w, s.key)
                       const ids = draft ? draft[k] : current[k]
+                      const droppable = !!draft && !!dragFrom && canMoveDuty(draft, dragFrom, k)
+                      const isOver = droppable && dragOver?.k === k
+                      const overAt = isOver && dragOver ? dragOver.at : -1
+                      const visible = ids.flatMap((id, i) => (isOver && id === 0 ? [] : [{ id, i }])) // 拖到這班時空列先收起來
+                      // 拖到這班時出現的 slot：放開就放在這裡（mx-6＝左右對齊下拉）
+                      const slotEl = isOver && draft && dragFrom && (
+                        <div className="mx-6 h-9 pl-3 flex items-center rounded-lg border border-dashed border-white text-white/50 font-chinese">
+                          {nameOf(draft[dragFrom.k][dragFrom.i])}
+                        </div>
+                      )
                       return (
-                        <td key={s.key} className={`${td} align-top`}>
+                        <td
+                          key={s.key}
+                          onDragOver={e => {
+                            if (!droppable) return
+                            e.preventDefault()
+                            const at = slotIndex(e.currentTarget, e.clientY)
+                            if (dragOver?.k !== k || dragOver.at !== at) setDragOver({ k, at })
+                          }}
+                          onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOver(null) }}
+                          onDrop={e => { e.preventDefault(); if (draft && dragFrom && dragOver) setDraft(moveDuty(draft, dragFrom, k, dragOver.at)); endDrag() }}
+                          className={`${td} align-top`}
+                        >
                           {draft ? (
                             <div className="flex flex-col gap-2">
-                              {ids.map((id, i) => (
-                                <div key={i} className="flex items-center gap-2">
+                              {visible.map(({ id, i }, n) => (
+                                <React.Fragment key={i}>
+                                {n === overAt && slotEl}
+                                <div data-duty-row={id > 0 ? '' : undefined} className={`flex items-center gap-1.5 ${dragFrom?.k === k && dragFrom.i === i ? 'opacity-50' : ''}`}>
+                                  {/* 把手：還沒選人的空列沒東西可拖（invisible 保留位置，各列下拉才對齊） */}
+                                  <span
+                                    draggable={id > 0}
+                                    onDragStart={e => startDrag(e, { k, i }, nameOf(id))}
+                                    onDragEnd={endDrag}
+                                    title="拖到想放的位置"
+                                    aria-label="拖曳調整值班"
+                                    className={`material-symbols-outlined text-gray-light cursor-grab active:cursor-grabbing select-none ${id > 0 ? '' : 'invisible'}`}
+                                    style={{ fontSize: '18px' }}
+                                  >drag_indicator</span>
                                   <Select<number>
                                     value={id}
                                     placeholder="選擇"
-                                    options={staffOptions}
+                                    options={staffOptions.filter(o => o.value === id || !ids.includes(o.value))}
                                     onChange={v => setCell(k, ids.map((x, j) => (j === i ? v : x)))}
                                     className="font-chinese flex-1 min-w-0"
                                     aria-label={`週${WD[w]}${s.zh}第 ${i + 1} 位`}
@@ -568,17 +661,19 @@ const AdminHoursPage: React.FC = () => {
                                   >
                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                                   </button>
-                                  {/* ＋只在最後一列、未滿 3 人時出現，省一列空間 */}
+                                  {/* ＋只在最後一列、未滿上限時出現，省一列空間 */}
                                   {i === ids.length - 1 && ids.length < MAX_PER_SHIFT && (
                                     <button type="button" onClick={() => setCell(k, [...ids, 0])} title="加人" aria-label="加人" className={iconBtnCls}>
                                       <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
                                     </button>
                                   )}
                                 </div>
+                                </React.Fragment>
                               ))}
+                              {overAt >= visible.length && slotEl}
                             </div>
                           ) : ids.length > 0 ? (
-                            <span className="font-chinese">{ids.map(nameOf).join('、')}</span>
+                            <div className="font-chinese flex flex-col gap-1">{ids.map(id => <div key={id}>{nameOf(id)}</div>)}</div>
                           ) : (
                             <span className="text-gray-mid font-chinese">未排</span>
                           )}
@@ -592,6 +687,7 @@ const AdminHoursPage: React.FC = () => {
             {staff.length === 0 && (
               <p className="mt-4 text-xs text-gray-mid font-chinese">還沒有系學會成員：先到會員管理把身份設為系學會。</p>
             )}
+            </div>
           </section>
         </div>
       )}

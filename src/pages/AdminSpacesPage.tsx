@@ -30,7 +30,6 @@ const AREA_META: Record<string, { zh: string }> = {
   'back-terrace': { zh: '後陽台' },
   'front-terrace': { zh: '前陽台' },
   square: { zh: '中庭' },
-  'area-f': { zh: 'F 區' },
   'glass-wall': { zh: '玻璃牆' },
   corridor: { zh: '專案許可區' },
   pillar: { zh: '專案許可區（柱）' }

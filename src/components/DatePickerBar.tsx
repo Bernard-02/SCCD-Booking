@@ -4,7 +4,7 @@
  * 支援設備和空間各自獨立的日期選擇
  */
 
-import { BTN, CHIP, TAP } from '@/components/common/btn'
+import { BTN, BTN_INVERT, CHIP, TAP } from '@/components/common/btn'
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Calendar from './Calendar'
@@ -612,16 +612,16 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
               onClick={handleReset}
               aria-label={t('Reset', '重置')}
               title={t('Reset', '重置')}
-              className={`w-9 h-9 max-lg:w-11 max-lg:h-11 flex items-center justify-center rounded-lg bg-gray-dark text-white ${BTN}`}
+              className={`w-9 h-9 max-lg:w-11 max-lg:h-11 flex items-center justify-center rounded-lg bg-gray-dark text-white ${BTN_INVERT}`}
             >
               <span className="material-symbols-outlined">restart_alt</span>
             </button>
 
-            {/* 已選日期：灰底 icon＋文字鈕（同重置鈕；icon 側 padding 少 4px），購物車沒有日期時 20% 透明；清單開著＝active 不加 hover */}
+            {/* 已選日期：灰底 icon＋文字鈕（同重置鈕；icon 側 padding 少 4px），購物車沒有日期時 20% 透明；清單開著＝active 白底黑字 */}
             <button
               onClick={() => setShowExistingDates(!showExistingDates)}
               disabled={existingCartDates.length === 0}
-              className={`existing-dates-btn flex items-center gap-2 max-md:gap-1 pl-3 pr-4 max-md:pl-2 max-md:pr-2.5 py-2 max-lg:h-11 rounded-lg bg-gray-dark text-white text-sm whitespace-nowrap ${showExistingDates ? 'cursor-pointer' : BTN}`}
+              className={`existing-dates-btn flex items-center gap-2 max-md:gap-1 pl-3 pr-4 max-md:pl-2 max-md:pr-2.5 py-2 max-lg:h-11 rounded-lg text-sm whitespace-nowrap ${showExistingDates ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white ${BTN_INVERT}`}`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>event_available</span>
               {t('Exist Cart', '已選日期')}

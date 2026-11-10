@@ -9,6 +9,7 @@ import { formatDateRange, formatOrderTime } from './OrderDetail'
 import type { Receipt } from './OrderDetail'
 import { useBundles } from '../../services/equipmentService'
 import { splitIntoSets } from '../../utils/bundleUtils'
+import { elementsToPdf } from '../../utils/pdf'
 
 // 設備＝小量／大量；空間單 'little'＝個人、'mass-group'＝團體
 const bookingTypeLabel = (type?: string, isEquip = true) =>
@@ -168,16 +169,7 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
 
 /** 擷取收據元素 → A4 PDF 下載 */
 export async function downloadReceiptPdf(el: HTMLElement, rentalNumber: string) {
-  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')])
-  const canvas = await html2canvas(el, {
-    scale: 2, // 約 192 DPI，收據（純文字白底）已足夠清晰
-    useCORS: true,
-    backgroundColor: '#ffffff'
-  } as Parameters<typeof html2canvas>[1])
-  // JPEG（白底不需透明）+ compress：檔案由數十 MB 降到約 1MB
-  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true })
-  const width = pdf.internal.pageSize.getWidth()
-  pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, width, (canvas.height * width) / canvas.width)
+  const pdf = await elementsToPdf([el])
   pdf.save(`SCCD_Receipt_${rentalNumber}.pdf`)
 }
 

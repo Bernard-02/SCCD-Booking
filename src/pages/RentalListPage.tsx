@@ -3,7 +3,7 @@
  * 從 rental-list.html 遷移
  */
 
-import { BTN, BTN_TOOL } from '@/components/common/btn'
+import { BTN, BTN_INVERT, BTN_TOOL } from '@/components/common/btn'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { cartGroupKey, type CartItem } from '../types/equipment'
@@ -308,7 +308,7 @@ const RentalListPage = () => {
                   {selectMode && (
                     <button
                       onClick={exitSelectMode}
-                      className={`${BTN_TOOL} ${BTN}`}
+                      className={`${BTN_TOOL} ${BTN_INVERT}`}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>undo</span>
                       {t('Cancel', '取消')}
@@ -317,7 +317,7 @@ const RentalListPage = () => {
                   <button
                     onClick={selectMode ? handleClearAll : () => setSelectMode(true)}
                     disabled={selectMode ? selectedGroups.size === 0 : cart.length === 0}
-                    className={`${BTN_TOOL} ${selectMode ? '' : '!pl-3'} ${BTN}`}
+                    className={`${BTN_TOOL} ${selectMode ? '' : '!pl-3'} ${BTN_INVERT}`}
                   >
                     {selectMode && <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>}
                     {selectMode ? t('Clear', '清除') : t('Select', '選取')}

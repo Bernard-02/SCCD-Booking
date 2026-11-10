@@ -1,11 +1,11 @@
 /**
- * 通知下拉面板（前台 Header 鈴鐺）：標題列＋X、清單（公告 chip、未讀紅點、日期與相對時間）。
+ * 通知下拉面板（前台 Header 鈴鐺）：標題列＋X、清單（未讀紅點、日期與相對時間）。
  * 定位交給呼叫端（className／style）。清單本體 NotificationList 另外 export 給後台「通知」頁整頁用。
  * onSelect 給了且該則有 link → 整列是按鈕（後台點了跳頁）。zhOnly＝後台：不隨前台語言切換。
  * 公休撞到取件時段的通知（link 帶 pickup=單號）多一顆「修改取件日」：帶去 Profile 直接開修改視窗。
  */
 
-import { BTN_OUTLINE, CHIP } from '@/components/common/btn'
+import { BTN_OUTLINE } from '@/components/common/btn'
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import CloseButton from './CloseButton'
@@ -47,10 +47,7 @@ export const NotificationList: React.FC<{
   const body = (n: AppNotification) => (
     <>
       <div className="flex gap-3 mb-2">
-        <p className="flex-1 text-white text-xs leading-relaxed">
-          {n.announcement && <span className={`${CHIP} mr-2 border border-white`}>公告</span>}
-          {n.content}
-        </p>
+        <p className="flex-1 min-w-0 text-white text-xs leading-relaxed">{n.content}</p>
         {!n.read && <span className="mt-2 w-2 h-2 shrink-0 bg-pink rounded-full" />}
       </div>
       {n.link?.includes('pickup=') && (

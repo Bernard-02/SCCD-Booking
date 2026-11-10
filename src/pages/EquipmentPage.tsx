@@ -3,7 +3,7 @@
  * 對應原本的 equipment.html
  */
 
-import { BTN, BTN_TOOL } from '@/components/common/btn'
+import { BTN, BTN_INVERT, BTN_TOOL } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Header from '../components/layouts/Header'
@@ -85,7 +85,7 @@ const EquipmentPage: React.FC = () => {
                 type="button"
                 onClick={() => setLegendOpen(o => !o)}
                 aria-expanded={legendOpen}
-                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? 'cursor-pointer' : BTN}`}
+                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? '!bg-white !text-black cursor-pointer' : BTN_INVERT}`}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>filter_list</span>
                 {t('Status', '狀態')}

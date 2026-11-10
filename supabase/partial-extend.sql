@@ -2,13 +2,19 @@
 -- 使用方式：SQL Editor 貼上執行一次（可重複執行）。前置：schema.sql、orders-rpc.sql、rental-blackouts.sql、equipment-bundles.sql。
 -- 規則：延期介面勾選品項——全選＝整單延期不拆單；部分＝拆子單（單號根單號續流水、parent_order_id 指根單）。
 -- 延期用掉整張單的延期權（原單與子單 has_extended 皆 true）；
--- 押金：小單依品項拆（設備組合整組算，被拆開的組合押金等整組還了才退，見 split_settled_deposit）、
--- 大量單押金不拆（全留根單，全數歸還後一次退）。
+-- 押金一律不拆（2026-11-08 Bernard 定）：全留根單，原單＋子單都還完才在「退押金」一次結，不開放還多少退多少。
 
 -- ---------- 1. 拆單欄位 ----------
--- parent_order_id 一律指「根單」；refunded 供部分歸還退押金記錄（後台拆單用，先建欄位）
+-- parent_order_id 一律指「根單」；refunded＝退押金結算時退了多少（null＝還沒結）
 alter table public.orders add column if not exists parent_order_id bigint references public.orders (id);
 alter table public.orders add column if not exists refunded int;
+-- returned_at：實際按歸還的時間，退押金時用來試算逾期罰款（不然日子會一直往後滾）
+alter table public.orders add column if not exists returned_at timestamptz;
+-- 加這欄之前歸還的押金 0 單沒有東西要結，不要跑進「待退押金」
+update public.orders set refunded = 0
+  where status = 'returned' and deposit_total = 0 and refunded is null and parent_order_id is null and returned_at is null;
+
+drop function if exists public.split_settled_deposit(bigint, bigint[]); -- 押金不再依品項拆
 
 -- ---------- 2. 逐品項撞期檢查（唯讀；前台勾選介面用，僅本人可查）----------
 create or replace function public.extend_check(p_rental_number text, p_days int)
@@ -62,14 +68,12 @@ end;
 $$;
 
 -- ---------- 3. 後台部分歸還（情境 5-①）：勾選「已歸還」品項——全勾＝整單歸還；部分＝拆子單 ----------
--- 已還品項留原單（結案、寫罰款與經手人）；未還品項拆子單（沿原歸還日、沿用 has_extended 與狀態，
--- 續走逾期／罰款／延期／停權流程）。押金：小單→子單＝未還品項小計、原單 refunded＝退還現金；
--- 大量單→押金不拆（子單 0、全數歸還後一次退，refunded 留空由人工結）。
--- 罰款由學會填（逾期、損壞、遺失，2026-11-07 Bernard 定）：從押金扣，超過押金＝退 0，差額學會自己收。
-drop function if exists public.admin_mark_returned_partial(text, bigint[], integer, text); -- 舊簽名（未帶繳清旗標）
+-- 已還品項留原單（結案、記經手人與歸還時間）；未還品項拆子單（沿原歸還日、沿用 has_extended 與狀態，
+-- 續走逾期／延期／停權流程）。這裡只記東西回來了，押金與罰金在 admin_refund_deposit 一次結。
+drop function if exists public.admin_mark_returned_partial(text, bigint[], integer, text);          -- 舊簽名
+drop function if exists public.admin_mark_returned_partial(text, bigint[], integer, text, boolean); -- 舊簽名（歸還時填罰款）
 create or replace function public.admin_mark_returned_partial(
-  p_rental_number text, p_item_ids bigint[], p_penalty int default 0, p_handler text default null,
-  p_penalty_paid boolean default true)
+  p_rental_number text, p_item_ids bigint[], p_handler text default null)
 returns text
 language plpgsql
 security definer set search_path = public
@@ -83,14 +87,8 @@ declare
   v_suffix int;
   v_child_number text;
   v_child_id bigint;
-  v_child_dep int := 0;
 begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
-  if p_penalty < 0 then
-    raise exception '罰款金額不可為負';
-  end if;
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
   if p_item_ids is null or array_length(p_item_ids, 1) is null then
     raise exception '請選擇至少一項已歸還的品項';
   end if;
@@ -115,15 +113,11 @@ begin
   -- 全勾 → 整單歸還（同 admin_mark_returned）
   if v_selected = v_total_items then
     update public.orders
-      set status = 'returned', penalty_total = p_penalty, returned_by = p_handler,
-          penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end,
-          refunded = greatest(deposit_total - p_penalty, 0),
-          refunded_by = p_handler
+      set status = 'returned', returned_by = p_handler, returned_at = now()
       where id = v_order.id;
     insert into public.notifications (student_id, type, title, message, link)
     values (v_order.student_id, 'success', '已歸還',
-            '訂單 ' || v_order.rental_number || ' 已完成歸還'
-            || case when p_penalty > 0 then '，罰款 NT$ ' || p_penalty else '' end || '。', '/profile');
+            '訂單 ' || v_order.rental_number || ' 已完成歸還。', '/profile');
     return v_order.rental_number;
   end if;
 
@@ -133,42 +127,26 @@ begin
   select count(*) + 1 into v_suffix from public.orders where parent_order_id = v_root_id;
   v_child_number := v_root_number || '-' || v_suffix;
 
-  -- 押金：小單→已還品項退「湊滿的組合＋單件」，其餘（含被拆開的組合零件）留子單，整組還了才退
-  -- （equipment-bundles.sql split_settled_deposit）；大量單不拆
-  if v_order.booking_type = 'little' then
-    v_child_dep := v_order.deposit_total
-      - least(public.split_settled_deposit(v_order.id, p_item_ids), v_order.deposit_total);
-  end if;
-
   insert into public.orders
     (rental_number, student_id, start_date, end_date, booking_type, status,
      deposit_total, has_extended, parent_order_id, reason, class_name, teacher, as_teacher, proof_path)
   values
     (v_child_number, v_order.student_id, v_order.start_date, v_order.end_date, v_order.booking_type,
-     v_order.status, v_child_dep, v_order.has_extended, v_root_id,
+     v_order.status, 0, v_order.has_extended, v_root_id,
      v_order.reason, v_order.class_name, v_order.teacher, v_order.as_teacher, v_order.proof_path)
   returning id into v_child_id;
 
   update public.order_items set order_id = v_child_id
     where order_id = v_order.id and not (id = any(p_item_ids));
 
-  -- 原單結案：罰款、經手人；小單記退還現金（實收 − 子單押金 − 罰款），大量單留空（全還才退，人工結）
   update public.orders
-    set status = 'returned',
-        penalty_total = p_penalty,
-        returned_by = p_handler,
-        penalty_paid = case when p_penalty > 0 then p_penalty_paid else true end,
-        refunded = case when v_order.booking_type = 'little'
-                        then greatest(v_order.deposit_total - v_child_dep - p_penalty, 0) else null end,
-        refunded_by = case when v_order.booking_type = 'little' then p_handler end
+    set status = 'returned', returned_by = p_handler, returned_at = now()
     where id = v_order.id;
 
   insert into public.notifications (student_id, type, title, message, link)
   values (v_order.student_id, 'success', '部分歸還完成',
-          '訂單 ' || v_order.rental_number || ' 已歸還部分品項'
-          || case when p_penalty > 0 then '（罰款 NT$ ' || p_penalty || '）' else '' end
-          || '；未歸還品項拆為子單 ' || v_child_number || '，歸還日不變（'
-          || to_char(v_order.end_date, 'YYYY-MM-DD') || '）。', '/profile');
+          '訂單 ' || v_order.rental_number || ' 已歸還部分品項；未歸還品項拆為子單 ' || v_child_number || '，歸還日不變（'
+          || to_char(v_order.end_date, 'YYYY-MM-DD') || '）。押金等全部歸還後一次結算。', '/profile');
 
   return v_child_number;
 end;
@@ -195,7 +173,6 @@ declare
   v_suffix int;
   v_child_number text;
   v_child_id bigint;
-  v_child_dep int := 0;
 begin
   if v_uid is null then
     raise exception '未登入';
@@ -298,31 +275,19 @@ begin
   select count(*) + 1 into v_suffix from public.orders where parent_order_id = v_root_id;
   v_child_number := v_root_number || '-' || v_suffix;
 
-  -- 押金：小單→原單（照原日歸還的品項）留「湊滿的組合＋單件」，其餘（含被拆開的組合零件）跟延期子單走，
-  -- 整組還了才退（equipment-bundles.sql split_settled_deposit）；大量單押金不拆（全留根單，全數歸還後一次退）
-  if v_order.booking_type = 'little' then
-    v_child_dep := v_order.deposit_total - least(public.split_settled_deposit(
-      v_order.id,
-      array(select id from public.order_items where order_id = v_order.id and not (id = any(p_item_ids)))
-    ), v_order.deposit_total);
-  end if;
-
   insert into public.orders
     (rental_number, student_id, start_date, end_date, booking_type, status,
      deposit_total, has_extended, parent_order_id, reason, class_name, teacher, as_teacher, proof_path)
   values
     (v_child_number, v_order.student_id, v_order.start_date, v_new_end, v_order.booking_type,
-     'in-progress', v_child_dep, true, v_root_id, v_order.reason, v_order.class_name, v_order.teacher,
+     'in-progress', 0, true, v_root_id, v_order.reason, v_order.class_name, v_order.teacher,
      v_order.as_teacher, v_order.proof_path)
   returning id into v_child_id;
 
   update public.order_items set order_id = v_child_id where id = any(p_item_ids);
 
-  -- 原單：延期權用掉（整張單僅乙次）、押金扣掉移到子單的部分
-  update public.orders
-    set has_extended = true,
-        deposit_total = deposit_total - v_child_dep
-    where id = v_order.id;
+  -- 原單：延期權用掉（整張單僅乙次）
+  update public.orders set has_extended = true where id = v_order.id;
 
   insert into public.notifications (student_id, type, title, message, link)
   values (v_uid, 'success', '部分延期成功',
@@ -332,3 +297,66 @@ begin
   return v_child_number;
 end;
 $$;
+
+-- ---------- 5. 退押金＝結算（2026-11-08 Bernard 定）----------
+-- 學會在這裡填罰金（逾期、損壞、遺失，系統不知道狀況），押金扣掉罰金退給學生。
+-- 罰金超過押金：退 0，差額要學生繳（penalty_paid＝false，擋新單），後台「收罰款」收清這張單才算結束。
+-- 整張單（根單＋子單）都還完才能結，押金加總回根單；已繳押金的取消單也走這裡（沒有罰金）。
+drop function if exists public.admin_refund_deposit(text, text); -- 舊簽名（未帶罰金）
+create or replace function public.admin_refund_deposit(p_rental_number text, p_penalty int, p_handler text)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_order public.orders%rowtype;
+  v_deposit int;
+  v_refund int;
+  v_owed int;
+begin
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
+  if p_penalty is null or p_penalty < 0 then
+    raise exception '罰款金額不可為負';
+  end if;
+
+  select * into v_order from public.orders
+    where rental_number = p_rental_number and parent_order_id is null and refunded is null
+      and (status = 'returned' or (status = 'canceled' and deposit_paid_at is not null and deposit_total > 0))
+    for update;
+  if not found then
+    raise exception '此訂單沒有待退的押金';
+  end if;
+  if v_order.status = 'canceled' and p_penalty > 0 then
+    raise exception '取消的訂單不能填罰款';
+  end if;
+  if exists (select 1 from public.orders where parent_order_id = v_order.id and status in ('pending', 'in-progress', 'overdue')) then
+    raise exception '還有子單沒歸還，全部還完才能退押金';
+  end if;
+
+  -- 子單平常押金 0；點交時學會另收的押金記在子單上，一起算回根單
+  select sum(deposit_total) into v_deposit from public.orders
+    where id = v_order.id or parent_order_id = v_order.id;
+  v_refund := greatest(v_deposit - p_penalty, 0);
+  v_owed := greatest(p_penalty - v_deposit, 0);
+
+  update public.orders set deposit_total = 0 where parent_order_id = v_order.id and deposit_total <> 0;
+  update public.orders
+    set deposit_total = v_deposit, penalty_total = p_penalty, penalty_paid = (v_owed = 0),
+        refunded = v_refund, refunded_by = p_handler
+    where id = v_order.id;
+
+  if v_owed > 0 then
+    insert into public.notifications (student_id, type, title, message, link)
+    values (v_order.student_id, 'warning', '請繳清罰款',
+            '訂單 ' || p_rental_number || ' 罰款 NT$ ' || p_penalty || '，押金 NT$ ' || v_deposit
+            || ' 抵扣後還要繳 NT$ ' || v_owed || '，請至系學會繳清；繳清前無法預約。', '/profile');
+  elsif v_deposit > 0 then
+    insert into public.notifications (student_id, type, title, message, link)
+    values (v_order.student_id, 'success', '押金已退還',
+            '訂單 ' || p_rental_number || ' 的押金已退還 NT$ ' || v_refund
+            || case when p_penalty > 0 then '（已扣罰款 NT$ ' || p_penalty || '）' else '' end || '。', '/profile');
+  end if;
+end;
+$$;
+
+notify pgrst, 'reload schema';

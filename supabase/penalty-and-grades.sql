@@ -4,8 +4,8 @@
 --       partial-extend.sql 的 admin_mark_returned_partial 加了 p_penalty_paid 參數，需一併重貼。
 
 -- ---------- 1. 罰款繳納欄位 ----------
--- penalty_paid：罰款是否已繳清。預設 true（無罰款或當場繳清都算 true）；
--- 歸還時勾「未當場繳清」才會是 false → submit_orders 擋新單直到收罰款。
+-- penalty_paid：罰款是否已繳清。預設 true（無罰款或押金夠扣都算 true）；
+-- 退押金時罰金超過押金才會是 false → submit_orders 擋新單直到收罰款。
 alter table public.orders add column if not exists penalty_paid boolean not null default true;
 alter table public.orders add column if not exists penalty_collected_by text; -- 收罰款經手幹部（姓名快照）
 
@@ -19,9 +19,7 @@ declare
   v_student uuid;
   v_amount int;
 begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
 
   update public.orders
     set penalty_paid = true,

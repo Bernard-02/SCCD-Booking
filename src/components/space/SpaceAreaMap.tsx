@@ -17,7 +17,7 @@ import { AREA_SUBCATEGORY as areaToSubCategory } from '../cart/cartHelpers'
 // 區域對應 (大區塊)
 const areaMapping: Record<string, { deposit: number; key: string; subCategoryId: string }> = {
   'Square': { deposit: 1000, key: 'square', subCategoryId: 'Square' },
-  'Area_F': { deposit: 1000, key: 'area-f', subCategoryId: 'AreaF' },
+  'Area_F': { deposit: 1000, key: 'square', subCategoryId: 'Square' }, // F1–F6 算中庭（SVG 仍是獨立群組）
   'Corridor': { deposit: 1000, key: 'corridor', subCategoryId: 'CasePermitArea' },
   'Front_Terrace': { deposit: 1000, key: 'front-terrace', subCategoryId: 'FrontTerrace' },
   'Back_Terrace': { deposit: 2000, key: 'back-terrace', subCategoryId: 'BackTerrace' },
@@ -29,7 +29,6 @@ const areaMapping: Record<string, { deposit: number; key: string; subCategoryId:
 // 子分類對應
 const subCategoryToAreaKey: Record<string, string> = {
   'Square': 'square',
-  'AreaF': 'area-f',
   'FrontTerrace': 'front-terrace',
   'BackTerrace': 'back-terrace',
   'GlassWall': 'glass-wall',
@@ -39,7 +38,6 @@ const subCategoryToAreaKey: Record<string, string> = {
 // 縮放配置
 const zoomConfigs: Record<string, { scale: number; translateX: number; translateY: number }> = {
   'square': { scale: 1.8, translateX: 7, translateY: 25 },
-  'area-f': { scale: 1.8, translateX: -5, translateY: 25 },
   'front-terrace': { scale: 2, translateX: -16, translateY: -30 },
   'back-terrace': { scale: 2.3, translateX: 25, translateY: 10 },
   'glass-wall': { scale: 1, translateX: 0, translateY: -2 },

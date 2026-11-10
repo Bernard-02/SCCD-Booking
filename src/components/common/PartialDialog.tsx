@@ -7,7 +7,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
-import { BTN } from './btn'
+import { BTN_INVERT } from './btn'
 import { useT } from '../../stores/langStore'
 import { contiguousRuns } from '../../utils/timeUtils'
 
@@ -84,11 +84,11 @@ const PartialDialog: React.FC<PartialDialogProps> = ({
             key={r[0]}
             type="button"
             onClick={() => setPick(i)}
-            className={`h-9 pl-3 pr-2 rounded-lg text-xs inline-flex items-center gap-2 ${i === pick ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white ${BTN}`}`}
+            className={`group h-9 pl-3 pr-2 rounded-lg text-xs inline-flex items-center gap-2 ${i === pick ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white ${BTN_INVERT}`}`}
             aria-label={`${md(r[0])} – ${md(r[1])}，${lenOf(r)} ${t('days', '天')}`}
           >
             <span className="font-english">{md(r[0])} – {md(r[1])}</span>
-            <span className={`min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english ${i === pick ? 'bg-gray-light' : 'bg-white/10 opacity-70'}`}>
+            <span className={`min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english ${i === pick ? 'bg-gray-light' : 'bg-white/10 opacity-70 group-hover:bg-gray-light group-hover:opacity-100'}`}>
               {lenOf(r)}
             </span>
           </button>

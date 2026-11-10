@@ -39,8 +39,10 @@ export interface OrderRow {
   class_name: string | null      // 大量／團體必填：使用班級
   teacher: string | null         // 大量／團體必填：負責老師
   created_at: string
-  penalty_total: number | null   // 歸還時凍結的最終罰款（null = 尚未結算）
-  penalty_paid: boolean          // 罰款是否已繳清（false = 欠繳，submit_orders 擋新單）
+  parent_order_id: number | null // 拆單的子單指向根單；押金與罰金都在根單結
+  returned_at: string | null     // 實際歸還時間（退押金時試算逾期罰款）
+  penalty_total: number | null   // 退押金時學會填的罰金（null = 尚未結算）
+  penalty_paid: boolean          // 超過押金的差額是否繳清（false = 欠繳，submit_orders 擋新單）
   // 大量設備預選時段（mass-pickup.sql）：繳押金日＋時段、取件時段（日期＝起租日）
   deposit_date: string | null
   deposit_slot: string | null    // 'HH:MM-HH:MM'
@@ -75,18 +77,11 @@ export interface AdminOrderRow extends OrderRow {
 }
 
 /**
- * 讀取全部訂單（含品項與借用者資訊，新的在前）。
- * 僅 admin 讀得到全部（RLS `orders: admin all`）；非 admin 只會拿到自己的。
+ * 讀取全部訂單（含品項與借用者姓名學號，新的在前）。
+ * 最高權限與學會成員共用（RPC，operator-access.sql）；其他人拿到空清單。
  */
 export async function fetchAllOrders(): Promise<AdminOrderRow[]> {
-  return fetchAllRows<AdminOrderRow>((from, to) =>
-    supabase
-      .from('orders')
-      .select('*, order_items(*), students(student_id, name)')
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
-      .range(from, to)
-  )
+  return fetchAllRows<AdminOrderRow>((from, to) => supabase.rpc('operator_orders').range(from, to))
 }
 
 /**
@@ -159,8 +154,7 @@ export async function fetchBlackouts(): Promise<{ start: string; end: string }[]
 }
 
 /**
- * 後台：修改訂單軟性欄位（原因／班級／老師，學生打錯字時代改）。
- * 直接 update 表：RLS 只有 `orders: admin all` 允許更新，學生端無 update 權限、前台也無編輯介面。
+ * 後台：修改訂單軟性欄位（原因／班級／老師，學生打錯字時代改；RPC，operator-access.sql）。
  * 硬性資料（日期／品項／狀態／押金）不走這裡，一律走專用 RPC（order-lifecycle 情境 9）。
  */
 /** 小量只有 reason；大量／團體三項皆有（不帶的欄位不會被更新） */
@@ -174,9 +168,8 @@ export async function adminUpdateOrderInfo(
   rentalNumber: string,
   info: OrderInfo
 ): Promise<{ ok: boolean; message?: string }> {
-  // select().single()：RLS 擋下或單號不存在時 update 會「成功但 0 列」，這樣才會報錯
-  const { error } = await supabase.from('orders').update(info).eq('rental_number', rentalNumber).select('id').single()
-  if (error) return { ok: false, message: error.code === 'PGRST116' ? '訂單不存在或無修改權限' : error.message }
+  const { error } = await supabase.rpc('operator_update_order_info', { p_rental_number: rentalNumber, p_info: info })
+  if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
 
@@ -208,28 +201,26 @@ export async function adminMarkPaid(
 export async function adminMarkReturnedPartial(
   rentalNumber: string,
   itemIds: number[],
-  penalty: number,
-  handler: string,
-  penaltyPaid: boolean
+  handler: string
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_mark_returned_partial', {
     p_rental_number: rentalNumber,
     p_item_ids: itemIds,
-    p_penalty: penalty,
-    p_handler: handler,
-    p_penalty_paid: penaltyPaid
+    p_handler: handler
   })
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
 
-/** 後台：退押金（已繳押金的取消單、拆單全還後人工結的大量單；rules-2026-11.sql） */
+/** 後台：退押金＝結算，填罰金、押金扣完退還，超過的差額記欠繳（整張單還完才能結；partial-extend.sql） */
 export async function adminRefundDeposit(
   rentalNumber: string,
+  penalty: number,
   handler: string
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.rpc('admin_refund_deposit', {
     p_rental_number: rentalNumber,
+    p_penalty: penalty,
     p_handler: handler
   })
   if (error) return { ok: false, message: error.message }
@@ -392,6 +383,10 @@ export async function adminHandoverItems(
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
+
+/** 學生還要繳的罰款：押金抵完還差的金額，收清前 penalty_paid＝false */
+export const penaltyOwed = (o: Pick<OrderRow, 'penalty_total' | 'penalty_paid' | 'deposit_total'>): number =>
+  o.penalty_paid === false ? Math.max((o.penalty_total ?? 0) - o.deposit_total, 0) : 0
 
 /** 押金建議值：品項小計（單價×數量，設備套用組合）cap 5,000，同 submit_orders；學會現場計算時預填用 */
 export const suggestedDeposit = (

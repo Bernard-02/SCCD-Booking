@@ -5,6 +5,7 @@
 export interface Equipment {
   id: string
   category: string
+  location?: string // 存放地點（後台大量設備核對單用）
   name: string
   status: string
   mainImage: string

@@ -47,7 +47,7 @@ const EXACT: Record<string, string> = {
   '帳號已停權（未完成清潔歸還），無法修改訂單，請聯絡系學會': 'Your account is suspended (clean return not completed), so you can’t edit orders. Please contact the SA.',
   '帳號已停用（已畢業），無法送出預約': 'Your account has been deactivated (graduated) and can’t submit bookings.',
   '帳號目前標記為休學，暫停租借；復學後請洽系學會恢復': 'Your account is marked as on leave, so rentals are paused. Please contact the SA after you return.',
-  '有未繳清的逾期罰款，請先至系學會繳清後再預約': 'You have an unpaid late fee. Please pay it at the SA before booking again.',
+  '有未繳清的罰款，請先至系學會繳清後再預約': 'You have an unpaid fine. Please pay it at the SA before booking again.',
   '僅待繳押金、已繳待取件、租借中的訂單可修改（逾期請先歸還）': 'Only orders that are awaiting deposit, awaiting pickup, or in progress can be edited (return overdue orders first).',
   僅設備訂單可修改品項: 'Only equipment orders can be edited.',
   '已取件的設備不能減少（不需要的到期一起歸還即可）': 'You can’t reduce equipment you’ve already picked up — just return what you don’t need on the return date.',

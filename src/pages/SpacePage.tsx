@@ -2,7 +2,7 @@
  * 空間租借頁面 - React 新版
  */
 
-import { BTN, BTN_TOOL } from '@/components/common/btn'
+import { BTN, BTN_INVERT, BTN_TOOL } from '@/components/common/btn'
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import Header from '../components/layouts/Header'
@@ -32,7 +32,6 @@ const SUB_ITEM = 'flex items-center gap-2 pl-3 pr-4 py-1.5 rounded-lg text-sm te
 // 子分類 → SVG 區域代碼對應（專案許可區包含 corridor 與 pillar）
 const AREA_MAPPING: Record<string, string[]> = {
   'Square': ['square'],
-  'AreaF': ['area-f'],
   'FrontTerrace': ['front-terrace'],
   'BackTerrace': ['back-terrace'],
   'GlassWall': ['glass-wall'],
@@ -140,7 +139,6 @@ const SpacePage: React.FC = () => {
       // Area 到 SubCategory 的映射
       const areaToSubCategoryMap: Record<string, string> = {
         'square': 'Square',
-        'area-f': 'AreaF',
         'front-terrace': 'FrontTerrace',
         'back-terrace': 'BackTerrace',
         'glass-wall': 'GlassWall',
@@ -434,7 +432,6 @@ const SpacePage: React.FC = () => {
   // A5F 編號區子分類
   const numberedAreaCategories = [
     { id: 'Square', icon: 'yard' },
-    { id: 'AreaF', icon: 'view_week' },
     { id: 'FrontTerrace', icon: 'balcony' },
     { id: 'BackTerrace', icon: 'balcony' },
     { id: 'GlassWall', icon: 'window' },
@@ -536,7 +533,7 @@ const SpacePage: React.FC = () => {
                 type="button"
                 onClick={() => setLegendOpen(o => !o)}
                 aria-expanded={legendOpen}
-                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? 'cursor-pointer' : BTN}`}
+                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? '!bg-white !text-black cursor-pointer' : BTN_INVERT}`}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>filter_list</span>
                 {t('Status', '狀態')}
@@ -788,7 +785,7 @@ const SpacePage: React.FC = () => {
                           onClick={handleSelectAll}
                           disabled={!selectedSubCategory || allAvailableSelected}
                           className={`${BTN_TOOL} font-english ${
-                            !hasSelectedDates || isPersonalBooking ? 'opacity-20 cursor-not-allowed' : BTN
+                            !hasSelectedDates || isPersonalBooking ? 'opacity-20 cursor-not-allowed' : BTN_INVERT
                           }`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>select_all</span>
@@ -797,7 +794,7 @@ const SpacePage: React.FC = () => {
                         <button
                           onClick={() => setSelectedBlocks([])}
                           disabled={!selectedSubCategory || selectedBlocks.length === 0}
-                          className={`${BTN_TOOL} font-english ${BTN}`}
+                          className={`${BTN_TOOL} font-english ${BTN_INVERT}`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
                           {t('Clear', '清除')}

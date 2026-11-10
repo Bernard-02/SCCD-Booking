@@ -1,22 +1,22 @@
 /**
  * 後台 · 會員管理（設定段）——規則、欄位與身份／狀態定義見 docs/admin-members.md
  * 版面同設備管理：計數分頁 全部／學生／系學會；標題列右側「＋ 新增會員」「匯入」；搜尋列（搜尋、年級、租借狀態篩選）；
- * 表格（選取模式同設備頁：按「選取」出現勾選欄；勾選的列身份／狀態欄變下拉，改一個套用到全部勾選；會費用工具列按鈕批次標；表頭可排序）；修改走對話框（班級不在後台改）。
- * 已畢業預設隱藏（工具列「已畢業」切換），還有未完成的單的例外會列。
+ * 表格（選取模式同設備頁：按「選取」出現勾選欄；勾選的列身份／狀態欄變下拉，改一個套用到全部勾選；會費用工具列按鈕批次標，未啟用的也能標；表頭可排序）；修改走對話框（班級不在後台改）。
+ * 已畢業預設隱藏，還有未完成的單的例外會列；工具列「已畢業」＝只看已畢業的。
  * 新增會員＝預先登記 login_allowlist（清單顯示「未啟用」），本人第一次 Google 登入時 trigger 套用登記的姓名／身份
  * （members-v2.sql）。租借歷史改到訂單頁看：「總租借」數字可點，帶學號過去當篩選（搜尋列旁顯示學生 chip）。
  * 違規／租借狀態由訂單即時算不入庫；系學會＝staff_members（經手人名單）。寫入走 RLS "students: admin update"。
  */
 
-import { BTN, CHIP } from '@/components/common/btn'
+import { BTN_INVERT, CHIP } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   listMembers, updateMember, updateMembersMany, listStaff, addStaffBulk, updateStaffPosition, deleteStaff, deleteStaffMany,
-  unsuspendStudent, deleteMember, listAllowlist, addAllowlist, removeAllowlist
+  unsuspendStudent, deleteMember, listAllowlist, addAllowlist, removeAllowlist, updateAllowlistDues
 } from '../services/adminService'
 import type { Member, StaffMember, AllowEntry } from '../services/adminService'
-import { fetchAllOrders } from '../services/ordersService'
+import { fetchAllOrders, penaltyOwed } from '../services/ordersService'
 import type { AdminOrderRow } from '../services/ordersService'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
@@ -116,9 +116,9 @@ const AdminMembersPage: React.FC = () => {
   const [gradeFilter, setGradeFilter] = useState('all')
   const [rentalFilter, setRentalFilter] = useState<Rental | 'all'>('all')
   const [sort, setSort] = useState<Sort<SortField>>(null)
-  const [showGraduated, setShowGraduated] = useState(false) // 已畢業預設隱藏（還有未完成的單才顯示）
+  const [onlyGraduated, setOnlyGraduated] = useState(false) // 工具列「已畢業」篩選；關著時已畢業隱藏（還有未完成的單才顯示）
   const [selectMode, setSelectMode] = useState(false)
-  const [selected, setSelected] = useState<Set<string>>(new Set()) // students.id
+  const [selected, setSelected] = useState<Set<string>>(new Set()) // Row.key：students.id，未啟用的是 pending:學號
   const [busy, setBusy] = useState(false)
   const [edit, setEdit] = useState<EditDialog | null>(null)
   const [draft, setDraft] = useState<NewDialog | null>(null)
@@ -150,8 +150,8 @@ const AdminMembersPage: React.FC = () => {
       const os = ordersBy[m.id] ?? []
       const overdue = os.filter(o => o.status === 'overdue').length
       const inProgress = os.filter(o => o.status === 'pending' || o.status === 'in-progress').length
-      // 欠罰款同 submit_orders 的擋單條件（penalty_paid=false）
-      const unpaid = os.reduce((sum, o) => sum + (o.penalty_paid === false ? o.penalty_total ?? 0 : 0), 0)
+      // 欠罰款＝押金抵完還差的（擋單條件同 submit_orders 的 penalty_paid=false）
+      const unpaid = os.reduce((sum, o) => sum + penaltyOwed(o), 0)
       const suspended = m.account_level >= 5
       const sa = staffBySid[m.student_id]
       const identity: Identity =
@@ -192,8 +192,8 @@ const AdminMembersPage: React.FC = () => {
 
   // 已畢業的預設不列（人會越積越多）；還有未完成的單（進行中／逾期／欠罰款／停權）的例外，處理完才消失
   const baseRows = useMemo(
-    () => (showGraduated ? rows : rows.filter(r => r.status !== 'graduated' || r.rental !== 'ok')),
-    [rows, showGraduated]
+    () => rows.filter(r => (onlyGraduated ? r.status === 'graduated' : r.status !== 'graduated' || r.rental !== 'ok')),
+    [rows, onlyGraduated]
   )
   const counts = useMemo(() => ({
     all: baseRows.length,
@@ -213,32 +213,40 @@ const AdminMembersPage: React.FC = () => {
   const sorted = useMemo(() => (sort ? sortRows(filtered, sort.dir, r => r[sort.field]) : filtered), [filtered, sort])
   const { pageRows, pager } = usePager(sorted, [tab, search, gradeFilter, rentalFilter, sort])
 
-  // 選取模式（同設備／空間頁）：按「選取」才出現勾選欄；只有真帳號能勾（未啟用的沒東西可標）；全選＝目前篩選結果；切分頁即退出
-  const selectable = filtered.filter(r => r.member)
-  const selectedCount = selectable.filter(r => selected.has(r.key)).length
-  const allSelected = selectable.length > 0 && selectedCount === selectable.length
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(selectable.map(r => r.key)))
+  // 選取模式（同設備／空間頁）：按「選取」才出現勾選欄；全選＝目前篩選結果；切分頁即退出。
+  // 未啟用的也能勾，但只能標會費（存在預先登記，第一次登入帶進帳號）；身份、狀態只對真帳號
+  const selectedCount = filtered.filter(r => selected.has(r.key)).length
+  const allSelected = filtered.length > 0 && selectedCount === filtered.length
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(filtered.map(r => r.key)))
   const toggleOne = (key: string) => setSelected(s => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n })
   const exitSelect = () => { setSelectMode(false); setSelected(new Set()) }
   useEffect(exitSelect, [tab])
 
   const bulk = async (zh: string, fields: { on_leave?: boolean; graduated?: boolean; dues_paid?: boolean }) => {
-    const ids = selectable.filter(r => selected.has(r.key)).map(r => r.key)
-    if (ids.length === 0) return
-    const ok = await confirm({ title: zh, message: `將選取的 ${ids.length} 位${zh}？`, confirmTextZh: '確定', variant: fields.graduated || fields.on_leave ? 'danger' : 'default' })
+    const picked = filtered.filter(r => selected.has(r.key))
+    const ids = picked.filter(r => r.member).map(r => r.key)
+    const pendingSids = fields.dues_paid === undefined ? [] : picked.filter(r => !r.member).map(r => r.student_id)
+    const total = ids.length + pendingSids.length
+    if (total === 0) return
+    const ok = await confirm({ title: zh, message: `將選取的 ${total} 位${zh}？`, confirmTextZh: '確定', variant: fields.graduated || fields.on_leave ? 'danger' : 'default' })
     if (!ok) return
     setBusy(true)
-    const res = await updateMembersMany(ids, fields)
+    const skip = Promise.resolve<{ ok: boolean; message?: string }>({ ok: true })
+    const results = await Promise.all([
+      ids.length > 0 ? updateMembersMany(ids, fields) : skip,
+      pendingSids.length > 0 ? updateAllowlistDues(pendingSids, fields.dues_paid!) : skip
+    ])
     setBusy(false)
-    if (!res.ok) { showToast(res.message ?? '更新失敗'); return }
-    showToast(`已${zh} ${ids.length} 位`, 'success')
+    const failed = results.find(r => !r.ok)
+    if (failed) { showToast(failed.message ?? '更新失敗'); await load(); return }
+    showToast(`已${zh} ${total} 位`, 'success')
     setSelected(new Set())
     await load()
   }
 
   // 批次設為身份（勾選的列身份欄變下拉，改一個套用到全部勾選；換屆：新幹部設系學會、舊幹部改回學生）：管理員略過；職位之後補
   const bulkSetIdentity = async (identity: Exclude<Identity, 'admin'>) => {
-    const targets = selectable.filter(r => selected.has(r.key) && r.identity !== 'admin')
+    const targets = filtered.filter(r => r.member && selected.has(r.key) && r.identity !== 'admin')
     if (targets.length === 0) { showToast('沒有可改的對象（管理員不在這裡改）'); return }
     const toSa = identity === 'sa'
     const addSa = toSa ? targets.filter(r => !staffBySid[r.student_id]) : []
@@ -433,9 +441,9 @@ const AdminMembersPage: React.FC = () => {
           ]}
         />
         <button
-          onClick={() => setShowGraduated(v => !v)}
-          className={textBtn(showGraduated)}
-          title={showGraduated ? '隱藏已畢業' : '顯示已畢業（還有未完成的單的本來就會列）'}
+          onClick={() => setOnlyGraduated(v => !v)}
+          className={textBtn(onlyGraduated)}
+          title={onlyGraduated ? '回到全部' : '只看已畢業'}
         >
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">history_edu</span>
           已畢業
@@ -473,7 +481,7 @@ const AdminMembersPage: React.FC = () => {
                 <tr className="text-left text-gray-light">
                   {selectMode && (
                     <th className={`${th} w-10`}>
-                      <input type="checkbox" className="custom-checkbox block" checked={allSelected} onChange={toggleAll} aria-label="全選" disabled={selectable.length === 0} />
+                      <input type="checkbox" className="custom-checkbox block" checked={allSelected} onChange={toggleAll} aria-label="全選" disabled={filtered.length === 0} />
                     </th>
                   )}
                   <SortTh zh="學號" field="student_id" className="w-32" {...sortProps} />
@@ -495,7 +503,7 @@ const AdminMembersPage: React.FC = () => {
                     {selectMode && (
                       <td className={td}>
                         <input
-                          type="checkbox" className="custom-checkbox block" checked={selected.has(r.key)} disabled={!r.member}
+                          type="checkbox" className="custom-checkbox block" checked={selected.has(r.key)}
                           onChange={() => toggleOne(r.key)} aria-label={`選取 ${r.name || r.student_id}`}
                         />
                       </td>
@@ -507,7 +515,7 @@ const AdminMembersPage: React.FC = () => {
                     <td className={`${td} font-english`}>{r.phone || <span className="text-gray-mid">—</span>}</td>
                     <td className={`${td} font-chinese`}>
                       {/* 選取模式下勾選的列：身份變下拉，改一個＝套用到所有勾選的人（管理員除外） */}
-                      {selectMode && selected.has(r.key) && r.identity !== 'admin' ? (
+                      {selectMode && selected.has(r.key) && r.member && r.identity !== 'admin' ? (
                         <Select<Exclude<Identity, 'admin'>>
                           value={r.identity}
                           onChange={v => { if (v !== r.identity) void bulkSetIdentity(v) }}
@@ -521,7 +529,7 @@ const AdminMembersPage: React.FC = () => {
                     </td>
                     <td className={td}>
                       {/* 選取模式下勾選的列：狀態變下拉（在學／休學／已畢業），改一個＝套用到所有勾選的人；違規是算出來的不能選 */}
-                      {selectMode && selected.has(r.key) ? (
+                      {selectMode && selected.has(r.key) && r.member ? (
                         <Select<EditDialog['status']>
                           value={r.status === 'graduated' || r.status === 'on_leave' ? r.status : 'active'}
                           onChange={v => void bulkSetStatus(v)}
@@ -547,7 +555,7 @@ const AdminMembersPage: React.FC = () => {
                         <button
                           onClick={() => navigate(`/admin/orders?student=${encodeURIComponent(r.student_id)}`)}
                           title="到訂單頁看租借歷史"
-                          className={`min-w-7 h-7 px-2 inline-flex items-center justify-center rounded-lg bg-gray-dark font-english ${BTN}`}
+                          className={`min-w-7 h-7 px-2 inline-flex items-center justify-center rounded-lg bg-gray-dark font-english ${BTN_INVERT}`}
                         >
                           {r.orders}
                         </button>
@@ -640,55 +648,59 @@ const AdminMembersPage: React.FC = () => {
 
       {/* 新增會員＝預先登記；Email 依學號自動帶，可改。未啟用的登記也用這個對話框修改或刪除 */}
       {draft && (
-        <FormDialog title={draft.original ? '修改登記' : '新增會員'} confirmZh={draft.original ? '確定修改' : '新增'} busy={busy} onConfirm={handleAdd} onCancel={() => setDraft(null)}>
-          <Field zh="學號" required>
-            <input
-              value={draft.sid} autoFocus placeholder="A111144001"
-              onChange={e => {
-                const sid = e.target.value.replace(/[^A-Za-z0-9]/g, '')
-                setDraft(d => (d ? { ...d, sid, email: d.emailTouched ? d.email : emailFor(sid) } : d))
-              }}
-              className={`${inputCls} w-full font-english`}
-            />
-          </Field>
-          <Field zh="姓名">
-            <input value={draft.name} onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))} className={`${inputCls} w-full font-chinese`} />
-          </Field>
-          <Field zh="Email" required>
-            <input
-              type="email" value={draft.email} placeholder="學號@gm.usc.edu.tw"
-              onChange={e => setDraft(d => (d ? { ...d, email: e.target.value, emailTouched: true } : d))}
-              className={`${inputCls} w-full font-english`}
-            />
-          </Field>
-          <Field zh="班級">
-            <input
-              value={draft.classText} placeholder="日媒四乙、碩媒一甲；空白＝由學號推"
-              onChange={e => setDraft(d => (d ? { ...d, classText: e.target.value } : d))}
-              className={`${inputCls} w-full font-chinese`}
-            />
-          </Field>
-          <Field zh="系學會費">
-            <Select
-              value={draft.dues ? 'paid' : 'unpaid'}
-              onChange={v => setDraft(d => (d ? { ...d, dues: v === 'paid' } : d))}
-              options={DUES_OPTIONS}
-              className="font-chinese w-full"
-            />
-          </Field>
-          <Field zh="身份">
-            <Select<NewDialog['identity']>
-              value={draft.identity}
-              onChange={identity => setDraft(d => (d ? { ...d, identity } : d))}
-              options={IDENTITY_OPTIONS.map(i => ({ value: i, label: IDENTITY_ZH[i] }))}
-              className="font-chinese w-full"
-            />
-          </Field>
-          {draft.identity === 'sa' && (
-            <Field zh="職位">
-              <input value={draft.position} placeholder="會長、器材長…" onChange={e => setDraft(d => (d ? { ...d, position: e.target.value } : d))} className={`${inputCls} w-full font-chinese`} />
+        <FormDialog title={draft.original ? '修改登記' : '新增會員'} confirmZh={draft.original ? '確定修改' : '新增'} busy={busy} onConfirm={handleAdd} onCancel={() => setDraft(null)} wide>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <Field zh="學號" required>
+              <input
+                value={draft.sid} autoFocus placeholder="A111144001"
+                onChange={e => {
+                  const sid = e.target.value.replace(/[^A-Za-z0-9]/g, '')
+                  setDraft(d => (d ? { ...d, sid, email: d.emailTouched ? d.email : emailFor(sid) } : d))
+                }}
+                className={`${inputCls} w-full font-english`}
+              />
             </Field>
-          )}
+            <Field zh="姓名">
+              <input value={draft.name} onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))} className={`${inputCls} w-full font-chinese`} />
+            </Field>
+            <div className="col-span-2">
+              <Field zh="Email" required>
+                <input
+                  type="email" value={draft.email} placeholder="學號@gm.usc.edu.tw"
+                  onChange={e => setDraft(d => (d ? { ...d, email: e.target.value, emailTouched: true } : d))}
+                  className={`${inputCls} w-full font-english`}
+                />
+              </Field>
+            </div>
+            <Field zh="班級">
+              <input
+                value={draft.classText} placeholder="日媒四乙、碩媒一甲；空白＝由學號推"
+                onChange={e => setDraft(d => (d ? { ...d, classText: e.target.value } : d))}
+                className={`${inputCls} w-full font-chinese`}
+              />
+            </Field>
+            <Field zh="系學會費">
+              <Select
+                value={draft.dues ? 'paid' : 'unpaid'}
+                onChange={v => setDraft(d => (d ? { ...d, dues: v === 'paid' } : d))}
+                options={DUES_OPTIONS}
+                className="font-chinese w-full"
+              />
+            </Field>
+            <Field zh="身份">
+              <Select<NewDialog['identity']>
+                value={draft.identity}
+                onChange={identity => setDraft(d => (d ? { ...d, identity } : d))}
+                options={IDENTITY_OPTIONS.map(i => ({ value: i, label: IDENTITY_ZH[i] }))}
+                className="font-chinese w-full"
+              />
+            </Field>
+            {draft.identity === 'sa' && (
+              <Field zh="職位">
+                <input value={draft.position} placeholder="會長、器材長…" onChange={e => setDraft(d => (d ? { ...d, position: e.target.value } : d))} className={`${inputCls} w-full font-chinese`} />
+              </Field>
+            )}
+          </div>
           <p className="text-2xs text-gray-mid font-chinese">帳號在本人第一次用學校 Google 帳號登入時建立，登記前顯示為「未啟用」。</p>
           {draft.original && (
             <button onClick={handleRemovePending} className={`${toolBtn(false)} px-3 self-start font-chinese`}>刪除登記</button>

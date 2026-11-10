@@ -10,6 +10,57 @@
 import { supabase, fetchAllRows } from './supabase'
 import { closedDayImpact, closedKey, dutySlotOptions, fromDateKey, slotClosed, slotLabel, slotStart, toDateKey, type ClosedShift } from '../utils/timeUtils'
 import { fetchClosedDates, fetchDutySlots, invalidateClosedDates } from './ordersService'
+import type { AdminOrderRow } from './ordersService'
+import { loadEquipmentData } from './equipmentService'
+
+/**
+ * 大量設備單的核對單（2026-11-09 學會改要試算表）：Apps Script 複製 Drive 裡的範本、填入這張單（程式與部署步驟見 docs/drive-upload-setup.md）。
+ * info／items 的 key 對應範本裡的 {{…}}。組合拆成零件逐項列（order_items 原樣），現場是一件一件點的。
+ * 每次都是新檔，不覆蓋學會改過的版本。權限由 Apps Script 拿這裡帶的 Supabase token 查 backend_access，前端不放共用密鑰。
+ * Content-Type 用 text/plain：Apps Script 不回應 CORS preflight。
+ */
+export async function createCheckSheet(o: AdminOrderRow): Promise<{ ok: boolean; message: string }> {
+  const url = import.meta.env.VITE_DRIVE_UPLOAD_URL
+  if (!url) return { ok: false, message: '尚未設定 Google Drive' }
+  // 檔名＝起租日＋班級＋使用原因（學會舊表單的命名），在 Drive 依名稱排序就是依日期。班級、原因是學生打的：換行收成空白、太長截斷
+  const clean = (s: string | null) => (s ?? '').replace(/\s+/g, ' ').trim()
+  const name = [o.start_date.replace(/-/g, ''), clean(o.class_name), clean(o.reason) || o.rental_number].filter(Boolean).join(' ').slice(0, 60)
+  const fmt = (d: string) => d.replace(/-/g, '/')
+  try {
+    const [equipment, { data: { session } }] = await Promise.all([loadEquipmentData(), supabase.auth.getSession()])
+    // 依存放地點、類別排序：同一處的東西排在一起，方便點貨，Apps Script 也才能把相鄰同地點合併成一格
+    const rows = o.order_items
+      .map(i => ({
+        存放地點: equipment[i.item_id]?.location || '—',
+        類別: equipment[i.item_id]?.category ?? '—',
+        品項: `${i.name}${i.pickup_pending ? '（待點交）' : ''}`,
+        數量: i.quantity
+      }))
+      .sort((a, b) => a.存放地點.localeCompare(b.存放地點, 'zh-Hant') || a.類別.localeCompare(b.類別, 'zh-Hant'))
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        token: session?.access_token,
+        name,
+        info: {
+          單號: o.rental_number,
+          借用人: `${o.students?.name ?? '—'} ${o.students?.student_id ?? ''}`.trim(),
+          使用班級: o.class_name || '—',
+          負責老師: `${o.teacher || '—'}${o.as_teacher ? '（老師名義）' : ''}`,
+          借用期間: `${fmt(o.start_date)} – ${fmt(o.end_date)}`,
+          取件時段: o.pickup_slot ? slotLabel({ date: o.pickup_date ?? o.start_date, slot: o.pickup_slot }) : '—',
+          使用原因: o.reason || '—'
+        },
+        items: rows.map((r, n) => ({ '#': n + 1, ...r }))
+      })
+    })
+    const out = await res.json() as { error?: string }
+    return out.error ? { ok: false, message: `建立試算表失敗（${out.error}）` } : { ok: true, message: `已建立試算表：${name}` }
+  } catch {
+    return { ok: false, message: '連不上 Google Drive，請稍後再試' }
+  }
+}
 
 // 不營業日類別（supabase/closed-date-kinds.sql）：學會自己的公休三種＋自動匯入的法定假日。
 // 四種對計算的效果都一樣（同週末：倒數／逾期跳過、歸還期限順延），差別只在後台分區與是否發公告。
@@ -31,17 +82,17 @@ export interface StaffMember {
 
 // ---- 幹部名單（staff_members + staff_duties，見 supabase/staff-members.sql）----
 // 收押金／歸還的「值班經手人」選單來源；幹部連結 students（搜學號新增），
-// 姓名 join 學生表；訂單上的經手人是姓名快照，刪除幹部不影響歷史紀錄。
+// 姓名 join 學生表，還沒啟用的讀預先登記（pending-staff.sql）；訂單上的經手人是姓名快照，刪除幹部不影響歷史紀錄。
 export async function listStaff(): Promise<StaffMember[]> {
   const { data, error } = await supabase
     .from('staff_members')
-    .select('id, position, students(name, student_id), staff_duties(id, weekday, start_time, end_time)')
+    .select('id, position, students(name, student_id), login_allowlist(name, student_id), staff_duties(id, weekday, start_time, end_time)')
     .order('id')
   if (error) throw error
   return (data ?? []).map((r: any) => ({
     id: r.id,
-    name: r.students?.name ?? '',
-    studentNo: r.students?.student_id ?? '',
+    name: r.students?.name ?? r.login_allowlist?.name ?? '',
+    studentNo: r.students?.student_id ?? r.login_allowlist?.student_id ?? '',
     position: r.position ?? '',
     duties: ((r.staff_duties ?? []) as StaffDuty[]).sort(
       (a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time)
@@ -63,15 +114,20 @@ export async function updateStaffPosition(id: number, position: string): Promise
   return { ok: true }
 }
 
-export async function addStaffDuty(
-  staffId: number,
-  weekday: number,
-  start: string, // 'HH:MM'
-  end: string
+/** 新增值班：一次寫入，陣列順序＝id 先後＝同一班的顯示順序 */
+export async function addStaffDuties(
+  rows: { staffId: number; weekday: number; start: string; end: string }[] // start／end：'HH:MM'
 ): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase
     .from('staff_duties')
-    .insert({ staff_id: staffId, weekday, start_time: start, end_time: end })
+    .insert(rows.map(r => ({ staff_id: r.staffId, weekday: r.weekday, start_time: r.start, end_time: r.end })))
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 把值班列改給別人（同一班重排時用，見 AdminHoursPage dutyDiff） */
+export async function reassignStaffDuty(id: number, staffId: number): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('staff_duties').update({ staff_id: staffId }).eq('id', id)
   if (error) return { ok: false, message: error.message }
   return { ok: true }
 }
@@ -195,6 +251,13 @@ export async function addAllowlist(rows: AllowEntry[]): Promise<{ ok: boolean; m
   return { ok: true }
 }
 
+/** 批次標未啟用者的會費（會員頁選取模式）：本人第一次登入時帶進帳號 */
+export async function updateAllowlistDues(studentIds: string[], duesPaid: boolean): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('login_allowlist').update({ dues_paid: duesPaid }).in('student_id', studentIds)
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
 export async function removeAllowlist(studentId: string): Promise<{ ok: boolean; message?: string }> {
   const { error } = await supabase.from('login_allowlist').delete().eq('student_id', studentId)
   if (error) return { ok: false, message: error.message }
@@ -214,7 +277,7 @@ async function insertNotifications(rows: NewNotification[]): Promise<NotifyResul
   return { ok: true, count: rows.length }
 }
 
-/** 全站通知：發給所有非管理員帳號（type 'announcement'，鈴鐺標「公告」）；目前由公休日 template 觸發。
+/** 全站通知：發給所有非管理員帳號（type 'announcement'）；目前由公休日 template 觸發。
  *  收件人分段抓（fetchAllRows），破千也不漏 */
 export async function broadcastNotification(message: string): Promise<NotifyResult> {
   let ids: { id: string }[]
@@ -406,8 +469,8 @@ export async function autoImportHolidays(): Promise<void> {
   }
 }
 
-export async function deleteClosedDate(day: string): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.from('closed_dates').delete().eq('day', day)
+export async function deleteClosedDates(days: string[]): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('closed_dates').delete().in('day', days)
   if (error) return { ok: false, message: error.message }
   invalidateClosedDates()
   return { ok: true }
@@ -645,24 +708,18 @@ export interface SpaceOccupant {
   studentNo: string
 }
 
-/** 查指定日期（YYYY-MM-DD）佔用中的空間與借用人；RLS admin 可讀全部訂單 */
+/** 查指定日期（YYYY-MM-DD）佔用中的空間與借用人；最高權限與學會成員共用（operator-access.sql） */
 export async function fetchSpaceOccupancy(date: string): Promise<SpaceOccupant[]> {
-  const { data, error } = await supabase
-    .from('order_items')
-    .select('item_id, item_type, orders!inner(rental_number, status, start_date, end_date, students!inner(name, student_id))')
-    .in('item_type', ['space-block', 'classroom'])
-    .in('orders.status', ['pending', 'in-progress', 'overdue'])
-    .lte('orders.start_date', date)
-    .gte('orders.end_date', date)
+  const { data, error } = await supabase.rpc('operator_space_occupancy', { p_date: date })
   if (error) throw error
   return (data ?? []).map((r: any) => ({
     itemId: r.item_id,
     itemType: r.item_type,
-    rentalNumber: r.orders?.rental_number ?? '',
-    status: r.orders?.status ?? '',
-    startDate: r.orders?.start_date ?? '',
-    endDate: r.orders?.end_date ?? '',
-    studentName: r.orders?.students?.name ?? '',
-    studentNo: r.orders?.students?.student_id ?? ''
+    rentalNumber: r.rental_number,
+    status: r.status,
+    startDate: r.start_date,
+    endDate: r.end_date,
+    studentName: r.student_name,
+    studentNo: r.student_no
   }))
 }

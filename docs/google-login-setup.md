@@ -1,7 +1,7 @@
 # 學校 Google 帳號登入：後台設定步驟
 
-學生用學校 Google 帳號登入（2026-10-24 定），程式與 SQL 已寫好，**只差這份文件的一次性設定**。
-設定完成前，登入頁的「使用學校 Google 帳號登入」按了會失敗；後台帳號 `sccdsa` 的學號＋密碼登入不受影響。
+學生用學校 Google 帳號登入（2026-10-24 定）。2026-11-10 確認 Supabase 已開 Google provider、接上 OAuth 用戶端，A–D 看起來已做完，**剩「E. 測試」**。
+後台帳號 `sccdsa` 要用學會 Gmail 登入，另外照「後台用 Gmail 登入」設定；學號＋密碼登入（登入頁的小連結）不受影響。
 
 - 規則與程式：`supabase/members-v2.sql`（資格判斷）、`src/services/authService.ts`（`signInWithGoogle`／`finishGoogleLogin`）
 - Supabase 專案：`https://qhcgqdsfriyvkpjdwseu.supabase.co`
@@ -57,14 +57,10 @@
 ## E. 測試
 
 1. 先在後台會員管理「新增會員」登記要測試的學校帳號（沒登記的登不進來）。
-2. `npm run dev`，在登入頁按密碼表單下方的「使用學校 Google 帳號登入」。
+2. `npm run dev`，在登入頁按「使用學校 Google 帳號登入」。
 3. 用登記過的學校帳號（`學號@gm／gm1／gm2.usc.edu.tw`）→ 應直接進型錄；Profile 的班級、年級應已帶好。
 4. 用非學校的 Gmail，或沒登記的學校帳號 → 應被擋下，登入頁顯示「請使用學校 Google 帳號…只有系學會登記過的帳號能登入」。
 5. 到後台會員管理，確認帳號從「未啟用」變成已啟用。
-
-## 上線時
-
-`src/pages/HomePage.tsx` 的 `PASSWORD_MODE_DEFAULT` 改回 `false`，登入頁改成預設顯示 Google 登入。
 
 ## 選做：品牌審核
 

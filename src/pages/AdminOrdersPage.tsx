@@ -2,28 +2,29 @@
  * 後台 · 訂單全覽（搜尋 + 租借時間／狀態／種類篩選 + 點表頭單欄排序 + 收押金／歸還）
  * 樣式沿用前台 Profile：狀態標籤語彙與顏色同 getStatusInfo、按鈕同 Extend 樣式。
  * 「收押金」「歸還」兩欄＝每張單都會走的兩步（2026-10-26）：還沒做是按鈕、做完顯示經手人，一眼看出走到哪、誰經手；
- * 其餘動作（點交／延期／取消訂單）在最右「操作」欄，釘在右邊，欄位再多往右捲都看得到。所有動作都走 OrderActionDialog，必選值班經手人
+ * 其餘動作（點交／延期／取消訂單／大量設備的核對單）收在最右「操作」欄的 ⋯ 選單，釘在右邊，欄位再多往右捲都看得到。所有動作都走 OrderActionDialog，最高權限帳號必選值班經手人，學會成員用自己的帳號就記本人
  * （寫入 paid_by / picked_up_by / returned_by / refunded_by 供追溯）。
- * 「名義」欄＝個人或老師名義＋證明檔；「退押金」欄＝退了多少與經手人，已繳押金的取消單在這裡按退押金（2026-11-07）。
- * 搜尋列下方五個分類按鈕：全部／待繳押金／待取件／待歸還／待退押金，各附筆數；點了切換下方表格內容。
+ * 「名義」欄＝個人或老師名義＋證明檔；「退押金」欄＝結算：整張單還完在這裡填罰金、退押金，超過押金的差額接「收罰款」，收清才算結束（2026-11-08）。
+ * 搜尋列下方六個分類按鈕：全部／待繳押金／待取件／待歸還／待退押金／待繳罰款，各附筆數；點了切換下方表格內容。
  * 待歸還＝使用中＋未完成歸還（都是要收回來的）；已歸還／已取消只在「全部」裡看（搜尋得到）。
  */
 
 import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, adminRefundDeposit, fetchClosedDates, proofUrl } from '../services/ordersService'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, adminRefundDeposit, fetchClosedDates, proofUrl, penaltyOwed } from '../services/ordersService'
 import type { AdminOrderRow, OrderInfo } from '../services/ordersService'
-import { listStaff } from '../services/adminService'
+import { listStaff, createCheckSheet } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
 import { overduePenalty, overdueBusinessDays, pendingMsRemaining, isOnDuty, slotEnd, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
 import { ADMIN_HANDLER_KEY } from '../utils/storageKeys'
 import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, textBtn, SearchBox, CountTabs, SortTh, toggleSort, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup } from '../components/admin/adminUi'
-import type { Sort } from '../components/admin/adminUi'
+import type { Sort, SelectOption } from '../components/admin/adminUi'
 import OrderActionDialog, { type AdminActionMode } from '../components/admin/OrderActionDialog'
 import OrderInfoDialog from '../components/admin/OrderInfoDialog'
 import { useToast } from '../hooks/useToast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { useAuth } from '../contexts/AuthContext'
 
 const fmtDate = (d: string) => d?.slice(5).replace('-', '/') // 'YYYY-MM-DD' → 'MM/DD'
 const fmtDateTime = (iso: string) => {
@@ -52,7 +53,7 @@ const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
 }
 
 // w＝欄寬：表格 w-full＋自動排版下，有寬度的欄固定（內容更長才撐開，不會溢出），只有品項不給寬度、吃掉全部剩餘空間，
-// 切換篩選／排序時表頭就不跳。狀態／原因／操作內容較長時換行，不要為此放大欄寬（螢幕約 1400px 時品項才有 200px 以上）
+// 切換篩選／排序時表頭就不跳。狀態／原因內容較長時換行，不要為此放大欄寬
 const COLUMNS: { field: SortField; zh: string; w?: string }[] = [
   { field: 'rental_number', zh: '單號', w: 'w-24' },
   { field: 'items', zh: '品項' },
@@ -70,25 +71,40 @@ const COLUMNS: { field: SortField; zh: string; w?: string }[] = [
 ]
 
 // 搜尋列下方的分類按鈕：篩選條件＋筆數。待繳押金＝pending 未繳；待取件＝大量設備已繳待取（isAwaitingPickup）；
-// 待歸還＝使用中＋未完成歸還；待退押金＝已繳押金但取消（含沒來取件自動取消），或拆單全還後人工結的大量單
-const awaitingRefund = (o: AdminOrderRow) =>
-  (o.status === 'canceled' || o.status === 'returned') && !!o.deposit_paid_at && o.deposit_total > 0 && o.refunded == null
-type TabKey = 'all' | 'deposit' | 'pickup' | 'return' | 'refund'
-const TABS: { key: TabKey; zh: string; match: (o: AdminOrderRow) => boolean }[] = [
+// 待歸還＝使用中＋未完成歸還；待退押金＝東西都回來、錢還沒結：整張單還完的根單（子單併到根單結），或已繳押金的取消單（含沒來取件自動取消）；
+// 待繳罰款＝押金抵完還差的，收清這筆單才算結束
+const awaitingRefund = (o: AdminOrderRow, openRoots: ReadonlySet<number>) =>
+  o.refunded == null && !o.parent_order_id && (
+    o.status === 'returned' ? !openRoots.has(o.id) : o.status === 'canceled' && !!o.deposit_paid_at && o.deposit_total > 0
+  )
+type TabKey = 'all' | 'deposit' | 'pickup' | 'return' | 'refund' | 'fine'
+const TABS: { key: TabKey; zh: string; match: (o: AdminOrderRow, openRoots: ReadonlySet<number>) => boolean }[] = [
   { key: 'all', zh: '全部', match: () => true },
   { key: 'deposit', zh: '待繳押金', match: o => o.status === 'pending' && !o.deposit_paid_at },
   { key: 'pickup', zh: '待取件', match: isAwaitingPickup },
   { key: 'return', zh: '待歸還', match: o => o.status === 'in-progress' || o.status === 'overdue' },
-  { key: 'refund', zh: '待退押金', match: awaitingRefund }
+  { key: 'refund', zh: '待退押金', match: awaitingRefund },
+  { key: 'fine', zh: '待繳罰款', match: o => penaltyOwed(o) > 0 }
 ]
+
+// 整張單＝根單＋子單（parent_order_id 一律指根單）：押金與罰金只在根單結一次
+const familyOf = (o: AdminOrderRow, rows: AdminOrderRow[]) => rows.filter(x => x.id === o.id || x.parent_order_id === o.id)
+const familyDeposit = (o: AdminOrderRow, rows: AdminOrderRow[]) => familyOf(o, rows).reduce((sum, x) => sum + x.deposit_total, 0)
+// 退押金預填的逾期試算：每段各算到實際歸還那天，上限同 overduePenalty
+const familyEstPenalty = (o: AdminOrderRow, rows: AdminOrderRow[], closed: ReadonlySet<string>) => {
+  const deposit = familyDeposit(o, rows)
+  const sum = familyOf(o, rows).reduce((s, x) => s + (x.returned_at ? overduePenalty(x.end_date, deposit, closed, new Date(x.returned_at)) : 0), 0)
+  return Math.min(sum, deposit || 5000)
+}
 
 // 表頭／儲存格樣式共用 adminUi 的 tableTh／tableTd（表頭 sticky、底線畫在儲存格上）
 const th = tableTh
 const td = tableTd
 // 操作區（收押金／歸還／退押金／操作）釘在右邊，左邊一條線跟捲過去的內容分開。sticky 要實色底蓋住捲過去的欄，
-// hover 用同色漸層疊上去，才跟整列 white/10 一致。right＝右邊各欄寬加總（w-28＝7rem、操作 w-40＝10rem），改欄寬要一起改
+// hover 用同色漸層疊上去，才跟整列 white/10 一致。right＝右邊各欄寬加總（w-28＝7rem、操作 w-16＝4rem），改欄寬要一起改
 const pinTd = 'sticky bg-black group-hover:bg-linear-to-r group-hover:from-white/10 group-hover:to-white/10'
-const PIN: Partial<Record<SortField, string>> = { paid_by: 'right-96 border-l', returned_by: 'right-68', refunded: 'right-40' }
+const PIN: Partial<Record<SortField, string>> = { paid_by: 'right-72 border-l', returned_by: 'right-44', refunded: 'right-16' }
+type RowAction = AdminActionMode | 'sheet' | '' // ⋯ 選單的選項；'' ＝沒選（Select 的 value）
 
 // 每欄的儲存格渲染：依 COLUMNS 順序查表（closed＝公休日，倒數／逾期天數用；act＝開操作對話框、busy＝處理中的單號）
 type CellCtx = {
@@ -97,13 +113,12 @@ type CellCtx = {
   openProof: (o: AdminOrderRow) => void
   act: (o: AdminOrderRow, mode: AdminActionMode) => void
   busy: string | null
+  openRoots: ReadonlySet<number> // 還有子單沒還完的根單
 }
-// 收押金／歸還欄裡的動作鈕；該單處理中時改顯示文字（操作欄此時不顯示，免得兩格都寫處理中）。
-// enabled=false＝這一步現在不能做（例：已取消的單）：按鈕照樣顯示但停用，每列欄位對齊、一眼看出走到哪
+// 收押金／歸還欄裡的動作鈕。enabled=false＝這一步現在不能做（例：已取消的單），該單處理中時也一樣：
+// 按鈕照樣顯示但停用，每列欄位對齊、一眼看出走到哪
 const actBtn = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, zh: string, enabled = true) =>
-  ctx.busy === o.rental_number
-    ? <span className="text-gray-light">處理中…</span>
-    : <button onClick={() => enabled && ctx.act(o, mode)} disabled={!enabled} className={actionBtn}>{zh}</button>
+  <button onClick={() => enabled && ctx.act(o, mode)} disabled={!enabled || ctx.busy === o.rental_number} className={actionBtn}>{zh}</button>
 const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNode> = {
   rental_number: o => <td key="rental_number" className={`${td} font-english`}>{o.rental_number}</td>,
   name: o => <td key="name" className={`${td} font-chinese`}>{o.students?.name ?? '—'}</td>,
@@ -123,6 +138,9 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
   status: (o, { closed }) => (
     <td key="status" className={`px-3 py-3 ${rowLine}`}>
       <StatusChip status={o.status} awaitingPickup={isAwaitingPickup(o)} />
+      {penaltyOwed(o) > 0 && (
+        <div className="mt-1 font-chinese" style={{ color: 'var(--color-pink)' }}>待繳 <span className="font-english">NT$ {penaltyOwed(o).toLocaleString()}</span></div>
+      )}
       {o.status === 'pending' && !o.deposit_paid_at && (() => {
         const ms = pendingMsRemaining(o.created_at, new Date(), closed, o.deposit_date && o.deposit_slot ? slotEnd(o.deposit_date, o.deposit_slot) : null)
         return ms > 0
@@ -147,17 +165,19 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
       )}
     </td>
   ),
-  // 品項與原因較長，允許換行；一項一行。學生改單（情境 3）：取件後新增＝待點交、送單後改過＝已更動
+  // 品項與原因較長，允許換行；一項一行，最多顯示三行（3lh，換行也算），超過在格子內捲動。學生改單（情境 3）：取件後新增＝待點交、送單後改過＝已更動
   items: o => (
     <td key="items" className={`px-3 py-3 font-chinese ${rowLine}`}>
-      {o.order_items.map(i => (
-        <div key={i.id}>
-          {i.name}{i.item_type === 'equipment' && <span className="font-english"> ×{i.quantity}</span>}
-          {i.pickup_pending
-            ? <span className="ml-1" style={{ color: 'var(--color-yellow)' }}>待點交</span>
-            : i.changed_at && <span className="ml-1 text-gray-light">已更動</span>}
-        </div>
-      ))}
+      <div className="max-h-[3lh] overflow-y-auto pr-2 custom-scrollbar">
+        {o.order_items.map(i => (
+          <div key={i.id}>
+            {i.name}{i.item_type === 'equipment' && <span className="font-english"> ×{i.quantity}</span>}
+            {i.pickup_pending
+              ? <span className="ml-1" style={{ color: 'var(--color-yellow)' }}>待點交</span>
+              : i.changed_at && <span className="ml-1 text-gray-light">已更動</span>}
+          </div>
+        ))}
+      </div>
       {o.items_updated_at && (
         <div className="text-gray-light mt-1">改於 <span className="font-english">{fmtDateTime(o.items_updated_at)}</span></div>
       )}
@@ -194,19 +214,12 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         )}
     </td>
   ),
-  // 歸還：借用中／逾期＝「歸還」鈕（逾期含罰款確認）；還完顯示經手人，欠繳罰款再接「收罰款」鈕（收清才解除擋單）
+  // 歸還：借用中／逾期＝「歸還」鈕；還完顯示經手人（罰金與押金在退押金欄結）
   returned_by: (o, ctx) => (
     <td key="returned_by" className={`${td} ${pinTd} ${PIN.returned_by} font-chinese`}>
       {o.status === 'in-progress' || o.status === 'overdue' ? actBtn(o, ctx, 'return', '歸還')
         : !o.returned_by ? actBtn(o, ctx, 'return', '歸還', false)
-        : (
-          <div className="leading-5">
-            <div>{o.returned_by}</div>
-            {o.status === 'returned' && (o.penalty_total ?? 0) > 0 && o.penalty_paid === false && (
-              <div className="mt-1">{actBtn(o, ctx, 'penalty', '收罰款')}</div>
-            )}
-          </div>
-        )}
+        : o.returned_by}
     </td>
   ),
   // 名義：個人／老師名義；有證明檔（老師名義、雷切機一年級）多一個鈕開檔案，符不符合由學會看
@@ -216,12 +229,20 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
       {o.proof_path && <button onClick={() => openProof(o)} className={`mt-1 ${actionBtn}`}>證明</button>}
     </td>
   ),
-  // 退押金：退完顯示金額與經手人；待退＝按鈕
+  // 退押金：待結＝按鈕（押金 0 的單沒得退，但還是要有地方填罰金）；退完顯示金額與經手人，還有差額接「收罰款」，收清才算結束
   refunded: (o, ctx) => (
     <td key="refunded" className={`${td} ${pinTd} ${PIN.refunded} font-english`}>
       {o.refunded != null
-        ? <div className="leading-5">NT$ {o.refunded.toLocaleString()}{o.refunded_by && <div className="font-chinese text-gray-light">{o.refunded_by}</div>}</div>
-        : awaitingRefund(o) ? actBtn(o, ctx, 'refund', '退押金') : <span className="text-gray-mid">—</span>}
+        ? (
+          <div className="leading-5">
+            NT$ {o.refunded.toLocaleString()}
+            {o.refunded_by && <div className="font-chinese text-gray-light">{o.refunded_by}</div>}
+            {penaltyOwed(o) > 0 && <div className="mt-1 font-chinese">{actBtn(o, ctx, 'penalty', '收罰款')}</div>}
+          </div>
+        )
+        : awaitingRefund(o, ctx.openRoots) ? <span className="font-chinese">{actBtn(o, ctx, 'refund', o.deposit_total > 0 ? '退押金' : '結算')}</span>
+        : ctx.openRoots.has(o.id) ? <span className="font-chinese text-gray-light">子單未還</span>
+        : <span className="text-gray-mid">—</span>}
     </td>
   )
 }
@@ -229,6 +250,7 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
 
 const AdminOrdersPage: React.FC = () => {
   const { showToast, toastElement } = useToast()
+  const { currentUser } = useAuth()
   const [orders, setOrders] = useState<AdminOrderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -274,7 +296,7 @@ const AdminOrdersPage: React.FC = () => {
 
   // 對話框確認：收押金／歸還／收罰款／代取消／代延期（經手人記住供下次預選；
   // 歸還支援部分歸還——全勾整單、部分勾拆子單）
-  const handleAction = async (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean, depositTotal?: number) => {
+  const handleAction = async (handler: string, penalty: number, itemIds: number[], days: number, pickup: boolean, depositTotal?: number) => {
     if (!action) return
     const { order, mode } = action
     setAction(null)
@@ -292,12 +314,11 @@ const AdminOrdersPage: React.FC = () => {
             : mode === 'extend'
               ? await adminExtendOrder(order.rental_number, days, handler)
               : mode === 'refund'
-                ? await adminRefundDeposit(order.rental_number, handler)
-                : await adminMarkReturnedPartial(order.rental_number, itemIds, penalty, handler, penaltyPaid)
+                ? await adminRefundDeposit(order.rental_number, penalty, handler)
+                : await adminMarkReturnedPartial(order.rental_number, itemIds, handler)
     setBusy(null)
     if (!res.ok) { showToast(res.message ?? '操作失敗'); return }
     const rn = order.rental_number
-    const penaltyNote = penalty > 0 ? `，罰款 NT$ ${penalty}${penaltyPaid ? '已繳清' : '記為欠繳'}` : ''
     showToast(
       mode === 'handover' ? `已點交 ${rn} 新增的設備`
       : mode === 'pickup' ? `已完成取件 ${rn}，租借開始`
@@ -306,9 +327,9 @@ const AdminOrdersPage: React.FC = () => {
       : mode === 'penalty' ? `已收罰款 ${rn}`
       : mode === 'cancel' ? `已取消 ${rn}`
       : mode === 'extend' ? `已將 ${rn} 延期 ${days} 天`
-      : mode === 'refund' ? `已退 ${rn} 的押金`
-      : itemIds.length < order.order_items.length ? `已部分歸還 ${rn}，未還品項已拆成子單續租${penaltyNote}`
-      : `已完成歸還 ${rn}${penaltyNote}`,
+      : mode === 'refund' ? (penalty > familyDeposit(order, orders) ? `已結算 ${rn}，差額待同學繳清` : `已結算 ${rn} 的押金`)
+      : itemIds.length < order.order_items.length ? `已部分歸還 ${rn}，未還品項已拆成子單續租`
+      : `已完成歸還 ${rn}`,
       'success'
     )
     await load()
@@ -320,6 +341,12 @@ const AdminOrdersPage: React.FC = () => {
     const url = await proofUrl(o.proof_path!)
     if (url && tab) tab.location.href = url
     else { tab?.close(); showToast('讀取證明文件失敗') }
+  }
+
+  // 大量設備單的核對單：在學會 Drive 建一份試算表
+  const exportSheet = (o: AdminOrderRow) => {
+    setBusy(o.rental_number) // 按下就鎖住，連點不會建兩份
+    createCheckSheet(o).then(r => { setBusy(null); showToast(r.message, r.ok ? 'success' : 'error') })
   }
 
   // 修改借用資訊（軟性欄位）：失敗時對話框保留，內容不丟
@@ -359,14 +386,21 @@ const AdminOrdersPage: React.FC = () => {
   }, [orders, search, typeFilter, range, studentFilter])
   const studentName = studentFilter ? orders.find(o => o.students?.student_id === studentFilter)?.students?.name ?? '' : ''
 
+  // 還有子單沒還完的根單：押金要等全部還完才結（看全部訂單，不受搜尋影響）
+  const openRoots = useMemo(
+    () => new Set(orders.filter(o => o.parent_order_id && ['pending', 'in-progress', 'overdue'].includes(o.status)).map(o => o.parent_order_id!)),
+    [orders]
+  )
+
   // 各籤筆數跟著搜尋／時間／種類篩選變（同 Notion：filter 後再分籤）
   const counts = useMemo(
-    () => Object.fromEntries(TABS.map(t => [t.key, base.filter(t.match).length])) as Record<TabKey, number>,
-    [base]
+    () => Object.fromEntries(TABS.map(t => [t.key, base.filter(o => t.match(o, openRoots)).length])) as Record<TabKey, number>,
+    [base, openRoots]
   )
 
   const visible = useMemo(() => {
-    const rows = base.filter(TABS.find(t => t.key === tab)!.match)
+    const { match } = TABS.find(t => t.key === tab)!
+    const rows = base.filter(o => match(o, openRoots))
     if (!sort) return rows // 維持建立時間新→舊（fetch 預設）
     const { field, dir } = sort
     return [...rows].sort((a, b) => {
@@ -375,13 +409,13 @@ const AdminOrdersPage: React.FC = () => {
       if (va > vb) return dir === 'asc' ? 1 : -1
       return 0
     })
-  }, [base, tab, sort])
+  }, [base, tab, sort, openRoots])
 
   const { pageRows, pager } = usePager(visible, [search, tab, typeFilter, range, sort])
   const sortProps = { sort, onSort: (f: SortField) => setSort(s => toggleSort(s, f)) }
 
   const hasRange = !!(range.from || range.to)
-  const cellCtx: CellCtx = { closed: closedDates, editInfo: setInfoOrder, openProof: o => void openProof(o), act: (order, mode) => setAction({ order, mode }), busy }
+  const cellCtx: CellCtx = { closed: closedDates, editInfo: setInfoOrder, openProof: o => void openProof(o), act: (order, mode) => setAction({ order, mode }), busy, openRoots }
 
   return (
     // 撐滿內容區（AdminLayout main 固定 h-screen）：標題／工具列／分頁固定，只有表格區捲動
@@ -452,12 +486,12 @@ const AdminOrdersPage: React.FC = () => {
 
       {!loading && !error && (
         <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
-          {/* min-w＝固定欄總和（1472px）＋品項至少 170px：塞不下時橫向捲動，不然 Chrome 會按比例壓縮所有欄、表頭又會跳 */}
-          <table className="w-full min-w-[1644px] text-xs border-separate border-spacing-0">
+          {/* min-w＝固定欄總和（1376px）＋品項至少 360px（最寬的一欄，長品名加「待點交」也一行放得下）：塞不下時橫向捲動，不然 Chrome 會按比例壓縮所有欄、表頭又會跳 */}
+          <table className="w-full min-w-[1736px] text-xs border-separate border-spacing-0">
             <thead>
               <tr className="text-left text-gray-light">
                 {COLUMNS.map(col => <SortTh key={col.field} zh={col.zh} field={col.field} className={`${col.w ?? ''} ${PIN[col.field] ? `${PIN[col.field]} z-20` : ''}`} {...sortProps} />)}
-                <th className={`${th} w-40 right-0 z-20`}>操作</th>
+                <th className={`${th} w-16 right-0 z-20`}>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -466,8 +500,8 @@ const AdminOrdersPage: React.FC = () => {
                   {COLUMNS.map(c => CELL[c.field](o, cellCtx))}
                   <td className={`${td} ${pinTd} right-0`}>
                     {(() => {
-                      // 收押金／取件／歸還／收罰款在各自的欄；這裡是其餘動作（情境 9／13）：
-                      // 學生取件後新增設備 → 前面多一個「點交」；處理中由收押金／歸還欄顯示，這裡留白
+                      // 收押金／取件／歸還／收罰款在各自的欄；這裡是其餘動作（情境 9／13），收進 ⋯ 選單：
+                      // 學生取件後新增設備 → 前面多一個「點交」；沒有動作時這裡留白，該單處理中時選單停用
                       const handover: { mode: AdminActionMode; zh: string }[] =
                         o.order_items.some(i => i.pickup_pending) ? [{ mode: 'handover', zh: '點交' }] : []
                       const acts: { mode: AdminActionMode; zh: string }[] =
@@ -478,19 +512,21 @@ const AdminOrdersPage: React.FC = () => {
                             : o.status === 'overdue'
                               ? [...handover, { mode: 'extend', zh: '延期' }]
                               : []
-                      if (busy === o.rental_number) return null
+                      const menu: SelectOption<RowAction>[] = acts.map(a => ({ value: a.mode, label: a.zh }))
+                      if (orderKind(o) === 'equipment-mass-personal' && o.status !== 'canceled') {
+                        menu.push({ value: 'sheet', label: <span title="在學會 Google Drive 建立試算表">核對單</span> })
+                      }
+                      if (menu.length === 0) return null
                       return (
-                        <div className="flex flex-wrap items-center gap-3">
-                          {acts.map(a => (
-                            <button
-                              key={a.mode}
-                              onClick={() => setAction({ order: o, mode: a.mode })}
-                              className={actionBtn}
-                            >
-                              {a.zh}
-                            </button>
-                          ))}
-                        </div>
+                        <Select<RowAction>
+                          value=""
+                          more
+                          filled
+                          disabled={busy === o.rental_number}
+                          options={menu}
+                          onChange={v => { if (v === 'sheet') exportSheet(o); else if (v) setAction({ order: o, mode: v }) }}
+                          aria-label="操作"
+                        />
                       )
                     })()}
                   </td>
@@ -517,11 +553,9 @@ const AdminOrdersPage: React.FC = () => {
             .map(m => ({ name: m.name, onDuty: isOnDuty(m.duties) }))
             .sort((a, b) => Number(b.onDuty) - Number(a.onDuty))}
           defaultHandler={localStorage.getItem(ADMIN_HANDLER_KEY) ?? ''}
-          estPenalty={
-            action.order.status === 'overdue'
-              ? overduePenalty(action.order.end_date, action.order.deposit_total, closedDates)
-              : 0
-          }
+          lockedHandler={currentUser?.role === 'admin' ? undefined : currentUser?.name}
+          estPenalty={action.mode === 'refund' ? familyEstPenalty(action.order, orders, closedDates) : 0}
+          familyDeposit={familyDeposit(action.order, orders)}
           onConfirm={handleAction}
           onCancel={() => setAction(null)}
         />

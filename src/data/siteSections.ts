@@ -98,14 +98,14 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         '歸還日 19:01 起算逾期：第 1 日罰 100 元，之後每日翻倍（週末及節假日不計），上限為押金總額。',
         '罰款達押金總額或逾期達 6 日者，視為未完成「清潔歸還」，將不得再使用預約系統。',
         '輕微損壞視程度罰款或以學系清潔勞動服務抵扣；嚴重損壞須視程度罰款並全權承擔維修或換新費用。',
-        '損壞或遺失的罰款由系學會依狀況填寫，從押金扣除；超過押金的部分須另外繳交。'
+        '損壞或遺失的罰款由系學會依狀況填寫，從押金扣除；超過押金的部分須另外繳交，繳清前無法再預約。'
       ].join('\n'),
       [
         'Using SA-managed spaces or equipment without a booking: NT$ 200 fine per instance.',
         'Late returns count from 19:01 on the return date: NT$ 100 on day 1, doubling daily (weekends and holidays excluded), capped at your total deposit.',
         'Reaching the deposit cap or being 6 days late counts as failing the "clean return" and bars you from the booking system.',
         'Minor damage is fined by severity or offset by department cleaning service; severe damage also covers full repair or replacement costs.',
-        'Fines for damage or loss are set by the SA and taken from your deposit; anything above the deposit must be paid separately.'
+        'Fines for damage or loss are set by the SA and taken from your deposit; anything above the deposit must be paid separately before you can book again.'
       ].join('\n'))),
     sec('押金', 'Deposit', blk('list',
       [
@@ -113,14 +113,16 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         '空間：編號區每磚 1,000 元（後陽台 2,000 元）、教室每間 5,000 元。',
         '設備：個人預約每件 500 元、團體預約每次 5,000 元。',
         '老師名義借用免押金。',
-        '完成「清潔歸還」並經系學會確認後退還押金，有罰款時扣除罰款後退還。'
+        '完成「清潔歸還」並經系學會確認後退還押金，有罰款時扣除罰款後退還。',
+        '部分歸還不分批退押金，全部歸還後一次結算。'
       ].join('\n'),
       [
         'Cash only, counted in person; deposits are capped at NT$ 5,000 for spaces and NT$ 5,000 for equipment, counted separately.',
         'Spaces: NT$ 1,000 per block in the numbered area (NT$ 2,000 for the back terrace); NT$ 5,000 per classroom.',
         'Equipment: NT$ 500 per item for personal bookings; NT$ 5,000 per group order.',
         'Bookings under a teacher\’s name have no deposit.',
-        'The deposit is refunded after the "clean return" is confirmed by the SA, minus any fines.'
+        'The deposit is refunded after the "clean return" is confirmed by the SA, minus any fines.',
+        'Partial returns are not refunded in parts; the deposit is settled once everything is back.'
       ].join('\n'))),
     sec('預約流程', 'Booking Steps', blk('list',
       [

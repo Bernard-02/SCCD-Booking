@@ -139,6 +139,7 @@ export const useBundles = (): Bundle[] => {
 const mapRow = (row: EquipmentRow): Equipment => ({
   id: row.id,
   category: row.category,
+  location: row.location ?? '',
   name: row.name,
   status: '',
   mainImage: imageSrc(row.image_url),

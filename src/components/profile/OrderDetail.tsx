@@ -50,6 +50,8 @@ export interface Receipt {
   asTeacher?: boolean            // 老師名義：押金 0
   teacher?: string | null
   refunded?: number | null       // 已退押金
+  penaltyTotal?: number | null   // 學會結算時填的罰款
+  penaltyOwed?: number           // 押金抵完還要繳的；繳清前不能再預約
 }
 
 export const formatDate = (s: string) =>
@@ -107,7 +109,9 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
     ...(receipt.itemsUpdatedAt ? [[t('Updated', '最後修改'), formatOrderTime(receipt.itemsUpdatedAt), 'font-english'] as [string, string, string]] : []),
     ...(receipt.reason ? [[t('Reason', '使用原因'), receipt.reason, 'font-chinese'] as [string, string, string]] : []),
     ...(receipt.asTeacher ? [[t('Teacher', '老師名義'), receipt.teacher ?? '', 'font-chinese'] as [string, string, string]] : []),
-    ...(receipt.refunded != null ? [[t('Refunded', '已退押金'), `NT$ ${receipt.refunded.toLocaleString()}`, 'font-english'] as [string, string, string]] : [])
+    ...(receipt.penaltyTotal ? [[t('Fine', '罰款'), `NT$ ${receipt.penaltyTotal.toLocaleString()}`, 'font-english'] as [string, string, string]] : []),
+    ...(receipt.refunded != null ? [[t('Refunded', '已退押金'), `NT$ ${receipt.refunded.toLocaleString()}`, 'font-english'] as [string, string, string]] : []),
+    ...(receipt.penaltyOwed ? [[t('Fine Due', '待繳罰款'), `NT$ ${receipt.penaltyOwed.toLocaleString()}`, 'font-english text-error'] as [string, string, string]] : [])
   ]
 
   return (

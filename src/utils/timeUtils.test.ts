@@ -20,6 +20,8 @@ import {
   dutySlotOptions,
   closedKey,
   closedRangeRows,
+  closedRun,
+  type ClosedShift,
   maxStartDate,
   slotClosed,
   PENDING_LIMIT_MS
@@ -223,6 +225,25 @@ describe('公休時段', () => {
       { day: '2026-07-21', shift: 'noon' }     // 週二午班止
     ])
     expect(closedRangeRows('2026-07-18', '2026-07-19', 'noon', 'evening')).toEqual([])
+  })
+
+  it('closedRun：同原因跨週末與法定假日算一段，班接不上或原因不同就斷', () => {
+    const r = (day: string, shift: ClosedShift = 'all', kind = 'activity', reason: string | null = null) => ({ day, shift, kind, reason })
+    const rows = [
+      r('2026-07-16', 'evening'),                // 週四晚班起
+      r('2026-07-17'),                           // 週五，後面隔週末
+      r('2026-07-20', 'all', 'holiday', '假日'), // 週一法定假日，隔過去但不算進去
+      r('2026-07-21', 'noon'),                   // 週二休到午班
+      r('2026-07-22', 'noon'),                   // 週三只休午班：前一天沒休到晚班，接不上
+      r('2026-07-23', 'all', 'review')           // 週四原因不同
+    ]
+    const days = (day: string) => closedRun(rows, day).map(c => c.day)
+    expect(days('2026-07-17')).toEqual(['2026-07-16', '2026-07-17', '2026-07-21'])
+    expect(days('2026-07-21')).toEqual(['2026-07-16', '2026-07-17', '2026-07-21'])
+    expect(days('2026-07-20')).toEqual(['2026-07-20'])
+    expect(days('2026-07-22')).toEqual(['2026-07-22'])
+    expect(days('2026-07-23')).toEqual(['2026-07-23'])
+    expect(days('2026-07-24')).toEqual([])
   })
 
   it('dutySlotOptions 跳過公休的那一班', () => {

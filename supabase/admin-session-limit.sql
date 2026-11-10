@@ -3,7 +3,7 @@
 -- 後台 RPC 與 RLS 的權限判斷全都走 user_role()，只改這支就全部涵蓋。
 -- 2FA 看 JWT 的 aal（通過驗證碼才是 aal2，帳密或 Google 登入都只到 aal1）。
 -- 不用 Supabase Pro 的 Time-box：那是全專案設定，學生也會一起被登出。
--- 登入時間看 auth.sessions.created_at（token 續期不會變）；session 被刪（別台登入踢掉、登出、改密碼）時權限也立刻失效，不必等 access token 到期。
+-- 登入時間看 auth.sessions.created_at（token 續期不會變）；session 被刪（登出、改密碼）時權限也立刻失效，不必等 access token 到期。
 -- 期限要改：這裡的 interval 和 src/utils/authStorage.ts 的 ADMIN_SESSION_MS 一起改。
 -- 使用方式（2FA 關閉）：先在 SQL Editor 貼上執行（可重複執行），再上線 MFA_ENABLED = false 的前端；順序反了，後台會判定沒權限、把人登出。
 -- 2FA 開回來：先上線 AdminRoute 的 MFA_ENABLED = true（沒有 MfaGate 就沒地方輸入驗證碼，後台會全部失效），再取消下面 aal 那行的註解、重貼這份。

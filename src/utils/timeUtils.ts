@@ -63,6 +63,34 @@ export const closedRangeRows = (
       return { day, shift: from === to ? from : 'all' }
     })
 
+/**
+ * day 所在的那段連續休息日，依日期排序：同種類同原因、午晚班接得上，中間只隔週末或法定假日（假日本身不算進去）。
+ * ponytail: 資料一天一列、沒存「同一批」，用相鄰推回來；分開新增但同原因又相鄰的也算一段，要分清楚再加 batch 欄位。
+ * 法定假日不成段，只回自己。
+ */
+export const closedRun = <T extends { day: string; reason: string | null; kind?: string; shift?: ClosedShift }>(rows: T[], day: string): T[] => {
+  const byDay = new Map(rows.map(r => [r.day, r]))
+  const self = byDay.get(day)
+  if (!self) return []
+  if (self.kind === 'holiday') return [self]
+  // a 在前、b 在後：a 要休到晚班、b 要從午班開始才接得上
+  const joins = (a: T, b: T) => a.kind === b.kind && a.reason === b.reason && a.shift !== 'noon' && b.shift !== 'evening'
+  const run = [self]
+  for (const step of [-1, 1]) {
+    const d = fromDateKey(day)
+    let cur = self
+    for (;;) {
+      d.setDate(d.getDate() + step)
+      const next = byDay.get(toDateKey(d))
+      if (next?.kind === 'holiday' || (!next && [0, 6].includes(d.getDay()))) continue
+      if (!next || !(step > 0 ? joins(cur, next) : joins(next, cur))) break
+      run.push(next)
+      cur = next
+    }
+  }
+  return run.sort((a, b) => a.day.localeCompare(b.day))
+}
+
 /** 是否為公休日（週六日或整天公休） */
 export const isOffDay = (date: Date, closedDates: ReadonlySet<string>): boolean => {
   const day = date.getDay()

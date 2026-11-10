@@ -1,17 +1,14 @@
 /**
  * 首頁 - 登入畫面
  * 單欄直排（標題→登入→訪客→工作室連結），無 Header／Footer；手機置中、桌機靠右
- * 學生用學校 Google 帳號登入（google-login.sql）；學號＋密碼表單給後台帳號（sccdsa）與有密碼的帳號，兩種表單可互切。
- * Google Cloud／Supabase 尚未設定完成，目前預設顯示學號密碼表單（PASSWORD_MODE_DEFAULT）。
+ * 預設 Google 登入（google-login.sql，學生與後台都走這條）；學號＋密碼退為小連結當備援（2026-11-09 定），兩種表單可互切。
  */
 
 import { BTN } from '@/components/common/btn'
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth, GOOGLE_PENDING_KEY } from '../contexts/AuthContext'
-import { requestPasswordReset } from '../services/authService'
 import { useT } from '../stores/langStore'
-import ConfirmDialog from '../components/common/ConfirmDialog'
 
 const STUDIO_LINKS = [
   { en: 'Studio', zh: '工作室', icon: 'desk', href: 'https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link' },
@@ -31,8 +28,6 @@ const GoogleIcon = () => (
   </svg>
 )
 
-// ponytail: Google 登入設定完成後改回 false（預設 Google、密碼表單退為次要）
-const PASSWORD_MODE_DEFAULT = true
 // 登入後回跳的頁面（訪客按加入清單／ProtectedRoute 帶來的 redirect_url）；放 sessionStorage 撐過 Google 來回
 const REDIRECT_KEY = 'sccd_login_redirect'
 
@@ -40,16 +35,15 @@ const HomePage = () => {
   const navigate = useNavigate()
   const { login, loginWithGoogle, finishGoogleLogin, isAuthenticated, currentUser } = useAuth()
   const t = useT()
-  const [passwordMode, setPasswordMode] = useState(PASSWORD_MODE_DEFAULT) // 學號＋密碼表單
+  const [passwordMode, setPasswordMode] = useState(false) // 學號＋密碼表單
   const [googleError, setGoogleError] = useState('')
   // 剛從 Google 跳回來：處理完之前不畫登入頁，不然登入成功時會閃一下
   const [finishing, setFinishing] = useState(() => sessionStorage.getItem(GOOGLE_PENDING_KEY) !== null)
   const [searchParams] = useSearchParams()
   const redirectUrl = searchParams.get('redirect_url')
   if (redirectUrl?.startsWith('/')) sessionStorage.setItem(REDIRECT_KEY, redirectUrl)
-  // 後台被 AdminLayout 導回來（別台登入／到期）：借錯誤槽提示，不然值班的人會以為壞了
-  const sessionNotice = searchParams.get('kicked') ? t('This account was signed in on another device, so you’ve been logged out here.', '帳號已在其他裝置登入，這台已登出')
-    : searchParams.get('expired') ? t('Your session has expired. Please log in again.', '登入已過期，請重新登入') : ''
+  // 後台被導回來（到期）：借錯誤槽提示，不然值班的人會以為壞了
+  const sessionNotice = searchParams.get('expired') ? t('Your session has expired. Please log in again.', '登入已過期，請重新登入') : ''
 
   // 登入後導向：admin 進後台，其餘回到被擋下的頁面或型錄
   const landingPath = (role?: string) => {
@@ -61,35 +55,8 @@ const HomePage = () => {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false)
   const [studentIdError, setStudentIdError] = useState('')
   const [passwordError, setPasswordError] = useState('')
-  // 忘記密碼流程狀態
-  const [resetStudentId, setResetStudentId] = useState('')
-  const [resetSent, setResetSent] = useState('') // 已寄出：存遮罩後的 email
-  const [resetError, setResetError] = useState('')
-  const [resetSending, setResetSending] = useState(false)
-
-  const sendReset = async () => {
-    if (!resetStudentId.trim() || resetSending) return
-    setResetError('')
-    setResetSending(true)
-    const result = await requestPasswordReset(resetStudentId.trim())
-    setResetSending(false)
-    if (result.ok && result.maskedEmail) {
-      setResetSent(result.maskedEmail)
-    } else {
-      setResetError(result.message || t('Failed to send. Please try again later.', '寄送失敗'))
-    }
-  }
-
-  // 關閉時重置，下次打開回到輸入學號
-  const closeForgotPassword = () => {
-    setShowForgotPasswordModal(false)
-    setResetStudentId('')
-    setResetSent('')
-    setResetError('')
-  }
 
   // 如果已登入，自動導向到 BookingResourcesPage
   useEffect(() => {
@@ -244,8 +211,8 @@ const HomePage = () => {
                 <p className="h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{passwordError || sessionNotice}</p>
               </div>
 
-              {/* 記住我／忘記密碼 */}
-              <div className="flex justify-between items-center px-1">
+              {/* 記住我（忘記密碼 2026-11-09 拿掉：一律 Google 登入，不做 SMTP；sccdsa 忘記密碼到 Supabase 後台重設） */}
+              <div className="flex items-center px-1">
                 <label className="flex items-center gap-2 cursor-pointer">
                   {/* 全站共用圓形 checkbox（css/common.css .custom-checkbox） */}
                   <input
@@ -256,13 +223,6 @@ const HomePage = () => {
                   />
                   <span className="text-sm text-gray-light">{t('Remember Me', '記住我')}</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPasswordModal(true)}
-                  className={`text-sm text-white ${BTN}`}
-                >
-                  {t('Forgot Password?', '忘記密碼？')}
-                </button>
               </div>
 
               <button
@@ -312,45 +272,6 @@ const HomePage = () => {
           </div>
         </div>
       </div>
-
-      {/* 忘記密碼：沿用 ConfirmDialog 外觀；寄出後同一個框改顯示結果 */}
-      <ConfirmDialog
-        isOpen={showForgotPasswordModal}
-        title={resetSent ? '重設信已寄出' : '忘記密碼'}
-        titleEn={resetSent ? 'Reset Email Sent' : 'Forgot Password'}
-        message={
-          resetSent
-            ? `重設密碼信已寄至 ${resetSent}，請至信箱點擊連結設定新密碼。`
-            : '輸入學號，系統會寄送重設密碼連結到你的學校信箱。'
-        }
-        messageEn={
-          resetSent
-            ? `A password reset email has been sent to ${resetSent}. Open the link in it to set a new password.`
-            : 'Enter your student ID and we’ll send a password reset link to your school email.'
-        }
-        confirmText={resetSent ? 'Confirm' : 'Send'}
-        confirmTextZh={resetSent ? '確認' : '寄送'}
-        confirmDisabled={!resetSent && (!resetStudentId.trim() || resetSending)}
-        hideCancel={!!resetSent}
-        onConfirm={resetSent ? closeForgotPassword : sendReset}
-        onCancel={closeForgotPassword}
-      >
-        {!resetSent && (
-          // form 讓輸入框按 Enter 也能寄送
-          <form onSubmit={(e) => { e.preventDefault(); sendReset() }} className="mt-4">
-            <input
-              type="text"
-              value={resetStudentId}
-              onChange={(e) => setResetStudentId(e.target.value.replace(/[^A-Za-z0-9]/g, ''))}
-              placeholder={t('Student ID', '學號')}
-              aria-label={t('Student ID', '學號')}
-              autoFocus
-              className="w-full px-3 py-2 bg-gray-darker border border-gray-mid text-white text-xs focus:outline-none focus:border-white rounded-lg"
-            />
-            {resetError && <p className="mt-2 text-2xs text-error">{resetError}</p>}
-          </form>
-        )}
-      </ConfirmDialog>
 
     </div>
   )

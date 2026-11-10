@@ -49,12 +49,12 @@ begin
   if (select graduated from public.students where id = v_uid) then
     raise exception '帳號已停用（已畢業），無法送出預約';
   end if;
-  -- 罰款欠繳擋單（情境 13，2026-09-26）：有未繳清的逾期罰款者不可再下單（僅擋 student）
+  -- 罰款欠繳擋單（情境 13，2026-09-26）：有未繳清的罰款者不可再下單（僅擋 student）
   if public.user_role() = 'student' and exists (
     select 1 from public.orders
     where student_id = v_uid and coalesce(penalty_total, 0) > 0 and penalty_paid = false
   ) then
-    raise exception '有未繳清的逾期罰款，請先至系學會繳清後再預約';
+    raise exception '有未繳清的罰款，請先至系學會繳清後再預約';
   end if;
   -- 系學會費（2026-11-07）：只看學生；系秘、admin 不用繳
   if public.user_role() = 'student' and not (select dues_paid from public.students where id = v_uid) then
@@ -339,9 +339,7 @@ as $$
 declare
   v_order public.orders%rowtype;
 begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
 
   select * into v_order from public.orders
     where rental_number = p_rental_number and status = 'pending'

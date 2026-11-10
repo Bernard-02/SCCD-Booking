@@ -21,8 +21,8 @@ import Collapse from '../components/common/Collapse'
 import { navItemCls } from '../components/common/navItem'
 import Toast from '../components/common/Toast'
 import ConfirmDialog from '../components/common/ConfirmDialog'
-import { changePassword, updateMyPhone } from '../services/authService'
-import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder, changeMyPickup } from '../services/ordersService'
+import { changePassword, fetchBackendAccess, updateMyPhone } from '../services/authService'
+import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder, changeMyPickup, penaltyOwed } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadItemImages } from '../services/equipmentService'
 import { classLabel } from '../utils/gradeUtils'
@@ -54,6 +54,9 @@ const ProfilePage: React.FC = () => {
     await logout()
     navigate('/login', { replace: true })
   }
+  // 學會成員的後台入口（登入滿 12 小時的也顯示，點了會要求重新登入）
+  const [hasBackend, setHasBackend] = useState(false)
+  useEffect(() => { void fetchBackendAccess().then(a => setHasBackend(!!a && a !== 'none')) }, [])
   // 菜單項目
   const menuItems = [
     { id: 'history' as ProfileSection, en: 'Orders', zh: '訂單', icon: 'receipt_long' },
@@ -84,6 +87,13 @@ const ProfilePage: React.FC = () => {
                     <span>{t(item.en, item.zh)}</span>
                   </button>
                 ))}
+                {/* 後台沒有手機版，手機不顯示入口 */}
+                {hasBackend && (
+                  <button onClick={() => navigate('/admin/orders')} className={`max-md:hidden ${navItemCls(false)}`}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>admin_panel_settings</span>
+                    <span>{t('Admin', '後台')}</span>
+                  </button>
+                )}
                 {/* 登出：同上方選單樣式，放同一欄底部（inline-flex 讓它與上方選單同寬），緊貼 Footer 的 Profile 頭像上方 */}
                 <button onClick={handleLogout} className={`mt-auto max-md:mt-0 max-md:ml-auto ${navItemCls(false)}`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
@@ -193,7 +203,9 @@ const RentalHistorySection: React.FC = () => {
         itemsUpdatedAt: order.items_updated_at,
         asTeacher: order.as_teacher,
         teacher: order.teacher,
-        refunded: order.refunded
+        refunded: order.refunded,
+        penaltyTotal: order.penalty_total,
+        penaltyOwed: penaltyOwed(order)
       }))
 
       setAllReceipts(receipts)
@@ -431,6 +443,14 @@ const RentalHistorySection: React.FC = () => {
           </span>
         </div>
       )
+    } else if (receipt.penaltyOwed) {
+      return (
+        <div className="text-right mt-2">
+          <span className="font-english text-sm text-error">
+            {t('Fine due', '待繳罰款')} NT$ {receipt.penaltyOwed.toLocaleString()}
+          </span>
+        </div>
+      )
     }
     return null
   }
@@ -444,7 +464,10 @@ const RentalHistorySection: React.FC = () => {
     // 公休撞到取件時段：要改取件日，沒改取件日 19:00 後自動取消
     const pickupBlocked = status === 'pending' && !!receipt.pickupSlot && slotClosed(pickupDayOf(receipt), receipt.pickupSlot, closedDates)
 
-    const statusInfo = awaitingPickup ? AWAITING_PICKUP_META : getStatusInfo(status)
+    // 差額沒繳清這筆單還沒結束，不顯示「已歸還」
+    const statusInfo = receipt.penaltyOwed
+      ? { color: 'var(--color-pink)', en: 'Fine Due', zh: '待繳罰款' }
+      : awaitingPickup ? AWAITING_PICKUP_META : getStatusInfo(status)
     // 可延期＝租借中、未延期過、且未逾「前三天」期限
     const endDate = receipt.rentalDates[receipt.rentalDates.length - 1]
     const canExtend = status === 'in-progress' && !receipt.hasExtended && isWithinExtendWindow(endDate)
@@ -667,6 +690,7 @@ const ProfileDataSection: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   // 當前最嚴重逾期單的營業日天數（第 1-6 級標籤即時計算，不入庫）
   const [worstOverdueDays, setWorstOverdueDays] = useState(0)
+  const [owed, setOwed] = useState(0) // 待繳罰款合計（押金抵完還差的）
 
   useEffect(() => {
     Promise.all([fetchMyOrders(), fetchClosedDates()])
@@ -675,6 +699,7 @@ const ProfileDataSection: React.FC = () => {
           .filter(order => order.status === 'overdue')
           .map(order => overdueBusinessDays(order.end_date, closed))
         setWorstOverdueDays(days.length ? Math.max(...days) : 0)
+        setOwed(orders.reduce((sum, order) => sum + penaltyOwed(order), 0))
       })
       .catch(() => {}) // 讀取失敗維持第 1 級顯示，停權仍由 accountLevel 判定
   }, [])
@@ -739,6 +764,20 @@ const ProfileDataSection: React.FC = () => {
                   `您有訂單已逾期 ${worstOverdueDays} 個營業日，滿 6 天帳號將停權，請儘速歸還`
                 )}
               </p>
+            </div>
+          </>
+        ) : owed > 0 ? (
+          <>
+            <div className="mb-6">
+              <p className="text-white text-md">
+                {t(
+                  <>You have an unpaid fine of <span className="font-english" style={{ color: 'var(--color-pink)', fontWeight: 600 }}>NT$ {owed.toLocaleString()}</span></>,
+                  <>您有待繳罰款 <span className="font-english" style={{ color: 'var(--color-pink)', fontWeight: 600 }}>NT$ {owed.toLocaleString()}</span></>
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-light text-xs">{t('Please pay it at the student association. You cannot place new bookings until it is cleared.', '請至系學會繳清，繳清前無法送出預約')}</p>
             </div>
           </>
         ) : (

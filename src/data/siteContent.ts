@@ -30,7 +30,6 @@ export const CONTENT_GROUPS: { id: ContentEntry['group']; label: string; desc: s
 export const CONTENT: ContentEntry[] = [
   // ---- 編號區區域名稱（key＝前台子分類 id；專案許可區含走廊與柱子，共用一個）----
   { key: 'area.Square', group: 'area', label: '中庭', zh: '中庭', en: 'Square' },
-  { key: 'area.AreaF', group: 'area', label: 'F 區', zh: 'F 區', en: 'Area F' },
   { key: 'area.FrontTerrace', group: 'area', label: '前陽台', zh: '前陽台', en: 'Front Terrace' },
   { key: 'area.BackTerrace', group: 'area', label: '後陽台', zh: '後陽台', en: 'Back Terrace' },
   { key: 'area.GlassWall', group: 'area', label: '玻璃牆', zh: '玻璃牆', en: 'Glass Wall' },

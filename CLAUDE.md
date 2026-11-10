@@ -9,7 +9,7 @@
 - **Zustand** — 收藏（bookmark）狀態、介面語言（`stores/langStore.ts`）
 - **Tailwind CSS v4** (`@tailwindcss/vite`) 共存於舊的 `css/*.css` 檔案
 - **動畫**：原生 CSS（transition、`@keyframes`，共用的在 `css/animations.css`），不裝動畫庫（2026-11-06 定；gsap 從沒被 import 過，已移除）
-- **其他**：jspdf、html2canvas（僅 Profile 訂單下載收據用，點下載時才動態載入：`components/profile/OrderReceipt.tsx`）
+- **其他**：jspdf、html2canvas（Profile 收據用，按下去才動態載入：`utils/pdf.ts`）
 
 ## 目錄結構
 
@@ -44,6 +44,7 @@ docs/roadmap.md                 # 完成路線圖（階段 1-6 與任務清單�
 docs/supabase-backend-plan.md   # 後端定案與接線規劃（Supabase）
 docs/sa-discussion.md           # 待與系學會討論的規則（開會用，決議後回寫 rental-rules）
 docs/google-login-setup.md      # 學校 Google 登入的 Google Cloud／Supabase 一次性設定步驟
+docs/drive-upload-setup.md      # 大量訂單核對單存學會 Drive 的 Apps Script 部署步驟
 docs/bookmark-system.md         # 收藏系統設計文檔
 ```
 
@@ -71,14 +72,15 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   app 資料在但 Supabase 憑證已沒了也視為登出。**admin 例外**（2026-11-06，後台在學會共用電腦上用）：登入起算固定 12 小時、不續期，分頁開著也會到期
   （`authStorage.isLoginExpired`＋`AdminLayout` 每分鐘檢查，導回 `/?expired=1` 顯示提示）；真正的防線在 `user_role()`（`supabase/admin-session-limit.sql`，看 `auth.sessions.created_at`）。
   **後台 2FA**（2026-11-07 先關閉：`AdminRoute` 的 `MFA_ENABLED`＋`supabase/admin-session-limit.sql` 的 aal 那行，上線前決定要不要開回來，見 roadmap）：帳密或 Google 登入後由 `AdminRoute` 的 `components/admin/MfaGate` 接手（Supabase TOTP，免費；第一次顯示 QR 綁定，之後輸入 6 位數驗證碼），`user_role()` 要求 JWT `aal2`，只過第一步拿不到後台權限。
-  **後台同時只留一台**：進後台就把其他裝置登出（`AdminLayout` 呼叫 `signOutOtherDevices`；開著 2FA 時過關才進得來，只知道密碼的人踢不掉值班中的電腦，關閉期間踢得掉），舊裝置由 `AdminLayout` 每分鐘查 `user_role` 發現、導回 `/?kicked=1`。
-  踢舊的、不擋新的：擋新登入的話上一台忘了登出，下一班就進不去。登出用 `scope: 'local'` 只登出這台。後台帳號改用學會 Gmail 登入、換屆交接見 `docs/google-login-setup.md`
+  **後台分權**（2026-11-08）：最高權限＝`role=admin`（`sccdsa`），整個後台；學會成員＝會員管理標「系學會」（`staff_members`，`students.role` 仍是 student，借東西的規則照舊）用自己的帳號，只能用側欄「值班」（訂單、A5F 編號區、通知），不限同時登入的裝置數。
+  判斷都在 `supabase/operator-access.sql`：`backend_access()`（admin／operator／expired／none，學會成員同樣登入滿 12 小時失效）、值班 RPC 開頭的 `operator_handler`（學會成員的經手人強制記本人）、值班頁讀資料走 `operator_*` RPC。**不要為了值班頁開 `orders`／`students` 的 RLS**：`fetchMyOrders` 靠 RLS 篩，開了學會成員自己的訂單頁會撈到所有人的單。前端 `AdminRoute`（`AdminOnly` 包「設定」路由）與 `AdminLayout` 依 `role` 隱藏「設定」，學會成員從 Profile 左選單「後台」進來。
+  登出用 `scope: 'local'` 只登出這台。後台帳號改用學會 Gmail 登入、換屆交接見 `docs/google-login-setup.md`
 - **登入實作**（2026-10-24 改學校 Google 帳號）：學生按「使用學校 Google 帳號登入」→ `signInWithGoogle` 導去 Google →
   跳回首頁由 `HomePage` 呼叫 `AuthContext.finishGoogleLogin` 撈 profile；資格在 DB trigger 把關（`supabase/google-login.sql`：
   網域 gm／gm1／gm2.usc.edu.tw，**且學號或 Email 要先在後台會員管理「新增會員」登記過**＝`login_allowlist`，`members-v2.sql`，2026-10-25 改封閉名單，不再依學號格式自動放行），
   第一次登入自動建學生資料（年級／班別由學號給初值、姓名用 Google 名字）。不另寄驗證信——Google 登入本身即驗證。
-  學號＋密碼（`supabaseLogin`）給後台帳號 `sccdsa` 與有密碼的帳號；**Google Cloud／Supabase 尚未設定完成，登入頁目前預設顯示學號密碼表單**
-  （`HomePage` 的 `PASSWORD_MODE_DEFAULT`，設定好後改回 false，密碼表單退為「學號密碼登入」連結）。LINE／IG 內建瀏覽器會被 Google 擋，登入頁會提示。
+  登入頁預設 Google（學生與後台都走這條，2026-11-09 定），學號＋密碼（`supabaseLogin`）退為「學號密碼登入」小連結當備援；不做 SMTP、沒有忘記密碼，`sccdsa` 的密碼到 Supabase 後台重設。
+  Supabase 已開 Google provider、接上 OAuth 用戶端（2026-11-10 確認），**還沒用真實帳號實測**（docs/google-login-setup.md「E. 測試」）。LINE／IG 內建瀏覽器會被 Google 擋，登入頁會提示。
   舊的 mock 登入已移除，認證共用型別留在 `utils/authTypes.ts`
 - **保護路由**：目前僅 `/profile` 包在 `ProtectedRoute` 中，其他路由都是公開的
 
@@ -113,7 +115,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 **改後端注意**：規則把關（庫存互斥、空間衝突、押金、流水號、會費、一類別一張）都在 `submit_orders` RPC 的 transaction 內，前端檢查只是 UX；動資料表結構（含改名）前先全域搜尋引用。plpgsql 的 `if` 條件裡 `case` 要加括號，不然第一個 `then` 會被當成 if 的 then。剩餘階段（管理後台 → 規則補完 → 品質 → 手機版 → 部署）與任務清單在 **`docs/roadmap.md`**。摘要：
 
-- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）／通知（2026-11-02 從左上鈴鐺改成獨立頁 `/admin/notifications`：清單由 AdminLayout 抓、Outlet context 傳入，標題右「全部已讀」鈕；側欄 icon 有未讀粉紅點）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／文字內容〔2026-11-02 加、11-03 段落化：使用教學／系學會＝段落清單拖曳排序＋右側滑入面板改標題與積木（`site_sections` 表，`supabase/site-sections.sql`，整頁一次儲存）；關於／聯絡方式／延期規則仍是固定欄位（`site_content`），清空＝回內建〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～3 位系學會，編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
+- **階段 2 管理後台**：進行中。自建 `/admin`（`AdminLayout` 側欄兩組〔小字組名＋icon 膠囊，同前台 Profile；後台只有中文；左上「SCCDSA／Booking 後台」兩行＋今天日期，與各頁標題同高（pt-10，不跟前台 Header 對齊）〕：值班＝訂單（上方各狀態數量，原總覽 2026-10-24 拿掉）／A5F 編號區（原名空間地圖，教室不列）／通知（2026-11-02 從左上鈴鐺改成獨立頁 `/admin/notifications`：清單由 AdminLayout 抓、Outlet context 傳入，標題右「全部已讀」鈕；側欄 icon 有未讀粉紅點）；設定＝設備管理／空間管理／會員管理〔含系學會＝經手人名單〕／文字內容〔2026-11-02 加、11-03 段落化：使用教學／系學會＝段落清單拖曳排序＋右側滑入面板改標題與積木（`site_sections` 表，`supabase/site-sections.sql`，整頁一次儲存）；關於／聯絡方式／延期規則仍是固定欄位（`site_content`），清空＝回內建〕／營業時間〔2026-10-26 改版：左「假期 & 休息日」月曆整合休息日／法定假日（自動匯入）／寒暑假封鎖，點日期開小視窗新增或刪除；右值班時間表 週一～五 × 午班／晚班、每格 1～5 位系學會（還沒啟用的也能排，`supabase/pending-staff.sql`），編輯→確定一次寫入；規則見 docs/admin-hours.md〕）已上線——訂單全覽、收押金、整單歸還＋罰款、值班經手人追溯、公休日／封鎖維護皆完成；代客延期、拆單、代取消、助教直借、畢業生停用亦已完成（清單見 roadmap.md；手動建單 2026-10-04 定案不做）。admin 帳號學號 `sccdsa`。
   後台通知（2026-11-02）：學生送單／改品項／延期／取消由 `orders` trigger 發給 admin（`supabase/admin-notifications.sql`），
   側欄鈴鐺（`NotificationPanel` 與前台共用）點一則跳 `/admin/orders?student=學號`。
 - **階段 3 規則補完**：已完成。2026-11-07 落地學會決議（`supabase/rules-2026-11.sql`，執行順序在檔頭）：起租日最遠 30 天、一類別一張、設備天數依年級（大五大六）、已繳未取件自動取消＋退押金、公休改取件日、公休分時段、老師名義與證明檔（私有 bucket `proofs`）、系學會費、罰款由學會填、F 區。grade 慣例見 rental-rules.md「年級限制」。
@@ -167,11 +169,12 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **hover 一律即時變化，不加 fade**（2026-10-23 定）：hover 變色／變透明不要寫 `transition-colors`、`transition-opacity`、`transition`；
   非 hover 的動畫照常（展開收合、刪除淡出、選取模式位移、chevron 旋轉、圖片 hover 放大這類 transform）。
 - **按鈕狀態一律接 `BTN`**（`components/common/btn.ts`，2026-10-31 定，前後台同）：hover 整顆 50%、停用整顆 20%，不另寫 hover／disabled class；
+  **hover 50% 只給沒有 active 狀態的 CTA；灰底鈕（`bg-gray-dark`）接 `BTN_INVERT`，hover 直接顯示 active 的樣子＝白底黑字**（2026-11-09 定：`toolBtn`／`textBtn`、`filled` 下拉、日期鈕、分頁膠囊、`BTN_TOOL`；停用同 20%，開著／選中時也是白底黑字）；灰框的表單下拉同理，hover＝展開時的白框；
   工具鈕（icon＋文字灰底 chip）加 `BTN_TOOL`；多選／分類膠囊走 `navItemCls`（未選中 hover 白字＋white/10 底）。
   **線框鈕（白線白字）接 `BTN_OUTLINE`，hover 反白＝白底黑字**（2026-11-02 定；整顆變淡會像快停用）：借的是「選中」的白底黑字語彙，
   所以只給動作型（後台 `actionBtn`、購物車「＋ 新增」、型錄 − ＋），toggle 不用；連結版（登入頁兩張卡）自己寫 `hover:bg-white hover:border-white hover:text-black`。
   **有 active 狀態的按鈕，active 時不加 hover**（2026-11-02 定）：選中的膠囊、目前所在頁的 icon（Footer /profile 頭像、Header /cart）、
-  開著下拉／彈出清單的開關鈕（Header 通知鈴、Footer 連結、DatePickerBar 已選日期）——寫 `${active ? 'cursor-pointer' : BTN}`；沒有 active 狀態的按鈕照常接 `BTN`；
+  開著下拉／彈出清單的開關鈕（Header 通知鈴、Footer 連結）——寫 `${active ? 'cursor-pointer' : BTN}`；沒有 active 狀態的按鈕照常接 `BTN`；
   `<a>` 沒有 :enabled 直接寫 `hover:opacity-50`；仍可點、點了跳提示的 aria-disabled 鈕自己寫 `opacity-20 cursor-not-allowed`。Profile 訂單卡整列 hover 反白是卡片不是按鈕，維持。
 - **顏色只用 `src/index.css` `@theme` 的 token**（2026-11-01 定，前後台同一套；`--color-*: initial` 已關掉 Tailwind 預設色盤，寫 `text-zinc-400` 會沒效果、build 不擋）：
   黑白＋四階灰 `gray-light`（輔助文字）／`gray-mid`（線、框、佔位）／`gray-dark`（灰鈕、chip、tooltip、選單 hover 底，2026-11-02 加，前後台灰鈕同這個）／`gray-darker`（面板底）；狀態色 `green`／`pink`（品牌粉）／`error`／`yellow`／`orange`／`cyan`，意義表在 token 註解。

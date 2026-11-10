@@ -4,9 +4,9 @@
  * 改狀態語彙時兩邊要一起動。
  */
 
-import { BTN, BTN_OUTLINE, CHIP } from '@/components/common/btn'
+import { BTN, BTN_INVERT, BTN_OUTLINE, CHIP } from '@/components/common/btn'
 import CloseButton from '../common/CloseButton'
-import React, { useEffect, useId, useRef, useState } from 'react'
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
 import { toDateKey } from '../../utils/timeUtils'
@@ -73,9 +73,9 @@ export const actionBtn = `px-3 py-1 inline-flex items-center justify-center roun
 export const inputCls =
   'bg-transparent border border-gray-mid rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none'
 
-// ---- 工具列（訂單／設備管理等清單頁共用，2026-10-24 定）：預設 gray-dark 底白字（同前台 BTN_TOOL）、active（展開中／有生效篩選／選中分頁）＝白底黑字 ----
+// ---- 工具列（訂單／設備管理等清單頁共用，2026-10-24 定）：預設 gray-dark 底白字（同前台 BTN_TOOL）、active（展開中／有生效篩選／選中分頁）與 hover＝白底黑字 ----
 export const toolBtn = (active: boolean) =>
-  `h-9 rounded-lg text-xs whitespace-nowrap ${active ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white ${BTN}`}`
+  `h-9 rounded-lg text-xs whitespace-nowrap ${active ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white ${BTN_INVERT}`}`
 // icon＋文字：icon 側 padding 少 4px
 export const textBtn = (active: boolean) => `${toolBtn(active)} inline-flex items-center pl-2 pr-3 gap-1.5 font-chinese`
 // 列內的 icon 動作鈕（修改等）：白底黑 icon 方形（同前台的白色按鈕，hover 變淡）
@@ -177,11 +177,11 @@ export function CountTabs<K extends string>({ tabs, value, counts, onChange }: {
             role="tab"
             aria-selected={active}
             onClick={() => onChange(t.key)}
-            className={`${toolBtn(active)} pl-3 pr-2 flex items-center gap-2 font-chinese ${active ? 'font-bold' : ''}`}
+            className={`group ${toolBtn(active)} pl-3 pr-2 flex items-center gap-2 font-chinese ${active ? 'font-bold' : ''}`}
           >
             {t.zh}
             <span className={`min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english font-normal ${
-              active ? 'bg-gray-light' : 'bg-white/10 opacity-70'
+              active ? 'bg-gray-light' : 'bg-white/10 opacity-70 group-hover:bg-gray-light group-hover:opacity-100'
             }`}>
               {counts[t.key] ?? 0}
             </span>
@@ -353,7 +353,7 @@ export const Field: React.FC<{ zh: string; required?: boolean; children: React.R
 /**
  * 下拉選單（自訂，取代原生 <select>：原生展開的清單無法改樣式）。
  * 觸發鈕同輸入框外觀（高 36px、expand_more 箭頭）；清單圓角 8px（同按鈕，後台 2026-10-24 定）、hover／鍵盤選到出灰底、
- * 已選的打勾。清單用 portal＋fixed 定位，不會被表格等捲動容器裁掉；下方空間不夠就往上開；捲動或縮放視窗時收起。
+ * 已選的打勾。清單用 portal＋fixed 定位，不會被表格等捲動容器裁掉；下方空間不夠就往上開、右邊放不下就對齊按鈕右緣；捲動或縮放視窗時收起。
  * 鍵盤：↑↓ 移動、Enter／空白 選取、Esc 收起（不會連帶關掉外層對話框）、Tab 收起。
  * group＝分組標題（取代 optgroup）；value 不在選項內時觸發鈕顯示 placeholder（「＋ 加人」這類動作選單即如此）。
  * searchable＝清單第一列是搜尋框（選項多的時候，如組合的「加入設備」）：展開即聚焦、打字過濾 label／group、
@@ -362,7 +362,7 @@ export const Field: React.FC<{ zh: string; required?: boolean; children: React.R
 export interface SelectOption<V> { value: V; label: React.ReactNode; disabled?: boolean; group?: string }
 
 export function Select<V extends string | number>({
-  value, options, onChange, placeholder = '請選擇', disabled, icon, filled, searchable,
+  value, options, onChange, placeholder = '請選擇', disabled, icon, filled, more, searchable,
   searchPlaceholder = '搜尋', emptyText = '找不到符合的項目', className = '', size = 'sm', 'aria-label': ariaLabel
 }: {
   value: V
@@ -370,8 +370,10 @@ export function Select<V extends string | number>({
   size?: 'xs' | 'sm'
   /** 顯示在選中文字左邊的 Material icon（工具列篩選用，如 category） */
   icon?: string
-  /** 工具列樣式：灰底無框，展開＝白底黑字（同狀態分頁的選中膠囊）；預設是表單用的透明底灰框（跟著容器底色：對話框 gray-darker、頁面黑） */
+  /** 工具列樣式：灰底無框，展開＝白底黑字（同狀態分頁的選中膠囊），清單對齊按鈕右緣；預設是表單用的透明底灰框（跟著容器底色：對話框 gray-darker、頁面黑） */
   filled?: boolean
+  /** 動作選單：觸發鈕只有 ⋯ icon（36×36） */
+  more?: boolean
   /** 清單頂端放搜尋框過濾選項 */
   searchable?: boolean
   /** 搜尋框提示／沒有符合時的文字（前台用 t() 傳英文；後台用預設中文） */
@@ -401,9 +403,11 @@ export function Select<V extends string | number>({
     const groups = new Set(options.map(o => o.group).filter(Boolean)).size
     const menuH = Math.min(options.length * 36 + groups * 28 + 10 + (searchable ? 40 : 0), 320) // 320＝max-h-80
     const below = window.innerHeight - r.bottom
+    // 工具列的下拉在頁面右側，清單對齊按鈕右緣，選項比按鈕寬也不會超出內容區；表單的對齊左緣
+    const x = filled ? { right: document.documentElement.clientWidth - r.right } : { left: r.left }
     setPos(below < menuH + 8 && r.top > below
-      ? { left: r.left, bottom: window.innerHeight - r.top + 4, minWidth: r.width }
-      : { left: r.left, top: r.bottom + 4, minWidth: r.width })
+      ? { ...x, bottom: window.innerHeight - r.top + 4, minWidth: r.width }
+      : { ...x, top: r.bottom + 4, minWidth: r.width })
     setQuery('')
     setActive(options.findIndex(o => o.value === value && !o.disabled))
     setOpen(true)
@@ -415,6 +419,15 @@ export function Select<V extends string | number>({
     btnRef.current?.focus()
     if (o.value !== value) onChange(o.value)
   }
+
+  // 清單寬度要畫出來才知道：顯示前量一次，超出視窗右邊就改對齊按鈕右緣
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current || !btnRef.current) return
+    const vw = document.documentElement.clientWidth
+    if (menuRef.current.getBoundingClientRect().right <= vw) return
+    const right = vw - btnRef.current.getBoundingClientRect().right
+    setPos(p => ({ ...p, left: undefined, right }))
+  }, [open])
 
   // 點外面、捲動（清單本身除外）、縮放視窗 → 收起
   useEffect(() => {
@@ -473,22 +486,28 @@ export function Select<V extends string | number>({
         aria-controls={open ? listId : undefined}
         aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
         aria-label={ariaLabel}
-        className={`relative inline-flex items-center ${size === 'xs' ? 'h-7 text-2xs pr-7' : 'h-9 text-xs pr-9'} ${
+        className={`relative inline-flex items-center ${more ? 'w-9 h-9 justify-center' : `${size === 'xs' ? 'h-7 text-2xs pr-7' : 'h-9 text-xs pr-9'} ${
           icon ? 'pl-2 gap-1.5' : size === 'xs' ? 'pl-2' : 'pl-3'
-        } rounded-lg text-left outline-none whitespace-nowrap ${
+        }`} rounded-lg text-left outline-none whitespace-nowrap ${
           filled
-            ? open ? 'bg-white text-black' : `bg-gray-dark text-white focus-visible:bg-gray-mid ${BTN}`
-            : `bg-transparent border text-white ${open ? 'border-white' : 'border-gray-mid focus-visible:border-white'}`
-        } ${open ? 'cursor-pointer' : BTN} ${className}`}
+            ? open ? 'bg-white text-black cursor-pointer' : `bg-gray-dark text-white focus-visible:bg-gray-mid ${BTN_INVERT}`
+            : `bg-transparent border text-white ${open ? 'border-white cursor-pointer' : 'border-gray-mid focus-visible:border-white cursor-pointer enabled:hover:border-white disabled:cursor-not-allowed disabled:opacity-20'}`
+        } ${className}`}
       >
-        {icon && <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">{icon}</span>}
-        {/* placeholder 灰字；filled 展開中是白底，placeholder 跟著黑（如營業時間的「新增」） */}
-        <span className={`min-w-0 truncate ${selected ? '' : open && filled ? 'text-black' : 'text-gray-light'}`}>{selected?.label ?? placeholder}</span>
-        <span
-          className={`material-symbols-outlined absolute ${size === 'xs' ? 'right-1.5' : 'right-2.5'} top-1/2 -translate-y-1/2 pointer-events-none opacity-70`}
-          style={{ fontSize: size === 'xs' ? '16px' : '18px' }}
-          aria-hidden="true"
-        >expand_more</span>
+        {more ? (
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }} aria-hidden="true">more_horiz</span>
+        ) : (
+          <>
+            {icon && <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">{icon}</span>}
+            {/* placeholder 灰字；filled 的 hover／展開中是白底，字跟著按鈕變色（如營業時間的「新增」） */}
+            <span className={`min-w-0 truncate ${selected || filled ? '' : 'text-gray-light'}`}>{selected?.label ?? placeholder}</span>
+            <span
+              className={`material-symbols-outlined absolute ${size === 'xs' ? 'right-1.5' : 'right-2.5'} top-1/2 -translate-y-1/2 pointer-events-none opacity-70`}
+              style={{ fontSize: size === 'xs' ? '16px' : '18px' }}
+              aria-hidden="true"
+            >expand_more</span>
+          </>
+        )}
       </button>
       {open && createPortal(
         <ul
@@ -595,11 +614,11 @@ const DateTrigger: React.FC<{ value: string; placeholder: string; open: boolean;
     onClick={onClick}
     aria-haspopup="dialog"
     aria-expanded={open}
-    className={`relative inline-flex items-center h-9 pl-3 pr-9 rounded-lg text-xs text-left outline-none cursor-pointer ${
-      open ? 'bg-white text-black' : `bg-gray-dark text-white focus-visible:bg-gray-mid ${BTN}`
+    className={`group relative inline-flex items-center h-9 pl-3 pr-9 rounded-lg text-xs text-left outline-none cursor-pointer ${
+      open ? 'bg-white text-black' : `bg-gray-dark text-white focus-visible:bg-gray-mid ${BTN_INVERT}`
     } ${className}`}
   >
-    <span className={value ? 'font-english' : 'text-gray-light font-chinese'}>{value ? fmtKey(value) : placeholder}</span>
+    <span className={value ? 'font-english' : `font-chinese ${open ? '' : 'text-gray-light group-hover:text-black'}`}>{value ? fmtKey(value) : placeholder}</span>
     <span
       className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-70"
       style={{ fontSize: '18px' }}
@@ -615,9 +634,9 @@ export const DatePicker: React.FC<{ value: string; onChange: (v: string) => void
   const ref = useRef<HTMLDivElement>(null)
   useCloseOnOutside(open, setOpen, ref)
   const d = value ? parseKey(value) : null
-  // 兩顆按鈕（同後台工具列：灰底無框、hover 稍亮；展開中＝白底黑字）：左＝月曆 icon、右＝日期；點哪顆都開同一個月曆
+  // 兩顆按鈕（同後台工具列：灰底無框；hover 與展開中＝白底黑字）：左＝月曆 icon、右＝日期；點哪顆都開同一個月曆
   const btnCls = `h-9 inline-flex items-center rounded-lg text-xs outline-none cursor-pointer ${
-    open ? 'bg-white text-black' : `bg-gray-dark text-white ${BTN}`
+    open ? 'bg-white text-black' : `bg-gray-dark text-white ${BTN_INVERT}`
   }`
   const toggle = () => setOpen(v => !v)
   return (
@@ -719,7 +738,7 @@ export const ImagePicker: React.FC<{
         )}
       </span>
       {caption && (
-        <span className={`${textBtn(false)} w-full justify-center group-hover:opacity-50`}>
+        <span className={`${textBtn(false)} w-full justify-center group-hover:bg-white group-hover:text-black`}>
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">photo_camera</span>
           {caption}
         </span>

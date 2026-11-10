@@ -10,28 +10,40 @@ export interface AppNotification {
   content: string
   timestamp: number
   read: boolean
-  announcement: boolean // 後台全站通知（鈴鐺標「公告」）
   link: string | null   // 點了要去哪（後台通知用：/admin/orders?student=學號）
 }
+
+interface NotificationRow { id: number; message: string; is_read: boolean; created_at: string; link: string | null }
+const toNotification = (row: NotificationRow): AppNotification => ({
+  id: String(row.id),
+  content: row.message,
+  timestamp: new Date(row.created_at).getTime(),
+  read: row.is_read,
+  link: row.link ?? null
+})
 
 /** 讀取自己 7 天內的通知（新的在前） */
 export async function fetchMyNotifications(): Promise<AppNotification[]> {
   const since = new Date(Date.now() - 7 * 86400000).toISOString()
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, type, message, is_read, created_at, link')
+    .select('id, message, is_read, created_at, link')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
   if (error) throw error
+  return (data ?? []).map(toNotification)
+}
 
-  return (data ?? []).map(row => ({
-    id: String(row.id),
-    content: row.message,
-    timestamp: new Date(row.created_at).getTime(),
-    read: row.is_read,
-    announcement: row.type === 'announcement',
-    link: row.link ?? null
-  }))
+/** 後台通知頁：值班共用的收件匣，最高權限與學會成員看同一份（operator-access.sql） */
+export async function fetchDutyNotifications(): Promise<AppNotification[]> {
+  const { data, error } = await supabase.rpc('operator_notifications')
+  if (error) throw error
+  return ((data ?? []) as NotificationRow[]).map(toNotification)
+}
+
+export async function markDutyNotificationsRead(): Promise<void> {
+  const { error } = await supabase.rpc('operator_mark_notifications_read')
+  if (error) console.error('標記通知已讀失敗:', error)
 }
 
 /** 將自己的通知全部標為已讀 */

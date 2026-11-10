@@ -52,11 +52,12 @@ drop policy if exists "proofs: own or admin read" on storage.objects;
 create policy "proofs: own or admin read" on storage.objects for select to authenticated
   using (bucket_id = 'proofs' and ((storage.foldername(name))[1] = auth.uid()::text or public.user_role() = 'admin'));
 
--- ---------- 5. F 區（E1–E6 靠走廊的長條獨立出來，中庭的 E1–E6 不動；編號同 Venues 表）----------
+-- ---------- 5. F1–F6（E1–E6 靠走廊的長條獨立編號，算在中庭，2026-11-08 Bernard 定；中庭的 E1–E6 不動；編號同 Venues 表）----------
 insert into public.space (id, venue_code, name, area, deposit, is_active)
-select 'F' || n, '#A5NF00' || n, 'F' || n, 'area-f', 1000, true
+select 'F' || n, '#A5NF00' || n, 'F' || n, 'square', 1000, true
 from generate_series(1, 6) n
 on conflict (id) do nothing;
+update public.space set area = 'square' where area = 'area-f'; -- 先前建成獨立 F 區的
 
 -- ---------- 6. 公休改取件日 ----------
 -- 時段是否公休：slot＝'HH:MM-HH:MM'，15:00 前算午班（同前台 shiftOfSlot）
@@ -121,39 +122,6 @@ begin
     (select name || '（' || student_id || '）' from public.students where id = v_uid) ||
     ' 將訂單 ' || p_rental_number || ' 改到 ' || to_char(p_date, 'MM/DD') || ' ' || p_slot || ' 取件。',
     '/admin/orders?student=' || (select student_id from public.students where id = v_uid));
-end;
-$$;
-
--- ---------- 7. 後台退押金 ----------
--- 已繳押金但取消的單（含沒來取件自動取消），以及大量單拆單全還後人工結的押金
-create or replace function public.admin_refund_deposit(p_rental_number text, p_handler text)
-returns void
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  v_student uuid;
-  v_amount int;
-begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
-
-  update public.orders
-    set refunded = deposit_total, refunded_by = p_handler
-    where rental_number = p_rental_number
-      and status in ('canceled', 'returned')
-      and deposit_paid_at is not null
-      and deposit_total > 0
-      and refunded is null
-    returning student_id, deposit_total into v_student, v_amount;
-  if not found then
-    raise exception '此訂單沒有待退的押金';
-  end if;
-
-  insert into public.notifications (student_id, type, title, message, link)
-  values (v_student, 'success', '押金已退還',
-          '訂單 ' || p_rental_number || ' 的押金 NT$ ' || v_amount || ' 已退還。', '/profile');
 end;
 $$;
 

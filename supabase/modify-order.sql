@@ -177,9 +177,7 @@ as $$
 declare
   v_order public.orders%rowtype;
 begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
   if p_deposit_total is null or p_deposit_total < 0 then
     raise exception '押金金額不可為負';
   end if;

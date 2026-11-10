@@ -1,5 +1,5 @@
 /**
- * 後台操作對話框：收押金／取件／歸還（罰款由學會填）／退押金＋值班經手人選擇。
+ * 後台操作對話框：收押金／取件／歸還／退押金（罰金在這裡填）＋值班經手人選擇。
  * 經手人必選（追溯用）；樣式沿用 common/ConfirmDialog。
  * 大量設備預選了繳押金／取件時段（mass-pickup.sql）：收押金時可選「同時取件」，
  * 不勾＝只收押金（已繳待取件），之後再用 pickup 模式確認取件。
@@ -9,22 +9,24 @@ import { BTN } from '@/components/common/btn'
 import CloseButton from '../common/CloseButton'
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { suggestedDeposit, type AdminOrderRow } from '../../services/ordersService'
+import { penaltyOwed, suggestedDeposit, type AdminOrderRow } from '../../services/ordersService'
 import { useBundles } from '../../services/equipmentService'
 import { slotLabel, toDateKey } from '../../utils/timeUtils'
 import { Select } from './adminUi'
 
 export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'penalty' | 'cancel' | 'extend' | 'handover' | 'refund'
-// pickup = 已預繳者取件；penalty = 收罰款（歸還時未當場繳清的欠款）；cancel = 代取消；extend = 代客延期；
-// handover = 點交學生取件後新增的設備（modify-order.sql）；refund = 退押金（取消單、大量單全還後人工結）
+// pickup = 已預繳者取件；penalty = 收罰款（押金抵完還差的）；cancel = 代取消；extend = 代客延期；
+// handover = 點交學生取件後新增的設備（modify-order.sql）；refund = 退押金＝結算（填罰金；取消單沒有罰金）
 
 interface Props {
   order: AdminOrderRow
   mode: AdminActionMode
   staff: { name: string; onDuty: boolean }[] // 幹部（值班中排前面，選單來源）
   defaultHandler: string // 上次選擇的經手人（同班次免重選）
-  estPenalty: number // 逾期試算罰款（overdue 時預填，可修改）
-  onConfirm: (handler: string, penalty: number, itemIds: number[], penaltyPaid: boolean, days: number, pickup: boolean, depositTotal?: number) => void
+  estPenalty: number // 逾期試算罰金（退押金時預填，可修改）
+  familyDeposit?: number // 整張單（根單＋子單）的押金，退押金用
+  lockedHandler?: string // 學會成員用自己的帳號：經手人就是本人，不用選（server 也會強制）
+  onConfirm: (handler: string, penalty: number, itemIds: number[], days: number, pickup: boolean, depositTotal?: number) => void
   onCancel: () => void
 }
 
@@ -34,16 +36,13 @@ const OrderActionDialog: React.FC<Props> = ({
   staff,
   defaultHandler,
   estPenalty,
+  familyDeposit = order.deposit_total,
+  lockedHandler,
   onConfirm,
   onCancel
 }) => {
-  const isOverdue = order.status === 'overdue'
-  const [handler, setHandler] = useState(staff.some(s => s.name === defaultHandler) ? defaultHandler : '')
-  const [penalty, setPenalty] = useState(String(isOverdue ? estPenalty : 0))
-  // 已標 overdue 的單可能是「19:00 前已交還、按鈕晚按」——下拉區分準時（免罰）／逾期（預填試算）
-  const [returnKind, setReturnKind] = useState<'late' | 'ontime'>('late')
-  // 超過押金的差額是否當場收齊（情境 13）：沒收 → 欠繳記錄，學生不能再下單直到後台收罰款
-  const [paidNow, setPaidNow] = useState(true)
+  const [handler, setHandler] = useState(lockedHandler ?? (staff.some(s => s.name === defaultHandler) ? defaultHandler : ''))
+  const [penalty, setPenalty] = useState(String(estPenalty))
   // 代客延期天數（1-7；更長分次延）
   const [days, setDays] = useState('1')
   // 收押金時是否同時取件：有預選取件時段（大量設備）才可選，不開放提前取件，到取件日才勾得到；其他單一律同時
@@ -88,10 +87,10 @@ const OrderActionDialog: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', esc)
   }, [onCancel])
 
-  // 罰款由學會填（逾期、損壞、遺失，系統不知道狀況）：從押金扣，超過押金＝退 0，差額學會自己收（2026-11-07）
+  // 退押金＝結算（2026-11-08）：罰金由學會填（逾期、損壞、遺失，系統不知道狀況），從押金扣，超過的差額要學生繳清
+  const settling = mode === 'refund' && order.status === 'returned'
   const penaltyNum = parseInt(penalty, 10)
-  const penaltyValid = mode !== 'return' || (!Number.isNaN(penaltyNum) && penaltyNum >= 0)
-  const overDeposit = mode === 'return' && penaltyValid && penaltyNum > order.deposit_total
+  const penaltyValid = !settling || (!Number.isNaN(penaltyNum) && penaltyNum >= 0)
   const daysNum = parseInt(days, 10)
   const daysValid = mode !== 'extend' || (!Number.isNaN(daysNum) && daysNum >= 1 && daysNum <= 7)
   const canConfirm =
@@ -104,7 +103,7 @@ const OrderActionDialog: React.FC<Props> = ({
     : mode === 'cancel' ? '代取消訂單'
     : mode === 'extend' ? '代客延期'
     : mode === 'handover' ? '點交新增設備'
-    : mode === 'refund' ? '退押金'
+    : mode === 'refund' ? (familyDeposit > 0 ? '退押金' : '結算')
     : '確認歸還'
 
   // 代客延期的新歸還日預覽
@@ -148,11 +147,34 @@ const OrderActionDialog: React.FC<Props> = ({
             </p>
           )}
 
-          {/* 退押金：已繳押金的取消單，或拆單全還後人工結的大量單 */}
+          {/* 退押金：取消單整筆退；歸還的單填罰金，扣完退還，超過押金的差額要同學繳 */}
           {mode === 'refund' && (
             <p className="text-xs text-white font-chinese">
-              押金 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>，退還現金後按確認。
+              押金 <span className="font-english">NT$ {familyDeposit.toLocaleString()}</span>{!settling && '，退還現金後按確認。'}
             </p>
+          )}
+          {settling && (
+            <div>
+              <label className="text-gray-light text-xs block mb-2">
+                罰金（逾期、損壞或遺失，沒有就填 0）
+                {estPenalty > 0 && <span className="font-chinese ml-2">逾期試算 NT$ {estPenalty.toLocaleString()}</span>}
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={penalty}
+                onChange={e => setPenalty(e.target.value)}
+                className={`${field} font-english`}
+              />
+              {penaltyValid && (
+                <p className="text-xs text-white font-chinese mt-2">
+                  退還 <span className="font-english">NT$ {Math.max(familyDeposit - penaltyNum, 0).toLocaleString()}</span>
+                  {penaltyNum > familyDeposit && (
+                    <>，同學還要繳 <span className="font-english">NT$ {(penaltyNum - familyDeposit).toLocaleString()}</span>，繳清這筆單才算結束</>
+                  )}
+                </p>
+              )}
+            </div>
           )}
 
           {/* 老師名義：押金 0，核對證明才算數 */}
@@ -252,34 +274,36 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 收罰款：顯示欠繳金額 */}
           {mode === 'penalty' && (
             <p className="text-xs text-white font-chinese">
-              未繳罰款 <span className="font-english">NT$ {Math.max((order.penalty_total ?? 0) - order.deposit_total, 0).toLocaleString()}</span>
-              ，收款後學生即可恢復預約。
+              未繳罰款 <span className="font-english">NT$ {penaltyOwed(order).toLocaleString()}</span>
+              ，收款後這筆單結束，學生即可恢復預約。
             </p>
           )}
 
-          {/* 值班經手人 */}
-          <div>
-            <label className="text-gray-light text-xs block mb-2">
-              值班經手人
-            </label>
-            {staff.length === 0 ? (
-              <p className="text-xs font-chinese" style={{ color: 'var(--color-error)' }}>
-                尚無系學會成員，請先到「會員管理 Members」把幹部的身分設為系學會
-              </p>
-            ) : (
-              // 值班中的幹部排前面並分組標示；沒人值班時就是一般清單（代班都選得到）
-              <Select
-                value={handler}
-                onChange={setHandler}
-                options={staff.map(s => ({
-                  value: s.name,
-                  label: s.name,
-                  group: staff.some(x => x.onDuty) ? (s.onDuty ? '值班中' : '其他') : undefined
-                }))}
-                className="font-chinese w-full"
-              />
-            )}
-          </div>
+          {/* 值班經手人（共用的最高權限帳號才要選） */}
+          {!lockedHandler && (
+            <div>
+              <label className="text-gray-light text-xs block mb-2">
+                值班經手人
+              </label>
+              {staff.length === 0 ? (
+                <p className="text-xs font-chinese" style={{ color: 'var(--color-error)' }}>
+                  尚無系學會成員，請先到「會員管理 Members」把幹部的身分設為系學會
+                </p>
+              ) : (
+                // 值班中的幹部排前面並分組標示；沒人值班時就是一般清單（代班都選得到）
+                <Select
+                  value={handler}
+                  onChange={setHandler}
+                  options={staff.map(s => ({
+                    value: s.name,
+                    label: s.name,
+                    group: staff.some(x => x.onDuty) ? (s.onDuty ? '值班中' : '其他') : undefined
+                  }))}
+                  className="font-chinese w-full"
+                />
+              )}
+            </div>
+          )}
 
           {/* 歸還品項勾選（情境 5-①）：預設全勾＝整單歸還；部分勾＝未還品項拆子單續租 */}
           {mode === 'return' && (
@@ -303,67 +327,8 @@ const OrderActionDialog: React.FC<Props> = ({
               </div>
               {isPartialReturn && (
                 <p className="text-xs text-gray-light font-chinese mt-2">
-                  部分歸還：未勾選品項將拆為子單（歸還日不變），續走逾期／延期／罰款流程。
+                  部分歸還：未勾選品項將拆為子單（歸還日不變），續走逾期／延期流程；押金等全部歸還後一次結算。
                 </p>
-              )}
-            </div>
-          )}
-
-          {/* 已標逾期的單：下拉區分準時歸還（免罰）／逾期歸還（計罰款）——情境 6 定案 2026-09-26 */}
-          {isOverdue && (
-            <div>
-              <label className="text-gray-light text-xs block mb-2">
-                歸還認定
-              </label>
-              <Select<'late' | 'ontime'>
-                value={returnKind}
-                onChange={kind => { setReturnKind(kind); setPenalty(String(kind === 'late' ? estPenalty : 0)) }}
-                options={[
-                  { value: 'late', label: '逾期歸還（計罰款）' },
-                  { value: 'ontime', label: '準時歸還（免罰，19:00 前已交還）' }
-                ]}
-                className="font-chinese w-full"
-              />
-            </div>
-          )}
-
-          {/* 罰款金額：逾期預填試算，損壞、遺失由學會自己填，可超過押金 */}
-          {mode === 'return' && (
-            <div>
-              <label className="text-gray-light text-xs block mb-2">
-                罰款金額（逾期、損壞或遺失，沒有就填 0）
-                {isOverdue && returnKind === 'late' && (
-                  <span className="font-chinese ml-2">
-                    系統試算 NT$ {estPenalty.toLocaleString()}
-                  </span>
-                )}
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={penalty}
-                onChange={e => setPenalty(e.target.value)}
-                className={`${field} font-english`}
-              />
-              {penaltyValid && !isPartialReturn && (
-                <p className="text-xs text-gray-light font-chinese mt-2">
-                  押金 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>
-                  ，扣罰款後退還 <span className="font-english">NT$ {Math.max(order.deposit_total - penaltyNum, 0).toLocaleString()}</span>
-                </p>
-              )}
-              {/* 超過押金的差額沒收到 → 記欠繳，學生不能再下單直到收罰款（情境 13） */}
-              {overDeposit && (
-                <label className="flex items-center gap-3 text-xs text-white cursor-pointer mt-3">
-                  <input
-                    type="checkbox"
-                    className="custom-checkbox flex-shrink-0"
-                    checked={paidNow}
-                    onChange={e => setPaidNow(e.target.checked)}
-                  />
-                  <span className="font-chinese">
-                    超過押金的 <span className="font-english">NT$ {(penaltyNum - order.deposit_total).toLocaleString()}</span> 已當場收齊（未勾＝記欠繳，繳清前不可再預約）
-                  </span>
-                </label>
               )}
             </div>
           )}
@@ -384,9 +349,8 @@ const OrderActionDialog: React.FC<Props> = ({
               canConfirm &&
               onConfirm(
                 handler,
-                mode === 'return' ? penaltyNum : 0,
+                settling ? penaltyNum : 0,
                 [...returnIds],
-                overDeposit ? paidNow : true,
                 mode === 'extend' ? daysNum : 0,
                 mode === 'pickup' || pickupNow,
                 needDeposit ? depositNum : undefined

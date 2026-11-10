@@ -16,9 +16,7 @@ as $$
 declare
   v_order public.orders%rowtype;
 begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
 
   select * into v_order from public.orders
     where rental_number = p_rental_number for update;
@@ -62,9 +60,7 @@ declare
   v_reserved int;
   v_conflicts text[] := '{}';
 begin
-  if public.user_role() <> 'admin' then
-    raise exception '僅限管理員';
-  end if;
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
   if p_days < 1 or p_days > 7 then
     raise exception '延期天數需為 1-7 天（更長請分次延）';
   end if;
