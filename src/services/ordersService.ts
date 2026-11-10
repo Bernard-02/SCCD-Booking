@@ -227,6 +227,21 @@ export async function adminRefundDeposit(
   return { ok: true }
 }
 
+export type HandlerField = 'paid_by' | 'picked_up_by' | 'returned_by' | 'refunded_by'
+/**
+ * 後台（最高權限）：經手人選錯時直接換人，不動狀態（2026-11-10）。RLS orders: admin all 放行；
+ * 學會成員沒有這條權限，更新會是 0 筆，用回傳筆數判斷。
+ */
+export async function adminSetHandler(
+  rentalNumber: string,
+  fields: Partial<Record<HandlerField, string>>
+): Promise<{ ok: boolean; message?: string }> {
+  const { data, error } = await supabase.from('orders').update(fields).eq('rental_number', rentalNumber).select('id')
+  if (error) return { ok: false, message: error.message }
+  if (!data?.length) return { ok: false, message: '沒有權限更換經手人' }
+  return { ok: true }
+}
+
 /** 後台：代取消（pending／in-progress → canceled；in-progress 退押金為現場人工動作） */
 export async function adminCancelOrder(
   rentalNumber: string,

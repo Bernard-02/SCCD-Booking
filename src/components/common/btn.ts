@@ -1,5 +1,6 @@
 /**
- * 前台按鈕狀態共用 class（2026-10-31 定，各型通用）：hover 整顆 50%、停用整顆 20% 不透明度（從 100% 調，不分字色底色）；
+ * 按鈕狀態共用 class。總原則（2026-11-10）：hover＝它的 active 狀態（灰底鈕 BTN_INVERT、線框 BTN_OUTLINE、選單 navItemCls）；
+ * BTN 的 hover 整顆 50% 只給本身沒有 active 狀態的鈕（CTA、純 icon 鈕）。停用一律整顆 20%（從 100% 調，不分字色底色）；
  * 不加 transition（CLAUDE.md）。hover 用 enabled: 所以停用時不作用；<a> 沒有 :enabled，連結直接寫 hover:opacity-50。
  * aria-disabled（仍可點、點了跳提示）的鈕沒有 :disabled，自己寫 'opacity-20 cursor-not-allowed'（見 EquipmentGrid 加入清單）。
  */

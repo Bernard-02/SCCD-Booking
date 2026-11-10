@@ -143,7 +143,7 @@ export const NumberInput: React.FC<{
 export const SearchBox: React.FC<{ value: string; onChange: (v: string) => void; placeholder?: string; className?: string }> = ({
   value, onChange, placeholder = '搜尋', className = ''
 }) => (
-  <label className={`relative ${className}`}>
+  <label className={`relative max-md:w-full ${className}`}>
     <span
       className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-light"
       style={{ fontSize: '20px' }}
@@ -258,7 +258,7 @@ export const SelectControls: React.FC<{
   onExit: () => void
   actions: { zh: string; onClick: () => void }[]
 }> = ({ mode, count, onEnter, onExit, actions }) => mode ? (
-  <div className="flex items-center gap-2">
+  <div className="flex max-md:flex-wrap items-center gap-2">
     <span className="text-xs text-gray-light font-chinese mr-1">
       已選 <span className="font-english text-white">{count}</span>
     </span>
@@ -312,7 +312,7 @@ export const FormDialog: React.FC<{
       onClick={onCancel}
     >
       <div
-        className={`relative bg-gray-darker border border-gray-mid ${wide ? 'max-w-2xl' : 'max-w-lg'} w-full mx-4 rounded-2xl`}
+        className={`relative bg-gray-darker border border-gray-mid ${wide ? 'max-w-2xl' : 'max-w-lg'} w-full mx-4 rounded-2xl max-md:max-h-[calc(100dvh-2rem)] max-md:overflow-y-auto`}
         onClick={e => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -773,6 +773,8 @@ export function usePager<T>(rows: T[], resetKey: unknown[]) {
 }
 
 const pagerBtn = `w-9 h-9 flex items-center justify-center rounded-lg text-gray-light ${BTN}`
+// 頁碼：hover 直接顯示選中的樣子（灰底白字），不變淡；選中的不加 hover
+const pageNum = 'w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer font-english'
 
 /** 分頁列：左＝目前區間與總數、中＝上下頁＋頁碼（最多 5 個，目前頁盡量置中）、右＝每頁筆數；0 筆不顯示 */
 export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, page, pageSize, onPage, onPageSize }) => {
@@ -781,7 +783,7 @@ export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, p
   const first = Math.max(0, Math.min(page - 2, pages - 5))
   const nums = Array.from({ length: Math.min(5, pages) }, (_, i) => first + i)
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mt-4 text-xs text-gray-light font-chinese">
+    <div className="grid grid-cols-[1fr_auto_1fr] max-md:grid-cols-1 max-md:justify-items-center items-center gap-4 mt-4 text-xs text-gray-light font-chinese">
       <span>
         顯示 <span className="font-english">{page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)}</span>，共{' '}
         <span className="font-english">{total}</span> 筆
@@ -795,7 +797,7 @@ export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, p
             key={n}
             onClick={() => onPage(n)}
             aria-current={n === page ? 'page' : undefined}
-            className={`${n === page ? 'w-9 h-9 flex items-center justify-center rounded-lg text-white bg-gray-dark' : pagerBtn} font-english`}
+            className={`${pageNum} ${n === page ? 'text-white bg-gray-dark' : 'text-gray-light hover:bg-gray-dark hover:text-white'}`}
           >
             {n + 1}
           </button>
@@ -804,7 +806,7 @@ export const Pager: React.FC<ReturnType<typeof usePager>['pager']> = ({ total, p
           <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chevron_right</span>
         </button>
       </div>
-      <label className="flex items-center gap-2 justify-self-end">
+      <label className="flex items-center gap-2 justify-self-end max-md:justify-self-center">
         每頁顯示
         <Select value={pageSize} onChange={onPageSize} options={[10, 25, 50, 100].map(n => ({ value: n, label: n }))} className="font-english" />
         筆
@@ -830,7 +832,7 @@ export const LoadError: React.FC<{ message: string; onRetry: () => void }> = ({ 
 // top 必須是 -2.5rem 不是 0：sticky 在有 padding 的捲動容器裡是從 padding 內緣算，top-0 會被往下推 2.5rem、蓋到下方內容
 export const PageTitle: React.FC<{ zh: string; desc?: string; children?: React.ReactNode }> = ({ zh, desc, children }) => (
   <div className="sticky -top-10 z-10 -mt-10 pt-10 pb-8 bg-black">
-    <div className="h-9 flex items-center gap-3">
+    <div className="h-9 max-md:h-auto max-md:min-h-9 flex max-md:flex-wrap items-center gap-3">
       <h1 className="text-lg text-white mr-auto">{zh}</h1>
       {children}
     </div>

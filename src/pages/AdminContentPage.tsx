@@ -83,7 +83,7 @@ const AdminContentPage: React.FC = () => {
               {e.lines ? '一行一項，中英一行對一行。' : ''}{e.hint ?? ''}
             </p>
           </div>
-          <div className={`grid gap-4 ${e.single ? 'grid-cols-1 max-w-xl' : 'grid-cols-2'}`}>
+          <div className={`grid gap-4 ${e.single ? 'grid-cols-1 max-w-xl' : 'grid-cols-2 max-md:grid-cols-1'}`}>
             {textarea(e, 'zh')}
             {!e.single && textarea(e, 'en')}
           </div>

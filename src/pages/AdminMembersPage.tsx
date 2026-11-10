@@ -428,7 +428,7 @@ const AdminMembersPage: React.FC = () => {
       </PageTitle>
 
       {/* 搜尋列（分頁上方，同訂單頁）：左搜尋；選取模式（批次標記畢業／休學／在學）；右＝年級、租借狀態篩選 */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex max-md:flex-wrap items-center gap-2 mb-4">
         <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
         <SelectControls
           mode={selectMode}

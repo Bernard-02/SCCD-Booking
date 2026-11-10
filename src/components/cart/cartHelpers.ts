@@ -3,6 +3,7 @@
  */
 
 import type { CartItem } from '../../types/equipment'
+import type { BookingDetailsData } from '../common/BookingDetailsDialog'
 import { getCurrentStudentId } from '../../utils/authStorage'
 
 /** 購物車 localStorage key 前綴（連字號，非底線） */
@@ -20,14 +21,28 @@ export const readCart = (): CartItem[] => {
   return key ? JSON.parse(localStorage.getItem(key) || '[]') as CartItem[] : []
 }
 
-/** 寫入購物車並廣播 storage 事件（跨頁/跨分頁同步）；訪客不寫（加入清單本來就擋） */
-export const writeCart = (items: CartItem[]): void => {
-  const key = cartKey()
+/** 寫入並廣播 storage 事件（同頁各元件重讀；services/cartService 據此推上帳號）；訪客不寫（加入清單本來就擋） */
+const put = (key: string | null, value: unknown): void => {
   if (!key) return
-  const json = JSON.stringify(items)
+  const json = JSON.stringify(value)
   localStorage.setItem(key, json)
   window.dispatchEvent(new StorageEvent('storage', { key, newValue: json }))
 }
+
+export const writeCart = (items: CartItem[]): void => put(cartKey(), items)
+
+/** 各單借用資訊（cartGroupKey → BookingDetailsData），同購物車依學號分開存：sccd_booking_details_{學號} */
+export const detailsKey = (): string | null => {
+  const id = getCurrentStudentId()
+  return id ? `sccd_booking_details_${id}` : null
+}
+
+export const readDetails = (): Record<string, BookingDetailsData> => {
+  const key = detailsKey()
+  return key ? JSON.parse(localStorage.getItem(key) || '{}') : {}
+}
+
+export const writeDetails = (details: Record<string, BookingDetailsData>): void => put(detailsKey(), details)
 
 /** Date → 'YYYY/MM/DD'（補零） */
 export const formatYmd = (date: Date): string => {

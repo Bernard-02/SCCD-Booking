@@ -100,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 bg-transparent header-main">
+      <header className="fixed top-0 left-0 right-0 z-[1000] mt-[1.03rem] bg-transparent">
         <div className="container">
           <div className="flex justify-between items-center">
             <Link to="/catalog" className="font-english font-bold text-white text-md whitespace-nowrap">

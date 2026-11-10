@@ -227,7 +227,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
   return (
     <div className="w-full">
       {cart.length === 0 && (
-        <div className="empty-message-container flex-col">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] pointer-events-none">
           <p className="text-sm text-white">
             {t('This list is empty.', '此清單是空的。')}
             {/* 訪客導去登入頁（登入後預設落在型錄）；已登入直接去型錄。容器 pointer-events: none，連結要自己開回來 */}

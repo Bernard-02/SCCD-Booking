@@ -8,6 +8,8 @@
 
 /* 清單列（EquipmentGrid／ClassroomList）塞不下表格時改卡片：看容器寬不看視窗，左欄多寬都準；父層要有 @container */
 @custom-variant card (@container (width < 940px));
+/* 視窗偏方或直立（寬高比 < 5:4）：後台 A5F 編號區改上下排，地圖才放得大；地圖約 1:1，算過 1280～1920 寬交叉點都在 1.25 附近 */
+@custom-variant tall (@media (max-aspect-ratio: 5/4));
 
 /* 全站粗體統一 600（semibold 視覺）：font-bold 不改名，直接重定義 token；字體只載 400/600 */
 @theme {
@@ -74,6 +76,12 @@
     box-sizing: border-box;
   }
 
+  /* 鍵盤焦點（2026-11-10，上線前無障礙最低範圍）：Tab 到才出現，滑鼠點不會；自己有 focus 樣式的輸入框寫 outline-none 蓋掉 */
+  :focus-visible {
+    outline: 2px solid var(--color-white);
+    outline-offset: 2px;
+  }
+
   body {
     /* Inter 在前：拉丁字母與數字用 Inter，中文自動 fallback 到 Noto Sans TC */
     font-family: 'Inter', 'Noto Sans TC', sans-serif;
@@ -117,6 +125,10 @@
 }
 
 html:not(.icons-ready) .material-symbols-outlined { visibility: hidden; } /* 字型載入中不露出 ligature 文字，index.html 載好後加 class */
+
+/* 字型族（2026-11-10 從 css/typography.css 搬來；不分層，跟原本一樣蓋過分層的規則）。字距在上面 base 層 */
+.font-chinese { font-family: 'Inter', 'Noto Sans TC', sans-serif; } /* Inter 先接英數，中文 fallback Noto */
+.font-english { font-family: 'Inter', sans-serif; }
 
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined'; /* 確保指定字體 */

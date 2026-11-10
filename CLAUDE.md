@@ -75,8 +75,8 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   **後台分權**（2026-11-08）：最高權限＝`role=admin`（`sccdsa`），整個後台；學會成員＝會員管理標「系學會」（`staff_members`，`students.role` 仍是 student，借東西的規則照舊）用自己的帳號，只能用側欄「值班」（訂單、A5F 編號區、通知），不限同時登入的裝置數。
   判斷都在 `supabase/operator-access.sql`：`backend_access()`（admin／operator／expired／none，學會成員同樣登入滿 12 小時失效）、值班 RPC 開頭的 `operator_handler`（學會成員的經手人強制記本人）、值班頁讀資料走 `operator_*` RPC。**不要為了值班頁開 `orders`／`students` 的 RLS**：`fetchMyOrders` 靠 RLS 篩，開了學會成員自己的訂單頁會撈到所有人的單。前端 `AdminRoute`（`AdminOnly` 包「設定」路由）與 `AdminLayout` 依 `role` 隱藏「設定」，學會成員從 Profile 左選單「後台」進來。
   登出用 `scope: 'local'` 只登出這台。後台帳號改用學會 Gmail 登入、換屆交接見 `docs/google-login-setup.md`
-- **登入實作**（2026-10-24 改學校 Google 帳號）：學生按「使用學校 Google 帳號登入」→ `signInWithGoogle` 導去 Google →
-  跳回首頁由 `HomePage` 呼叫 `AuthContext.finishGoogleLogin` 撈 profile；資格在 DB trigger 把關（`supabase/google-login.sql`：
+- **登入實作**（2026-10-24 改學校 Google 帳號）：登入頁的 Google 鈕是 Google 自己畫的（`authService.renderGoogleButton`，2026-11-10 改，樣式只能用 Google 給的選項）→
+  選完帳號在本頁拿到 ID token，`AuthContext.loginWithGoogle` → `signInWithIdToken` 撈 profile，不跳頁；Google 畫面顯示本站網址（不買 Supabase 自訂網域），Client ID 在環境變數 `VITE_GOOGLE_CLIENT_ID`；資格在 DB trigger 把關（`supabase/google-login.sql`：
   網域 gm／gm1／gm2.usc.edu.tw，**且學號或 Email 要先在後台會員管理「新增會員」登記過**＝`login_allowlist`，`members-v2.sql`，2026-10-25 改封閉名單，不再依學號格式自動放行），
   第一次登入自動建學生資料（年級／班別由學號給初值、姓名用 Google 名字）。不另寄驗證信——Google 登入本身即驗證。
   登入頁預設 Google（學生與後台都走這條，2026-11-09 定），學號＋密碼（`supabaseLogin`）退為「學號密碼登入」小連結當備援；不做 SMTP、沒有忘記密碼，`sccdsa` 的密碼到 Supabase 後台重設。
@@ -89,13 +89,13 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 | Key | 用途 |
 |---|---|
 | `sccd_login_data` | 登入資料（同時存於 local + session） |
-| `sccd-rental-cart_{studentId}` | 購物車，依學號分開（注意前綴 `-` 不是 `_`）；訪客沒有購物車（`cartHelpers.cartKey`） |
-| `sccd_booking_details_{studentId}` | 購物車各單的借用資訊（同上依學號分開） |
+| `sccd-rental-cart_{studentId}` | 購物車，依學號分開（注意前綴 `-` 不是 `_`）；訪客沒有購物車（`cartHelpers.cartKey`）。本機那份，帳號那份在 `carts` 表（`services/cartService`） |
+| `sccd_booking_details_{studentId}` | 購物車各單的借用資訊（同上依學號分開、同上跟帳號同步；讀寫用 `cartHelpers.readDetails`／`writeDetails`） |
+| `sccd_cart_updated_{studentId}` | 本機購物車／借用資訊最後修改時間（ms），跟帳號那份比誰新 |
 | `sccd_equipment_dates` | 設備日期選擇（24h 過期） |
 | `sccd_space_dates` | 空間日期選擇（24h 過期） |
 | `sccd_bookmarks` 或 `sccd_bookmarks_{studentId}` | 收藏（依是否登入） |
 | `sccd_admin_handler` | 後台上次選擇的值班經手人（`ADMIN_HANDLER_KEY`） |
-| `sccd_google_pending` | sessionStorage：Google 登入進行中（值＝記住我 1／0），跳回首頁後即刪 |
 | `sccd_lang` | 前台介面語言（`zh`／`en`，zustand persist） |
 | `sccd_catalog_entered` | sessionStorage：型錄頁卡片進場動畫這個分頁已播過，再進來不重播 |
 
@@ -123,13 +123,14 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。公休集合（`fetchClosedDates`）裡，整天＝日期、只休一班＝`日期:noon`／`日期:evening`（`timeUtils.closedKey`）。
 - **部分時段可借用**（2026-11-02）：設備卡（含整組，看零件逐日）／地圖格／教室依「你選的區間逐日夠不夠」分綠／橘／粉（設備看卡片上填的數量，最好的一天可借幾件＝數量上限；同類型有未歸還單時日期列會清掉已存的日期），橘的點加入開 `components/common/PartialDialog`
   選一段（依日期順序、預設第一段），該類日期改成那段、清單同類品項一起改（同類型限一單，不開第二張）。SQL：`partial-availability.sql`（兩支逐日 RPC；沒執行時前端自動退回整段判定）。
-- **階段 5 RWD 與手機版**：前台 RWD 與手機版面 2026-11-06 完成（Equipment／Space／RentalList／Profile、導覽、日期列、地圖格子清單），待實機驗收；後台只做桌面 RWD，不做手機版，1280px 待人工確認。標準見下方「手機版（RWD）標準」，清單見 roadmap.md。
+- **階段 5 RWD 與手機版**：前台 RWD 與手機版面 2026-11-06 完成（Equipment／Space／RentalList／Profile、導覽、日期列、地圖格子清單），待實機驗收；後台 2026-11-10 補基礎 RWD（只防破版，不另做手機版面），待人工確認。標準見下方「手機版（RWD）標準」，清單見 roadmap.md。
 - **階段 5.5 無障礙**（2026-11-02 加）：至少鍵盤可操作——Calendar 日期格／地圖格／訂單卡等 16 處可點非按鈕元素、對話框焦點管理、全站 focus-visible、Toast aria-live；清單見 roadmap.md。
 - **階段 6 部署**：維持 Vercel（`vercel.json`）＋環境變數、正式資料填入。
 
 ## 手機版（RWD）標準
 
-- **範圍**（2026-11-06 定）：前台先做 RWD，再調手機版面；後台只做桌面 RWD，不做手機版。
+- **範圍**（2026-11-06 定）：前台先做 RWD，再調手機版面；後台不做手機版面，只做基礎 RWD 防破版（2026-11-10 補）：
+  `md` 以下側欄變頂部橫向選單（`AdminLayout`）、工具列換行、搜尋框全寬、表格維持左右捲、訂單頁釘在右邊的欄位取消釘選、對話框可捲、左右兩欄的頁面改上下排（營業時間 `xl` 以下）。
 - **斷點**：以 Tailwind 的 `md`（768px）為手機／桌機分界，桌面內的寬度差異用內建 `lg`／`xl`，不另設自訂斷點。Equipment／Space／日期列的左欄版面 `lg` 以上才有，以下分類移到上方；清單頁摘要 `lg` 以下併入同一欄。
 - **寫法**：手機覆寫一律用 `max-md:`／`max-lg:`，桌機 class 不動（改動最小、不會誤傷桌機）。Tailwind v4 的 `hover:` 只在有滑鼠的裝置生效，不用另外處理觸控黏住。
 - **清單列**：`EquipmentGrid`／`ClassroomList` 用 `card:` 變體（`src/index.css`，容器 < 940px 改卡片），看容器寬不看視窗。父層要有 `@container`，且不要放在含 `fixed` 子元素（全螢幕圖片）的外層，container 會變成 fixed 的定位基準。
@@ -144,7 +145,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 - **過大頁面／元件**：`ProfilePage`、`SpacePage`、`RentalListPage`、`DatePickerBar`、`CartList` 皆 700–820 行，做手機版動到時順手拆 hook。
 - **`DateSelectionContext` 複雜度**：一個 context 同時管設備／空間日期，可拆成兩個 context 降低耦合與 re-render。
-- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css`（約 1470 行）共存，長期可漸進遷移。
+- **CSS 雙軌並行**：Tailwind v4 與舊 `css/*.css` 共存（2026-11-10 剩五檔約 700 行：common＝容器／checkbox／Toast／隱藏捲軸、booking＝日曆日期數字、numbered-area＝A5F 地圖、scrollbar、animations＝共用動畫照規定留著），Header／Footer、清單空狀態、字型族已搬完，其餘長期漸進遷移。
 - ~~**Bundle 過大**~~：已用 `React.lazy` 做路由層 code-splitting（`App.tsx`），`jspdf`+`html2canvas` 改在下載收據時動態 import。
 - ~~**Storage key 命名混用**~~：已抽 `utils/storageKeys.ts`（receipts／notifications）與 `utils/authStorage.ts`（登入）集中管理。
 
@@ -168,14 +169,14 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - TypeScript 設定為 `strict: true`，並啟用 `noUnusedLocals` 與 `noUnusedParameters`，build 時型別錯誤會擋住。
 - **hover 一律即時變化，不加 fade**（2026-10-23 定）：hover 變色／變透明不要寫 `transition-colors`、`transition-opacity`、`transition`；
   非 hover 的動畫照常（展開收合、刪除淡出、選取模式位移、chevron 旋轉、圖片 hover 放大這類 transform）。
-- **按鈕狀態一律接 `BTN`**（`components/common/btn.ts`，2026-10-31 定，前後台同）：hover 整顆 50%、停用整顆 20%，不另寫 hover／disabled class；
-  **hover 50% 只給沒有 active 狀態的 CTA；灰底鈕（`bg-gray-dark`）接 `BTN_INVERT`，hover 直接顯示 active 的樣子＝白底黑字**（2026-11-09 定：`toolBtn`／`textBtn`、`filled` 下拉、日期鈕、分頁膠囊、`BTN_TOOL`；停用同 20%，開著／選中時也是白底黑字）；灰框的表單下拉同理，hover＝展開時的白框；
-  工具鈕（icon＋文字灰底 chip）加 `BTN_TOOL`；多選／分類膠囊走 `navItemCls`（未選中 hover 白字＋white/10 底）。
-  **線框鈕（白線白字）接 `BTN_OUTLINE`，hover 反白＝白底黑字**（2026-11-02 定；整顆變淡會像快停用）：借的是「選中」的白底黑字語彙，
-  所以只給動作型（後台 `actionBtn`、購物車「＋ 新增」、型錄 − ＋），toggle 不用；連結版（登入頁兩張卡）自己寫 `hover:bg-white hover:border-white hover:text-black`。
-  **有 active 狀態的按鈕，active 時不加 hover**（2026-11-02 定）：選中的膠囊、目前所在頁的 icon（Footer /profile 頭像、Header /cart）、
-  開著下拉／彈出清單的開關鈕（Header 通知鈴、Footer 連結）——寫 `${active ? 'cursor-pointer' : BTN}`；沒有 active 狀態的按鈕照常接 `BTN`；
-  `<a>` 沒有 :enabled 直接寫 `hover:opacity-50`；仍可點、點了跳提示的 aria-disabled 鈕自己寫 `opacity-20 cursor-not-allowed`。Profile 訂單卡整列 hover 反白是卡片不是按鈕，維持。
+- **hover＝它的 active 狀態**（2026-11-10 定為總原則，前後台同；樣式在 `components/common/btn.ts`、`navItem.ts`，不另寫 hover／disabled class）：
+  滑過去直接顯示「選中／開著」時的樣子，不是單純變淡。**只有本身沒有 active 狀態的按鈕才用 `BTN` 的整顆 50%**（送出這類 CTA、純 icon 鈕、文字連結）。停用一律整顆 20%。
+  - 灰底鈕（`bg-gray-dark`）接 `BTN_INVERT`：hover＝白底黑字（`toolBtn`／`textBtn`、`filled` 下拉、日期鈕、分頁膠囊、`BTN_TOOL`，開著／選中時也是白底黑字）；灰框的表單下拉 hover＝展開時的白框。
+  - 左側選單／分類膠囊走 `navItemCls`：未選中 hover＝選中的白底黑字；選中是 gray-dark 底的次層項目（空間頁子分類）hover 用 `NAV_HOVER` 灰底，專案許可區 hover 黃字。
+  - 線框鈕（白線白字）接 `BTN_OUTLINE`：hover 反白＝白底黑字，只給動作型（後台 `actionBtn`、購物車「＋ 新增」、型錄 − ＋），toggle 不用；連結版（登入頁兩張卡）自己寫 `hover:bg-white hover:border-white hover:text-black`。
+  - 危險動作（前後台側欄「登出」）：hover 紅字＋gray-dark 底，不用選中的白底。
+  - **已經是 active 的不加 hover**：選中的膠囊、目前所在頁的 icon（Footer /profile 頭像、Header /cart）、開著下拉／彈出清單的開關鈕（Header 通知鈴、Footer 連結）——寫 `${active ? 'cursor-pointer' : BTN}`。
+  - `<a>` 沒有 :enabled，直接寫 `hover:opacity-50`（或對應的 active 樣子）；仍可點、點了跳提示的 aria-disabled 鈕自己寫 `opacity-20 cursor-not-allowed`。Profile 訂單卡整列 hover 反白是卡片不是按鈕，維持。
 - **顏色只用 `src/index.css` `@theme` 的 token**（2026-11-01 定，前後台同一套；`--color-*: initial` 已關掉 Tailwind 預設色盤，寫 `text-zinc-400` 會沒效果、build 不擋）：
   黑白＋四階灰 `gray-light`（輔助文字）／`gray-mid`（線、框、佔位）／`gray-dark`（灰鈕、chip、tooltip、選單 hover 底，2026-11-02 加，前後台灰鈕同這個）／`gray-darker`（面板底）；狀態色 `green`／`pink`（品牌粉）／`error`／`yellow`／`orange`／`cyan`，意義表在 token 註解。
   不寫 hex、不寫 `text-[#…]`；inline style 用 `var(--color-xxx)`。透明層只給疊在別的東西上的（表格列 hover、鈕上的計數徽章、遮罩），只有 `white/10`、`white/50`、`black/80`；鈕／chip 本身的底是「一個東西」，用 `gray-dark` 不用 `white/10`；地圖可借用＝`green/50`。

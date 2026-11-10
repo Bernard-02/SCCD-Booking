@@ -20,16 +20,9 @@ import { useOrderSubmission } from '../hooks/useOrderSubmission'
 import { useSuspension } from '../hooks/useSuspension'
 import { useToast } from '../hooks/useToast'
 import { useCartReserved } from '../services/equipmentService'
-import { readCart, writeCart, formatYmd } from '../components/cart/cartHelpers'
-import { getCurrentStudentId } from '../utils/authStorage'
+import { readCart, writeCart, formatYmd, detailsKey, readDetails, writeDetails } from '../components/cart/cartHelpers'
 import { useT } from '../stores/langStore'
 import { useGuideDocUrl } from '../services/contentService'
-
-// 借用資訊同購物車依學號分開存（sccd_booking_details_{學號}）；訪客不存
-const detailsKey = () => {
-  const id = getCurrentStudentId()
-  return id ? `sccd_booking_details_${id}` : null
-}
 
 // 解析 groupKey（格式："equipment_<start>_<end>" 或 "space_<start>_<end>"）
 // 日期僅含連字號不含底線，故第一個底線後即為 start，最後一個底線後即為 end
@@ -63,7 +56,7 @@ const RentalListPage = () => {
   const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [toastMessage, setToastMessage] = useState('')
   // Booking Details 狀態
-  const [bookingDetails, setBookingDetails] = useState<Record<string, BookingDetailsData>>({})
+  const [bookingDetails, setBookingDetails] = useState<Record<string, BookingDetailsData>>(readDetails)
   // 選取模式＋選中的訂單組（只用來清除）
   const [selectMode, setSelectMode] = useState(false)
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
@@ -72,17 +65,11 @@ const RentalListPage = () => {
     setSelectedGroups(new Set())
   }
 
-  // 從 localStorage 載入 booking details
+  // 借用資訊：從帳號拉回較新的一份時（cartService 寫進本機並廣播）跟著更新
   useEffect(() => {
-    try {
-      const key = detailsKey()
-      const saved = key && localStorage.getItem(key)
-      if (saved) {
-        setBookingDetails(JSON.parse(saved))
-      }
-    } catch (error) {
-      console.error('Failed to load booking details:', error)
-    }
+    const reload = (e: StorageEvent) => { if (e.key === detailsKey()) setBookingDetails(readDetails()) }
+    window.addEventListener('storage', reload)
+    return () => window.removeEventListener('storage', reload)
   }, [])
 
   // 處理 Booking Details 變更
@@ -92,8 +79,7 @@ const RentalListPage = () => {
       [groupKey]: data
     }
     setBookingDetails(updated)
-    const key = detailsKey()
-    if (key) localStorage.setItem(key, JSON.stringify(updated))
+    writeDetails(updated)
   }
 
   // 彙整購物車驗證規則

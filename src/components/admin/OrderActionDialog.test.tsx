@@ -76,11 +76,35 @@ describe('退押金填罰金', () => {
 })
 
 describe('歸還', () => {
-  it('不填罰金，只勾品項', () => {
+  it('還有子單沒還：整單收回、不填罰金', () => {
     const onConfirm = open(order({ status: 'overdue' }), 'return')
     expect(screen.queryByRole('spinbutton')).toBeNull()
+    expect(screen.queryByRole('checkbox')).toBeNull()
     confirm()
     expect(onConfirm.mock.calls[0].slice(0, 3)).toEqual(['甲', 0, [1]])
+  })
+
+  it('最後一張：歸還時一起填罰金、退押金', () => {
+    const onConfirm = vi.fn()
+    render(
+      <OrderActionDialog
+        order={order({ status: 'overdue' })} mode="return" staff={[]} defaultHandler="" lockedHandler="甲"
+        estPenalty={100} settleOnReturn onConfirm={onConfirm} onCancel={vi.fn()}
+      />
+    )
+    expect(screen.getByText('確認歸還並退押金')).toBeTruthy()
+    expect(screen.getByText(/退還/).textContent).toContain('400')
+    confirm()
+    expect(onConfirm.mock.calls[0].slice(0, 3)).toEqual(['甲', 100, [1]])
+  })
+
+  it('部分歸還：至少留一項沒勾才能確認', () => {
+    const two = order({ order_items: [{ id: 1, name: '延長線', quantity: 1 }, { id: 2, name: '三腳架', quantity: 1 }] as AdminOrderRow['order_items'] })
+    const onConfirm = open(two, 'partial')
+    expect((screen.getByRole('button', { name: '確認' }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getAllByRole('checkbox')[1])
+    confirm()
+    expect(onConfirm.mock.calls[0][2]).toEqual([1])
   })
 })
 

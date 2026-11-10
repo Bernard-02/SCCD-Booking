@@ -175,7 +175,7 @@ const AdminEquipmentPage: React.FC = () => {
       </PageTitle>
 
       {/* 搜尋列（分頁上方，同訂單頁）：左搜尋（常駐）；右＝選取模式、分類、狀態篩選 */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex max-md:flex-wrap items-center gap-2 mb-4">
         <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
         {/* 組合分頁只有搜尋；選取、分類、狀態是設備的 */}
         {tab === 'equipment' && (<>
@@ -233,7 +233,7 @@ const AdminEquipmentPage: React.FC = () => {
       ) : (
         <>
           <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
-            {/* border-separate：表頭 sticky 時底線才跟著走（collapse 模式的 border 不會）。設備欄不給寬度、吃掉剩餘寬度 */}
+            {/* border-separate：表頭 sticky 時底線才跟著走（collapse 模式的 border 不會）。設備欄不給寬度、吃掉剩餘寬度；名稱固定 320px、超過才換行，畫面比表格窄時左右捲 */}
             <table className="w-full text-xs border-separate border-spacing-0">
               <thead>
                 <tr className="text-left text-gray-light">
@@ -268,7 +268,7 @@ const AdminEquipmentPage: React.FC = () => {
                         <div className={`flex items-center gap-3 ${dim}`}>
                           {/* 沒上傳過圖＝灰底相機 icon（不沿用前台的預設延長線圖） */}
                           <Thumb src={r.image_url ? imageSrc(r.image_url) : null} alt={r.name} icon="photo_camera" />
-                          <div>
+                          <div className="w-80 whitespace-normal">
                             <div className="font-chinese">{r.name}</div>
                             {r.en_name && <div className="font-english text-gray-light">{r.en_name}</div>}
                           </div>
@@ -317,7 +317,7 @@ const AdminEquipmentPage: React.FC = () => {
           onCancel={closeDialog}
           wide
         >
-          <div className="flex gap-8">
+          <div className="flex max-md:flex-col gap-8 max-md:gap-4">
             <div className="shrink-0">
               {/* 還沒有圖（新增、或舊資料沒圖）→ 虛線 placeholder */}
               <ImagePicker

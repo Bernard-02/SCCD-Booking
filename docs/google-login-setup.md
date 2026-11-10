@@ -1,9 +1,10 @@
 # 學校 Google 帳號登入：後台設定步驟
 
-學生用學校 Google 帳號登入（2026-10-24 定）。2026-11-10 確認 Supabase 已開 Google provider、接上 OAuth 用戶端，A–D 看起來已做完，**剩「E. 測試」**。
+學生用學校 Google 帳號登入（2026-10-24 定）。2026-11-10 確認 Supabase 已開 Google provider、接上 OAuth 用戶端，A–D 看起來已做完。
+同日登入改用 Google 自己的按鈕（ID token），Google 畫面顯示本站網址、不再顯示 supabase.co（免買 Supabase 自訂網域）：**要補 C-2 的 `http://localhost` 和 D-5 的 Client ID 環境變數**，再做「E. 測試」。
 後台帳號 `sccdsa` 要用學會 Gmail 登入，另外照「後台用 Gmail 登入」設定；學號＋密碼登入（登入頁的小連結）不受影響。
 
-- 規則與程式：`supabase/members-v2.sql`（資格判斷）、`src/services/authService.ts`（`signInWithGoogle`／`finishGoogleLogin`）
+- 規則與程式：`supabase/members-v2.sql`（資格判斷）、`src/services/authService.ts`（`renderGoogleButton` 畫 Google 按鈕、拿到 ID token 後 `signInWithGoogle`）
 - Supabase 專案：`https://qhcgqdsfriyvkpjdwseu.supabase.co`
 
 ## 開始前
@@ -34,8 +35,9 @@
 **Clients → Create client**：
 
 1. **Application type**：Web application；名稱隨意（例：`Supabase`）。
-2. **Authorized JavaScript origins**：加 `http://localhost:3000` 和 Vercel 網址（`https://你的專案.vercel.app`，結尾不加斜線）。
-3. **Authorized redirect URIs**：
+2. **Authorized JavaScript origins**：加 `http://localhost:3000`、`http://localhost`（本機測試 Google 按鈕兩個都要）和 Vercel 網址（`https://你的專案.vercel.app`，結尾不加斜線）。
+   Google 按鈕只認這裡列的網址，換網域要回來加。
+3. **Authorized redirect URIs**（舊的跳轉式登入用的，現在用不到，留著無妨）：
    ```
    https://qhcgqdsfriyvkpjdwseu.supabase.co/auth/v1/callback
    ```
@@ -53,18 +55,20 @@
 3. **Authentication → Sign In / Providers** 最上方的 **Allow new users to sign up** 要開著（第一次 Google 登入＝註冊）。
 4. **SQL Editor** 貼上 `supabase/members-v2.sql` 執行（可重複執行）。
    不要跑 `supabase/google-login.sql`：它是舊版，會把「只有登記過的才能登入」蓋掉。
+5. **環境變數**：`.env` 和 Vercel（Project → Settings → Environment Variables）加 `VITE_GOOGLE_CLIENT_ID`＝C-4 的 Client ID（範本見 `.env.example`；Client ID 可公開，secret 不要放）。
+   Vercel 改完要重新部署才生效。D-1 填的就是同一組 Client ID，Supabase 會認這個按鈕拿到的 ID token，不用另外設。
 
 ## E. 測試
 
 1. 先在後台會員管理「新增會員」登記要測試的學校帳號（沒登記的登不進來）。
-2. `npm run dev`，在登入頁按「使用學校 Google 帳號登入」。
+2. `npm run dev`，在登入頁按 Google 的「使用 Google 帳戶繼續」鈕（瀏覽器已登入 Google 時會顯示「以 某某 的身分繼續」），Google 視窗應顯示 `localhost`、不是 supabase.co。
 3. 用登記過的學校帳號（`學號@gm／gm1／gm2.usc.edu.tw`）→ 應直接進型錄；Profile 的班級、年級應已帶好。
 4. 用非學校的 Gmail，或沒登記的學校帳號 → 應被擋下，登入頁顯示「請使用學校 Google 帳號…只有系學會登記過的帳號能登入」。
 5. 到後台會員管理，確認帳號從「未啟用」變成已啟用。
 
 ## 選做：品牌審核
 
-系上內部用不做（2026-11-07 定）。通過後 Google 登入頁才會顯示 `SCCDSA Booking`，沒做只是顯示 supabase 網址，登入功能不受影響。要做的話：
+系上內部用不做（2026-11-07 定）。通過後 Google 登入頁才會顯示 `SCCDSA Booking`，沒做只是顯示本站網址（vercel.app），登入功能不受影響。要做的話：
 
    - 先在 **Branding** 填首頁和隱私權政策網址，再到 **Audience** 按 **Publish app**。
    - 要有自己的網域，並在 Search Console 驗證擁有權。`vercel.app` 有人回報過不了；學校子網域可能要驗證整個 `usc.edu.tw`。
@@ -76,11 +80,11 @@
 
 | 狀況 | 原因／處理 |
 |---|---|
-| Google 頁面顯示 `redirect_uri_mismatch` | C-3 的 redirect URI 沒填或打錯，要跟上面完全一樣 |
+| 按鈕沒出現、顯示「無法連線到 Google」 | `VITE_GOOGLE_CLIENT_ID` 沒設（D-5），或網路擋了 accounts.google.com；瀏覽器 Console 有原因 |
+| Google 視窗顯示 origin 不允許（`The given origin is not allowed`） | C-2 沒加這個網址；本機要 `http://localhost` 和 `http://localhost:3000` 都加 |
 | 403 `access_denied`（不是自己按取消） | Supabase 的 Google 設定多加了基本權限以外的 scope，拿掉就好（有其他 scope 才受 Test users 限制） |
 | 回到網站顯示「請使用學校 Google 帳號…」 | 網域不是學校的，或帳號還沒登記；該能借的人到會員管理「新增會員」登記 |
 | LINE／IG 裡開網頁登不進去 | Google 不允許 App 內建瀏覽器登入；LINE 會自動改開外部瀏覽器，其他請學生用 Safari／Chrome |
-| 跳回 `localhost` 或錯的網址 | D-2 的 Redirect URLs／Site URL 沒設對 |
 
 ## 後台用 Gmail 登入
 

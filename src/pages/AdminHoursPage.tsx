@@ -267,7 +267,8 @@ const AdminHoursPage: React.FC = () => {
   const daysInMonth = new Date(year, m + 1, 0).getDate()
   const rows = Math.max(6, Math.ceil((firstDow + daysInMonth) / 7)) // 固定 6 行，翻月高度不跳
   // 同前台日曆：大數字、Inter 粗體、靠左；hover 數字上滑由 booking.css 的 .cursor-pointer 規則處理
-  const cellCls = "text-left text-[2.5rem] font-bold font-english tracking-tighter leading-none py-1 min-w-0"
+  // 字級跟著月曆欄寬（左欄 @container）縮：寬螢幕 40px，窄到兩位數會互撞時一起變小（同前台 Calendar 的 cqw 做法）
+  const cellCls = "text-left text-[length:min(2.5rem,9cqw)] font-bold font-english tracking-tighter leading-none py-1 min-w-0"
   const inRange = (key: string) => {
     if (mode === 'idle' || !range.start) return false
     const end = range.end ?? (hover && hover >= range.start ? hover : range.start)
@@ -377,13 +378,13 @@ const AdminHoursPage: React.FC = () => {
       ) : loadError ? (
         <LoadError message={loadError} onRetry={() => { setLoading(true); void load() }} />
       ) : (
-        <div className="flex-1 min-h-0 overflow-auto flex gap-12">
+        <div className="flex-1 min-h-0 overflow-auto flex gap-12 max-xl:flex-col max-xl:gap-8">
           {/* ===== 左：假期 & 休息日 ===== */}
-          <section className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-4 mb-6 h-9">
+          <section className="flex-1 min-w-0 @container max-xl:flex-none">
+            <div className="flex items-center justify-between gap-4 mb-6 h-9 max-md:h-auto max-md:flex-wrap">
               <h2 className="text-sm text-white">假期 &amp; 休息日</h2>
               {mode !== 'idle' ? (
-                <div className="flex items-center gap-2">
+                <div className="flex max-md:flex-wrap items-center gap-2">
                   {/* 起訖日：同前台日期列顯示兩個日期，可點月曆也可直接 key */}
                   {(['start', 'end'] as const).map(which => (
                     <label key={which} className="flex items-center gap-2 text-xs text-gray-light font-chinese">
@@ -440,7 +441,7 @@ const AdminHoursPage: React.FC = () => {
                   今天
                 </button>
               </div>
-              <div className="text-white text-xl font-normal font-english pr-6">{year} {MONTH_ZH[m]}</div>
+              <div className="text-white text-[length:min(var(--text-xl),7.5cqw)] font-normal font-english pr-6 whitespace-nowrap">{year} {MONTH_ZH[m]}</div>
             </div>
 
             {/* 月曆本體：relative 讓日期小視窗以格子位置定位 */}
@@ -455,7 +456,7 @@ const AdminHoursPage: React.FC = () => {
               {pop && (
                 <div
                   ref={popRef}
-                  className="absolute z-20 w-72 p-4 bg-gray-darker border border-gray-mid rounded-2xl text-xs flex flex-col gap-4"
+                  className="absolute z-20 w-72 p-4 max-md:!left-0 max-md:![transform:none] max-md:w-full bg-gray-darker border border-gray-mid rounded-2xl text-xs flex flex-col gap-4"
                   style={{ left: pop.left, top: pop.top, transform: pop.flip ? 'translateX(-100%)' : undefined }}
                 >
                   {popDay ? (
@@ -555,7 +556,7 @@ const AdminHoursPage: React.FC = () => {
           </section>
 
           {/* ===== 右：值班時間（深灰卡片，和左邊月曆分開）：高度不超過內容區，標題列固定、只有表格在卡片裡捲動，左邊月曆不會跟著動 ===== */}
-          <section className="w-[32rem] shrink-0 self-start sticky top-0 max-h-full flex flex-col bg-gray-dark rounded-2xl p-6">
+          <section className="w-[32rem] shrink-0 self-start sticky top-0 max-h-full max-xl:w-full max-xl:static max-xl:max-h-none flex flex-col bg-gray-dark rounded-2xl p-6">
             <div className="flex items-center justify-between gap-4 mb-6 h-9 shrink-0">
               <h2 className="text-sm text-white">值班時間</h2>
               {draft ? (
@@ -585,7 +586,7 @@ const AdminHoursPage: React.FC = () => {
             {/* 捲軸從表頭下面開始：軌道上方留表頭的高度（h-12，兩邊要一起改） */}
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar [&::-webkit-scrollbar-track]:mt-12">
             {/* table-fixed：兩個班欄平分卡片寬度，下拉用 flex-1 縮放，不會撐破卡片；sticky 表頭用卡片的實色底，捲過去的內容才不會透出來 */}
-            <table className="w-full table-fixed text-xs border-separate border-spacing-0">
+            <table className="w-full table-fixed max-md:min-w-[30rem] text-xs border-separate border-spacing-0">
               <thead>
                 <tr className="text-left text-gray-light">
                   <th className={`${th} !bg-gray-dark h-12 w-14`}>日期</th>

@@ -1,6 +1,6 @@
 /**
  * Supabase 認證服務
- * 登入流程：學生＝學校 Google 帳號（signInWithGoogle → 跳回 → finishGoogleLogin）；
+ * 登入流程：學生＝學校 Google 帳號（renderGoogleButton 拿 ID token → signInWithGoogle）；
  * 密碼帳號（admin sccdsa，以及 Google 設定完成前仍開放的有密碼學生帳號）＝學號 → email（RPC email_for_student）→ Supabase Auth 驗證。兩者最後都撈 students profile。
  * 取代已移除的 mock 登入（原 utils/testAuthData）。
  */
@@ -60,23 +60,45 @@ export async function supabaseLogin(studentId: string, password: string): Promis
   return loadProfile(data.user.id, data.session.access_token, 'email')
 }
 
+// Google Identity Services（accounts.google.com/gsi/client）用到的部分
+interface Gis {
+  initialize: (o: { client_id: string; nonce: string; callback: (r: { credential: string }) => void }) => void
+  renderButton: (el: HTMLElement, o: Record<string, unknown>) => void
+}
+let gis: Promise<Gis> | null = null
+const loadGis = () => gis ??= new Promise<Gis>((resolve, reject) => {
+  const s = document.createElement('script')
+  s.src = 'https://accounts.google.com/gsi/client'
+  s.onload = () => resolve((window as unknown as { google: { accounts: { id: Gis } } }).google.accounts.id)
+  s.onerror = () => { gis = null; reject(new Error('Google 登入元件載入失敗')) }
+  document.head.appendChild(s)
+})
+
 /**
- * 學校 Google 帳號登入（google-login.sql）：導去 Google，選完帳號跳回首頁，再由 finishGoogleLogin 接手。
- * 本系規則（網域、學號班級代碼、例外名單）在 DB trigger 把關，不符的帳號根本建不起來。
+ * 學校 Google 帳號登入（2026-11-10 改 Google 自己的按鈕＋ID token）：按鈕由 Google 畫在 el 裡，選完帳號在本頁拿到 ID token，
+ * 不再整頁導去 supabase.co——Google 畫面顯示的是本站網域，不用買 Supabase 自訂網域。拿到後交給 signInWithGoogle。
+ * 樣式只能用 Google 給的選項（品牌規範，文字也是 Google 的）。
  */
-export async function signInWithGoogle(): Promise<boolean> {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: `${window.location.origin}/`, queryParams: { prompt: 'select_account' } }
+export async function renderGoogleButton(el: HTMLElement, locale: 'zh-TW' | 'en', onCredential: (token: string, nonce: string) => void) {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  if (!clientId) throw new Error('缺少環境變數 VITE_GOOGLE_CLIENT_ID（見 .env.example）')
+  const id = await loadGis()
+  // nonce：Google 收雜湊、Supabase 收原值比對，ID token 被攔下也不能拿去別處重放
+  const nonce = crypto.randomUUID()
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(nonce)))
+  id.initialize({
+    client_id: clientId,
+    nonce: Array.from(hash, b => b.toString(16).padStart(2, '0')).join(''),
+    callback: ({ credential }) => onCredential(credential, nonce)
   })
-  return !error
+  id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', locale, width: el.offsetWidth })
 }
 
-/** Google 跳回來後：supabase-js 已從網址取出 session，這裡撈 profile（同密碼登入的 3、4 步） */
-export async function finishGoogleLogin(): Promise<LoginResult> {
-  const { data } = await supabase.auth.getSession()
-  if (!data.session) return { success: false, message: googleRejectMessage() }
-  return loadProfile(data.session.user.id, data.session.access_token, 'google')
+/** Google 給的 ID token 換 Supabase 登入，再撈 profile（同密碼登入的 3、4 步）。本系規則（網域、封閉名單）在 DB trigger 把關，不符的帳號建不起來 */
+export async function signInWithGoogle(token: string, nonce: string): Promise<LoginResult> {
+  const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'google', token, nonce })
+  if (error || !data.session || !data.user) return { success: false, message: googleRejectMessage() }
+  return loadProfile(data.user.id, data.session.access_token, 'google')
 }
 
 /** trigger 擋下時 Supabase 只回「Database error saving new user」，原因統一這樣講 */

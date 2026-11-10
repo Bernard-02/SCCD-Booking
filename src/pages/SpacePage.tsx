@@ -563,7 +563,7 @@ const SpacePage: React.FC = () => {
                 <div className="max-lg:order-last max-lg:w-full"><Collapse open={isNumberedAreaSelected}>
                   <div className="mt-2 ml-[22px] pl-3 border-l border-gray-mid flex flex-col gap-1 py-1 max-lg:ml-0 max-lg:pl-0 max-lg:border-l-0 max-lg:flex-row max-lg:overflow-x-auto">
                     {numberedAreaCategories.map((category) => {
-                      // 專案許可區使用黃色（選中＝淡黃底＋黃字，其餘子分類為淡白底）
+                      // 專案許可區用黃字（選中與 hover 都是），其餘子分類白字
                       const isCasePermit = category.id === 'CasePermitArea'
                       const isSelected = selectedSubCategory === category.id
                       return (
@@ -573,7 +573,7 @@ const SpacePage: React.FC = () => {
                           className={`${SUB_ITEM} max-lg:shrink-0 max-lg:whitespace-nowrap ${
                             isSelected
                               ? (isCasePermit ? 'bg-gray-dark text-yellow' : 'bg-gray-dark text-white')
-                              : `text-gray-light ${NAV_HOVER}`
+                              : `text-gray-light ${isCasePermit ? 'hover:text-yellow hover:bg-gray-dark' : NAV_HOVER}`
                           }`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{category.icon}</span>

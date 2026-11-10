@@ -18,7 +18,7 @@ import OrderDetail, { formatDateRange } from '../components/profile/OrderDetail'
 import type { Receipt, OrderStatus } from '../components/profile/OrderDetail'
 import OrderReceipt, { downloadReceiptPdf } from '../components/profile/OrderReceipt'
 import Collapse from '../components/common/Collapse'
-import { navItemCls } from '../components/common/navItem'
+import { navItemCls, NAV_ITEM } from '../components/common/navItem'
 import Toast from '../components/common/Toast'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { changePassword, fetchBackendAccess, updateMyPhone } from '../services/authService'
@@ -76,7 +76,7 @@ const ProfilePage: React.FC = () => {
             <div className="w-[30%] max-md:w-full flex-shrink-0 pr-3 max-md:pr-0 flex flex-col items-start">
               {/* 選中的分頁＝白底黑字圓角矩形（同訂單卡片展開時的反白）；inline-flex＝各項同寬、以最長的為準；
                   樣式共用 components/common/navItem.ts */}
-              <nav className="inline-flex flex-col gap-2 flex-1 max-md:flex-row max-md:w-full">
+              <nav className="inline-flex flex-col gap-2 flex-1 max-md:flex-row max-md:flex-wrap max-md:w-full">
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
@@ -87,15 +87,15 @@ const ProfilePage: React.FC = () => {
                     <span>{t(item.en, item.zh)}</span>
                   </button>
                 ))}
-                {/* 後台沒有手機版，手機不顯示入口 */}
+                {/* 後台原則上用電腦，手機只有基礎 RWD（不破版），入口照樣給 */}
                 {hasBackend && (
-                  <button onClick={() => navigate('/admin/orders')} className={`max-md:hidden ${navItemCls(false)}`}>
+                  <button onClick={() => navigate('/admin/orders')} className={navItemCls(false)}>
                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>admin_panel_settings</span>
                     <span>{t('Admin', '後台')}</span>
                   </button>
                 )}
-                {/* 登出：同上方選單樣式，放同一欄底部（inline-flex 讓它與上方選單同寬），緊貼 Footer 的 Profile 頭像上方 */}
-                <button onClick={handleLogout} className={`mt-auto max-md:mt-0 max-md:ml-auto ${navItemCls(false)}`}>
+                {/* 登出：放同一欄底部，緊貼 Footer 的 Profile 頭像上方；hover 紅字＋灰底（同後台側欄，危險動作不用選中的白底） */}
+                <button onClick={handleLogout} className={`mt-auto max-md:mt-0 max-md:ml-auto ${NAV_ITEM} pl-3 pr-4 text-gray-light hover:text-error hover:bg-gray-dark`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
                   <span>{t('Log out', '登出')}</span>
                 </button>
@@ -795,7 +795,6 @@ const ProfileDataSection: React.FC = () => {
             </div>
           </>
         )}
-        {/* TODO: 狀態視覺化圓點 */}
       </div>
 
       {/* 分割線（上下對稱間距） */}

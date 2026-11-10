@@ -17,10 +17,8 @@ import './index.css'
 
 // 引入所有原有的 CSS 文件
 import '../css/common.css'
-import '../css/typography.css'
 import '../css/animations.css'
 import '../css/booking.css'
-import '../css/rental-list.css'
 import '../css/numbered-area.css'
 import '../css/scrollbar.css'
 

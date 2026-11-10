@@ -1,8 +1,9 @@
 /**
- * 後台操作對話框：收押金／取件／歸還／退押金（罰金在這裡填）＋值班經手人選擇。
- * 經手人必選（追溯用）；樣式沿用 common/ConfirmDialog。
+ * 後台操作對話框：收押金／取件／歸還（最後一張順便結算：填罰金、退押金）／退押金＋值班經手人選擇。
+ * 經手人必選（追溯用）；訂單頁欄位裡已選好經手人時（lockedHandler）這裡只顯示、當作確認。樣式沿用 common/ConfirmDialog。
  * 大量設備預選了繳押金／取件時段（mass-pickup.sql）：收押金時可選「同時取件」，
  * 不勾＝只收押金（已繳待取件），之後再用 pickup 模式確認取件。
+ * 歸還一律整單（2026-11-10）；提早還一部分走 ⋯ 選單的 partial，勾先還的品項，沒勾的拆子單。
  */
 
 import { BTN } from '@/components/common/btn'
@@ -14,9 +15,10 @@ import { useBundles } from '../../services/equipmentService'
 import { slotLabel, toDateKey } from '../../utils/timeUtils'
 import { Select } from './adminUi'
 
-export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'penalty' | 'cancel' | 'extend' | 'handover' | 'refund'
+export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'partial' | 'penalty' | 'cancel' | 'extend' | 'handover' | 'refund'
 // pickup = 已預繳者取件；penalty = 收罰款（押金抵完還差的）；cancel = 代取消；extend = 代客延期；
-// handover = 點交學生取件後新增的設備（modify-order.sql）；refund = 退押金＝結算（填罰金；取消單沒有罰金）
+// handover = 點交學生取件後新增的設備（modify-order.sql）；refund = 退押金＝結算（填罰金；取消單沒有罰金）；
+// partial = 部分歸還（期限內提早還一部分）
 
 interface Props {
   order: AdminOrderRow
@@ -25,7 +27,8 @@ interface Props {
   defaultHandler: string // 上次選擇的經手人（同班次免重選）
   estPenalty: number // 逾期試算罰金（退押金時預填，可修改）
   familyDeposit?: number // 整張單（根單＋子單）的押金，退押金用
-  lockedHandler?: string // 學會成員用自己的帳號：經手人就是本人，不用選（server 也會強制）
+  lockedHandler?: string // 已決定的經手人：學會成員＝本人（server 也會強制）、最高權限＝在訂單頁欄位選好的
+  settleOnReturn?: boolean // 歸還的是整張單最後一張：同時填罰金、退押金
   onConfirm: (handler: string, penalty: number, itemIds: number[], days: number, pickup: boolean, depositTotal?: number) => void
   onCancel: () => void
 }
@@ -38,6 +41,7 @@ const OrderActionDialog: React.FC<Props> = ({
   estPenalty,
   familyDeposit = order.deposit_total,
   lockedHandler,
+  settleOnReturn = false,
   onConfirm,
   onCancel
 }) => {
@@ -51,7 +55,7 @@ const OrderActionDialog: React.FC<Props> = ({
   const canPickupNow = !hasPickupSlot || pickupDay <= toDateKey(new Date())
   const [pickupNow, setPickupNow] = useState(canPickupNow)
 
-  // 部分歸還（情境 5-①）：勾「已歸還」品項，預設全勾；部分勾＝未還品項拆子單續租
+  // 部分歸還（情境 5-①）：勾先還的品項，預設全勾；整單歸還（return）不顯示勾選，一律全部
   const [returnIds, setReturnIds] = useState<Set<number>>(
     () => new Set(order.order_items.map(i => i.id))
   )
@@ -63,7 +67,7 @@ const OrderActionDialog: React.FC<Props> = ({
       return next
     })
   }
-  const isPartialReturn = mode === 'return' && returnIds.size < order.order_items.length
+  const isPartialReturn = mode === 'partial' && returnIds.size > 0 && returnIds.size < order.order_items.length
 
   // 押金現場計算、系統記錄：點交新增設備，或已繳待取件的單繳押金後被學生改過品項 → 取件時一併記錄
   const pendingItems = order.order_items.filter(i => i.pickup_pending)
@@ -87,14 +91,15 @@ const OrderActionDialog: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', esc)
   }, [onCancel])
 
-  // 退押金＝結算（2026-11-08）：罰金由學會填（逾期、損壞、遺失，系統不知道狀況），從押金扣，超過的差額要學生繳清
-  const settling = mode === 'refund' && order.status === 'returned'
+  // 退押金＝結算（2026-11-08）：罰金由學會填（逾期、損壞、遺失，系統不知道狀況），從押金扣，超過的差額要學生繳清。
+  // 2026-11-10 起整張單最後一張歸還時就一起結（settleOnReturn），退押金鈕只剩取消單與補結用
+  const settling = (mode === 'refund' && order.status === 'returned') || (mode === 'return' && settleOnReturn)
   const penaltyNum = parseInt(penalty, 10)
   const penaltyValid = !settling || (!Number.isNaN(penaltyNum) && penaltyNum >= 0)
   const daysNum = parseInt(days, 10)
   const daysValid = mode !== 'extend' || (!Number.isNaN(daysNum) && daysNum >= 1 && daysNum <= 7)
   const canConfirm =
-    handler !== '' && penaltyValid && daysValid && depositValid && (mode !== 'return' || returnIds.size > 0)
+    handler !== '' && penaltyValid && daysValid && depositValid && (mode !== 'partial' || isPartialReturn)
 
   const title =
     mode === 'paid' ? '確認收押金'
@@ -104,6 +109,8 @@ const OrderActionDialog: React.FC<Props> = ({
     : mode === 'extend' ? '代客延期'
     : mode === 'handover' ? '點交新增設備'
     : mode === 'refund' ? (familyDeposit > 0 ? '退押金' : '結算')
+    : mode === 'partial' ? '部分歸還'
+    : settling && familyDeposit > 0 ? '確認歸還並退押金'
     : '確認歸還'
 
   // 代客延期的新歸還日預覽
@@ -122,7 +129,7 @@ const OrderActionDialog: React.FC<Props> = ({
       onClick={onCancel}
     >
       <div
-        className="relative bg-gray-darker border border-gray-mid max-w-lg w-full mx-4 rounded-2xl"
+        className="relative bg-gray-darker border border-gray-mid max-w-lg w-full mx-4 rounded-2xl max-md:max-h-[calc(100dvh-2rem)] max-md:overflow-y-auto"
         onClick={e => e.stopPropagation()}
         style={{ animation: 'fadeIn 0.2s ease-out' }}
       >
@@ -147,8 +154,13 @@ const OrderActionDialog: React.FC<Props> = ({
             </p>
           )}
 
+          {/* 整單歸還但還有子單沒還：押金先不結 */}
+          {mode === 'return' && !settleOnReturn && (
+            <p className="text-xs text-white font-chinese">這張單的東西全部收回。還有子單沒還，押金等全部還完再一起結。</p>
+          )}
+
           {/* 退押金：取消單整筆退；歸還的單填罰金，扣完退還，超過押金的差額要同學繳 */}
-          {mode === 'refund' && (
+          {(mode === 'refund' || settling) && (
             <p className="text-xs text-white font-chinese">
               押金 <span className="font-english">NT$ {familyDeposit.toLocaleString()}</span>{!settling && '，退還現金後按確認。'}
             </p>
@@ -279,7 +291,10 @@ const OrderActionDialog: React.FC<Props> = ({
             </p>
           )}
 
-          {/* 值班經手人（共用的最高權限帳號才要選） */}
+          {/* 值班經手人：已決定的只顯示（確認用）；共用的最高權限帳號從 ⋯ 選單或按鈕進來才要選 */}
+          {lockedHandler && (
+            <p className="text-xs text-gray-light font-chinese">經手人 <span className="text-white">{lockedHandler}</span></p>
+          )}
           {!lockedHandler && (
             <div>
               <label className="text-gray-light text-xs block mb-2">
@@ -305,11 +320,11 @@ const OrderActionDialog: React.FC<Props> = ({
             </div>
           )}
 
-          {/* 歸還品項勾選（情境 5-①）：預設全勾＝整單歸還；部分勾＝未還品項拆子單續租 */}
-          {mode === 'return' && (
+          {/* 部分歸還（情境 5-①）：勾先還的品項，至少留一項沒勾；沒勾的拆子單續租 */}
+          {mode === 'partial' && (
             <div>
               <label className="text-gray-light text-xs block mb-2">
-                已歸還品項（未勾選者拆為子單繼續租借）
+                先還的品項（沒勾的拆成子單繼續租借；全部都還請用「歸還」欄）
               </label>
               <div className="flex flex-col gap-2">
                 {order.order_items.map(item => (

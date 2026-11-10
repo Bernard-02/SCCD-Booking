@@ -5,10 +5,11 @@
  */
 
 import { BTN } from '@/components/common/btn'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth, GOOGLE_PENDING_KEY } from '../contexts/AuthContext'
-import { useT } from '../stores/langStore'
+import { useAuth } from '../contexts/AuthContext'
+import { renderGoogleButton } from '../services/authService'
+import { useT, useLangStore } from '../stores/langStore'
 
 const STUDIO_LINKS = [
   { en: 'Studio', zh: '工作室', icon: 'desk', href: 'https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link' },
@@ -28,29 +29,22 @@ const GoogleIcon = () => (
   </svg>
 )
 
-// 登入後回跳的頁面（訪客按加入清單／ProtectedRoute 帶來的 redirect_url）；放 sessionStorage 撐過 Google 來回
-const REDIRECT_KEY = 'sccd_login_redirect'
-
 const HomePage = () => {
   const navigate = useNavigate()
-  const { login, loginWithGoogle, finishGoogleLogin, isAuthenticated, currentUser } = useAuth()
+  const { login, loginWithGoogle, isAuthenticated, currentUser } = useAuth()
   const t = useT()
+  const lang = useLangStore((s) => s.lang)
   const [passwordMode, setPasswordMode] = useState(false) // 學號＋密碼表單
   const [googleError, setGoogleError] = useState('')
-  // 剛從 Google 跳回來：處理完之前不畫登入頁，不然登入成功時會閃一下
-  const [finishing, setFinishing] = useState(() => sessionStorage.getItem(GOOGLE_PENDING_KEY) !== null)
   const [searchParams] = useSearchParams()
+  // 登入後回跳的頁面（訪客按加入清單／ProtectedRoute 帶來的）
   const redirectUrl = searchParams.get('redirect_url')
-  if (redirectUrl?.startsWith('/')) sessionStorage.setItem(REDIRECT_KEY, redirectUrl)
   // 後台被導回來（到期）：借錯誤槽提示，不然值班的人會以為壞了
   const sessionNotice = searchParams.get('expired') ? t('Your session has expired. Please log in again.', '登入已過期，請重新登入') : ''
 
   // 登入後導向：admin 進後台，其餘回到被擋下的頁面或型錄
-  const landingPath = (role?: string) => {
-    const back = sessionStorage.getItem(REDIRECT_KEY)
-    sessionStorage.removeItem(REDIRECT_KEY)
-    return role === 'admin' ? '/admin/orders' : back || '/catalog'
-  }
+  const landingPath = (role?: string) =>
+    role === 'admin' ? '/admin/orders' : redirectUrl?.startsWith('/') ? redirectUrl : '/catalog'
   const [studentId, setStudentId] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -65,35 +59,36 @@ const HomePage = () => {
     }
   }, [isAuthenticated, currentUser, navigate])
 
-  // 從 Google 跳回首頁：完成登入或顯示原因，並清掉網址上的 token／error
+  // Google 按鈕由 Google 畫（authService.renderGoogleButton），切回 Google 模式時重畫；選完帳號在本頁登入，不跳頁。
+  // 記住我在選完帳號當下才讀，用 ref
+  const googleBtnRef = useRef<HTMLDivElement>(null)
+  const rememberRef = useRef(rememberMe)
+  rememberRef.current = rememberMe
   useEffect(() => {
-    finishGoogleLogin().then(result => {
-      if (!result) return
-      window.history.replaceState(null, '', window.location.pathname)
-      if (result.success) { navigate(landingPath(result.student?.role), { replace: true }); return }
-      // 錯誤槽在 Google 模式，停在密碼表單會看不到被擋的原因
-      if (result.message) { setPasswordMode(false); setGoogleError(result.message) }
-      setFinishing(false)
+    const el = googleBtnRef.current
+    if (!el) return
+    renderGoogleButton(el, lang === 'en' ? 'en' : 'zh-TW', async (token, nonce) => {
+      setGoogleError('')
+      const result = await loginWithGoogle(token, nonce, rememberRef.current)
+      if (result.success) navigate(landingPath(result.student?.role), { replace: true })
+      else setGoogleError(result.message ?? '')
+    }).catch(err => {
+      console.error('[auth]', err)
+      setGoogleError(t('Couldn’t connect to Google. Please try again later.', '無法連線到 Google，請稍後再試'))
     })
-  }, [])
+  }, [passwordMode, lang])
 
-  const handleGoogle = async () => {
-    setGoogleError('')
-    if (IN_APP) {
-      // LINE 認 openExternalBrowser=1，會改用手機預設瀏覽器開；IG／FB 只能請學生自己開
-      if (/Line\//i.test(navigator.userAgent)) {
-        window.location.href = `${window.location.origin}/?openExternalBrowser=1`
-        return
-      }
-      setGoogleError(t(
-        'Google sign-in doesn’t work in in-app browsers. Please open this page in Safari or Chrome.',
-        'App 內建瀏覽器無法使用 Google 登入，請改用 Safari 或 Chrome 開啟本頁'
-      ))
+  // App 內建瀏覽器不畫 Google 按鈕（Google 不給登入），放同樣子的鈕說明原因
+  const handleInApp = () => {
+    // LINE 認 openExternalBrowser=1，會改用手機預設瀏覽器開；IG／FB 只能請學生自己開
+    if (/Line\//i.test(navigator.userAgent)) {
+      window.location.href = `${window.location.origin}/?openExternalBrowser=1`
       return
     }
-    if (!(await loginWithGoogle(rememberMe))) {
-      setGoogleError(t('Couldn’t connect to Google. Please try again later.', '無法連線到 Google，請稍後再試'))
-    }
+    setGoogleError(t(
+      'Google sign-in doesn’t work in in-app browsers. Please open this page in Safari or Chrome.',
+      'App 內建瀏覽器無法使用 Google 登入，請改用 Safari 或 Chrome 開啟本頁'
+    ))
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -120,8 +115,6 @@ const HomePage = () => {
   const inputClass = (hasError: string) =>
     `font-english w-full h-14 px-6 rounded-2xl bg-gray-darker text-sm text-white placeholder:text-white/50 outline-none ring-inset focus:ring-1 focus:ring-white ${hasError ? 'ring-1 ring-error' : ''}`
 
-  if (finishing) return <div className="bg-black min-h-screen" />
-
   return (
     <div className="bg-black text-white min-h-screen flex items-center py-16">
       <div className="container flex justify-center md:justify-end">
@@ -136,16 +129,23 @@ const HomePage = () => {
 
             {!passwordMode ? (
               <div className="flex flex-col">
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  className={`h-14 rounded-2xl bg-white text-black text-sm flex items-center justify-center gap-3 ${BTN}`}
-                >
-                  <GoogleIcon />
-                  {t('Continue with School Google Account', '使用學校 Google 帳號登入')}
-                </button>
-                {/* 錯誤預留槽（同密碼表單）；原因可能兩行，用 min-h */}
-                <p className="min-h-9 pt-2 px-2 text-2xs text-error" aria-live="polite">{googleError || sessionNotice}</p>
+                {IN_APP ? (
+                  <button
+                    type="button"
+                    onClick={handleInApp}
+                    className={`h-14 rounded-2xl bg-white text-black text-sm flex items-center justify-center gap-3 ${BTN}`}
+                  >
+                    <GoogleIcon />
+                    {t('Continue with School Google Account', '使用學校 Google 帳號登入')}
+                  </button>
+                ) : (
+                  // Google 畫的按鈕（高 40px，寬＝容器）；文字是 Google 的，「學校帳號」寫在下面
+                  <div ref={googleBtnRef} className="min-h-10" />
+                )}
+                {/* 錯誤預留槽（同密碼表單），沒錯誤時提示選學校帳號；原因可能兩行，用 min-h */}
+                <p className={`min-h-9 pt-2 px-2 text-2xs ${googleError || sessionNotice ? 'text-error' : 'text-gray-light'}`} aria-live="polite">
+                  {googleError || sessionNotice || t('Please choose your school account (@gm／gm1／gm2.usc.edu.tw)', '請選擇學校帳號（@gm／gm1／gm2.usc.edu.tw）')}
+                </p>
                 <div className="flex justify-between items-center px-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -247,7 +247,6 @@ const HomePage = () => {
             {/* 訪客：可逛型錄、選日期；加入清單時才要求登入（useCart 把關） */}
             <Link
               to="/catalog"
-              onClick={() => sessionStorage.removeItem(REDIRECT_KEY)}
               className={`${passwordMode ? 'mt-3' : 'mt-5'} self-center text-sm text-gray-light underline underline-offset-4 hover:opacity-50`}
             >
               {t('Browse as Guest', '訪客登入')}

@@ -4,7 +4,8 @@
 
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { useCartSync } from './services/cartService'
 import { DateSelectionProvider } from './contexts/DateSelectionContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute, { AdminOnly } from './components/AdminRoute'
@@ -34,10 +35,17 @@ const RouteFallback = () => (
   </div>
 )
 
+// 購物車與借用資訊跟帳號同步（services/cartService）
+const CartSync = () => {
+  useCartSync(useAuth().currentUser?.studentId)
+  return null
+}
+
 function App() {
   return (
     <>
       <AuthProvider>
+        <CartSync />
         <DateSelectionProvider>
           <BrowserRouter>
             <Suspense fallback={<RouteFallback />}>

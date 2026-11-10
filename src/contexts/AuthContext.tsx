@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { Student, LoginResult } from '../utils/authTypes'
 import { tr } from '../stores/langStore'
-import { supabaseLogin, supabaseLogout, signInWithGoogle, finishGoogleLogin as finishGoogle } from '../services/authService'
+import { supabaseLogin, supabaseLogout, signInWithGoogle } from '../services/authService'
 import { supabase, persistAuth } from '../services/supabase'
 import { readLoginData, isLoginExpired } from '../utils/authStorage'
 import type { LoginData } from '../utils/authStorage'
@@ -16,8 +16,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (studentId: string, password: string, rememberMe?: boolean) => Promise<LoginResult>
-  loginWithGoogle: (rememberMe: boolean) => Promise<boolean>
-  finishGoogleLogin: () => Promise<LoginResult | null>
+  loginWithGoogle: (token: string, nonce: string, rememberMe: boolean) => Promise<LoginResult>
   logout: () => Promise<void>
 }
 
@@ -25,9 +24,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // localStorage key
 const STORAGE_KEY = 'sccd_login_data'
-// Google 登入進行中（sessionStorage，值＝記住我 '1'／'0'）：導去 Google 再跳回來，靠它記住勾選並辨認「剛從 Google 回來」
-// （重設密碼信點進來也是「有憑證、沒 app 資料」，不能只看 session）
-export const GOOGLE_PENDING_KEY = 'sccd_google_pending'
 
 // Props for AuthProvider
 interface AuthProviderProps {
@@ -102,27 +98,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
-  // Google 登入：先記下記住我，再整頁導去 Google（成功時不會回到這裡）
-  const loginWithGoogle = useCallback(async (rememberMe: boolean) => {
-    sessionStorage.setItem(GOOGLE_PENDING_KEY, rememberMe ? '1' : '0')
-    const ok = await signInWithGoogle()
-    if (!ok) sessionStorage.removeItem(GOOGLE_PENDING_KEY)
-    return ok
-  }, [])
-
-  // Google 跳回首頁後由 HomePage 呼叫；不是剛從 Google 回來回傳 null
-  const finishGoogleLogin = useCallback(async (): Promise<LoginResult | null> => {
-    const pending = sessionStorage.getItem(GOOGLE_PENDING_KEY)
-    if (pending === null) return null
-    sessionStorage.removeItem(GOOGLE_PENDING_KEY)
-    // 在 Google 按取消：不算錯誤，不顯示訊息
-    const params = new URLSearchParams(window.location.hash.slice(1) || window.location.search)
-    if (params.get('error') === 'access_denied') return { success: false }
-    const result = await finishGoogle()
+  // Google 登入：登入頁的 Google 按鈕拿到 ID token 後呼叫，之後同密碼登入
+  const loginWithGoogle = useCallback(async (token: string, nonce: string, rememberMe: boolean) => {
+    const result = await signInWithGoogle(token, nonce)
     if (result.success && result.student && result.token && result.expiresIn) {
-      const remember = pending === '1'
-      saveUserToStorage(result.student, result.token, result.expiresIn, remember)
-      persistAuth(remember)
+      saveUserToStorage(result.student, result.token, result.expiresIn, rememberMe)
+      persistAuth(rememberMe)
       setCurrentUser(result.student)
     } else {
       await supabaseLogout().catch(() => {})
@@ -198,7 +179,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: currentUser !== null,
     login,
     loginWithGoogle,
-    finishGoogleLogin,
     logout
   }
 

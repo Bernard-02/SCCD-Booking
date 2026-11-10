@@ -131,7 +131,7 @@ const BundleManager: React.FC<{
                 <div className="flex items-center gap-3">
                   {/* 沒圖＝灰底組合 icon（不沿用設備的預設圖） */}
                   <Thumb src={r.image_url ? imageSrc(r.image_url) : null} alt={r.name} icon="inventory_2" />
-                  <div>
+                  <div className="w-80 whitespace-normal">
                     <div className="font-chinese">{r.name}</div>
                     {r.en_name && <div className="font-english text-gray-light">{r.en_name}</div>}
                   </div>
@@ -173,7 +173,7 @@ const BundleManager: React.FC<{
           onCancel={close}
           wide
         >
-          <div className="flex gap-8">
+          <div className="flex max-md:flex-col gap-8 max-md:gap-4">
             <div className="shrink-0">
               {/* 同設備對話框：左圖（沒圖＝虛線 placeholder），按確定才上傳 */}
               <ImagePicker

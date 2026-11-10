@@ -97,10 +97,10 @@ const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-black text-white flex">
+    <div className="h-screen max-md:h-dvh bg-black text-white flex max-md:flex-col">
       {/* 側欄：固定滿高，項目多到超出時自己捲 */}
       {/* 寬度跟著內容（標題拆兩行、各行不換行，寬度由最長的選單項決定） */}
-      <aside className={`shrink-0 flex flex-col items-start ${EDGE_L} pr-8 py-10 h-screen overflow-y-auto`}>
+      <aside className={`shrink-0 flex flex-col items-start ${EDGE_L} pr-8 py-10 h-screen overflow-y-auto max-md:h-auto max-md:pt-6 max-md:pb-0 max-md:pr-[clamp(1.2rem,2vw,2%)]`}>
         {/* 同前台 Header logo 字樣（Inter 粗體 text-md）＋今天 */}
         <div>
           <p className="font-english font-bold text-white text-md whitespace-nowrap leading-tight">SCCDSA<br />Booking 後台</p>
@@ -108,15 +108,15 @@ const AdminLayout: React.FC = () => {
         </div>
 
         {/* inline-flex＝各項同寬、以最長的為準（同 Profile）；組名小字對齊 icon 左緣（px-3＝膠囊 pl-3） */}
-        <nav className="inline-flex flex-col mt-10 flex-1">
+        <nav className="inline-flex flex-col mt-10 flex-1 max-md:flex max-md:flex-row max-md:items-center max-md:gap-2 max-md:mt-4 max-md:w-full max-md:overflow-x-auto">
           {ADMIN_SECTION_GROUPS.filter(g => isAdmin || g.label === '值班').map((group, gi) => (
-            <div key={group.label} className={`flex flex-col gap-2 ${gi > 0 ? 'mt-8' : ''}`}>
-              <p className="px-3 text-xs text-gray-mid">{group.label}</p>
+            <div key={group.label} className={`flex flex-col gap-2 max-md:flex-row ${gi > 0 ? 'mt-8 max-md:mt-0' : ''}`}>
+              <p className="px-3 text-xs text-gray-mid max-md:hidden">{group.label}</p>
               {group.items.map(s => (
                 <NavLink
                   key={s.to}
                   to={s.to}
-                  className={({ isActive }) => `${navItemCls(isActive)} ${s.to === '/admin/notifications' && unread > 0 ? '!pr-2' : ''}`}
+                  className={({ isActive }) => `${navItemCls(isActive)} max-md:shrink-0 max-md:whitespace-nowrap ${s.to === '/admin/notifications' && unread > 0 ? '!pr-2' : ''}`}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{s.icon}</span>
                   <span>{s.label}</span>
@@ -132,10 +132,10 @@ const AdminLayout: React.FC = () => {
           ))}
 
           {/* 登出放在 nav 裡才會和上面的項目同寬（flex-col stretch）；外層負責推到底＋最小間距，不把 padding 加進 hover 框 */}
-          <div className="mt-auto pt-10 flex flex-col gap-2">
+          <div className="mt-auto pt-10 flex flex-col gap-2 max-md:mt-0 max-md:pt-0 max-md:ml-auto max-md:flex-row">
             {/* 學會成員也是學生，要回得去前台借東西 */}
             {!isAdmin && (
-              <NavLink to="/catalog" className={navItemCls(false)}>
+              <NavLink to="/catalog" className={`${navItemCls(false)} max-md:shrink-0 max-md:whitespace-nowrap`}>
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_back</span>
                 <span>回前台</span>
               </NavLink>
@@ -143,7 +143,7 @@ const AdminLayout: React.FC = () => {
             {/* 登出：平常灰字同其他項目，hover 才變 error 字＋gray-dark 底（同 NAV_HOVER） */}
             <button
               onClick={handleLogout}
-              className={`${NAV_ITEM} pl-3 pr-4 text-gray-light hover:text-error hover:bg-gray-dark`}
+              className={`${NAV_ITEM} pl-3 pr-4 text-gray-light hover:text-error hover:bg-gray-dark max-md:shrink-0 max-md:whitespace-nowrap`}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>logout</span>
               <span>登出</span>
@@ -153,7 +153,7 @@ const AdminLayout: React.FC = () => {
       </aside>
 
       {/* 內容區：自己捲動（捲軸貼視窗右緣，所以右邊距放在 main 內）；py-10 同側欄，頁標題與「SCCDSA Booking 後台」同高 */}
-      <main className={`flex-1 min-w-0 h-screen overflow-y-auto pl-12 ${EDGE_R} py-10`}>
+      <main className={`flex-1 min-w-0 h-screen overflow-y-auto pl-12 ${EDGE_R} py-10 max-md:h-auto max-md:min-h-0 max-md:pl-[clamp(1.2rem,2vw,2%)]`}>
         <Outlet context={{ notifs, markAllRead } satisfies AdminOutletContext} />
       </main>
     </div>

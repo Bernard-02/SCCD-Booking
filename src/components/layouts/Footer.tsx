@@ -137,7 +137,7 @@ const Footer: React.FC = () => {
   }, [])
 
   return (
-    <footer className="bg-transparent footer-main">
+    <footer className="bg-transparent py-6 max-md:py-3">
       <div className="container">
         {/* 手機收掉中間的 Copyright（hover 彩蛋沒有觸控），左右兩邊同桌機 */}
         <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto_1fr] items-end">
@@ -155,16 +155,16 @@ const Footer: React.FC = () => {
 
           {/* 中：Copyright（hover 彩蛋） */}
           <div
-            className="copyright hidden md:block font-english font-bold text-white text-center text-sm"
+            className="relative hidden md:block font-english font-bold text-white text-center text-sm"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
             <p>
-              <span className="copyright-original" style={{ opacity: showEasterEgg ? 0 : 1 }}>
+              <span style={{ opacity: showEasterEgg ? 0 : 1 }}>
                 <span className="font-english uppercase">Copyright © SCCDSA</span>
                 <span className="font-english"> All rights reserved.</span>
               </span>
-              <span className="copyright-easter-egg" style={{ opacity: showEasterEgg ? 1 : 0 }}>
+              <span className="absolute inset-0 whitespace-nowrap" style={{ opacity: showEasterEgg ? 1 : 0 }}>
                 {easterEggText}
               </span>
             </p>

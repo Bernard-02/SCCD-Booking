@@ -139,46 +139,6 @@
 
 }
 
-/* ===== Header 和 Footer 全域樣式 ===== */
-
-/* Header 樣式 */
-.header-main {
-  margin-top: 1.03rem;
-  z-index: 1000;
-}
-
-.footer-main {
-  padding: 1.5rem 0;
-}
-
-@media (max-width: 767px) {
-  .footer-main {
-    padding: 0.75rem 0;
-  }
-}
-
-/* ===== Copyright 彩蛋效果樣式 ===== */
-.copyright {
-  position: relative;
-}
-
-.copyright-original {
-  transition: none;
-}
-
-.copyright-easter-egg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  white-space: nowrap;
-  opacity: 0;
-  font-family: 'Inter', sans-serif;
-  font-size: inherit;
-  letter-spacing: inherit;
-}
-
 /* 全局隱藏滾動條但保持滾動功能 */
 * {
   scrollbar-width: none; /* Firefox */

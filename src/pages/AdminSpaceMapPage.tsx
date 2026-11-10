@@ -3,7 +3,8 @@
  * 沿用前台 A5F SVG 與 numbered-area.css 的區塊狀態視覺：
  * 格子顏色＝該日期佔用訂單的狀態，同 StatusChip 色票（黃＝待繳押金、藍＝使用中、粉紅＝未完成歸還）；有顏色的格子編號改黑（編號本身是黃／白）；
  * 暗（is-disabled）＝後台已關閉（不可點，反正不會有人借）；預設＝空閒。
- * 版面：地圖靠左、撐滿視窗剩餘高度（等比縮放，不捲動）；右欄由上而下＝圖例、日期、選到的區塊面板（點地圖上的區塊看借用人），
+ * 版面：地圖靠左、撐滿視窗剩餘高度（等比縮放，不捲動）；右欄由上而下＝圖例、日期、選到的區塊面板（點地圖上的區塊看借用人）；
+ * 視窗偏方或直立時（tall: 變體，index.css）改成地圖在上、下面左圖例右日期與面板，
  * 點到的區塊在地圖上填白色、格子上的編號改黑字（編號是獨立的 path，用位置對回格子）。教室不在 SVG 上，這頁不列（2026-10-24 定），教室借用到「訂單」篩個人／團體空間看。
  * 純查看不可改——開關在「設定 → 空間管理」，訂單操作在「值班 → 訂單」。
  */
@@ -178,13 +179,13 @@ const AdminSpaceMapPage: React.FC = () => {
       )}
 
       {/* 失敗時用 hidden 而非卸載：SVG 是注入進 containerRef 的節點 */}
-      <div className={`flex-1 min-h-0 flex gap-8 ${loadError ? 'hidden' : ''}`}>
+      <div className={`flex-1 min-h-0 flex gap-8 tall:flex-col ${loadError ? 'hidden' : ''}`}>
         {/* 地圖 */}
         {/* invisible（非 display:none）：仍有版面與座標，編號改黑用的 getBoundingClientRect 才準 */}
-        <div ref={containerRef} className={`flex-1 min-w-0 h-full ${painted ? '' : 'invisible'}`} />
+        <div ref={containerRef} className={`flex-1 min-w-0 min-h-0 h-full ${painted ? '' : 'invisible'}`} />
 
-        {/* 右欄：圖例＋面板 */}
-        <div className="w-80 shrink-0 min-h-0 flex flex-col gap-6">
+        {/* 右欄：圖例＋面板（tall：改成地圖下方一列，圖例靠左、日期與面板靠右） */}
+        <div className="w-1/4 min-w-56 max-w-80 shrink-0 min-h-0 flex flex-col gap-6 tall:w-full tall:max-w-none tall:flex-row tall:justify-between tall:items-end max-md:!flex-col max-md:!items-stretch">
           {/* 圖例：三種佔用狀態同 StatusChip 色票（pending 在地圖上叫待繳押金，同訂單頁分頁用字） */}
           <div className="flex flex-col gap-2 text-xs font-chinese text-white">
             {([['pending', '待繳押金'], ['in-progress', '使用中'], ['overdue', '未完成歸還（逾期）']] as const).map(([st, zh]) => (
@@ -197,11 +198,12 @@ const AdminSpaceMapPage: React.FC = () => {
             </span>
           </div>
 
+          <div className="min-h-0 flex flex-col gap-6 tall:w-80 max-md:!w-full">
           <DatePicker value={date} onChange={setDate} />
 
           {/* 選到的區塊：代號・區域＋該日期借用人。高度跟內容走；借用人太多超過右欄時只在面板內捲 */}
           {/* 灰卡片（gray-dark，同上方日期框底色、圓角 12px，地圖說明框那級）：全部白字（gray-dark 底上 gray-light 對比太低，2026-11-02） */}
-          <div className="min-h-0 flex flex-col bg-gray-dark text-white rounded-xl p-4 text-xs">
+          <div className="min-h-0 flex flex-col bg-gray-dark text-white rounded-xl p-4 text-xs tall:max-h-48">
             <div className="min-h-0 overflow-y-auto">
               {!selected ? (
                 <p className="font-chinese">點地圖上的區塊查看借用人</p>
@@ -221,6 +223,7 @@ const AdminSpaceMapPage: React.FC = () => {
                 </>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>

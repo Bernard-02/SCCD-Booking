@@ -286,9 +286,12 @@ const AdminSpacesPage: React.FC = () => {
               <span className={`material-symbols-outlined transition-transform ${open ? 'rotate-180' : ''}`} style={{ fontSize: '20px' }}>expand_more</span>
               {/* 該區示意圖，同前台購物車／訂單頁（前／後陽台沒有＝灰底 icon） */}
               <Thumb src={AREA_IMAGE_MAP[area] ?? null} alt={areaZh(area)} icon="map" />
-              <span className="font-chinese ml-1">{areaZh(area)}</span>
-              <span className="font-english text-gray-light">{text(areaKey(area)).en}</span>
-              {/* 格數徽章：同上方 CountTabs 的計數樣式，但直接貼在黑底上，底色提亮到 20% 才看得到 */}
+              {/* 英文名稱在中文下方（同設備管理）；button 裡只能放 span，用 block／flex 排 */}
+              <span className="ml-1 text-left">
+                <span className="block font-chinese">{areaZh(area)}</span>
+                <span className="block font-english text-gray-light">{text(areaKey(area)).en}</span>
+              </span>
+              {/* 格數徽章：在名稱右邊、跟兩行置中對齊；同上方 CountTabs 的計數樣式，但直接貼在黑底上，底色提亮到 20% 才看得到 */}
               <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-lg text-2xs font-english bg-white/20">{g.length}</span>
             </button>
           </td>
@@ -318,7 +321,7 @@ const AdminSpacesPage: React.FC = () => {
       <PageTitle zh="空間管理" />
 
       {/* 搜尋列（分頁上方，同訂單頁）：左搜尋（常駐）；右＝選取模式、狀態篩選 */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex max-md:flex-wrap items-center gap-2 mb-4">
         <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
         <SelectControls
           mode={selectMode}
@@ -399,7 +402,7 @@ const AdminSpacesPage: React.FC = () => {
               </Field>
             </div>
           ) : (
-            <div className="flex gap-8">
+            <div className="flex max-md:flex-col gap-8 max-md:gap-4">
               <div className="shrink-0">
                 <ImagePicker
                   src={dialog.preview ?? classroomImage(dialog.space)}

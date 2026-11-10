@@ -28,9 +28,10 @@ const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 3000, type =
     return () => clearTimeout(timer)
   }, [onClose, duration])
 
-  // 樣式全部交給 css/common.css 的 .toast 系列（含 show/error 狀態與手機版），這裡只切 class
+  // 樣式全部交給 css/common.css 的 .toast 系列（含 show/error 狀態與手機版），這裡只切 class。
+  // role：讀屏會唸出來（錯誤用 alert 立刻插話，其餘 status 等目前的話唸完）
   return (
-    <div className={`toast ${show ? 'show' : ''} ${type === 'error' ? 'error' : ''}`}>
+    <div role={type === 'error' ? 'alert' : 'status'} className={`toast ${show ? 'show' : ''} ${type === 'error' ? 'error' : ''}`}>
       <p>{message}</p>
     </div>
   )
