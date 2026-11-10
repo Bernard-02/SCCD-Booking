@@ -67,7 +67,8 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 ## 認證流程
 
 - **登入狀態**：`localStorage.sccd_login_data`（記住我）或 `sessionStorage.sccd_login_data`（僅此次）；
-  Supabase 憑證（`sb-*`）也跟著放同一邊（`services/supabase.ts` 自訂 storage＋`persistAuth`），沒勾記住我關分頁即真的登出
+  Supabase 憑證（`sb-*`）也跟著放同一邊（`services/supabase.ts` 自訂 storage＋`persistAuth`），沒勾記住我關分頁即真的登出。
+  **Google 登入一律記住、不顯示勾選**（2026-11-10：瀏覽器的 Google 帳號一直登入著，關分頁登出擋不住下一個人一鍵登入）；記住我只在學號密碼表單
 - **過期**：閒置效期 30 天——每次開 app 把 `loginTime` 續成現在，`loginTime + expiresIn < now` 才過期，過期連 Supabase 一起登出；
   app 資料在但 Supabase 憑證已沒了也視為登出。**admin 例外**（2026-11-06，後台在學會共用電腦上用）：登入起算固定 12 小時、不續期，分頁開著也會到期
   （`authStorage.isLoginExpired`＋`AdminLayout` 每分鐘檢查，導回 `/?expired=1` 顯示提示）；真正的防線在 `user_role()`（`supabase/admin-session-limit.sql`，看 `auth.sessions.created_at`）。
@@ -79,7 +80,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   選完帳號在本頁拿到 ID token，`AuthContext.loginWithGoogle` → `signInWithIdToken` 撈 profile，不跳頁；Google 畫面顯示本站網址（不買 Supabase 自訂網域），Client ID 在環境變數 `VITE_GOOGLE_CLIENT_ID`；資格在 DB trigger 把關（`supabase/google-login.sql`：
   網域 gm／gm1／gm2.usc.edu.tw，**且學號或 Email 要先在後台會員管理「新增會員」登記過**＝`login_allowlist`，`members-v2.sql`，2026-10-25 改封閉名單，不再依學號格式自動放行），
   第一次登入自動建學生資料（年級／班別由學號給初值、姓名用 Google 名字）。不另寄驗證信——Google 登入本身即驗證。
-  登入頁預設 Google（學生與後台都走這條，2026-11-09 定），學號＋密碼（`supabaseLogin`）退為「學號密碼登入」小連結當備援；不做 SMTP、沒有忘記密碼，`sccdsa` 的密碼到 Supabase 後台重設。
+  登入頁預設 Google（學生與後台都走這條，2026-11-09 定），學號＋密碼（`supabaseLogin`）退為 Google 鈕下方「學號密碼登入」鈕當備援（與「訪客登入」左右並排，2026-11-10）；不做 SMTP、沒有忘記密碼，`sccdsa` 的密碼到 Supabase 後台重設。
   Supabase 已開 Google provider、接上 OAuth 用戶端（2026-11-10 確認），**還沒用真實帳號實測**（docs/google-login-setup.md「E. 測試」）。LINE／IG 內建瀏覽器會被 Google 擋，登入頁會提示。
   舊的 mock 登入已移除，認證共用型別留在 `utils/authTypes.ts`
 - **保護路由**：目前僅 `/profile` 包在 `ProtectedRoute` 中，其他路由都是公開的

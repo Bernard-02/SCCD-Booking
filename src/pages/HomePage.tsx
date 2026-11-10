@@ -1,7 +1,7 @@
 /**
  * 首頁 - 登入畫面
  * 單欄直排（標題→登入→訪客→工作室連結），無 Header／Footer；手機置中、桌機靠右
- * 預設 Google 登入（google-login.sql，學生與後台都走這條）；學號＋密碼退為小連結當備援（2026-11-09 定），兩種表單可互切。
+ * 預設 Google 登入（google-login.sql，學生與後台都走這條）；學號＋密碼退為備援（2026-11-09 定）：Google 鈕下方左「學號密碼登入」、右「訪客登入」，兩種表單可互切。
  */
 
 import { BTN } from '@/components/common/btn'
@@ -15,6 +15,11 @@ const STUDIO_LINKS = [
   { en: 'Studio', zh: '工作室', icon: 'desk', href: 'https://drive.google.com/drive/folders/1LimCk34X8UdWWo4hQx4a3AWDxrfX8bdL?usp=drive_link' },
   { en: 'Film Studio', zh: '專業攝影棚', icon: 'photo_camera', href: 'https://drive.google.com/drive/folders/1z6eI-UGdBTNubM7bjw-0Erf4puDikobK?usp=drive_link' },
 ]
+
+// 線框卡片鈕（工作室連結、學號密碼／訪客）：hover 反白＝白底黑字（CLAUDE.md 線框鈕連結版）
+const OUTLINE_CARD = 'rounded-2xl border border-white/50 flex items-center text-white hover:bg-white hover:border-white hover:text-black no-underline'
+// 學號密碼／訪客並排半寬：icon 那側少 4px
+const OPTION_CLS = `${OUTLINE_CARD} h-14 pl-4 pr-5 gap-3 text-sm whitespace-nowrap`
 
 // LINE／IG／FB 內建瀏覽器：Google 不給在 App 內嵌網頁登入（disallowed_useragent）
 const IN_APP = /Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent)
@@ -60,16 +65,15 @@ const HomePage = () => {
   }, [isAuthenticated, currentUser, navigate])
 
   // Google 按鈕由 Google 畫（authService.renderGoogleButton），切回 Google 模式時重畫；選完帳號在本頁登入，不跳頁。
-  // 記住我在選完帳號當下才讀，用 ref
+  // Google 登入一律記住（2026-11-10）：瀏覽器裡的 Google 帳號本來就一直登入著，關分頁登出也擋不住下一個人按一下就進來，
+  // 所以不給選；共用電腦要靠登出＋登出 Google。記住我只留給學號密碼（學會櫃檯的 sccdsa）
   const googleBtnRef = useRef<HTMLDivElement>(null)
-  const rememberRef = useRef(rememberMe)
-  rememberRef.current = rememberMe
   useEffect(() => {
     const el = googleBtnRef.current
     if (!el) return
     renderGoogleButton(el, lang === 'en' ? 'en' : 'zh-TW', async (token, nonce) => {
       setGoogleError('')
-      const result = await loginWithGoogle(token, nonce, rememberRef.current)
+      const result = await loginWithGoogle(token, nonce, true)
       if (result.success) navigate(landingPath(result.student?.role), { replace: true })
       else setGoogleError(result.message ?? '')
     }).catch(err => {
@@ -146,24 +150,6 @@ const HomePage = () => {
                 <p className={`min-h-9 pt-2 px-2 text-2xs ${googleError || sessionNotice ? 'text-error' : 'text-gray-light'}`} aria-live="polite">
                   {googleError || sessionNotice || t('Please choose your school account (@gm／gm1／gm2.usc.edu.tw)', '請選擇學校帳號（@gm／gm1／gm2.usc.edu.tw）')}
                 </p>
-                <div className="flex justify-between items-center px-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="custom-checkbox"
-                    />
-                    <span className="text-sm text-gray-light">{t('Remember Me', '記住我')}</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { setPasswordMode(true); setGoogleError('') }}
-                    className={`text-sm text-white ${BTN}`}
-                  >
-                    {t('Sign in with Student ID', '學號密碼登入')}
-                  </button>
-                </div>
               </div>
             ) : (
             /* 錯誤訊息固定在輸入框下方的預留槽（h-9），出現時版面不跳動 */
@@ -234,23 +220,23 @@ const HomePage = () => {
             </form>
             )}
 
-            {/* 密碼表單模式：可切回 Google 登入 */}
-            {passwordMode && (
+            {/* 左：兩種登入互切；右：訪客（可逛型錄、選日期，加入清單時才要求登入，useCart 把關）。
+                樣子同下方工作室連結；半寬塞不下長英文，英文用短的 */}
+            <div className="mt-5 grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setPasswordMode(false)}
-                className={`mt-5 self-center text-sm text-gray-light underline underline-offset-4 ${BTN}`}
+                onClick={() => { setPasswordMode(!passwordMode); setGoogleError('') }}
+                className={`${OPTION_CLS} cursor-pointer`}
               >
-                {t('Sign in with School Google Account', '使用學校 Google 帳號登入')}
+                {passwordMode
+                  ? <><span className="w-5 flex justify-center"><GoogleIcon /></span>{t('Google', 'Google 登入')}</>
+                  : <><span className="material-symbols-outlined" style={{ fontSize: '20px' }}>badge</span>{t('Student ID', '學號密碼登入')}</>}
               </button>
-            )}
-            {/* 訪客：可逛型錄、選日期；加入清單時才要求登入（useCart 把關） */}
-            <Link
-              to="/catalog"
-              className={`${passwordMode ? 'mt-3' : 'mt-5'} self-center text-sm text-gray-light underline underline-offset-4 hover:opacity-50`}
-            >
-              {t('Browse as Guest', '訪客登入')}
-            </Link>
+              <Link to="/catalog" className={OPTION_CLS}>
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
+                {t('Guest', '訪客登入')}
+              </Link>
+            </div>
 
             {/* 工作室／攝影棚外部連結 */}
             <div className="mt-20 flex flex-col gap-5">
@@ -260,7 +246,7 @@ const HomePage = () => {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-16 px-6 rounded-2xl border border-white/50 flex items-center gap-5 text-white hover:bg-white hover:border-white hover:text-black no-underline"
+                  className={`${OUTLINE_CARD} h-16 px-6 gap-5`}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
                   <span className="flex-1 text-sm">{t(en, zh)}</span>

@@ -2,7 +2,7 @@
 
 學生用學校 Google 帳號登入（2026-10-24 定）。2026-11-10 確認 Supabase 已開 Google provider、接上 OAuth 用戶端，A–D 看起來已做完。
 同日登入改用 Google 自己的按鈕（ID token），Google 畫面顯示本站網址、不再顯示 supabase.co（免買 Supabase 自訂網域）：**要補 C-2 的 `http://localhost` 和 D-5 的 Client ID 環境變數**，再做「E. 測試」。
-後台帳號 `sccdsa` 要用學會 Gmail 登入，另外照「後台用 Gmail 登入」設定；學號＋密碼登入（登入頁的小連結）不受影響。
+後台帳號 `sccdsa` 要用學會 Gmail 登入，另外照「後台用 Gmail 登入」設定；學號＋密碼登入（登入頁 Google 鈕下方的「學號密碼登入」）不受影響。
 
 - 規則與程式：`supabase/members-v2.sql`（資格判斷）、`src/services/authService.ts`（`renderGoogleButton` 畫 Google 按鈕、拿到 ID token 後 `signInWithGoogle`）
 - Supabase 專案：`https://qhcgqdsfriyvkpjdwseu.supabase.co`

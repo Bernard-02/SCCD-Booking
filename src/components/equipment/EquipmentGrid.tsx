@@ -566,7 +566,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         {/* 狀態指示器列 - 空白表頭 */}
         <div></div>
 
-        <div className="font-english text-xs text-gray-light text-left">
+        {/* 欄寬 40px，英文 Favorites 比欄寬：flex 置中讓超出的部分左右平均 */}
+        <div className="font-english text-xs text-gray-light flex justify-center whitespace-nowrap">
           <div>{t('Favorites', '收藏')}</div>
         </div>
         <div className="font-english text-xs text-gray-light"></div>
@@ -660,7 +661,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                       e.stopPropagation()
                       toggleBookmark(item.id, item.name)
                     }}
-                    className={`w-6 h-6 card:box-content card:col-start-4 card:row-start-3 card:justify-self-center flex items-center justify-center ${fold} ${TAP} ${isBookmarked ? 'cursor-pointer' : BTN}`}
+                    className={`w-6 h-6 card:box-content card:col-start-4 card:row-start-3 justify-self-center flex items-center justify-center ${fold} ${TAP} ${isBookmarked ? 'cursor-pointer' : BTN}`}
                     aria-label={isBookmarked ? '取消收藏' : '加入收藏'}
                   >
                     <span
