@@ -137,7 +137,7 @@ const Footer: React.FC = () => {
   }, [])
 
   return (
-    <footer className="bg-transparent py-6 max-md:py-3">
+    <footer className="bg-transparent pt-6 max-md:pt-3 pb-[var(--gutter)]">
       <div className="container">
         {/* 手機收掉中間的 Copyright（hover 彩蛋沒有觸控），左右兩邊同桌機 */}
         <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto_1fr] items-end">

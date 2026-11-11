@@ -19,6 +19,7 @@ const SpacePage = lazy(() => import('./pages/SpacePage'))
 const RentalListPage = lazy(() => import('./pages/RentalListPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const BookingResourcesPage = lazy(() => import('./pages/BookingResourcesPage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'))
 const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
 const AdminHoursPage = lazy(() => import('./pages/AdminHoursPage'))
@@ -59,6 +60,8 @@ function App() {
                 <Route path="/equipment" element={<EquipmentPage />} />
                 <Route path="/space" element={<SpacePage />} />
                 <Route path="/cart" element={<RentalListPage />} />
+                {/* 手機的通知（桌機是 Header 下拉面板） */}
+                <Route path="/notifications" element={<NotificationsPage />} />
 
                 {/* 用戶相關 */}
                 <Route

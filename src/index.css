@@ -54,10 +54,11 @@
   --text-3xl--line-height: 1.2;
 }
 
-/* 手機字級（2026-11-06）：內文三階（12／14／16）手機照用，20px 以上的標題與數字往下收。
+/* 手機字級（2026-11-06）：20px 以上的標題與數字往下收；2026-11-11 主要內文 text-sm 16 → 14（同 text-xs），12 不動。
    改這裡全站生效，元件不用寫手機字級；不放進 @layer，才蓋得過 @theme 的值 */
 @media (width < 48rem) {
   :root {
+    --text-sm: 0.875rem;  /* 14 */
     --text-md: 1.125rem;  /* 18 */
     --text-lg: 1.25rem;   /* 20 */
     --text-xl: 1.5rem;    /* 24 */
@@ -96,7 +97,8 @@
   :root { --tracking-en: -0.011em; }
   .text-2xs { --tracking-en: 0; }          /* 12px */
   .text-xs { --tracking-en: -0.006em; }    /* 14px */
-  .text-sm { --tracking-en: -0.011em; }    /* 16px */
+  .text-sm { --tracking-en: -0.011em; }    /* 16px；手機 14px 見下行 */
+  @media (width < 48rem) { .text-sm { --tracking-en: -0.006em; } }
   .text-md { --tracking-en: -0.017em; }    /* 20px */
   .text-lg { --tracking-en: -0.02em; }     /* 24px */
   .text-xl, .text-2xl, .text-3xl { --tracking-en: -0.022em; } /* 32px 以上趨近 −0.0223 */

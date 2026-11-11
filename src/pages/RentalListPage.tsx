@@ -32,6 +32,17 @@ const parseGroupKey = (key: string): { category: string; startDate: string; endD
   return { category: match[1], startDate: match[2], endDate: match[3] }
 }
 
+// 送出條件的圈：大小、線寬同 .custom-checkbox（同意條款的勾選圈，css/common.css），完成＝綠底黑勾
+const StatusCircle = ({ done }: { done: boolean }) => (
+  <span className={`w-[1.125rem] h-[1.125rem] shrink-0 rounded-full border-[1.5px] flex items-center justify-center ${done ? 'bg-green border-green' : 'border-gray-light'}`}>
+    {done && (
+      <svg viewBox="0 0 10 8" fill="none" className="w-[55%]" aria-hidden="true">
+        <path d="M1 4L3.5 6.5L9 1" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )}
+  </span>
+)
+
 const RentalListPage = () => {
   const t = useT()
   const guideDocUrl = useGuideDocUrl() // 使用教學第一個「連結」積木的網址
@@ -267,52 +278,57 @@ const RentalListPage = () => {
     }
   }
 
+  const title = <h1 className="font-english text-white text-xl max-lg:text-md">{t('Cart', '清單')} ({totalUniqueItems})</h1>
+  // 選取 → 進入選取模式（各組左側出現圓圈），按鈕變清除；取消退出
+  const selectButtons = (
+    <div className="flex items-center gap-2">
+      {selectMode && (
+        <button
+          onClick={exitSelectMode}
+          className={`${BTN_TOOL} ${BTN_INVERT}`}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>undo</span>
+          {t('Cancel', '取消')}
+        </button>
+      )}
+      <button
+        onClick={selectMode ? handleClearAll : () => setSelectMode(true)}
+        disabled={selectMode ? selectedGroups.size === 0 : cart.length === 0}
+        className={`${BTN_TOOL} ${selectMode ? '' : '!pl-3'} ${BTN_INVERT}`}
+      >
+        {selectMode && <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>}
+        {selectMode ? t('Clear', '清除') : t('Select', '選取')}
+      </button>
+    </div>
+  )
+
   return (
     <div className="bg-black text-white h-dvh overflow-hidden flex flex-col">
       <Header />
 
       {/* 主要內容區塊 */}
-      <main className="flex-1 pt-20 max-md:pt-16 overflow-hidden flex flex-col">
-        {/* 返回上一頁 */}
-        <div className="container">
-          <BackButton />
+      <main className="flex-1 pt-[calc(var(--gutter)+4rem)] max-md:pt-[calc(var(--gutter)+3rem)] overflow-hidden flex flex-col">
+        {/* 返回上一頁；lg 以下標題（置中）與選取鈕也放這列，固定不捲 */}
+        <div className="container max-lg:grid max-lg:grid-cols-[1fr_auto_1fr] max-lg:items-center max-lg:mb-4">
+          <div><BackButton /></div>
+          <div className="lg:hidden">{title}</div>
+          <div className="lg:hidden justify-self-end">{selectButtons}</div>
         </div>
 
         {/* flex-1 而非 h-full：扣掉返回鈕高度，底部送出鈕才不會被裁掉 */}
         <div className="container flex-1 min-h-0 flex flex-col overflow-hidden">
-          {/* 左右分欄佈局 */}
-          <div className="flex gap-16 flex-1 overflow-hidden max-lg:flex-col max-lg:gap-6 max-lg:overflow-y-auto">
+          {/* 左右分欄佈局；lg 以下上下排：清單自己捲，摘要＋送出固定在底部 */}
+          <div className="flex gap-16 flex-1 min-h-0 overflow-hidden max-lg:flex-col max-lg:gap-0">
             {/* 左邊：租借清單（剩餘寬度） */}
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden max-lg:flex-none max-lg:overflow-visible">
-              {/* 頁面標題 */}
-              <div className="mb-6 flex justify-between items-center flex-shrink-0">
-                <h1 className="font-english text-white text-xl">
-                  {t('Cart', '清單')} ({totalUniqueItems})
-                </h1>
-                {/* 選取 → 進入選取模式（各組左側出現圓圈），按鈕變清除；取消退出 */}
-                <div className="flex items-center gap-2">
-                  {selectMode && (
-                    <button
-                      onClick={exitSelectMode}
-                      className={`${BTN_TOOL} ${BTN_INVERT}`}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>undo</span>
-                      {t('Cancel', '取消')}
-                    </button>
-                  )}
-                  <button
-                    onClick={selectMode ? handleClearAll : () => setSelectMode(true)}
-                    disabled={selectMode ? selectedGroups.size === 0 : cart.length === 0}
-                    className={`${BTN_TOOL} ${selectMode ? '' : '!pl-3'} ${BTN_INVERT}`}
-                  >
-                    {selectMode && <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>}
-                    {selectMode ? t('Clear', '清除') : t('Select', '選取')}
-                  </button>
-                </div>
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+              {/* 頁面標題（lg 以下在返回那列） */}
+              <div className="mb-6 flex justify-between items-center flex-shrink-0 max-lg:hidden">
+                {title}
+                {selectButtons}
               </div>
 
               {/* 設備列表 */}
-              <div className="flex-1 overflow-y-auto pb-8 max-lg:overflow-visible max-lg:pb-0">
+              <div className="flex-1 min-h-0 overflow-y-auto pb-8 max-lg:pb-4">
                 <CartList
                   cart={cart}
                   onQuantityChange={updateEquipmentQuantity}
@@ -328,41 +344,35 @@ const RentalListPage = () => {
               </div>
             </div>
 
-            {/* 右邊：租借摘要 (20%)：押金／提醒／檢查清單可捲動，同意條款＋送出固定在底部 */}
-            <div className="w-1/5 flex-shrink-0 pr-4 pb-8 flex flex-col max-lg:w-full max-lg:pr-0">
+            {/* 右邊：租借摘要 (20%)：押金／提醒／檢查清單可捲動，同意條款＋送出固定在底部；
+                lg 以下整塊固定在畫面底部，押金明細往上展開（清單區跟著變矮） */}
+            <div className="w-1/5 flex-shrink-0 pr-4 pb-8 flex flex-col max-lg:w-full max-lg:pr-0 max-lg:pb-4 max-lg:pt-4 max-lg:border-t max-lg:border-gray-mid">
               {/* 租借摘要內容 */}
-              <div className="flex-1 min-h-0 overflow-y-auto max-lg:overflow-visible">
-                {/* 押金標籤 */}
-                <div className="mb-2">
-                  <div className="text-xs text-gray-light">
-                    <span>{t('Total Deposit', '總押金')}</span>
-                  </div>
-                </div>
-
-                {/* 總押金展開按鈕 */}
+              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col max-lg:overflow-visible">
+                {/* 總押金（整列可點展開明細）：桌機標籤在上、金額在下；lg 以下同一列、金額靠右，chevron 朝上＝往上展開 */}
                 <button
                   onClick={() => setDepositBreakdownExpanded(!depositBreakdownExpanded)}
                   disabled={depositGroups.length === 0}
-                  className={`group w-full flex items-center justify-between mb-4 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
+                  className={`group w-full grid grid-cols-[1fr_auto] items-center gap-y-2 mb-4 text-left max-lg:grid-cols-[1fr_auto_auto] max-lg:gap-x-3 max-lg:mb-3 ${depositGroups.length === 0 ? 'cursor-default' : 'cursor-pointer'}`}
                 >
-                  <div className="text-2xl max-xl:text-xl font-english font-normal text-white whitespace-nowrap">
+                  <span className="text-xs text-gray-light col-span-2 max-lg:col-span-1">{t('Total Deposit', '總押金')}</span>
+                  <span className="text-2xl max-xl:text-xl font-english font-normal text-white whitespace-nowrap">
                     NT$ {totalDeposit.toLocaleString()}
-                  </div>
-                  {depositGroups.length > 0 && (
-                    <svg
-                      className={`w-4 h-4 text-white transition-transform group-hover:opacity-50 ${depositBreakdownExpanded ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  )}
+                  </span>
+                  {/* 沒有明細時隱形但佔位，金額位置不跳 */}
+                  <svg
+                    className={`w-4 h-4 text-white transition-transform group-hover:opacity-50 ${depositGroups.length === 0 ? 'invisible' : ''} ${depositBreakdownExpanded ? 'rotate-180 max-lg:rotate-0' : 'max-lg:rotate-180'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
 
-                {/* 各訂單押金明細 - 展開時顯示 */}
+                {/* 各訂單押金明細 - 展開時顯示；lg 以下排在總押金上方 */}
                 {depositBreakdownExpanded && depositGroups.length > 0 && (
-                  <div className="mb-6">
+                  <div className="mb-6 max-lg:order-first max-lg:mb-1">
                     {depositGroups.map((group, index) => (
                       <div key={index} className="flex items-center gap-3 text-xs text-white mb-3">
                         {/* 數字符號：自製圓圈＋數字（像 Guide，無數量上限；固定寬度讓後面日期對齊） */}
@@ -380,9 +390,9 @@ const RentalListPage = () => {
                   </div>
                 )}
 
-                <div className="mb-8"></div>
+                <div className="mb-8 max-lg:hidden"></div>
 
-                <div className="mb-6">
+                <div className="mb-6 max-lg:mb-4">
                   <div className="text-shrink-container pr-4">
                     <p className="text-xs text-white text-shrink-content">{t('Please visit the SA to pay the deposit and complete your reservation within 24 hrs of checkout.', '結帳後會保留24小時的繳押金時間，請在時間內至系學會完成預約程序')}</p>
                   </div>
@@ -390,7 +400,7 @@ const RentalListPage = () => {
 
                 {/* 預約條件檢查清單 */}
                 {cart.length > 0 && (
-                  <div className="mb-6 space-y-2">
+                  <div className="mb-6 space-y-2 max-lg:mb-2">
                     {/* 條件 0: 檢查過期訂單 - 僅有過期訂單時顯示 */}
                     {!expiredOrdersValidation.valid && (
                       <div className="flex items-start gap-2">
@@ -454,12 +464,8 @@ const RentalListPage = () => {
                     )}
 
                     {/* 條件 1: 填寫借用資訊 - 常駐 */}
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-xs" style={{
-                        color: bookingDetailsValidation.valid ? 'var(--color-green)' : 'var(--color-gray-light)'
-                      }}>
-                        {bookingDetailsValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <StatusCircle done={bookingDetailsValidation.valid} />
                       <span className={`text-xs ${
                         bookingDetailsValidation.valid ? 'text-green' : 'text-gray-light'
                       }`}>
@@ -475,12 +481,8 @@ const RentalListPage = () => {
                       if (!hasMassBooking) return null
 
                       return (
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-xs" style={{
-                            color: cartValidation.valid ? 'var(--color-green)' : 'var(--color-gray-light)'
-                          }}>
-                            {cartValidation.valid ? 'check_circle' : 'radio_button_unchecked'}
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <StatusCircle done={cartValidation.valid} />
                           <span className={`text-xs ${
                             cartValidation.valid ? 'text-green' : 'text-gray-light'
                           }`}>
@@ -491,12 +493,8 @@ const RentalListPage = () => {
                     })()}
 
                     {/* 條件 3: 同意條款 - 常駐 */}
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-xs" style={{
-                        color: agreedToTerms ? 'var(--color-green)' : 'var(--color-gray-light)'
-                      }}>
-                        {agreedToTerms ? 'check_circle' : 'radio_button_unchecked'}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <StatusCircle done={agreedToTerms} />
                       <span className={`text-xs ${
                         agreedToTerms ? 'text-green' : 'text-gray-light'
                       }`}>
@@ -508,7 +506,7 @@ const RentalListPage = () => {
               </div>
 
               {/* 底部：同意條款＋送出（停權帳號鎖定） */}
-              <div className="flex-shrink-0 pt-6">
+              <div className="flex-shrink-0 pt-6 max-lg:pt-4">
                 <div className="flex items-start gap-3 mb-4">
                   <input
                     type="checkbox"

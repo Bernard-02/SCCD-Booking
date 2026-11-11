@@ -1,6 +1,6 @@
 /**
  * Header 組件
- * 左 logo（回型錄）；右 Info（開 InfoDialog：教學／系學會／關於）、Cart、通知 三個 icon
+ * 左 logo（回型錄）；右 Info（開 InfoDialog：教學／系學會／關於）、Cart、通知（桌機下拉面板、手機進 /notifications）三個 icon
  * Profile 與外部連結在 Footer
  */
 
@@ -15,6 +15,7 @@ import type { AppNotification as Notification } from '../../services/notificatio
 import InfoDialog from '../common/InfoDialog'
 import type { InfoTab } from '../common/InfoDialog'
 import { useT } from '../../stores/langStore'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 interface HeaderProps {
   hideNavigation?: boolean // 是否隱藏右側導航按鈕
@@ -23,6 +24,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
   const t = useT()
   const { pathname } = useLocation()
+  const isMobile = useIsMobile()
+  const onNotifPage = pathname === '/notifications'
   const { cart } = useCart()
   const { isAuthenticated, currentUser } = useAuth()
   const [notificationMenuOpen, setNotificationMenuOpen] = React.useState(false)
@@ -100,7 +103,7 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[1000] mt-[1.03rem] bg-transparent">
+      <header className="fixed top-0 left-0 right-0 z-[1000] mt-[var(--gutter)] bg-transparent">
         <div className="container">
           <div className="flex justify-between items-center">
             <Link to="/catalog" className="font-english font-bold text-white text-md whitespace-nowrap">
@@ -134,19 +137,20 @@ const Header: React.FC<HeaderProps> = ({ hideNavigation = false }) => {
                   )}
                 </Link>
 
-                {/* 通知鈴鐺 */}
+                {/* 通知鈴鐺：桌機開下拉面板，手機進通知頁（NotificationsPage） */}
                 <div className="notification-dropdown-container relative">
                   <Link
-                    to="#"
-                    onClick={handleNotificationClick}
-                    className={`relative flex items-center text-white ${TAP} ${notificationMenuOpen ? 'cursor-pointer' : BTN}`}
+                    to={isMobile ? '/notifications' : '#'}
+                    replace={onNotifPage}
+                    onClick={isMobile ? undefined : handleNotificationClick}
+                    className={`relative flex items-center text-white ${TAP} ${notificationMenuOpen || onNotifPage ? 'cursor-pointer' : BTN}`}
                     aria-label="Notification"
                   >
                     <span className="material-symbols-outlined text-md">
                       notifications
                     </span>
-                    {/* 全域紅點：只有在選單關閉且有未讀訊息時顯示 */}
-                    {unreadCount > 0 && !notificationMenuOpen && (
+                    {/* 全域紅點：只有在選單關閉、不在通知頁且有未讀訊息時顯示 */}
+                    {unreadCount > 0 && !notificationMenuOpen && !onNotifPage && (
                       <span className="absolute top-2.5 right-2.5 bg-pink rounded-full w-2 h-2"></span>
                     )}
                   </Link>

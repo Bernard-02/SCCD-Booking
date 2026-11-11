@@ -1,14 +1,17 @@
 /* ===== 通用樣式 ===== */
 /* 注意：顏色系統已移至 colors.css */
 
+/* 頁面外框邊距（2026-11-11）：左右＝.container，上＝Header 的 mt、下＝Footer 的 pb，四邊一樣寬 */
+:root { --gutter: max(1.2rem, 2vw); }
+
 /* 統一容器樣式 */
 .container {
   width: 100%;
   max-width: 2000px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: clamp(1.2rem, 2vw, 2%);
-  padding-right: clamp(1.2rem, 2vw, 2%);
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
 }
 
 /* 選取（反白）樣式 */
@@ -25,7 +28,7 @@
   flex-shrink: 0;
   width: 1.125rem;
   height: 1.125rem;
-  border: 1px solid white;
+  border: 1.5px solid white; /* 2026-11-11 由 1px 加粗：手機上 1px 太細，清單頁送出條件的圈（StatusCircle）同這個線寬 */
   border-radius: 50%;
   background-color: transparent;
   cursor: pointer;
@@ -107,10 +110,7 @@
 
 /* 平板和手機 (767px以下) */
 @media (max-width: 767px) {
-  .container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
+  :root { --gutter: 1.5rem; }
   
   /* 手機版 Toast 樣式 */
   .toast, #notification {

@@ -1,7 +1,7 @@
 /**
  * 首頁 - 登入畫面
  * 單欄直排（標題→登入→訪客→工作室連結），無 Header／Footer；手機置中、桌機靠右
- * 預設 Google 登入（google-login.sql，學生與後台都走這條）；學號＋密碼退為備援（2026-11-09 定）：Google 鈕下方左「學號密碼登入」、右「訪客登入」，兩種表單可互切。
+ * 預設 Google 登入（google-login.sql，學生與後台都走這條）；學號＋密碼退為備援（2026-11-09 定）：Google 鈕下方左「學號密碼登入」、右「訪客模式」，兩種表單可互切。
  */
 
 import { BTN } from '@/components/common/btn'
@@ -234,7 +234,7 @@ const HomePage = () => {
               </button>
               <Link to="/catalog" className={OPTION_CLS}>
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
-                {t('Guest', '訪客登入')}
+                {t('Guest', '訪客模式')}
               </Link>
             </div>
 

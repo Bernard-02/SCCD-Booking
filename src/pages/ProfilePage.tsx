@@ -68,7 +68,7 @@ const ProfilePage: React.FC = () => {
       <Header />
 
       {/* Main Content */}
-      <main className="flex-1 pt-20 max-md:pt-16 flex flex-col overflow-hidden">
+      <main className="flex-1 pt-[calc(var(--gutter)+4rem)] max-md:pt-[calc(var(--gutter)+3rem)] flex flex-col overflow-hidden">
         <div className="container h-full flex flex-col">
           {/* 左右分割佈局 */}
           <div className="flex flex-1 overflow-hidden pt-4 pb-4 max-md:flex-col max-md:gap-4 max-md:pt-0">

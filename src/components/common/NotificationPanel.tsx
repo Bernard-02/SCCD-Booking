@@ -1,5 +1,5 @@
 /**
- * 通知下拉面板（前台 Header 鈴鐺）：標題列＋X、清單（未讀紅點、日期與相對時間）。
+ * 通知下拉面板（前台 Header 鈴鐺）：標題列＋X、清單（未讀紅點、日期時間；依時間分組：剛剛／3天前／一個星期前／更早）。
  * 定位交給呼叫端（className／style）。清單本體 NotificationList 另外 export 給後台「通知」頁整頁用。
  * onSelect 給了且該則有 link → 整列是按鈕（後台點了跳頁）。zhOnly＝後台：不隨前台語言切換。
  * 公休撞到取件時段的通知（link 帶 pickup=單號）多一顆「修改取件日」：帶去 Profile 直接開修改視窗。
@@ -34,21 +34,19 @@ export const NotificationList: React.FC<{
   const t = useZh(zhOnly)
   const navigate = useNavigate()
 
-  // 剛剛／3分鐘前／3小時前／3天前
-  const timeAgo = (ts: number) => {
-    const diff = Date.now() - ts
-    if (diff < 60000) return t('Just Now', '剛剛')
-    if (diff < 3600000) { const m = Math.floor(diff / 60000); return t(`${m} Min${m > 1 ? 's' : ''} Ago`, `${m}分鐘前`) }
-    if (diff < 86400000) { const h = Math.floor(diff / 3600000); return t(`${h} Hour${h > 1 ? 's' : ''} Ago`, `${h}小時前`) }
-    const d = Math.floor(diff / 86400000)
-    return t(`${d} Day${d > 1 ? 's' : ''} Ago`, `${d}天前`)
+  // 依時間分四組，組名放在該組上方，每則只留日期時間：剛剛（3 天內）／3天前／一個星期前／更早
+  const group = (ts: number) => {
+    const d = (Date.now() - ts) / 86400000
+    return d < 3 ? 0 : d < 7 ? 1 : d < 14 ? 2 : 3
   }
+  const GROUPS = [t('Recent', '剛剛'), t('3 Days Ago', '3天前'), t('A Week Ago', '一個星期前'), t('Earlier', '更早')]
 
   const body = (n: AppNotification) => (
     <>
       <div className="flex gap-3 mb-2">
         <p className="flex-1 min-w-0 text-white text-xs leading-relaxed">{n.content}</p>
-        {!n.read && <span className="mt-2 w-2 h-2 shrink-0 bg-pink rounded-full" />}
+        {/* 紅點的位置固定留著：已讀也佔位，文字右緣每則一致 */}
+        <span className={`mt-2 w-2 h-2 shrink-0 rounded-full ${n.read ? '' : 'bg-pink'}`} />
       </div>
       {n.link?.includes('pickup=') && (
         <button
@@ -61,7 +59,6 @@ export const NotificationList: React.FC<{
       )}
       <div className="flex justify-between items-end">
         <span className="font-english text-gray-light text-xs">{formatDate(n.timestamp)}</span>
-        <span className="font-english text-gray-light text-xs">{timeAgo(n.timestamp)}</span>
       </div>
     </>
   )
@@ -77,6 +74,12 @@ export const NotificationList: React.FC<{
     <>
       {items.map((n, i) => (
         <React.Fragment key={n.id}>
+          {/* 橫線只在同組的兩則之間，頭尾沒有；換組不畫線，用較大的間距隔開 */}
+          {i === 0 || group(n.timestamp) !== group(items[i - 1].timestamp) ? (
+            <p className={`p-4 pb-2 text-xs text-gray-light ${i > 0 ? 'pt-10' : ''}`}>{GROUPS[group(n.timestamp)]}</p>
+          ) : (
+            <div className="h-[1px] bg-gray-mid" />
+          )}
           {onSelect && n.link ? (
             <button type="button" onClick={() => onSelect(n)} className="block w-full text-left p-4 hover:bg-white/10 cursor-pointer">
               {body(n)}
@@ -84,7 +87,6 @@ export const NotificationList: React.FC<{
           ) : (
             <div className="p-4 hover:bg-white/10">{body(n)}</div>
           )}
-          {i < items.length - 1 && <div className="h-[1px] bg-gray-mid" />}
         </React.Fragment>
       ))}
     </>

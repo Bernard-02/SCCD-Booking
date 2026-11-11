@@ -25,9 +25,7 @@ const AdminNotificationsPage: React.FC = () => {
       {notifs.length === 0 ? (
         <p className="text-xs text-gray-light">目前沒有通知</p>
       ) : (
-        <div className="border-b border-gray-mid">
-          <NotificationList items={notifs} onSelect={n => { if (n.link) navigate(n.link) }} zhOnly />
-        </div>
+        <NotificationList items={notifs} onSelect={n => { if (n.link) navigate(n.link) }} zhOnly />
       )}
     </div>
   )

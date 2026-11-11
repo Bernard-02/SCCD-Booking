@@ -80,7 +80,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   選完帳號在本頁拿到 ID token，`AuthContext.loginWithGoogle` → `signInWithIdToken` 撈 profile，不跳頁；Google 畫面顯示本站網址（不買 Supabase 自訂網域），Client ID 在環境變數 `VITE_GOOGLE_CLIENT_ID`；資格在 DB trigger 把關（`supabase/google-login.sql`：
   網域 gm／gm1／gm2.usc.edu.tw，**且學號或 Email 要先在後台會員管理「新增會員」登記過**＝`login_allowlist`，`members-v2.sql`，2026-10-25 改封閉名單，不再依學號格式自動放行），
   第一次登入自動建學生資料（年級／班別由學號給初值、姓名用 Google 名字）。不另寄驗證信——Google 登入本身即驗證。
-  登入頁預設 Google（學生與後台都走這條，2026-11-09 定），學號＋密碼（`supabaseLogin`）退為 Google 鈕下方「學號密碼登入」鈕當備援（與「訪客登入」左右並排，2026-11-10）；不做 SMTP、沒有忘記密碼，`sccdsa` 的密碼到 Supabase 後台重設。
+  登入頁預設 Google（學生與後台都走這條，2026-11-09 定），學號＋密碼（`supabaseLogin`）退為 Google 鈕下方「學號密碼登入」鈕當備援（與「訪客模式」左右並排，2026-11-10）；不做 SMTP、沒有忘記密碼，`sccdsa` 的密碼到 Supabase 後台重設。
   Supabase 已開 Google provider、接上 OAuth 用戶端（2026-11-10 確認），**還沒用真實帳號實測**（docs/google-login-setup.md「E. 測試」）。LINE／IG 內建瀏覽器會被 Google 擋，登入頁會提示。
   舊的 mock 登入已移除，認證共用型別留在 `utils/authTypes.ts`
 - **保護路由**：目前僅 `/profile` 包在 `ProtectedRoute` 中，其他路由都是公開的
@@ -136,7 +136,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **寫法**：手機覆寫一律用 `max-md:`／`max-lg:`，桌機 class 不動（改動最小、不會誤傷桌機）。Tailwind v4 的 `hover:` 只在有滑鼠的裝置生效，不用另外處理觸控黏住。
 - **清單列**：`EquipmentGrid`／`ClassroomList` 用 `card:` 變體（`src/index.css`，容器 < 940px 改卡片），看容器寬不看視窗。父層要有 `@container`，且不要放在含 `fixed` 子元素（全螢幕圖片）的外層，container 會變成 fixed 的定位基準。
 - **模式**：優先用響應式 class 寫成單份 JSX（參考 `HomePage` 登入頁）。差太多的區塊才用「同頁兩份 JSX」——桌機 `hidden md:block`／`md:flex`、手機 `md:hidden`（參考 `BookingResourcesPage`）；`hidden` 只是 CSS 隱藏，兩份都會 mount，自己抓資料的元件（如 `EquipmentGrid`）不要用這招，改用 `matchMedia` 只 mount 一份。
-- **字級**（2026-11-06 定）：手機另有一組字級，在 `src/index.css` 的 `@media` 覆寫 token（18／20／24／28／40），12／14／16 內文不動；元件照寫 `text-*` 就好，排版真的塞不下才加 `max-md:text-*`。手機輸入框固定 16px，否則 iOS 聚焦會放大整頁。
+- **字級**（2026-11-06 定）：手機另有一組字級，在 `src/index.css` 的 `@media` 覆寫 token（18／20／24／28／40），主要內文 `text-sm` 手機 14px（2026-11-11 改，與 `text-xs` 同），12 不動；元件照寫 `text-*` 就好，排版真的塞不下才加 `max-md:text-*`。手機輸入框固定 16px，否則 iOS 聚焦會放大整頁。
 - **收合**（2026-11-06 定）：桌機一次呈現、手機可收起的內容用 `Collapse` 的 `below="md"`／`"lg"`（純 CSS，以上永遠展開）。目前有圖例（標題列「狀態」鈕）、使用教學段落、日期列（選完日期自動收，只留起訖日與類型）；設備卡片用 `card:` 變體收合，一次展開一張，收著仍可直接加入清單。**警示、缺貨與送出條件不收**，學生要看得到為什麼不能送出。
 - **日曆**：`Calendar` 內部用 `hooks/useIsMobile`，手機自動單月，呼叫端不用傳 prop。排列差異用 CSS 就好，`useIsMobile` 只給渲染內容不同的地方。
 - **觸控**：hover-only 的互動（tooltip、hover 預覽）必須有觸控替代；可點擊目標最小 44×44px，icon 鈕接 `TAP`（`components/common/btn.ts`，撐大點擊範圍但版面不變）。A5F 地圖格子手機上點不到（玻璃牆最窄 2.4px），`lg` 以下由 `SpacePage` 的格子清單代替，雙指縮放用瀏覽器原生。
@@ -182,6 +182,7 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   黑白＋四階灰 `gray-light`（輔助文字）／`gray-mid`（線、框、佔位）／`gray-dark`（灰鈕、chip、tooltip、選單 hover 底，2026-11-02 加，前後台灰鈕同這個）／`gray-darker`（面板底）；狀態色 `green`／`pink`（品牌粉）／`error`／`yellow`／`orange`／`cyan`，意義表在 token 註解。
   不寫 hex、不寫 `text-[#…]`；inline style 用 `var(--color-xxx)`。透明層只給疊在別的東西上的（表格列 hover、鈕上的計數徽章、遮罩），只有 `white/10`、`white/50`、`black/80`；鈕／chip 本身的底是「一個東西」，用 `gray-dark` 不用 `white/10`；地圖可借用＝`green/50`。
   有色底的 chip 一律黑字。舊 `css/colors.css` 與 `.text-gray-scale*` 已刪，`hover:text-white` 不用再加 `!`。
+- **頁面外框四邊一樣寬**（2026-11-11 定，前台）：`--gutter`（`css/common.css`，桌機 `max(1.2rem, 2vw)`、手機 1.5rem）＝`.container` 左右、Header 的 `mt`、Footer 的 `pb`；頁面 `main` 的上距寫 `pt-[calc(var(--gutter)+4rem)]`（手機 `+3rem`）留給 Header。後台 `AdminLayout` 有自己的邊距，不套。
 - **圓角三級**（2026-10-22 定）：`rounded-lg` 8px＝按鈕、chip、左側選單膠囊（chip 一律用 `components/common/btn.ts` 的 `CHIP`：
   h-6／px-2.5／text-2xs，2026-11-01 收斂，前後台同；底色字色各處自己給，有 icon 加 `!pl-1.5 gap-1`）；
   `rounded-xl` 12px＝tooltip（待繳押金 ⓘ）、地圖說明框與覆蓋提示、後台大縮圖（Toast 2026-11-01 改 8px，表格小縮圖 6px 改 8px）；

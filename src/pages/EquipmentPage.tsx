@@ -72,7 +72,7 @@ const EquipmentPage: React.FC = () => {
     <div className="bg-black text-white h-dvh flex flex-col overflow-hidden">
       <Header />
 
-      <main className="flex-1 pt-20 max-lg:pt-16 flex flex-col overflow-hidden relative">
+      <main className="flex-1 pt-[calc(var(--gutter)+4rem)] max-lg:pt-[calc(var(--gutter)+3rem)] flex flex-col overflow-hidden relative">
         <div className="container flex flex-1 gap-6 overflow-hidden items-stretch pb-6 max-lg:flex-col max-lg:gap-3 max-lg:pb-3">
           {/* 左側欄位：20% */}
           <div className="w-[20%] max-lg:w-full flex-shrink-0 flex flex-col overflow-hidden">

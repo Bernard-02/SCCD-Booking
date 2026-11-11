@@ -28,7 +28,7 @@ const BookingResourcesPage = () => {
       <Header />
 
       {/* 主要內容區域 - 佔滿剩餘空間，Footer 固定在底部 */}
-      <main className="flex-1 pt-20 flex flex-col overflow-hidden relative">
+      <main className="flex-1 pt-[calc(var(--gutter)+4rem)] flex flex-col overflow-hidden relative">
         <div className="container hidden md:flex flex-1 gap-6 overflow-hidden items-stretch pb-20 pt-12">
           {/* 左側標題 */}
           <div className="flex-shrink-0 overflow-hidden">

@@ -46,8 +46,10 @@ const toStudent = (row: StudentRow): Student => ({
 })
 
 export async function supabaseLogin(studentId: string, password: string): Promise<LoginResult> {
-  // 1. 學號 → email
-  const { data: email, error: lookupError } = await supabase.rpc('email_for_student', { sid: studentId })
+  // 1. 學號 → email。學號一律存大寫（a111… 打小寫也要能登）；只有 sccdsa 是小寫，所以照打的找不到才改大寫再找
+  const lookup = (sid: string) => supabase.rpc('email_for_student', { sid })
+  let { data: email, error: lookupError } = await lookup(studentId)
+  if (!email && studentId !== studentId.toUpperCase()) ({ data: email, error: lookupError } = await lookup(studentId.toUpperCase()))
   if (lookupError || !email) {
     return { success: false, error: 'user_not_found', message: tr('Student ID not found', '查無此學號') }
   }
