@@ -27,7 +27,7 @@ src/
     profile/                    # ExtendDialog、ChangePickupDialog（公休改取件日）
     admin/                      # 後台共用 UI 語彙（adminUi）、OrderActionDialog、MfaGate（2FA 關卡）
   contexts/                     # AuthContext、DateSelectionContext
-  hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation
+  hooks/                        # useCart、useConfirmDialog、useOrderSubmission、useCartValidation、useEnterConfirm（對話框 Enter＝確認）
   stores/bookmarkStore.ts       # Zustand 收藏 store
   stores/langStore.ts           # 前台中／EN 切換（useT），後台只有中文
   services/                     # Supabase 存取層（supabase client、auth、orders、equipment、space、admin…）
@@ -68,13 +68,15 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 
 - **登入狀態**：`localStorage.sccd_login_data`（記住我）或 `sessionStorage.sccd_login_data`（僅此次）；
   Supabase 憑證（`sb-*`）也跟著放同一邊（`services/supabase.ts` 自訂 storage＋`persistAuth`），沒勾記住我關分頁即真的登出。
+  裡面的學生資料是登入當下的快照：開 app 時背景重讀一次（`authService.fetchMyProfile`），自己改了資料（手機）用 `AuthContext.updateUser` 寫回去，不要另存一份 state（2026-11-14）。
   **Google 登入一律記住、不顯示勾選**（2026-11-10：瀏覽器的 Google 帳號一直登入著，關分頁登出擋不住下一個人一鍵登入）；記住我只在學號密碼表單
 - **過期**：閒置效期 30 天——每次開 app 把 `loginTime` 續成現在，`loginTime + expiresIn < now` 才過期，過期連 Supabase 一起登出；
   app 資料在但 Supabase 憑證已沒了也視為登出。**admin 例外**（2026-11-06，後台在學會共用電腦上用）：登入起算固定 12 小時、不續期，分頁開著也會到期
   （`authStorage.isLoginExpired`＋`AdminLayout` 每分鐘檢查，導回 `/?expired=1` 顯示提示）；真正的防線在 `user_role()`（`supabase/admin-session-limit.sql`，看 `auth.sessions.created_at`）。
   **後台 2FA**（2026-11-07 先關閉：`AdminRoute` 的 `MFA_ENABLED`＋`supabase/admin-session-limit.sql` 的 aal 那行，上線前決定要不要開回來，見 roadmap）：帳密或 Google 登入後由 `AdminRoute` 的 `components/admin/MfaGate` 接手（Supabase TOTP，免費；第一次顯示 QR 綁定，之後輸入 6 位數驗證碼），`user_role()` 要求 JWT `aal2`，只過第一步拿不到後台權限。
   **後台分權**（2026-11-08）：最高權限＝`role=admin`（`sccdsa`），整個後台；學會成員＝會員管理標「系學會」（`staff_members`，`students.role` 仍是 student，借東西的規則照舊）用自己的帳號，只能用側欄「值班」（訂單、A5F 編號區、通知），不限同時登入的裝置數。
-  判斷都在 `supabase/operator-access.sql`：`backend_access()`（admin／operator／expired／none，學會成員同樣登入滿 12 小時失效）、值班 RPC 開頭的 `operator_handler`（學會成員的經手人強制記本人）、值班頁讀資料走 `operator_*` RPC。**不要為了值班頁開 `orders`／`students` 的 RLS**：`fetchMyOrders` 靠 RLS 篩，開了學會成員自己的訂單頁會撈到所有人的單。前端 `AdminRoute`（`AdminOnly` 包「設定」路由）與 `AdminLayout` 依 `role` 隱藏「設定」，學會成員從 Profile 左選單「後台」進來。
+  判斷都在 `supabase/operator-access.sql`：`backend_access()`（admin／operator／expired／none，學會成員同樣登入滿 12 小時失效）、值班 RPC 開頭的 `operator_handler`（學會成員的經手人強制記本人）、值班頁讀資料走 `operator_*` RPC。**不要為了值班頁開 `orders`／`students` 的 RLS**：`fetchMyOrders` 靠 RLS 篩，開了學會成員自己的訂單頁會撈到所有人的單。前端 `AdminRoute`（`AdminOnly` 包營業時間、文字內容）與 `AdminLayout` 依 `role` 隱藏，學會成員從 Profile 左選單「後台」進來。
+  **學會成員看得到設備／空間／會員管理但不能改**（2026-11-14，側欄「查看」）：各頁用 `canEdit`（role=admin）藏掉新增、選取、開關、修改；會員資料走 `operator_members` RPC（`supabase/sa-feedback-2026-11.sql`），寫入照舊只有 admin 的 RLS。
   登出用 `scope: 'local'` 只登出這台。後台帳號改用學會 Gmail 登入、換屆交接見 `docs/google-login-setup.md`
 - **登入實作**（2026-10-24 改學校 Google 帳號）：登入頁的 Google 鈕是 Google 自己畫的（`authService.renderGoogleButton`，2026-11-10 改，樣式只能用 Google 給的選項）→
   選完帳號在本頁拿到 ID token，`AuthContext.loginWithGoogle` → `signInWithIdToken` 撈 profile，不跳頁；Google 畫面顯示本站網址（不買 Supabase 自訂網域），Client ID 在環境變數 `VITE_GOOGLE_CLIENT_ID`；資格在 DB trigger 把關（`supabase/google-login.sql`：
@@ -122,6 +124,26 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
 - **階段 3 規則補完**：已完成。2026-11-07 落地學會決議（`supabase/rules-2026-11.sql`，執行順序在檔頭）：起租日最遠 30 天、一類別一張、設備天數依年級（大五大六）、已繳未取件自動取消＋退押金、公休改取件日、公休分時段、老師名義與證明檔（私有 bucket `proofs`）、系學會費、罰款由學會填、F 區。grade 慣例見 rental-rules.md「年級限制」。
 - **階段 4 品質**：測試已有基礎（vitest：`timeUtils`／`useCart`／`useCartValidation`，`npm test`）；tech debt、零散 TODO 仍在。
 - **訂單生命週期**：情境 1／6／7（逾時取消、逾期標記罰款、停權）已定案實作——pg_cron 三排程，見 `docs/order-lifecycle.md`。公休集合（`fetchClosedDates`）裡，整天＝日期、只休一班＝`日期:noon`／`日期:evening`（`timeUtils.closedKey`）。
+- **2026-11-14 學會實測後的調整**（清單與未定事項在 roadmap.md 階段 1.5；SQL `supabase/sa-feedback-2026-11.sql`，執行順序在檔頭，Bernard 2026-11-14 已執行；之後加的「雷切機兩班押金內建」「通知點一則已讀」「雷切機撞到休息」要再貼一次：`equipment-bundles.sql` → 這支 → `orders-rpc.sql`）：
+  延期改申請制（學生送 `orders.extend_request`，學會在訂單頁「通過延期」才真的延／拆子單，沒確認照原歸還日）；學生可自己取消還沒繳押金的單（`cancel_my_order`）；
+  收押金與取件一律分兩步、各選經手人（小量單也會經過「已繳待取件」，收完押金接著跳取件確認框；沒取件的自動取消只限有預選取件時段的大量設備），收罰款也記經手人；沒留手機不能送單；清單頁送出前跳確認框；
+  清單裡被別人先借走的空間標出來並鎖住送出鈕；訂單頁「清除已完成」＝封存（`orders.archived_at`，不刪資料：單號流水靠當年度筆數算，刪了會撞號）；
+  後台待繳費的單顯示到期時間點「期限 11/16（一）20:00」（`timeUtils.pendingDeadline`），不寫剩幾小時（週五關門後送的單期限是週一）；學生 Profile 的倒數維持原樣。
+  後台通知頁點一則＝那則已讀（`operator_mark_notification_read`，`AdminLayout` 的 `markRead` 經 Outlet context 給通知頁）。
+  組合的刪除收在修改對話框裡（先確認，刪掉後 toast 可復原）：可復原的刪除用 `useToast` 的第三個參數 `undo`（`showToast(訊息, 'success', { label: '復原', run })`）。
+- **過了最後營業時間的歸還日**（2026-11-14）：過了今天 19:00，歸還日不能是今天、最早明天（起租日照舊可以是今天；設備、空間都一樣）——
+  `timeUtils.minEndDate`／`periodExpired`，選日期（`DatePickerBar`、`DateEditDialog`）、`useCart.addToCart`、清單頁的「已過期」、`submit_orders` 都看它。規則見 rental-rules.md §2。
+- **設備頁的「清單／現況」切換**（2026-11-14，前台）：現況＝`components/equipment/EquipmentStatus`，一列一個設備、一欄一天（兩週一頁），格子是當天還能借幾個（橘＝部分借出、粉＝借完），
+  用現成的 `equipment_reserved_daily`（只有數量）。**不顯示誰借走**：前台連訪客都看得到，要顯示得另開 RPC，等 Bernard 決定給誰看。版面是第一版，他會再說怎麼調。後台沒有現況頁。
+- **分時段的設備（雷切機）**（2026-11-14）：只能在營業時間用，借午班、晚班或兩班。資料是兩個設備「雷切機（午班）」「雷切機（晚班）」各 1 台（佔用各算各的），
+  型錄把**名稱結尾（午班）／（晚班）、其餘相同**的一對併成一張卡片（`EquipmentGrid` 的 `shiftGroups`），按加入清單開選時段的視窗（`components/equipment/ShiftDialog`）：
+  一天一列、午班／晚班各一格，可以跨天、每天選不同的班。選的日子存在品項的 `days`（`CartItem.days`／`order_items.days`，null＝整段），**只佔那幾天**——
+  算設備佔用的地方都要看它（`submit_orders`、`equipment_reserved`、`equipment_reserved_daily`；延期遇到有 `days` 的品項不查撞期），顯示用 `timeUtils.daysLabel`。
+  兩班都有借＝一組、押金算一份——內建規則、不用在後台建組合（前端 `bundleUtils.shiftPairBundles` 接在 `loadBundles` 後面，server `equipment_bundle_calc`，兩邊同規則）。
+  那一班沒開的日子（週六日、公休整天、只休那一班）借不到，今天已經結束的班也不能借（午班 13:00、晚班 19:00：`timeUtils.SHIFT_END`／`shiftPassed`，
+  時間另外寫死在 `AdminHoursPage` 的 `SHIFTS` 與 `submit_orders`，要改三處一起改）：視窗裡那一格不能點（`slotState`），`submit_orders` 再擋一次。「修改訂單」還不能加雷切機（roadmap）。
+  改名時結尾的（午班）／（晚班）和「雷切」（一年級上傳證明靠它認）要留著。規則見 rental-rules.md §9。
+  SQL（2026-11-14 加 `days`，**還沒貼**）：`orders-rpc.sql` → `partial-availability.sql` → `partial-extend.sql` → `admin-actions.sql`。
 - **部分時段可借用**（2026-11-02）：設備卡（含整組，看零件逐日）／地圖格／教室依「你選的區間逐日夠不夠」分綠／橘／粉（設備看卡片上填的數量，最好的一天可借幾件＝數量上限；同類型有未歸還單時日期列會清掉已存的日期），橘的點加入開 `components/common/PartialDialog`
   選一段（依日期順序、預設第一段），該類日期改成那段、清單同類品項一起改（同類型限一單，不開第二張）。SQL：`partial-availability.sql`（兩支逐日 RPC；沒執行時前端自動退回整段判定）。
 - **階段 5 RWD 與手機版**：前台 RWD 與手機版面 2026-11-06 完成（Equipment／Space／RentalList／Profile、導覽、日期列、地圖格子清單），待實機驗收；後台 2026-11-10 補基礎 RWD（只防破版，不另做手機版面），待人工確認。標準見下方「手機版（RWD）標準」，清單見 roadmap.md。
@@ -187,6 +209,8 @@ npm test           # vitest 單元測試（timeUtils／gradeUtils／useCart／us
   h-6／px-2.5／text-2xs，2026-11-01 收斂，前後台同；底色字色各處自己給，有 icon 加 `!pl-1.5 gap-1`）；
   `rounded-xl` 12px＝tooltip（待繳押金 ⓘ）、地圖說明框與覆蓋提示、後台大縮圖（Toast 2026-11-01 改 8px，表格小縮圖 6px 改 8px）；
   `rounded-2xl` 16px＝彈窗（ConfirmDialog／InfoDialog 等 lightbox）與下拉選單、訂單卡片，以及登入頁高 56px 以上的大按鈕／輸入框。
+- **對話框按 Enter＝確認**（2026-11-14 定，前後台同）：`ConfirmDialog`／`FormDialog` 內建；自己用 `createPortal` 寫的對話框要接 `hooks/useEnterConfirm(open, onConfirm, canConfirm)`
+  （多層對話框只有最上面那個收；選字中、textarea、焦點在按鈕上、下拉清單用掉的 Enter 不搶）。刪除、取消訂單這類收不回來的確認不接（`variant="danger"` 自動排除）。
 - **下拉選單一律用 `components/admin/adminUi` 的 `Select`，不寫原生 `<select>`**（2026-11-02 定，前後台同；原生展開的清單改不了樣式）：
   表單用預設（透明底灰框，跟容器底色）、工具列用 `filled`、卡片列裡的小下拉用 `size="xs"`，選項多的加 `searchable`。
 - **前面有 icon 的按鈕／選項，icon 那側 padding 少 4px**（例：`pl-3 pr-4`，參考 ProfilePage 左側選單）：
