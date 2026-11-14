@@ -10,6 +10,8 @@ import Footer from '../components/layouts/Footer'
 import { useT } from '../stores/langStore'
 import { CATALOG_ENTERED_KEY } from '../utils/storageKeys'
 
+const MOBILE_CARD = 'relative overflow-hidden rounded-2xl flex flex-col justify-end w-full p-[1.2rem] flex-1 min-h-0 max-h-96'
+
 const BookingResourcesPage = () => {
   const t = useT()
   // 卡片進場動畫（css/animations.css slideIn）只在這個分頁第一次進來播，跑完前不能點（避免還在滑動就被點進去）；之後再進來直接顯示
@@ -95,10 +97,10 @@ const BookingResourcesPage = () => {
           </div>
         </div>
 
-        {/* 手機版：兩個卡片垂直排列 */}
-        <div className="md:hidden flex flex-col gap-6 w-full container">
+        {/* 手機版：兩個卡片垂直排列，平分 Header 與 Footer 之間的高度（螢幕矮就跟著縮），一張最高 24rem */}
+        <div className="md:hidden flex flex-1 min-h-0 flex-col gap-6 w-full container">
             {/* 空間卡片 */}
-            <Link to="/space" {...slideIn('m-space', 'mobile-card-slide-in', 'relative overflow-hidden rounded-2xl block mobile-card')}>
+            <Link to="/space" {...slideIn('m-space', 'mobile-card-slide-in', MOBILE_CARD)}>
               <div className="absolute inset-0">
                 <img
                   src="/Images/Space Image.webp"
@@ -121,7 +123,7 @@ const BookingResourcesPage = () => {
             {/* 設備卡片 */}
             <Link
               to="/equipment"
-              {...slideIn('m-equipment', 'mobile-card-slide-in', 'relative overflow-hidden rounded-2xl block mobile-card')}
+              {...slideIn('m-equipment', 'mobile-card-slide-in', MOBILE_CARD)}
             >
               <div className="absolute inset-0">
                 <img

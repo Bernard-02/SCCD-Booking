@@ -85,14 +85,7 @@
 /* ===== 手機版動畫 ===== */
 
 @media (max-width: 767px) {
-  
-  .mobile-card {
-    width: 100%;
-    min-height: 280px;
-    padding: 1.2rem;
-    position: relative;
-  }
-  
+
   /* 手機版卡片進場動畫 */
   .mobile-card-slide-in {
     opacity: 0;
