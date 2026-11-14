@@ -2,28 +2,34 @@
  * 後台 · 訂單全覽（搜尋 + 租借時間／狀態／種類篩選 + 點表頭單欄排序 + 收押金／取件／歸還）
  * 樣式沿用前台 Profile：狀態標籤語彙與顏色同 getStatusInfo、按鈕同 Extend 樣式。
  * 「收押金」「取件」「歸還」三欄＝每張單都會走的三步（2026-11-10 改版）：最高權限帳號（學會櫃檯共用）還沒做是經手人下拉，
- * 選了跳確認框、做完顯示經手人，選錯可直接換人；學會成員用自己的帳號是按鈕，經手人一律記本人。小量單收押金時同時取件，取件欄自動帶同一人。
- * 歸還＝退押金：整單一次歸還，整張單（根單＋子單）最後一張還完時在同一個確認框填罰金、退押金，超過押金的差額接「收罰款」，收清才算結束；
+ * 選了跳確認框、做完顯示經手人，選錯可直接換人；學會成員用自己的帳號是按鈕，經手人一律記本人。
+ * 收押金與取件各記各的經手人（2026-11-14 學會：收押金的人不一定是交付設備的人）：收完押金、當下就能取件的單會接著跳取件確認框，
+ * 另外選取件經手人（不預選），按取消＝晚點再取（單子留在「待取件」）。
+ * 歸還＝退押金：整單一次歸還，整張單（根單＋子單）最後一張還完時在同一個確認框填罰金、退押金，超過押金的差額接「收罰款」（同樣記經手人），收清才算結束；
  * 期限內提早還一部分走 ⋯ 選單的「部分歸還」。已繳押金的取消單，退押金鈕也在歸還欄。
- * 其餘動作（點交／延期／取消訂單／部分歸還／大量設備的核對單）收在最右「操作」欄的 ⋯ 選單，釘在右邊，欄位再多往右捲都看得到。
- * 所有動作都走 OrderActionDialog（寫入 paid_by / picked_up_by / returned_by / refunded_by 供追溯）。「名義」欄＝個人或老師名義＋證明檔。
- * 搜尋列下方六個分類按鈕：全部／待繳押金／待取件／待歸還／待退押金／待繳罰款，各附筆數；點了切換下方表格內容。
+ * 其餘動作（點交／延期／通過或退回延期申請／取消訂單／部分歸還／大量設備的核對單）收在最右「操作」欄的 ⋯ 選單，釘在右邊，欄位再多往右捲都看得到。
+ * 所有動作都走 OrderActionDialog（寫入 paid_by / picked_up_by / returned_by / refunded_by / penalty_collected_by 供追溯）。「名義」欄＝個人或老師名義＋證明檔（點了在畫面上開）。
+ * 搜尋列下方七個分類按鈕：全部／待繳押金／待取件／待歸還／延期申請／待退押金／待繳罰款，各附筆數；點了切換下方表格內容。
  * 待歸還＝使用中＋未完成歸還（都是要收回來的）；已歸還／已取消只在「全部」裡看（搜尋得到）。
+ * 姓名、學號點了跳會員管理查這個人。學期結束由最高權限按「清除已完成」把結束的單收進「已封存」（資料不刪）。
  */
 
 import { BTN } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminUpdateOrderInfo, adminRefundDeposit, adminSetHandler, fetchClosedDates, proofUrl, penaltyOwed } from '../services/ordersService'
+import { createPortal } from 'react-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { fetchAllOrders, adminMarkPaid, adminMarkReturnedPartial, adminHandoverItems, adminCollectPenalty, adminCancelOrder, adminExtendOrder, adminApproveExtend, adminRejectExtend, adminArchiveOrders, adminUpdateOrderInfo, adminRefundDeposit, adminSetHandler, fetchClosedDates, proofUrl, penaltyOwed } from '../services/ordersService'
 import type { AdminOrderRow, OrderInfo, HandlerField } from '../services/ordersService'
 import { listStaff, createCheckSheet } from '../services/adminService'
 import type { StaffMember } from '../services/adminService'
-import { overduePenalty, overdueBusinessDays, pendingMsRemaining, isOnDuty, slotEnd, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
+import { overduePenalty, overdueBusinessDays, pendingDeadline, dateTimeLabel, daysLabel, isOnDuty, slotEnd, slotLabel, toDateKey, SUSPENSION_OVERDUE_DAYS } from '../utils/timeUtils'
 import { ADMIN_HANDLER_KEY } from '../utils/storageKeys'
 import { ORDER_KIND_META, orderKind, orderKindMeta, StatusChip, actionBtn, PageTitle, tableTh, tableTd, tableRowLine as rowLine, toolBtn, textBtn, SearchBox, CountTabs, SortTh, toggleSort, itemsSummary, usePager, Pager, Select, DateRangePicker, LoadError, isAwaitingPickup } from '../components/admin/adminUi'
 import type { Sort, SelectOption } from '../components/admin/adminUi'
 import OrderActionDialog, { type AdminActionMode } from '../components/admin/OrderActionDialog'
 import OrderInfoDialog from '../components/admin/OrderInfoDialog'
+import CloseButton from '../components/common/CloseButton'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { useAuth } from '../contexts/AuthContext'
@@ -41,6 +47,8 @@ type SortField =
 // 取件欄顯示的經手人：picked_up_by 欄位加上前的舊單沒記，已取件就當收押金的人
 const pickedUpBy = (o: AdminOrderRow) =>
   o.picked_up_by ?? (['in-progress', 'overdue', 'returned'].includes(o.status) ? o.paid_by : null)
+// 現在能不能取件：有預選取件時段的（大量設備）不開放提前取件，到取件日才行；其他單收完押金就能取
+const canPickupNow = (o: AdminOrderRow) => !o.pickup_slot || (o.pickup_date ?? o.start_date) <= toDateKey(new Date())
 const sortVal = (o: AdminOrderRow, f: SortField): string | number => {
   switch (f) {
     case 'name': return o.students?.name ?? ''
@@ -82,12 +90,15 @@ const awaitingRefund = (o: AdminOrderRow, openRoots: ReadonlySet<number>) =>
   o.refunded == null && !o.parent_order_id && (
     o.status === 'returned' ? !openRoots.has(o.id) : o.status === 'canceled' && !!o.deposit_paid_at && o.deposit_total > 0
   )
-type TabKey = 'all' | 'deposit' | 'pickup' | 'return' | 'refund' | 'fine'
+// 學生送出、等學會確認的延期申請（server 在逾期、歸還、歸還日變動時會自動清掉，這裡再擋一次狀態）
+const extendRequest = (o: AdminOrderRow) => (o.status === 'in-progress' ? o.extend_request ?? null : null)
+type TabKey = 'all' | 'deposit' | 'pickup' | 'return' | 'extend' | 'refund' | 'fine'
 const TABS: { key: TabKey; zh: string; match: (o: AdminOrderRow, openRoots: ReadonlySet<number>) => boolean }[] = [
   { key: 'all', zh: '全部', match: () => true },
   { key: 'deposit', zh: '待繳押金', match: o => o.status === 'pending' && !o.deposit_paid_at },
   { key: 'pickup', zh: '待取件', match: isAwaitingPickup },
   { key: 'return', zh: '待歸還', match: o => o.status === 'in-progress' || o.status === 'overdue' },
+  { key: 'extend', zh: '延期申請', match: o => !!extendRequest(o) },
   { key: 'refund', zh: '待退押金', match: awaitingRefund },
   { key: 'fine', zh: '待繳罰款', match: o => penaltyOwed(o) > 0 }
 ]
@@ -101,6 +112,12 @@ const OPEN = ['pending', 'in-progress', 'overdue']
 const settlesOnReturn = (o: AdminOrderRow, rows: AdminOrderRow[]) => {
   const root = rootOf(o, rows)
   return root.refunded == null && !familyOf(root, rows).some(x => x.id !== o.id && OPEN.includes(x.status))
+}
+// 這張單完全結束了（學期結束可以清掉）：自己已歸還或已取消，整張單（根單＋子單）都沒有還在跑的，押金結清、罰款收清
+const isFinished = (o: AdminOrderRow, rows: AdminOrderRow[], openRoots: ReadonlySet<number>) => {
+  const root = rootOf(o, rows)
+  return !OPEN.includes(o.status) && !familyOf(root, rows).some(x => OPEN.includes(x.status)) &&
+    !awaitingRefund(root, openRoots) && penaltyOwed(root) === 0
 }
 // 結算預填的逾期試算：每段各算到實際歸還那天（正在還的這張算到今天），上限同 overduePenalty
 const familyEstPenalty = (root: AdminOrderRow, rows: AdminOrderRow[], closed: ReadonlySet<string>, returningId?: number) => {
@@ -119,29 +136,35 @@ const td = tableTd
 // hover 用同色漸層疊上去，才跟整列 white/10 一致。right＝右邊各欄寬加總（w-28＝7rem、操作 w-16＝4rem），改欄寬要一起改
 const pinTd = 'sticky bg-black group-hover:bg-linear-to-r group-hover:from-white/10 group-hover:to-white/10'
 const PIN: Partial<Record<SortField, string>> = { paid_by: 'right-72 max-md:right-auto border-l', picked_up_by: 'right-44 max-md:right-auto', returned_by: 'right-16 max-md:right-auto' }
-const STEP_ZH: Record<'paid_by' | 'picked_up_by' | 'returned_by', string> = { paid_by: '收押金', picked_up_by: '取件', returned_by: '歸還' }
+// 一步一個經手人欄位：三欄各一步，收罰款（歸還欄裡，有欠繳才出現）也算一步
+type StepField = 'paid_by' | 'picked_up_by' | 'returned_by' | 'penalty_collected_by'
+const STEP_ZH: Record<StepField, string> = { paid_by: '收押金', picked_up_by: '取件', returned_by: '歸還', penalty_collected_by: '收罰款' }
 const dash = <span className="text-gray-mid">—</span>
-type RowAction = AdminActionMode | 'sheet' | '' // ⋯ 選單的選項；'' ＝沒選（Select 的 value）
+type RowAction = AdminActionMode | 'sheet' | 'reject' | '' // ⋯ 選單的選項；reject＝退回延期申請；'' ＝沒選（Select 的 value）
 
 // 每欄的儲存格渲染：依 COLUMNS 順序查表（closed＝公休日，倒數／逾期天數用；act＝開操作對話框、busy＝處理中的單號）
 type CellCtx = {
   closed: ReadonlySet<string>
   editInfo: (o: AdminOrderRow) => void
   openProof: (o: AdminOrderRow) => void
+  openMember: (o: AdminOrderRow) => void // 姓名／學號點了跳會員管理查這個人
   act: (o: AdminOrderRow, mode: AdminActionMode, handler?: string) => void
-  setHandler: (o: AdminOrderRow, field: 'paid_by' | 'picked_up_by' | 'returned_by', name: string) => void
+  setHandler: (o: AdminOrderRow, field: StepField, name: string) => void
   busy: string | null
   openRoots: ReadonlySet<number> // 還有子單沒還完的根單
   isAdmin: boolean // 最高權限（櫃檯共用帳號）：步驟欄是經手人下拉；學會成員是按鈕、記本人
   staffOptions: SelectOption<string>[]
 }
-// 歸還欄裡的退押金／收罰款鈕，與學會成員的步驟鈕。enabled=false＝這一步現在不能做，該單處理中時也一樣：
+// 歸還欄裡的退押金鈕，與學會成員的步驟鈕。enabled=false＝這一步現在不能做，該單處理中時也一樣：
 // 按鈕照樣顯示但停用，每列欄位對齊、一眼看出走到哪
 const actBtn = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, zh: string, enabled = true) =>
   <button onClick={() => enabled && ctx.act(o, mode)} disabled={!enabled || ctx.busy === o.rental_number} className={actionBtn}>{zh}</button>
-// 收押金／取件／歸還一步一格：還沒做＝經手人下拉，選了跳確認框；做完＝顯示經手人，選錯直接換人（不再確認）。
+// 姓名／學號：點了跳會員管理查這個人（文字連結，hover 變淡）
+const memberLink = (o: AdminOrderRow, ctx: CellCtx, text: string) =>
+  o.students ? <button onClick={() => ctx.openMember(o)} title="到會員管理查這位同學" className={BTN}>{text}</button> : '—'
+// 收押金／取件／歸還／收罰款一步一格：還沒做＝經手人下拉，選了跳確認框；做完＝顯示經手人，選錯直接換人（不再確認）。
 // 學會成員：還沒做是按鈕（經手人記本人），做完只顯示名字
-const step = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, field: 'paid_by' | 'picked_up_by' | 'returned_by', done: string | null, enabled = true) => {
+const step = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, field: StepField, done: string | null, enabled = true) => {
   const zh = STEP_ZH[field]
   const busy = ctx.busy === o.rental_number
   if (!ctx.isAdmin) return done ?? actBtn(o, ctx, mode, zh, enabled)
@@ -162,8 +185,8 @@ const step = (o: AdminOrderRow, ctx: CellCtx, mode: AdminActionMode, field: 'pai
 }
 const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNode> = {
   rental_number: o => <td key="rental_number" className={`${td} font-english`}>{o.rental_number}</td>,
-  name: o => <td key="name" className={`${td} font-chinese`}>{o.students?.name ?? '—'}</td>,
-  student_id: o => <td key="student_id" className={`${td} text-gray-light font-english`}>{o.students?.student_id ?? ''}</td>,
+  name: (o, ctx) => <td key="name" className={`${td} font-chinese`}>{memberLink(o, ctx, o.students?.name || '—')}</td>,
+  student_id: (o, ctx) => <td key="student_id" className={`${td} text-gray-light font-english`}>{memberLink(o, ctx, o.students?.student_id ?? '')}</td>,
   booking_type: o => <td key="booking_type" className={`${td} font-chinese`}>{orderKindMeta(o).zh}</td>,
   start_date: o => <td key="start_date" className={`${td} font-english`}>{fmtDate(o.start_date)}–{fmtDate(o.end_date)}</td>,
   deposit_total: o => (
@@ -183,11 +206,18 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         <div className="mt-1 font-chinese" style={{ color: 'var(--color-pink)' }}>待繳 <span className="font-english">NT$ {penaltyOwed(o).toLocaleString()}</span></div>
       )}
       {o.status === 'pending' && !o.deposit_paid_at && (() => {
-        const ms = pendingMsRemaining(o.created_at, new Date(), closed, o.deposit_date && o.deposit_slot ? slotEnd(o.deposit_date, o.deposit_slot) : null)
-        return ms > 0
-          ? <div className="mt-1 font-chinese" style={{ color: 'var(--color-yellow)' }}>剩 {Math.ceil(ms / 3_600_000)} 小時</div>
+        // 顯示到期的時間點，不寫「剩幾小時」：倒數跳過週末與公休，週五關門後送的單期限是下週一，寫剩 24 小時會被當成隔天到期
+        const deadline = pendingDeadline(o.created_at, closed, o.deposit_date && o.deposit_slot ? slotEnd(o.deposit_date, o.deposit_slot) : null)
+        return deadline > new Date()
+          ? <div className="mt-1 font-chinese" style={{ color: 'var(--color-yellow)' }}>期限 <span className="font-english">{dateTimeLabel(deadline)}</span></div>
           : <div className="mt-1 font-chinese text-gray-mid">已逾時，將自動取消</div>
       })()}
+      {/* 學生送出的延期申請：同學到學會確認後，從 ⋯ 選單按「通過延期」才成立 */}
+      {extendRequest(o) && (
+        <div className="mt-1 font-chinese" style={{ color: 'var(--color-yellow)' }}>
+          申請延期 <span className="font-english">{extendRequest(o)!.days}</span> 天{extendRequest(o)!.all ? '' : '（部分）'}
+        </div>
+      )}
       {o.status === 'overdue' && (() => {
         const days = overdueBusinessDays(o.end_date, closed)
         return (
@@ -213,6 +243,8 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         {o.order_items.map(i => (
           <div key={i.id}>
             {i.name}{i.item_type === 'equipment' && <span className="font-english"> ×{i.quantity}</span>}
+            {/* 分時段的設備（雷切機）：借的是哪幾天 */}
+            {i.days && <span className="font-english text-gray-light">（{daysLabel(i.days)}）</span>}
             {i.pickup_pending
               ? <span className="ml-1" style={{ color: 'var(--color-yellow)' }}>待點交</span>
               : i.changed_at && <span className="ml-1 text-gray-light">已更動</span>}
@@ -240,7 +272,7 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
       </div>
     </td>
   ),
-  // 收押金：待繳＝收押金；收完顯示經手人。沒繳就取消的、系秘直借（送出即租借、沒人收押金）＝—
+  // 收押金：待繳＝收押金；收完顯示經手人。沒繳就取消的、系秘（免押金，送出即待取件、沒人收押金）＝—
   paid_by: (o, ctx) => (
     <td key="paid_by" className={`${td} ${pinTd} ${PIN.paid_by} font-chinese`}>
       {o.status === 'pending' && !o.deposit_paid_at ? step(o, ctx, 'paid', 'paid_by', null)
@@ -248,17 +280,17 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
         : dash}
     </td>
   ),
-  // 取件：小量單收押金時同時取件（自動帶同一人）；大量設備先繳後取（情境 2），不開放提前取件，到取件日才能選
+  // 取件：收完押金才能按，經手人另外選（不帶收押金的人）。大量設備有預選取件時段，不開放提前取件，到取件日才能選
   picked_up_by: (o, ctx) => (
     <td key="picked_up_by" className={`${td} ${pinTd} ${PIN.picked_up_by} font-chinese`}>
       {pickedUpBy(o) ? step(o, ctx, 'pickup', 'picked_up_by', pickedUpBy(o))
-        : isAwaitingPickup(o) ? step(o, ctx, 'pickup', 'picked_up_by', null, (o.pickup_date ?? o.start_date) <= toDateKey(new Date()))
+        : isAwaitingPickup(o) ? step(o, ctx, 'pickup', 'picked_up_by', null, canPickupNow(o))
         : o.status === 'pending' ? step(o, ctx, 'pickup', 'picked_up_by', null, false)
         : dash}
     </td>
   ),
-  // 歸還＝退押金：借用中／逾期＝歸還（最後一張順便結算）；還完顯示經手人＋退了多少，還有差額接「收罰款」。
-  // 已繳押金的取消單、舊資料沒結到的，退押金鈕也在這裡
+  // 歸還＝退押金：借用中／逾期＝歸還（最後一張順便結算）；還完顯示經手人＋退了多少，還有差額接「收罰款」
+  // （跟前三步同一套：最高權限選經手人、學會成員按鈕；收完顯示誰收的）。已繳押金的取消單、舊資料沒結到的，退押金鈕也在這裡
   returned_by: (o, ctx) => {
     if (o.status === 'in-progress' || o.status === 'overdue') return <td key="returned_by" className={`${td} ${pinTd} ${PIN.returned_by} font-chinese`}>{step(o, ctx, 'return', 'returned_by', null)}</td>
     if (o.status === 'pending') return <td key="returned_by" className={`${td} ${pinTd} ${PIN.returned_by} font-chinese`}>{step(o, ctx, 'return', 'returned_by', null, false)}</td>
@@ -267,7 +299,13 @@ const CELL: Record<SortField, (o: AdminOrderRow, ctx: CellCtx) => React.ReactNod
       o.refunded != null && <div key="refunded" className="text-gray-light">退 <span className="font-english">NT$ {o.refunded.toLocaleString()}</span></div>,
       o.refunded == null && ctx.openRoots.has(o.id) && <div key="open" className="text-gray-light">子單未還</div>,
       awaitingRefund(o, ctx.openRoots) && <div key="refund">{actBtn(o, ctx, 'refund', o.deposit_total > 0 ? '退押金' : '結算')}</div>,
-      penaltyOwed(o) > 0 && <div key="penalty">{actBtn(o, ctx, 'penalty', '收罰款')}</div>
+      penaltyOwed(o) > 0 && <div key="penalty">{step(o, ctx, 'penalty', 'penalty_collected_by', null)}</div>,
+      o.penalty_collected_by && (
+        <div key="collected">
+          <div className="text-gray-light">罰款已收</div>
+          {step(o, ctx, 'penalty', 'penalty_collected_by', o.penalty_collected_by)}
+        </div>
+      )
     ].filter(Boolean)
     return (
       <td key="returned_by" className={`${td} ${pinTd} ${PIN.returned_by} font-chinese`}>
@@ -305,8 +343,13 @@ const AdminOrdersPage: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null) // 正在操作的單號
   const [closedDates, setClosedDates] = useState<ReadonlySet<string>>(new Set())
   const [staff, setStaff] = useState<StaffMember[]>([]) // 幹部（經手人選單，值班中優先）
-  const [action, setAction] = useState<{ order: AdminOrderRow; mode: AdminActionMode; handler?: string } | null>(null)
+  // noDefault＝確認框不預選上次的經手人（收完押金接著跳的取件：不能自動帶收押金的人）
+  const [action, setAction] = useState<{ order: AdminOrderRow; mode: AdminActionMode; handler?: string; noDefault?: boolean } | null>(null)
   const isAdmin = currentUser?.role === 'admin'
+  const navigate = useNavigate()
+  const { confirm, ConfirmDialog } = useConfirmDialog()
+  // 已封存＝學期結束清掉的單：預設不列，按工具列「已封存」只看這些
+  const [showArchived, setShowArchived] = useState(false)
   // 經手人選單：值班中的幹部排前面並分組標示；沒人值班時就是一般清單（代班都選得到）
   const staffList = useMemo(
     () => staff.map(m => ({ name: m.name, onDuty: isOnDuty(m.duties) })).sort((a, b) => Number(b.onDuty) - Number(a.onDuty)),
@@ -371,7 +414,9 @@ const AdminOrdersPage: React.FC = () => {
             ? await adminCancelOrder(order.rental_number, handler)
             : mode === 'extend'
               ? await adminExtendOrder(order.rental_number, days, handler)
-              : await adminRefundDeposit(order.rental_number, penalty, handler)
+              : mode === 'approve'
+                ? await adminApproveExtend(order.rental_number, handler)
+                : await adminRefundDeposit(order.rental_number, penalty, handler)
     setBusy(null)
     if (!res.ok) { showToast(res.message ?? '操作失敗'); await load(); return }
     const rn = order.rental_number
@@ -379,25 +424,28 @@ const AdminOrdersPage: React.FC = () => {
     showToast(
       mode === 'handover' ? `已點交 ${rn} 新增的設備`
       : mode === 'pickup' ? `已完成取件 ${rn}，租借開始`
-      : mode === 'paid' && !pickup ? `已收押金 ${rn}，待取件`
-      : mode === 'paid' ? `已確認收押金 ${rn}`
+      : mode === 'paid' ? `已收押金 ${rn}，待取件`
       : mode === 'penalty' ? `已收罰款 ${rn}`
       : mode === 'cancel' ? `已取消 ${rn}`
       : mode === 'extend' ? `已將 ${rn} 延期 ${days} 天`
+      : mode === 'approve' ? `已通過 ${rn} 的延期申請`
       : mode === 'refund' ? (owes ? `已結算 ${rn}，差額待同學繳清` : `已結算 ${rn} 的押金`)
       : mode === 'partial' ? `已部分歸還 ${rn}，未還品項已拆成子單續租`
       : settle ? (owes ? `已歸還 ${rn}，差額待同學繳清` : `已歸還 ${rn} 並結算押金`)
       : `已歸還 ${rn}，押金等子單還完一起結`,
       'success'
     )
+    // 收完押金、當下就能取件：接著跳取件確認框，取件經手人另外選（不預選收押金的人）。
+    // 設備交出去卻忘了按取件，單子會一直停在「待取件」（大量設備還會在取件日 19:00 被當成沒來取而自動取消），所以直接帶到下一步；按取消＝晚點再取
+    if (mode === 'paid' && canPickupNow(order)) {
+      setAction({ order: { ...order, deposit_paid_at: new Date().toISOString(), paid_by: handler }, mode: 'pickup', noDefault: true })
+    }
     await load()
   }
 
-  // 最高權限選錯經手人：直接換，不再確認（2026-11-10）。同一步一起記的欄位跟著換：
-  // 小量單收押金＝取件同一人、歸還時一起結的退押金經手人
-  const changeHandler = async (o: AdminOrderRow, field: 'paid_by' | 'picked_up_by' | 'returned_by', name: string) => {
+  // 最高權限選錯經手人：直接換，不再確認（2026-11-10）。同一步一起記的欄位跟著換：歸還時一起結的退押金經手人
+  const changeHandler = async (o: AdminOrderRow, field: StepField, name: string) => {
     const fields: Partial<Record<HandlerField, string>> = { [field]: name }
-    if (field === 'paid_by' && o.picked_up_by === o.paid_by) fields.picked_up_by = name
     if (field === 'returned_by' && o.refunded_by === o.returned_by) fields.refunded_by = name
     setBusy(o.rental_number)
     const res = await adminSetHandler(o.rental_number, fields)
@@ -407,12 +455,49 @@ const AdminOrdersPage: React.FC = () => {
     await load()
   }
 
-  // 證明檔在私有 bucket，開的時候才簽短效網址；先開分頁再填網址，不然 await 之後會被瀏覽器當彈窗擋掉
+  // 證明檔在私有 bucket，開的時候才簽短效網址；直接在畫面上開（圖片＝img、PDF＝iframe），不另開分頁
+  const [proof, setProof] = useState<{ url: string; pdf: boolean; title: string } | null>(null)
   const openProof = async (o: AdminOrderRow) => {
-    const tab = window.open('', '_blank')
     const url = await proofUrl(o.proof_path!)
-    if (url && tab) tab.location.href = url
-    else { tab?.close(); showToast('讀取證明文件失敗') }
+    if (url) setProof({ url, pdf: /\.pdf$/i.test(o.proof_path!), title: `${o.rental_number} 證明文件` })
+    else showToast('讀取證明文件失敗')
+  }
+  useEffect(() => {
+    if (!proof) return
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setProof(null) }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [proof])
+
+  // 退回學生的延期申請：同學照原歸還日歸還，延期權不扣
+  const rejectExtend = async (o: AdminOrderRow) => {
+    const ok = await confirm({
+      title: '退回延期申請',
+      message: `退回 ${o.rental_number}（${o.students?.name ?? ''}）的延期申請？同學照原歸還日 ${o.end_date} 歸還。`,
+      confirmTextZh: '退回', variant: 'danger'
+    })
+    if (!ok) return
+    setBusy(o.rental_number)
+    const res = await adminRejectExtend(o.rental_number, currentUser?.name ?? '')
+    setBusy(null)
+    showToast(res.ok ? `已退回 ${o.rental_number} 的延期申請` : res.message ?? '操作失敗', res.ok ? 'success' : 'error')
+    await load()
+  }
+
+  // 學期結束（最高權限）：把已經完全結束的單從訂單頁清掉＝封存，資料不刪，按「已封存」還看得到。
+  // 還在跑的、押金沒結清、罰款沒收清的不動
+  const archiveFinished = async () => {
+    const ids = orders.filter(o => !o.archived_at && isFinished(o, orders, openRoots)).map(o => o.id)
+    if (ids.length === 0) { showToast('沒有可以清除的訂單（已歸還並結清、已取消的才會清）'); return }
+    const ok = await confirm({
+      title: '清除已完成的訂單',
+      message: `把 ${ids.length} 筆已完成的訂單（已歸還並結清、已取消）從訂單頁清除？\n還沒結束的單不受影響。資料不會刪除，之後按「已封存」可以回頭看。`,
+      confirmTextZh: '清除', variant: 'danger'
+    })
+    if (!ok) return
+    const res = await adminArchiveOrders(ids)
+    showToast(res.ok ? `已清除 ${ids.length} 筆已完成的訂單` : res.message ?? '清除失敗', res.ok ? 'success' : 'error')
+    await load()
   }
 
   // 大量設備單的核對單：在學會 Drive 建一份試算表
@@ -439,6 +524,7 @@ const AdminOrdersPage: React.FC = () => {
   const base = useMemo(() => {
     const q = search.trim().toLowerCase()
     return orders.filter(o => {
+      if (!!o.archived_at !== showArchived) return false
       if (studentFilter && (o.students?.student_id ?? '') !== studentFilter) return false
       if (typeFilter !== 'all' && orderKind(o) !== typeFilter) return false
       if (range.from && o.end_date < range.from) return false
@@ -455,7 +541,7 @@ const AdminOrdersPage: React.FC = () => {
         o.returned_by ?? ''
       ].some(v => v.toLowerCase().includes(q))
     })
-  }, [orders, search, typeFilter, range, studentFilter])
+  }, [orders, search, typeFilter, range, studentFilter, showArchived])
   const studentName = studentFilter ? orders.find(o => o.students?.student_id === studentFilter)?.students?.name ?? '' : ''
 
   // 還有子單沒還完的根單：押金要等全部還完才結（看全部訂單，不受搜尋影響）
@@ -483,12 +569,13 @@ const AdminOrdersPage: React.FC = () => {
     })
   }, [base, tab, sort, openRoots])
 
-  const { pageRows, pager } = usePager(visible, [search, tab, typeFilter, range, sort])
+  const { pageRows, pager } = usePager(visible, [search, tab, typeFilter, range, sort, showArchived])
   const sortProps = { sort, onSort: (f: SortField) => setSort(s => toggleSort(s, f)) }
 
   const hasRange = !!(range.from || range.to)
   const cellCtx: CellCtx = {
     closed: closedDates, editInfo: setInfoOrder, openProof: o => void openProof(o),
+    openMember: o => navigate(`/admin/members?q=${encodeURIComponent(o.students?.student_id ?? '')}`),
     act: (order, mode, handler) => setAction({ order, mode, handler }),
     setHandler: (o, field, name) => void changeHandler(o, field, name),
     busy, openRoots, isAdmin, staffOptions
@@ -514,6 +601,13 @@ const AdminOrdersPage: React.FC = () => {
           <span className={`material-symbols-outlined opacity-70 ${refreshing ? 'animate-spin' : ''}`} style={{ fontSize: '18px' }} aria-hidden="true">refresh</span>
           重新整理
         </button>
+        {/* 學期結束清掉已完成的單（只有最高權限；封存不刪除） */}
+        {isAdmin && (
+          <button onClick={() => void archiveFinished()} className={textBtn(false)} title="把已歸還並結清、已取消的訂單收進「已封存」">
+            <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">archive</span>
+            清除已完成
+          </button>
+        )}
       </PageTitle>
 
       {/* 工具列：左搜尋框（常駐）；右＝租借時間、種類 */}
@@ -533,6 +627,10 @@ const AdminOrdersPage: React.FC = () => {
             </button>
           )}
         </div>
+        <button onClick={() => setShowArchived(v => !v)} className={textBtn(showArchived)} title={showArchived ? '回到目前的訂單' : '只看已封存（學期結束清掉）的訂單'}>
+          <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">inventory_2</span>
+          已封存
+        </button>
         <button onClick={() => setShowRange(v => !v)} className={textBtn(showRange || hasRange)} aria-expanded={showRange}>
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">date_range</span>
           租借時間
@@ -582,13 +680,18 @@ const AdminOrdersPage: React.FC = () => {
                       // 沒有動作時這裡留白，該單處理中時選單停用
                       const handover: { mode: AdminActionMode; zh: string }[] =
                         o.order_items.some(i => i.pickup_pending) ? [{ mode: 'handover', zh: '點交' }] : []
+                      // 部分歸還以「品項列」為單位拆單，所以這張單要有兩種以上的品項才有（同一種借很多個不能只還幾個）
                       const partial: { mode: AdminActionMode; zh: string }[] =
                         o.order_items.length > 1 ? [{ mode: 'partial', zh: '部分歸還' }] : []
-                      const acts: { mode: AdminActionMode; zh: string }[] =
+                      // 學生送了延期申請：通過（跳確認框記經手人）或退回，排最前面
+                      const request: { mode: RowAction; zh: string }[] =
+                        extendRequest(o) ? [{ mode: 'approve', zh: '通過延期' }, { mode: 'reject', zh: '退回延期' }] : []
+                      // 取消只給還沒取件的單（pending）；取件後東西在學生手上，只能歸還
+                      const acts: { mode: RowAction; zh: string }[] =
                         o.status === 'pending'
                           ? [{ mode: 'cancel', zh: '取消訂單' }]
                           : o.status === 'in-progress'
-                            ? [...handover, { mode: 'extend', zh: '延期' }, ...partial, { mode: 'cancel', zh: '取消訂單' }]
+                            ? [...request, ...handover, { mode: 'extend', zh: '延期' }, ...partial]
                             : o.status === 'overdue'
                               ? [...handover, { mode: 'extend', zh: '延期' }, ...partial]
                               : []
@@ -604,7 +707,11 @@ const AdminOrdersPage: React.FC = () => {
                           filled
                           disabled={busy === o.rental_number}
                           options={menu}
-                          onChange={v => { if (v === 'sheet') exportSheet(o); else if (v) setAction({ order: o, mode: v }) }}
+                          onChange={v => {
+                            if (v === 'sheet') exportSheet(o)
+                            else if (v === 'reject') void rejectExtend(o)
+                            else if (v) setAction({ order: o, mode: v })
+                          }}
                           aria-label="操作"
                         />
                       )
@@ -630,7 +737,7 @@ const AdminOrdersPage: React.FC = () => {
           order={action.order}
           mode={action.mode}
           staff={staffList}
-          defaultHandler={localStorage.getItem(ADMIN_HANDLER_KEY) ?? ''}
+          defaultHandler={action.noDefault ? '' : localStorage.getItem(ADMIN_HANDLER_KEY) ?? ''}
           lockedHandler={action.handler ?? (isAdmin ? undefined : currentUser?.name)}
           settleOnReturn={action.mode === 'return' && settlesOnReturn(action.order, orders)}
           estPenalty={
@@ -651,6 +758,21 @@ const AdminOrdersPage: React.FC = () => {
           onCancel={() => setInfoOrder(null)}
         />
       )}
+      {/* 證明文件：直接在畫面上看（點外面或 Esc 關閉）；手機的瀏覽器不一定能在頁面裡顯示 PDF，留一個另開分頁的連結 */}
+      {proof && createPortal(
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-3 bg-black/80 p-6" onClick={() => setProof(null)}>
+          <div className="w-full max-w-4xl flex items-center gap-4 text-xs text-white" onClick={e => e.stopPropagation()}>
+            <span className="font-chinese mr-auto">{proof.title}</span>
+            <a href={proof.url} target="_blank" rel="noopener noreferrer" className="font-chinese underline underline-offset-4 hover:opacity-50">另開分頁</a>
+            <CloseButton onClick={() => setProof(null)} />
+          </div>
+          {proof.pdf
+            ? <iframe src={proof.url} title={proof.title} className="w-full max-w-4xl flex-1 min-h-0 rounded-xl bg-white" />
+            : <img src={proof.url} alt={proof.title} className="max-w-full flex-1 min-h-0 object-contain rounded-xl" onClick={e => e.stopPropagation()} />}
+        </div>,
+        document.body
+      )}
+      <ConfirmDialog />
       {toastElement}
     </div>
   )

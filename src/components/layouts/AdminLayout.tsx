@@ -14,15 +14,16 @@ import { navItemCls, NAV_ITEM } from '../common/navItem'
 import { useAutoRefresh } from '../../hooks/useAutoRefresh'
 import { useLangStore, syncHtmlLang } from '../../stores/langStore'
 import { readLoginData, isLoginExpired } from '../../utils/authStorage'
-import { fetchDutyNotifications, markDutyNotificationsRead, type AppNotification } from '../../services/notificationsService'
+import { fetchDutyNotifications, markDutyNotificationRead, markDutyNotificationsRead, type AppNotification } from '../../services/notificationsService'
 
-/** 給子頁（Outlet context）：通知頁讀清單、「全部已讀」 */
-export interface AdminOutletContext { notifs: AppNotification[]; markAllRead: () => void }
+/** 給子頁（Outlet context）：通知頁讀清單、點一則已讀、「全部已讀」 */
+export interface AdminOutletContext { notifs: AppNotification[]; markRead: (id: string) => void; markAllRead: () => void }
 
 // 側欄分兩組、各有小字組名（2026-09-30 定案，防誤觸）：
-// 值班＝天天用的查看與訂單操作；設定＝改主檔會影響全站的資料維護，只有最高權限看得到（2026-11-08）。
+// 值班＝天天用的查看與訂單操作；設定＝改主檔會影響全站的資料維護，只有最高權限能改（2026-11-08）。
+// 學會成員看得到設備／空間／會員管理但不能改（2026-11-14，組名顯示「查看」；各頁依 role 藏掉操作），營業時間、文字內容不列（adminOnly）。
 // 查看（A5F 編號區，原名空間地圖）與寫入（空間管理）刻意拆成不同頁。總覽 2026-10-24 拿掉：各狀態數量併到訂單頁上方。
-interface AdminSection { to: string; label: string; icon: string }
+interface AdminSection { to: string; label: string; icon: string; adminOnly?: true }
 
 const ADMIN_SECTION_GROUPS: { label: string; items: AdminSection[] }[] = [
   {
@@ -39,8 +40,8 @@ const ADMIN_SECTION_GROUPS: { label: string; items: AdminSection[] }[] = [
       { to: '/admin/equipment', label: '設備管理', icon: 'photo_camera' },
       { to: '/admin/spaces', label: '空間管理', icon: 'meeting_room' },
       { to: '/admin/members', label: '會員管理', icon: 'group' }, // 含系學會（經手人）名單
-      { to: '/admin/hours', label: '營業時間', icon: 'schedule' }, // 值班時間＋公休日＋法定假日＋寒暑假封鎖
-      { to: '/admin/content', label: '文字內容', icon: 'edit_note' } // 使用教學／系學會／關於／聯絡方式／延期規則的說明文字
+      { to: '/admin/hours', label: '營業時間', icon: 'schedule', adminOnly: true }, // 值班時間＋公休日＋法定假日＋寒暑假封鎖
+      { to: '/admin/content', label: '文字內容', icon: 'edit_note', adminOnly: true } // 使用教學／系學會／關於／聯絡方式／延期規則的說明文字
     ]
   }
 ]
@@ -77,6 +78,12 @@ const AdminLayout: React.FC = () => {
     if (access && access !== 'admin' && access !== 'operator') { await logout(); window.location.replace('/?expired=1&redirect_url=/admin/orders') }
   })
   const unread = notifs.filter(n => !n.read).length
+  // 通知頁點一則＝那則已讀（2026-11-14）；已讀的不重送
+  const markRead = (id: string) => {
+    if (notifs.find(n => n.id === id)?.read !== false) return
+    setNotifs(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)))
+    void markDutyNotificationRead(id)
+  }
   // 通知頁的「全部已讀」鈕
   const markAllRead = () => {
     setNotifs(prev => prev.map(n => ({ ...n, read: true })))
@@ -109,10 +116,10 @@ const AdminLayout: React.FC = () => {
 
         {/* inline-flex＝各項同寬、以最長的為準（同 Profile）；組名小字對齊 icon 左緣（px-3＝膠囊 pl-3） */}
         <nav className="inline-flex flex-col mt-10 flex-1 max-md:flex max-md:flex-row max-md:items-center max-md:gap-2 max-md:mt-4 max-md:w-full max-md:overflow-x-auto">
-          {ADMIN_SECTION_GROUPS.filter(g => isAdmin || g.label === '值班').map((group, gi) => (
+          {ADMIN_SECTION_GROUPS.map((group, gi) => (
             <div key={group.label} className={`flex flex-col gap-2 max-md:flex-row ${gi > 0 ? 'mt-8 max-md:mt-0' : ''}`}>
-              <p className="px-3 text-xs text-gray-mid max-md:hidden">{group.label}</p>
-              {group.items.map(s => (
+              <p className="px-3 text-xs text-gray-mid max-md:hidden">{!isAdmin && group.label === '設定' ? '查看' : group.label}</p>
+              {group.items.filter(s => isAdmin || !s.adminOnly).map(s => (
                 <NavLink
                   key={s.to}
                   to={s.to}
@@ -154,7 +161,7 @@ const AdminLayout: React.FC = () => {
 
       {/* 內容區：自己捲動（捲軸貼視窗右緣，所以右邊距放在 main 內）；py-10 同側欄，頁標題與「SCCDSA Booking 後台」同高 */}
       <main className={`flex-1 min-w-0 h-screen overflow-y-auto pl-12 ${EDGE_R} py-10 max-md:h-auto max-md:min-h-0 max-md:pl-[clamp(1.2rem,2vw,2%)]`}>
-        <Outlet context={{ notifs, markAllRead } satisfies AdminOutletContext} />
+        <Outlet context={{ notifs, markRead, markAllRead } satisfies AdminOutletContext} />
       </main>
     </div>
   )

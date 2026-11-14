@@ -28,6 +28,7 @@ const MONTH_ZH = ['一月', '二月', '三月', '四月', '五月', '六月', '�
 const WD = '日一二三四五六' // 同 JS getDay：0＝週日
 const WEEKDAYS = [1, 2, 3, 4, 5]
 // ponytail: 值班時段寫死兩班；學會要改時間再做成設定。舊資料依開始時間歸類（15:00 前＝午班）
+// 結束時間另外寫在 timeUtils.SHIFT_END 與 submit_orders（雷切機今天過了的班不能借），改時間要一起改
 const SHIFTS = [
   { key: 'noon', zh: '午班', start: '12:00', end: '13:00' },
   { key: 'evening', zh: '晚班', start: '17:00', end: '19:00' }

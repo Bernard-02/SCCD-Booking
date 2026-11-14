@@ -73,7 +73,8 @@ function App() {
                   }
                 />
 
-                {/* 後台：側欄外框 + 各分區；值班三頁最高權限與學會成員都能用，其餘（設定）只有最高權限 */}
+                {/* 後台：側欄外框 + 各分區；值班三頁最高權限與學會成員都能用。設定裡的會員／設備／空間，學會成員看得到但不能改
+                    （2026-11-14，頁面依 role 藏掉操作，寫入另有 RLS 擋）；營業時間、文字內容只有最高權限 */}
                 <Route
                   path="/admin"
                   element={
@@ -87,11 +88,11 @@ function App() {
                   <Route path="orders" element={<AdminOrdersPage />} />
                   <Route path="space-map" element={<AdminSpaceMapPage />} />
                   <Route path="notifications" element={<AdminNotificationsPage />} />
+                  <Route path="members" element={<AdminMembersPage />} />
+                  <Route path="equipment" element={<AdminEquipmentPage />} />
+                  <Route path="spaces" element={<AdminSpacesPage />} />
                   <Route element={<AdminOnly />}>
                     <Route path="hours" element={<AdminHoursPage />} />
-                    <Route path="members" element={<AdminMembersPage />} />
-                    <Route path="equipment" element={<AdminEquipmentPage />} />
-                    <Route path="spaces" element={<AdminSpacesPage />} />
                     <Route path="content" element={<AdminContentPage />} />
                   </Route>
                 </Route>

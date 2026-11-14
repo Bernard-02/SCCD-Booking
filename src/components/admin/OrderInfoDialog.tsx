@@ -16,6 +16,7 @@ import type { AdminOrderRow, OrderInfo } from '../../services/ordersService'
 import { fetchClosedDates, fetchDutySlots } from '../../services/ordersService'
 import { addBusinessMs, dutySlotOptions, slotLabel, slotStart, PENDING_LIMIT_MS, type DutySlot } from '../../utils/timeUtils'
 import { orderKindMeta, Select } from './adminUi'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 interface Props {
   order: AdminOrderRow
@@ -96,6 +97,7 @@ const OrderInfoDialog: React.FC<Props> = ({ order, busy, onSave, onCancel }) => 
     if (hasDeposit) { const [d, s] = deposit.split(' '); info.deposit_date = d; info.deposit_slot = s }
     onSave(info)
   }
+  useEnterConfirm(true, save, canSave)
 
   return createPortal(
     <div

@@ -1,9 +1,10 @@
 /**
  * 後台操作對話框：收押金／取件／歸還（最後一張順便結算：填罰金、退押金）／退押金＋值班經手人選擇。
  * 經手人必選（追溯用）；訂單頁欄位裡已選好經手人時（lockedHandler）這裡只顯示、當作確認。樣式沿用 common/ConfirmDialog。
- * 大量設備預選了繳押金／取件時段（mass-pickup.sql）：收押金時可選「同時取件」，
- * 不勾＝只收押金（已繳待取件），之後再用 pickup 模式確認取件。
+ * 收押金與取件分開兩步、各記各的經手人（2026-11-14 學會：收押金的人不一定是交付設備的人）：
+ * paid＝只收押金（已繳待取件），pickup＝取件、租借開始；小量單也一樣，不再「收押金同時取件」。
  * 歸還一律整單（2026-11-10）；提早還一部分走 ⋯ 選單的 partial，勾先還的品項，沒勾的拆子單。
+ * approve＝通過學生的延期申請（學生到學會確認後按，這時才真的延）。Enter＝確認（代取消除外）。
  */
 
 import { BTN } from '@/components/common/btn'
@@ -12,13 +13,14 @@ import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { penaltyOwed, suggestedDeposit, type AdminOrderRow } from '../../services/ordersService'
 import { useBundles } from '../../services/equipmentService'
-import { slotLabel, toDateKey } from '../../utils/timeUtils'
+import { slotLabel } from '../../utils/timeUtils'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 import { Select } from './adminUi'
 
-export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'partial' | 'penalty' | 'cancel' | 'extend' | 'handover' | 'refund'
-// pickup = 已預繳者取件；penalty = 收罰款（押金抵完還差的）；cancel = 代取消；extend = 代客延期；
+export type AdminActionMode = 'paid' | 'pickup' | 'return' | 'partial' | 'penalty' | 'cancel' | 'extend' | 'handover' | 'refund' | 'approve'
+// pickup = 已繳押金者取件；penalty = 收罰款（押金抵完還差的）；cancel = 代取消；extend = 代客延期；
 // handover = 點交學生取件後新增的設備（modify-order.sql）；refund = 退押金＝結算（填罰金；取消單沒有罰金）；
-// partial = 部分歸還（期限內提早還一部分）
+// partial = 部分歸還（期限內提早還一部分）；approve = 通過學生的延期申請
 
 interface Props {
   order: AdminOrderRow
@@ -49,11 +51,9 @@ const OrderActionDialog: React.FC<Props> = ({
   const [penalty, setPenalty] = useState(String(estPenalty))
   // 代客延期天數（1-7；更長分次延）
   const [days, setDays] = useState('1')
-  // 收押金時是否同時取件：有預選取件時段（大量設備）才可選，不開放提前取件，到取件日才勾得到；其他單一律同時
+  // 大量設備預選的取件時段（收押金時顯示給學會看）
   const hasPickupSlot = !!order.pickup_slot
   const pickupDay = order.pickup_date ?? order.start_date
-  const canPickupNow = !hasPickupSlot || pickupDay <= toDateKey(new Date())
-  const [pickupNow, setPickupNow] = useState(canPickupNow)
 
   // 部分歸還（情境 5-①）：勾先還的品項，預設全勾；整單歸還（return）不顯示勾選，一律全部
   const [returnIds, setReturnIds] = useState<Set<number>>(
@@ -100,6 +100,18 @@ const OrderActionDialog: React.FC<Props> = ({
   const daysValid = mode !== 'extend' || (!Number.isNaN(daysNum) && daysNum >= 1 && daysNum <= 7)
   const canConfirm =
     handler !== '' && penaltyValid && daysValid && depositValid && (mode !== 'partial' || isPartialReturn)
+  const confirm = () =>
+    canConfirm &&
+    onConfirm(
+      handler,
+      settling ? penaltyNum : 0,
+      [...returnIds],
+      mode === 'extend' ? daysNum : 0,
+      mode === 'pickup',
+      needDeposit ? depositNum : undefined
+    )
+  // Enter＝確認；代取消是收不回來的動作，要用點的
+  useEnterConfirm(mode !== 'cancel', confirm, canConfirm)
 
   const title =
     mode === 'paid' ? '確認收押金'
@@ -107,19 +119,21 @@ const OrderActionDialog: React.FC<Props> = ({
     : mode === 'penalty' ? '收罰款'
     : mode === 'cancel' ? '代取消訂單'
     : mode === 'extend' ? '代客延期'
+    : mode === 'approve' ? '通過延期申請'
     : mode === 'handover' ? '點交新增設備'
     : mode === 'refund' ? (familyDeposit > 0 ? '退押金' : '結算')
     : mode === 'partial' ? '部分歸還'
     : settling && familyDeposit > 0 ? '確認歸還並退押金'
     : '確認歸還'
 
-  // 代客延期的新歸還日預覽
-  const newEndDate = (() => {
-    if (mode !== 'extend' || !daysValid) return null
+  // 延期後的新歸還日預覽（代客延期填的天數，或學生申請的天數）
+  const endDatePlus = (n: number) => {
     const d = new Date(order.end_date)
-    d.setDate(d.getDate() + daysNum)
+    d.setDate(d.getDate() + n)
     return `${d.getMonth() + 1} 月 ${d.getDate()} 日`
-  })()
+  }
+  const newEndDate = mode === 'extend' && daysValid ? endDatePlus(daysNum) : null
+  const request = order.extend_request
   const field =
     'bg-black border border-gray-mid rounded-lg px-3 py-1.5 text-xs text-white focus:border-white outline-none w-full'
 
@@ -148,8 +162,8 @@ const OrderActionDialog: React.FC<Props> = ({
           {/* 代取消：說明退押金與否 */}
           {mode === 'cancel' && (
             <p className="text-tiny text-white font-chinese">
-              {order.status === 'pending' && !order.deposit_paid_at
-                ? '此單尚未繳押金，取消後直接作廢、佔用釋放。'
+              {!order.deposit_paid_at ? '此單尚未繳押金，取消後直接作廢、佔用釋放。'
+                : order.deposit_total === 0 ? '此單免押金，取消後直接作廢、佔用釋放。'
                 : <>已繳押金 <span className="font-english">NT$ {order.deposit_total.toLocaleString()}</span>，請當場退還現金後再按確認。</>}
             </p>
           )}
@@ -218,34 +232,46 @@ const OrderActionDialog: React.FC<Props> = ({
             </div>
           )}
 
-          {/* 收押金（大量設備有預選時段）：顯示學生預約的時段＋是否同時取件 */}
-          {mode === 'paid' && hasPickupSlot && (
-            <div className="flex flex-col gap-3">
-              <p className="text-xs text-gray-light font-chinese">
-                學生預約：繳押金 {order.deposit_date && order.deposit_slot
-                  ? slotLabel({ date: order.deposit_date, slot: order.deposit_slot }) : '—'}
-                ；取件 {slotLabel({ date: pickupDay, slot: order.pickup_slot! })}
+          {/* 通過延期申請：學生申請的天數與品項；這時才真的延，撞期由 server 再查一次 */}
+          {mode === 'approve' && request && (
+            <div className="text-xs text-white font-chinese flex flex-col gap-2">
+              <p>
+                同學申請延期 <span className="font-english">{request.days}</span> 天：原歸還日 <span className="font-english">{order.end_date}</span>
+                ，通過後為 <span className="font-english">{endDatePlus(request.days)}</span>。
               </p>
-              <label className={`flex items-center gap-3 text-xs ${canPickupNow ? 'text-white cursor-pointer' : 'text-gray-light cursor-not-allowed'}`}>
-                <input
-                  type="checkbox"
-                  className="custom-checkbox flex-shrink-0"
-                  checked={pickupNow}
-                  disabled={!canPickupNow}
-                  onChange={e => setPickupNow(e.target.checked)}
-                />
-                <span className="font-chinese">
-                  {canPickupNow ? '同時取件（設備當場交付，租借開始；不勾＝只收押金，之後再取件）' : '還沒到取件日，這次只收押金'}
-                </span>
-              </label>
+              {!request.all && (
+                <p className="text-gray-light">
+                  只延這幾項（拆成子單）：{order.order_items.filter(i => request.item_ids.includes(i.id)).map(i => i.name).join('、')}
+                  ；其餘照原歸還日歸還。
+                </p>
+              )}
+              <p className="text-gray-light">同學本人到學會確認後再按確認，延期才成立；沒來確認就照原歸還日歸還。</p>
             </div>
           )}
 
-          {/* 取件（已預繳）：押金已收，交付設備後確認 */}
+          {/* 收押金：只收押金，設備交付另外按「取件」（各記各的經手人）。大量設備顯示學生預約的時段 */}
+          {mode === 'paid' && (
+            <p className="text-xs text-gray-light font-chinese">
+              {hasPickupSlot && (
+                <>
+                  學生預約：繳押金 {order.deposit_date && order.deposit_slot
+                    ? slotLabel({ date: order.deposit_date, slot: order.deposit_slot }) : '—'}
+                  ；取件 {slotLabel({ date: pickupDay, slot: order.pickup_slot! })}。
+                </>
+              )}
+              這一步只收押金；交付設備（取件）另外確認、另外選經手人。
+            </p>
+          )}
+
+          {/* 取件（押金已收）：交付設備後確認。收完押金會直接跳到這裡，還沒要交付就按取消 */}
           {mode === 'pickup' && (
             <p className="text-xs text-white font-chinese">
-              押金已於 <span className="font-english">{order.deposit_paid_at?.slice(5, 10).replace('-', '/')}</span> 收取
-              {order.paid_by && <>（經手 {order.paid_by}）</>}，設備交付後按確認，租借開始。
+              {/* 系秘免押金：送出即待取件，沒有人收過押金 */}
+              {order.deposit_total === 0 && !order.paid_by ? '免押金' : <>
+                押金已於 <span className="font-english">{order.deposit_paid_at && new Date(order.deposit_paid_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}</span> 收取
+                {order.paid_by && <>（經手 {order.paid_by}）</>}
+              </>}，設備交付後按確認，租借開始。
+              <span className="text-gray-light">還沒要交付就按取消，之後到「取件」欄再按。</span>
             </p>
           )}
 
@@ -359,21 +385,7 @@ const OrderActionDialog: React.FC<Props> = ({
           <button onClick={onCancel} className={`text-gray-light ${BTN}`}>
             <span className="text-xs">取消</span>
           </button>
-          <button
-            onClick={() =>
-              canConfirm &&
-              onConfirm(
-                handler,
-                settling ? penaltyNum : 0,
-                [...returnIds],
-                mode === 'extend' ? daysNum : 0,
-                mode === 'pickup' || pickupNow,
-                needDeposit ? depositNum : undefined
-              )
-            }
-            disabled={!canConfirm}
-            className={`text-white ${BTN}`}
-          >
+          <button onClick={confirm} disabled={!canConfirm} className={`text-white ${BTN}`}>
             <span className="text-xs">確認</span>
           </button>
         </div>

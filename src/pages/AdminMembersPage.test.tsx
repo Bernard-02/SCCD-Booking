@@ -6,9 +6,20 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import AdminMembersPage from './AdminMembersPage'
-import { listMembers, updateAllowlistDues, updateMembersMany } from '../services/adminService'
+import { listMembers, updateAllowlistDues, updateMembersMany, operatorMembers } from '../services/adminService'
 
+// 預設最高權限；個別測試改 role 看學會成員的唯讀版
+const auth = vi.hoisted(() => ({ role: 'admin' }))
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ currentUser: { role: auth.role } }) }))
 vi.mock('../services/adminService', () => ({
+  operatorMembers: vi.fn().mockResolvedValue({
+    members: [{
+      id: 'u1', student_id: 'A1', name: '陳有帳號', email: 'a1@x.tw', phone: '0912345678', grade: '大三', class_name: '甲',
+      role: 'student', account_level: 0, on_leave: false, graduated: false, is_transfer: false, dues_paid: true
+    }],
+    allowlist: [],
+    staff: [{ id: 1, name: '陳有帳號', studentNo: 'A1', position: '器材長', duties: [] }]
+  }),
   listMembers: vi.fn().mockResolvedValue([{
     id: 'u1', student_id: 'A1', name: '陳有帳號', email: 'a1@x.tw', phone: null, grade: '大三', class_name: '甲',
     role: 'student', account_level: 0, on_leave: false, graduated: false, is_transfer: false, dues_paid: false
@@ -27,6 +38,25 @@ vi.mock('../components/admin/MemberImportDialog', () => ({ default: () => null }
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  auth.role = 'admin'
+})
+
+describe('學會成員唯讀', () => {
+  it('看得到名單（走唯讀 RPC），沒有新增／匯入／選取／修改', async () => {
+    auth.role = 'student'
+    render(<MemoryRouter><AdminMembersPage /></MemoryRouter>)
+    await screen.findByText('陳有帳號')
+    expect(screen.getByText('系學會・器材長')).toBeTruthy()
+    expect(operatorMembers).toHaveBeenCalled()
+    expect(listMembers).not.toHaveBeenCalled()
+    for (const name of ['新增會員', '匯入', '選取', '修改']) expect(screen.queryByRole('button', { name })).toBeNull()
+  })
+
+  it('訂單頁帶 ?q=學號 過來：直接篩出這個人', async () => {
+    render(<MemoryRouter initialEntries={['/admin/members?q=B2']}><AdminMembersPage /></MemoryRouter>)
+    await screen.findByText('林未啟用')
+    expect(screen.queryByText('陳有帳號')).toBeNull()
+  })
 })
 
 const openSelect = async () => {

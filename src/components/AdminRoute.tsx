@@ -46,7 +46,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   return MFA_ENABLED && isAdmin ? <MfaGate>{children}</MfaGate> : <>{children}</>
 }
 
-/** 「設定」各頁只有最高權限：學會成員打網址進來導回訂單（寫入另有 RLS 擋） */
+/** 營業時間、文字內容只有最高權限：學會成員打網址進來導回訂單。會員／設備／空間學會成員可以看（唯讀），不包這層 */
 export const AdminOnly: React.FC = () => {
   const { currentUser } = useAuth()
   return currentUser?.role === 'admin' ? <Outlet /> : <Navigate to="/admin/orders" replace />

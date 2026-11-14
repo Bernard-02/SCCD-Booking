@@ -9,15 +9,16 @@ import CloseButton from '../common/CloseButton'
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Calendar from '../Calendar'
-import { toDateKey } from '../../utils/timeUtils'
+import { daysLabel, toDateKey } from '../../utils/timeUtils'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 import type { OrderStatus, OrderRow } from '../../services/ordersService'
 
-/** 品項摘要（一項一行）：設備一律標數量（含 ×1）；編號區／教室不標 */
+/** 品項摘要（一項一行）：設備一律標數量（含 ×1）；編號區／教室不標；分時段的設備（雷切機）加上借的那幾天 */
 export const itemsSummary = (o: Pick<OrderRow, 'order_items'>) =>
-  o.order_items.map(i => `${i.name}${i.item_type === 'equipment' ? ` ×${i.quantity}` : ''}`).join('\n')
+  o.order_items.map(i => `${i.name}${i.item_type === 'equipment' ? ` ×${i.quantity}` : ''}${i.days ? `（${daysLabel(i.days)}）` : ''}`).join('\n')
 
 export const STATUS_META: Record<OrderStatus, { zh: string; color: string }> = {
-  pending: { zh: '待銷單', color: 'var(--color-yellow)' },
+  pending: { zh: '待繳費', color: 'var(--color-yellow)' },
   'in-progress': { zh: '使用中', color: 'var(--color-cyan)' },
   overdue: { zh: '未完成歸還', color: 'var(--color-error)' },
   returned: { zh: '已歸還', color: 'var(--color-green)' },
@@ -98,6 +99,11 @@ export const Switch: React.FC<{ checked: boolean; onChange: () => void; busy?: b
   >
     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${checked ? 'translate-x-5' : ''}`} />
   </button>
+)
+
+/** 唯讀時代替開關的文字：學會成員看設備／空間管理，看得到狀態、不能切（2026-11-14） */
+export const OnOffText: React.FC<{ on: boolean; onZh: string; offZh: string }> = ({ on, onZh, offZh }) => (
+  <span className={`font-chinese ${on ? 'text-white' : 'text-gray-light'}`}>{on ? onZh : offZh}</span>
 )
 
 /** 數字輸入框：原生 spinner 藏掉，右側換成自己的上下 chevron（點了 ±step，不低於 min；空字串＝min） */
@@ -286,7 +292,7 @@ export const SelectControls: React.FC<{
 
 /**
  * 表單對話框殼（新增／修改設備、組合等）：樣式同 OrderActionDialog／OrderInfoDialog——
- * 黑底白字 16px 圓角、標題＋內容＋底線＋右下「取消／確定」。Esc／點外面＝取消。
+ * 黑底白字 16px 圓角、標題＋內容＋底線＋右下「取消／確定」。Esc／點外面＝取消、Enter＝確定。
  */
 export const FormDialog: React.FC<{
   title: string
@@ -306,6 +312,7 @@ export const FormDialog: React.FC<{
     return () => window.removeEventListener('keydown', esc)
   }, [onCancel])
   const ok = canConfirm && !busy
+  useEnterConfirm(true, onConfirm, ok)
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"

@@ -1,7 +1,7 @@
 /**
  * 後台 · 通知——學生送單／改品項／延期／取消發給 admin 的通知（supabase/admin-notifications.sql），整頁清單由上往下排。
  * 資料由 AdminLayout 抓（每分鐘跟著自動更新）經 Outlet context 傳進來；標題右「全部已讀」鈕，沒未讀時停用。
- * 有連結的那則整列可點，跳去該學生的訂單。
+ * 有連結的那則整列可點，跳去該學生的訂單；點了那則就算已讀（2026-11-14）。
  */
 
 import React from 'react'
@@ -12,7 +12,7 @@ import type { AdminOutletContext } from '../components/layouts/AdminLayout'
 
 const AdminNotificationsPage: React.FC = () => {
   const navigate = useNavigate()
-  const { notifs, markAllRead } = useOutletContext<AdminOutletContext>()
+  const { notifs, markRead, markAllRead } = useOutletContext<AdminOutletContext>()
   const unread = notifs.filter(n => !n.read).length
   return (
     <div className="font-chinese">
@@ -25,7 +25,7 @@ const AdminNotificationsPage: React.FC = () => {
       {notifs.length === 0 ? (
         <p className="text-xs text-gray-light">目前沒有通知</p>
       ) : (
-        <NotificationList items={notifs} onSelect={n => { if (n.link) navigate(n.link) }} zhOnly />
+        <NotificationList items={notifs} onSelect={n => { markRead(n.id); if (n.link) navigate(n.link) }} zhOnly />
       )}
     </div>
   )

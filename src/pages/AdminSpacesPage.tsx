@@ -7,6 +7,7 @@
  * 前台空間頁只撈 is_active=true：關閉即從前台消失（學生端重新整理生效）。A508 與後陽台預設不開放（2026-09-29 規則 #1）。
  * 圖片只有教室能換（JPG／PNG、5MB 內；沒上傳過沿用前台 /Images/{id}.webp）；編號區前台只讀 AREA_IMAGE_MAP 的靜態示意圖，
  * 後台同一張（前／後陽台沒有示意圖＝灰底 icon），格子的 image_url 沒人讀，不提供換圖。
+ * 學會成員（值班帳號）看得到這頁但不能改（2026-11-14）：選取、開關、修改都藏起來，開放狀態改顯示文字。
  */
 
 import { BTN } from '@/components/common/btn'
@@ -21,9 +22,10 @@ import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import {
   PageTitle, inputCls, iconFillBtn, SearchBox, CountTabs, SelectControls, tableTh as th, tableTd as td,
-  SortTh, toggleSort, sortRows, Thumb, ImagePicker, NumberInput, Switch, usePager, Pager, LoadError, Select, FormDialog, Field
+  SortTh, toggleSort, sortRows, Thumb, ImagePicker, NumberInput, Switch, OnOffText, usePager, Pager, LoadError, Select, FormDialog, Field
 } from '../components/admin/adminUi'
 import type { Sort } from '../components/admin/adminUi'
+import { useAuth } from '../contexts/AuthContext'
 
 // 編號區 area → 顯示名稱（沿用前台 SpaceAreaMap 的命名）；後陽台有開關需求排最前
 const AREA_META: Record<string, { zh: string }> = {
@@ -85,6 +87,8 @@ const AdminSpacesPage: React.FC = () => {
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast, toastElement } = useToast()
+  // 最高權限才能改；學會成員唯讀
+  const canEdit = useAuth().currentUser?.role === 'admin'
   // 區域英文名稱存在 site_content（area.* key，內建在 data/siteContent.ts），前台 EN 模式的分類、地圖、清單都讀它
   const text = useSiteContent()
 
@@ -243,14 +247,17 @@ const AdminSpacesPage: React.FC = () => {
         </td>
         <td className={`${td} font-english text-center`}><span className={dim}>{ntd(r.deposit)}</span></td>
         <td className={`${td} text-center`}>
-          {/* 選取模式下勾選的列：切一個開關＝套用到所有勾選（批次開放／關閉） */}
+          {/* 選取模式下勾選的列：切一個開關＝套用到所有勾選（批次開放／關閉）。唯讀＝只顯示狀態 */}
+          {canEdit ? (
           <Switch
             checked={r.is_active}
             onChange={() => (selectMode && selected.has(r.id) ? bulkSetActive(!r.is_active) : handleToggle(r))}
             busy={togglingId === r.id || (selectMode && selected.has(r.id) && togglingId === 'bulk')}
             label={r.is_active ? '關閉租借' : '開放租借'}
           />
+          ) : <OnOffText on={r.is_active} onZh="開放中" offZh="已關閉" />}
         </td>
+        {canEdit && (
         <td className={`${td} text-center`}>
           {!nested && (
             <button onClick={() => openDialog(r)} title="修改" aria-label="修改" className={iconFillBtn}>
@@ -258,6 +265,7 @@ const AdminSpacesPage: React.FC = () => {
             </button>
           )}
         </td>
+        )}
       </tr>
     )
   }
@@ -298,17 +306,21 @@ const AdminSpacesPage: React.FC = () => {
           <td className={`${td} font-english text-center`}>
             <span className={dim}>{lo === hi ? ntd(lo) : `${ntd(lo)}–${hi.toLocaleString()}`}</span>
           </td>
-          <td className={`${td} text-center`} onClick={stop}>
+          <td className={`${td} text-center`} onClick={canEdit ? stop : undefined}>
             <span className="inline-flex items-center gap-2">
-              <Switch checked={allOn} onChange={() => toggleArea(area, g)} busy={togglingId === area} label={allOn ? '關閉整區' : '開放整區'} />
+              {canEdit
+                ? <Switch checked={allOn} onChange={() => toggleArea(area, g)} busy={togglingId === area} label={allOn ? '關閉整區' : '開放整區'} />
+                : <OnOffText on={on > 0} onZh="開放中" offZh="已關閉" />}
               {!allOn && on > 0 && <span className="text-2xs text-gray-light font-english">{on}/{g.length}</span>}
             </span>
           </td>
+          {canEdit && (
           <td className={`${td} text-center`} onClick={stop}>
             <button onClick={() => openAreaDialog(area, g)} title="修改" aria-label="修改" className={iconFillBtn}>
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
             </button>
           </td>
+          )}
         </tr>
         {open && g.map(r => renderRow(r, true))}
       </React.Fragment>
@@ -323,6 +335,7 @@ const AdminSpacesPage: React.FC = () => {
       {/* 搜尋列（分頁上方，同訂單頁）：左搜尋（常駐）；右＝選取模式、狀態篩選 */}
       <div className="flex max-md:flex-wrap items-center gap-2 mb-4">
         <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
+        {canEdit && (
         <SelectControls
           mode={selectMode}
           count={selectedCount}
@@ -330,6 +343,7 @@ const AdminSpacesPage: React.FC = () => {
           onExit={exitSelect}
           actions={[]}
         />
+        )}
         <Select<StatusFilter>
           value={status}
           onChange={setStatus}
@@ -361,7 +375,7 @@ const AdminSpacesPage: React.FC = () => {
                   <SortTh zh={isClassroomTab ? '教室' : '區域／編號'} field="label" {...sortProps} />
                   <SortTh zh="押金" field="deposit" className="w-32 text-center" {...sortProps} />
                   <SortTh zh="開放狀態" field="is_active" className="w-36 text-center" {...sortProps} />
-                  <th className={`${th} w-24 text-center`}>操作</th>
+                  {canEdit && <th className={`${th} w-24 text-center`}>操作</th>}
                 </tr>
               </thead>
               <tbody>{isClassroomTab ? pageRows.map(r => renderRow(r)) : groups.map(renderGroup)}</tbody>

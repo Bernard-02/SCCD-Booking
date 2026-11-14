@@ -8,6 +8,7 @@
  * 只填總量——可借數由訂單佔用即時算，不用手動維護在庫（見 adminService withStock）。
  * 前台只撈 is_active=true：下架即從學生端消失（重新整理生效），歷史訂單不受影響（order_items 冗餘存名稱）。
  * 圖片只收 JPG／PNG、5MB 內（IMAGE_ACCEPT＋uploadImage 擋）。寫入權限由 RLS 把關（admin only）。
+ * 學會成員（值班帳號）看得到這頁但不能改（2026-11-14）：新增、選取、開關、修改都藏起來，上架狀態改顯示文字。
  */
 
 import React, { useEffect, useMemo, useState } from 'react'
@@ -20,11 +21,12 @@ import { useConfirmDialog } from '../hooks/useConfirmDialog'
 import { useToast } from '../hooks/useToast'
 import {
   PageTitle, inputCls, textBtn, iconFillBtn, SearchBox, CountTabs, SelectControls, tableTh as th, tableTd as td,
-  SortTh, toggleSort, sortRows, Thumb, ImagePicker, NumberInput, Switch, usePager, Pager, LoadError, Select, FormDialog, Field
+  SortTh, toggleSort, sortRows, Thumb, ImagePicker, NumberInput, Switch, OnOffText, usePager, Pager, LoadError, Select, FormDialog, Field
 } from '../components/admin/adminUi'
 import type { Sort } from '../components/admin/adminUi'
 import { EQUIPMENT_CATEGORIES } from '../types/equipment'
 import BundleManager from '../components/admin/BundleManager'
+import { useAuth } from '../contexts/AuthContext'
 
 const EMPTY: EquipmentFields = { name: '', en_name: '', category: '', original_quantity: 0, deposit: 0 }
 const TABS = [{ key: 'equipment', zh: '設備' }, { key: 'bundle', zh: '組合' }] as const
@@ -54,6 +56,8 @@ const AdminEquipmentPage: React.FC = () => {
   const [addingBundle, setAddingBundle] = useState<false | { equipmentId: string; quantity: number }[]>(false)
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast, toastElement } = useToast()
+  // 最高權限才能改；學會成員唯讀
+  const canEdit = useAuth().currentUser?.role === 'admin'
 
   const load = () => Promise.all([listEquipmentAdmin(), listBundlesAdmin()])
     .then(([e, b]) => { setRows(e); setBundles(b); setLoadError(null) })
@@ -165,6 +169,7 @@ const AdminEquipmentPage: React.FC = () => {
     // 撐滿內容區（AdminLayout main 固定 h-screen）：標題／分頁／搜尋固定，只有表格區捲動
     <div className="h-full flex flex-col">
       <PageTitle zh="設備管理">
+        {canEdit && (
         <button
           onClick={() => (tab === 'equipment' ? openDialog() : setAddingBundle([]))}
           className={textBtn(false)}
@@ -172,6 +177,7 @@ const AdminEquipmentPage: React.FC = () => {
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">add</span>
           {tab === 'equipment' ? '新增設備' : '新增組合'}
         </button>
+        )}
       </PageTitle>
 
       {/* 搜尋列（分頁上方，同訂單頁）：左搜尋（常駐）；右＝選取模式、分類、狀態篩選 */}
@@ -179,6 +185,7 @@ const AdminEquipmentPage: React.FC = () => {
         <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
         {/* 組合分頁只有搜尋；選取、分類、狀態是設備的 */}
         {tab === 'equipment' && (<>
+        {canEdit && (
         <SelectControls
           mode={selectMode}
           count={selectedCount}
@@ -194,6 +201,7 @@ const AdminEquipmentPage: React.FC = () => {
             }
           }]}
         />
+        )}
         <Select
           value={category}
           onChange={setCategory}
@@ -228,6 +236,7 @@ const AdminEquipmentPage: React.FC = () => {
             reload={load}
             adding={addingBundle}
             onAddClose={() => setAddingBundle(false)}
+            readOnly={!canEdit}
           />
         </div>
       ) : (
@@ -247,7 +256,7 @@ const AdminEquipmentPage: React.FC = () => {
                   <SortTh zh="總數量" field="original_quantity" className="w-28 text-center" {...sortProps} />
                   <SortTh zh="押金/個" field="deposit" className="w-32 text-center" {...sortProps} />
                   <SortTh zh="上架狀態" field="is_active" className="w-36 text-center" {...sortProps} />
-                  <th className={`${th} w-24 text-center`}>操作</th>
+                  {canEdit && <th className={`${th} w-24 text-center`}>操作</th>}
                 </tr>
               </thead>
               <tbody>
@@ -278,19 +287,23 @@ const AdminEquipmentPage: React.FC = () => {
                       <td className={`${td} font-english text-center`}><span className={dim}>{r.original_quantity}</span></td>
                       <td className={`${td} font-english text-center`}><span className={dim}>NT$ {r.deposit.toLocaleString()}</span></td>
                       <td className={`${td} text-center`}>
-                        {/* iOS 式開關：on＝上架中；下架先確認、上架直接切。選取模式下勾選的列：切一個＝套用到所有勾選 */}
+                        {/* iOS 式開關：on＝上架中；下架先確認、上架直接切。選取模式下勾選的列：切一個＝套用到所有勾選。唯讀＝只顯示狀態 */}
+                        {canEdit ? (
                         <Switch
                           checked={r.is_active}
                           onChange={() => (selectMode && selected.has(r.id) ? bulkSetActive(!r.is_active) : handleToggleActive(r))}
                           busy={togglingId === r.id}
                           label={r.is_active ? '下架' : '上架'}
                         />
+                        ) : <OnOffText on={r.is_active} onZh="上架中" offZh="已下架" />}
                       </td>
+                      {canEdit && (
                       <td className={`${td} text-center`}>
                         <button onClick={() => openDialog(r)} title="修改" aria-label="修改" className={iconFillBtn}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                         </button>
                       </td>
+                      )}
                     </tr>
                   )
                 })}

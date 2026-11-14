@@ -1,5 +1,5 @@
 /**
- * OrderActionDialog 測試：退押金時填罰金（可超過押金）、歸還不填罰金、不開放提前取件
+ * OrderActionDialog 測試：退押金時填罰金（可超過押金）、歸還不填罰金、收押金與取件分開、通過延期申請、Enter 確認
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
@@ -123,22 +123,56 @@ describe('經手人', () => {
   })
 })
 
-describe('不開放提前取件', () => {
-  const massOrder = (over: Partial<AdminOrderRow>) =>
-    order({ status: 'pending', pickup_slot: '17:00-19:00', deposit_slot: '12:00-13:00', ...over })
+describe('收押金與取件分開（各記各的經手人）', () => {
+  const pending = (over: Partial<AdminOrderRow> = {}) => order({ status: 'pending', ...over })
 
-  it('還沒到取件日：不能同時取件，只收押金', () => {
-    const onConfirm = open(massOrder({ start_date: '2999-01-01' }), 'paid')
-    expect((screen.getByRole('checkbox') as HTMLInputElement).disabled).toBe(true)
+  it('收押金：只收押金、不取件，小量單也一樣', () => {
+    const onConfirm = open(pending(), 'paid')
+    expect(screen.queryByRole('checkbox')).toBeNull()
     confirm()
     expect(onConfirm.mock.calls[0][4]).toBe(false)
   })
 
-  it('改過的取件日到了就可以取，就算起租日還沒到', () => {
-    const today = new Date().toLocaleDateString('sv')
-    const onConfirm = open(massOrder({ start_date: '2999-01-01', pickup_date: today }), 'paid')
-    expect((screen.getByRole('checkbox') as HTMLInputElement).disabled).toBe(false)
+  it('取件：另外一步', () => {
+    const onConfirm = open(pending({ deposit_paid_at: '2026-07-14T04:00:00Z', paid_by: '乙' }), 'pickup')
     confirm()
-    expect(onConfirm.mock.calls[0][4]).toBe(true)
+    expect(onConfirm.mock.calls[0].slice(0, 5)).toEqual(['甲', 0, [1], 0, true])
+  })
+})
+
+describe('通過延期申請', () => {
+  it('顯示申請的天數；部分延期列出要延的品項', () => {
+    const two = order({
+      order_items: [{ id: 1, name: '延長線', quantity: 1 }, { id: 2, name: '三腳架', quantity: 1 }] as AdminOrderRow['order_items'],
+      extend_request: { days: 3, item_ids: [2], all: false, at: '2026-07-10T00:00:00Z' }
+    })
+    const onConfirm = open(two, 'approve')
+    expect(screen.getByText(/同學申請延期/).textContent).toContain('3')
+    expect(screen.getByText(/只延這幾項/).textContent).toContain('三腳架')
+    confirm()
+    expect(onConfirm.mock.calls[0][0]).toBe('甲')
+  })
+})
+
+describe('Enter＝確認', () => {
+  const enter = () => fireEvent.keyDown(window, { key: 'Enter' })
+
+  it('按 Enter 等於按確認', () => {
+    const onConfirm = open(order(), 'return')
+    enter()
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('不能確認時（部分歸還還沒留一項）Enter 沒作用', () => {
+    const two = order({ order_items: [{ id: 1, name: '延長線', quantity: 1 }, { id: 2, name: '三腳架', quantity: 1 }] as AdminOrderRow['order_items'] })
+    const onConfirm = open(two, 'partial')
+    enter()
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it('代取消要用點的，Enter 不算', () => {
+    const onConfirm = open(order(), 'cancel')
+    enter()
+    expect(onConfirm).not.toHaveBeenCalled()
   })
 })

@@ -6,15 +6,18 @@
  * 新增會員＝預先登記 login_allowlist（清單顯示「未啟用」），本人第一次 Google 登入時 trigger 套用登記的姓名／身份
  * （members-v2.sql）。租借歷史改到訂單頁看：「總租借」數字可點，帶學號過去當篩選（搜尋列旁顯示學生 chip）。
  * 違規／租借狀態由訂單即時算不入庫；系學會＝staff_members（經手人名單）。寫入走 RLS "students: admin update"。
+ * 學會成員（值班帳號）看得到這頁但不能改（2026-11-14）：新增／匯入／選取／修改都藏起來，資料走 operator_members RPC。
+ * 訂單頁點姓名或學號會帶 ?q=學號 過來，當成搜尋字。
  */
 
 import { BTN_INVERT, CHIP } from '@/components/common/btn'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   listMembers, updateMember, updateMembersMany, listStaff, addStaffBulk, updateStaffPosition, deleteStaff, deleteStaffMany,
-  unsuspendStudent, deleteMember, listAllowlist, addAllowlist, removeAllowlist, updateAllowlistDues
+  unsuspendStudent, deleteMember, listAllowlist, addAllowlist, removeAllowlist, updateAllowlistDues, operatorMembers
 } from '../services/adminService'
+import { useAuth } from '../contexts/AuthContext'
 import type { Member, StaffMember, AllowEntry } from '../services/adminService'
 import { fetchAllOrders, penaltyOwed } from '../services/ordersService'
 import type { AdminOrderRow } from '../services/ordersService'
@@ -105,6 +108,8 @@ const AdminMembersPage: React.FC = () => {
   const navigate = useNavigate()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast, toastElement } = useToast()
+  // 最高權限才能改；學會成員唯讀
+  const canEdit = useAuth().currentUser?.role === 'admin'
   const [members, setMembers] = useState<Member[]>([])
   const [orders, setOrders] = useState<AdminOrderRow[]>([])
   const [staff, setStaff] = useState<StaffMember[]>([]) // 系學會（staff_members）
@@ -112,7 +117,9 @@ const AdminMembersPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('all')
-  const [search, setSearch] = useState('')
+  // 訂單頁點姓名／學號帶 ?q=學號 過來：直接當搜尋字，看完自己清掉就回到全部
+  const [searchParams] = useSearchParams()
+  const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const [gradeFilter, setGradeFilter] = useState('all')
   const [rentalFilter, setRentalFilter] = useState<Rental | 'all'>('all')
   const [sort, setSort] = useState<Sort<SortField>>(null)
@@ -125,11 +132,15 @@ const AdminMembersPage: React.FC = () => {
   const [showImport, setShowImport] = useState(false)
 
   const load = () =>
-    // 預先登記表讀不到（members-v2.sql 沒跑／cache 沒更新）只提示，不要讓整頁死掉
-    Promise.all([
-      listMembers(), fetchAllOrders(), listStaff(),
-      listAllowlist().catch((e: Error) => { showToast(`預先登記名單讀取失敗：${e.message}`); return [] as AllowEntry[] })
-    ])
+    (canEdit
+      // 預先登記表讀不到（members-v2.sql 沒跑／cache 沒更新）只提示，不要讓整頁死掉
+      ? Promise.all([
+          listMembers(), fetchAllOrders(), listStaff(),
+          listAllowlist().catch((e: Error) => { showToast(`預先登記名單讀取失敗：${e.message}`); return [] as AllowEntry[] })
+        ])
+      // 學會成員讀不到這幾張表（RLS 只給 admin），走唯讀 RPC 一次拿
+      : Promise.all([operatorMembers(), fetchAllOrders()]).then(([m, o]) => [m.members, o, m.staff, m.allowlist] as const)
+    )
       .then(([m, o, s, a]) => {
         setMembers(m); setOrders(o); setStaff(s); setAllowlist(a)
         setError(null)
@@ -252,7 +263,7 @@ const AdminMembersPage: React.FC = () => {
     const addSa = toSa ? targets.filter(r => !staffBySid[r.student_id]) : []
     const removeSa = toSa ? [] : targets.filter(r => staffBySid[r.student_id]).map(r => staffBySid[r.student_id].id)
     const notes = [
-      identity === 'secretary' ? '系秘免押金、送出即租借中' : '',
+      identity === 'secretary' ? '系秘免押金，其餘同一般使用者' : '',
       addSa.length > 0 ? `${addSa.length} 位加入經手人選單` : '',
       removeSa.length > 0 ? `${removeSa.length} 位從經手人選單移除（歷史經手紀錄不受影響）` : ''
     ].filter(Boolean).join('；')
@@ -309,7 +320,7 @@ const AdminMembersPage: React.FC = () => {
 
     // 影響借用權限／經手人名單的變更先確認（設定段寫入一律確認）
     const changes: string[] = []
-    if (role !== m.role) changes.push(role === 'staff' ? '設為系秘（免押金、送出即租借中）' : '取消系秘身分')
+    if (role !== m.role) changes.push(role === 'staff' ? '設為系秘（免押金）' : '取消系秘身分')
     if (toSa && !saRow) changes.push('加入系學會（收押金／歸還的經手人選單）')
     if (!isAdmin && !toSa && saRow) changes.push('移出系學會（從經手人選單移除；歷史經手紀錄不受影響）')
     if (onLeave !== !!m.on_leave) changes.push(onLeave ? '標記休學（無法送出新預約）' : '取消休學（恢復租借）')
@@ -417,6 +428,7 @@ const AdminMembersPage: React.FC = () => {
     // 撐滿內容區（AdminLayout main 固定 h-screen）：標題／分頁／搜尋固定，只有表格區捲動
     <div className="h-full flex flex-col">
       <PageTitle zh="會員管理">
+        {canEdit && (<>
         <button onClick={() => setDraft(NEW_EMPTY)} className={textBtn(false)}>
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">add</span>
           新增會員
@@ -425,11 +437,13 @@ const AdminMembersPage: React.FC = () => {
           <span className="material-symbols-outlined opacity-70" style={{ fontSize: '18px' }} aria-hidden="true">input</span>
           匯入
         </button>
+        </>)}
       </PageTitle>
 
       {/* 搜尋列（分頁上方，同訂單頁）：左搜尋；選取模式（批次標記畢業／休學／在學）；右＝年級、租借狀態篩選 */}
       <div className="flex max-md:flex-wrap items-center gap-2 mb-4">
         <SearchBox value={search} onChange={setSearch} className="w-72 mr-auto" />
+        {canEdit && (
         <SelectControls
           mode={selectMode}
           count={selectedCount}
@@ -440,6 +454,7 @@ const AdminMembersPage: React.FC = () => {
             { zh: '標記未繳會費', onClick: () => void bulk('標記未繳會費', { dues_paid: false }) }
           ]}
         />
+        )}
         <button
           onClick={() => setOnlyGraduated(v => !v)}
           className={textBtn(onlyGraduated)}
@@ -494,7 +509,7 @@ const AdminMembersPage: React.FC = () => {
                   <th className={`${th} w-20`}>會費</th>
                   <th className={`${th} w-36`}>租借狀態</th>
                   <SortTh zh="總租借" field="orders" className="w-24 text-center" {...sortProps} />
-                  <th className={`${th} w-20 text-center`}>操作</th>
+                  {canEdit && <th className={`${th} w-20 text-center`}>操作</th>}
                 </tr>
               </thead>
               <tbody>
@@ -561,11 +576,13 @@ const AdminMembersPage: React.FC = () => {
                         </button>
                       ) : <span className="text-gray-mid">—</span>}
                     </td>
+                    {canEdit && (
                     <td className={`${td} text-center`}>
                       <button onClick={() => (r.member ? openEdit(r) : openPending(r))} title="修改" aria-label="修改" className={iconFillBtn}>
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                       </button>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

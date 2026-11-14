@@ -4,15 +4,16 @@
  * 9 件額度／大量 10 件門檻算 1 件；湊不滿照單件計。同一設備可屬多個組合（先建的優先湊）。
  * 學生端加入組合內的設備時會提示整組借（EquipmentGrid）。改完學生端重新整理生效。
  * 清單資料由父層（AdminEquipmentPage）載入並傳入；新增／修改走同一個對話框（FormDialog）。
+ * 刪除在修改對話框裡（2026-11-14，不在列上單獨一顆）：先確認，刪掉後 toast 可以復原。
  */
 
 import { BTN } from '@/components/common/btn'
 import React, { useEffect, useState } from 'react'
-import { saveBundle, deleteBundle, uploadImage, imageSrc } from '../../services/adminService'
+import { saveBundle, deleteBundle, restoreBundle, uploadImage, imageSrc } from '../../services/adminService'
 import type { AdminEquipment, BundleFields, AdminBundle } from '../../services/adminService'
 import { useConfirmDialog } from '../../hooks/useConfirmDialog'
 import { useToast } from '../../hooks/useToast'
-import { inputCls, iconFillBtn, tableTh as th, tableTd as td, Select, FormDialog, Field, NumberInput, ImagePicker, Thumb } from './adminUi'
+import { inputCls, iconFillBtn, toolBtn, tableTh as th, tableTd as td, Select, FormDialog, Field, NumberInput, ImagePicker, Thumb } from './adminUi'
 import { EQUIPMENT_CATEGORIES } from '../../types/equipment'
 
 // 一組押金預設 500（規則：整組借只收一份單件押金），admin 可改
@@ -27,7 +28,9 @@ const BundleManager: React.FC<{
   /** 父層要開新增對話框＝預填的品項（標題列「新增組合」＝[]；設備頁選取「組成組合」＝勾選的設備各 1 個）；false＝沒開。關閉時呼叫 onAddClose */
   adding: false | BundleFields['items']
   onAddClose: () => void
-}> = ({ equipment, bundles, search = '', reload, adding, onAddClose }) => {
+  /** 學會成員唯讀：不顯示修改／刪除 */
+  readOnly?: boolean
+}> = ({ equipment, bundles, search = '', reload, adding, onAddClose, readOnly = false }) => {
   const [busy, setBusy] = useState(false)
   // 對話框：id＝null 為新增；一次只開一個。file／preview＝這次選的新圖（按確定才上傳）
   const [editing, setEditing] = useState<{
@@ -94,16 +97,31 @@ const BundleManager: React.FC<{
     await reload()
   }
 
-  const handleDelete = async (r: AdminBundle) => {
+  // 刪除正在修改的那個組合：刪的是資料庫裡存的那份（對話框裡還沒存的修改不算）。
+  // 復原＝把刪掉的那一列與品項照原樣寫回（id、湊組優先序、圖片都不變）
+  const handleDelete = async () => {
+    const r = bundles.find(b => b.id === editing?.id)
+    if (!r) return
     const ok = await confirm({
       title: '刪除組合',
       message: `刪除「${r.name}」？之後這些設備照單件押金計算（已送出的訂單押金不受影響）。`,
       confirmTextZh: '刪除', variant: 'danger'
     })
     if (!ok) return
+    setBusy(true)
     const res = await deleteBundle(r.id)
-    if (!res.ok) { showToast(res.message ?? '刪除失敗'); return }
-    showToast(`已刪除「${r.name}」`, 'success')
+    setBusy(false)
+    if (!res.ok || !res.row) { showToast(res.message ?? '刪除失敗'); return }
+    const row = res.row
+    close()
+    showToast(`已刪除「${r.name}」`, 'success', {
+      label: '復原',
+      run: async () => {
+        const back = await restoreBundle(row, r.items)
+        showToast(back.ok ? `已復原「${r.name}」` : `復原失敗：${back.message ?? ''}`, back.ok ? 'success' : undefined)
+        await reload()
+      }
+    })
     await reload()
   }
 
@@ -121,7 +139,7 @@ const BundleManager: React.FC<{
             <th className={th}>一組內容</th>
             <th className={`${th} w-28 text-center`}>押金/組</th>
             <th className={`${th} w-28 text-center`}>單件合計</th>
-            <th className={`${th} w-32 text-center`}>操作</th>
+            {!readOnly && <th className={`${th} w-20 text-center`}>操作</th>}
           </tr>
         </thead>
         <tbody>
@@ -142,19 +160,16 @@ const BundleManager: React.FC<{
               </td>
               <td className={`${td} font-english text-center`}>NT$ {r.deposit.toLocaleString()}</td>
               <td className={`${td} font-english text-center text-gray-light`}>NT$ {itemsTotal(r).toLocaleString()}</td>
+              {!readOnly && (
               <td className={`${td} text-center`}>
-                <div className="inline-flex items-center gap-3">
-                  <button
-                    onClick={() => setEditing({ id: r.id, f: { name: r.name, en_name: r.en_name, deposit: r.deposit, items: r.items }, imageUrl: r.image_url })}
-                    title="修改" aria-label="修改" className={iconFillBtn}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
-                  </button>
-                  <button onClick={() => handleDelete(r)} className={`${BTN} font-chinese`} style={{ color: 'var(--color-error)' }}>
-                    刪除
-                  </button>
-                </div>
+                <button
+                  onClick={() => setEditing({ id: r.id, f: { name: r.name, en_name: r.en_name, deposit: r.deposit, items: r.items }, imageUrl: r.image_url })}
+                  title="修改" aria-label="修改" className={iconFillBtn}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                </button>
               </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -237,6 +252,14 @@ const BundleManager: React.FC<{
                   />
             </div>
           </Field>
+
+              {/* 刪除組合（修改時才有）：同會員管理對話框裡的「刪除帳號」——左邊說明、右邊灰鈕，按了先確認 */}
+              {editing.id && (
+                <div className="flex items-center justify-between gap-4 text-xs font-chinese">
+                  <span className="text-gray-light">刪除後這些設備照單件押金計算</span>
+                  <button type="button" onClick={handleDelete} disabled={busy} className={`${toolBtn(false)} px-3 font-chinese`}>刪除組合</button>
+                </div>
+              )}
             </div>
           </div>
         </FormDialog>
