@@ -5,6 +5,8 @@
 import type { CartItem } from '../../types/equipment'
 import type { BookingDetailsData } from '../common/BookingDetailsDialog'
 import { getCurrentStudentId } from '../../utils/authStorage'
+import { SHIFT_RE } from '../../utils/bundleUtils'
+import { shiftPassed } from '../../utils/timeUtils'
 
 /** 購物車 localStorage key 前綴（連字號，非底線） */
 export const CART_STORAGE_KEY = 'sccd-rental-cart'
@@ -118,6 +120,23 @@ export const sortBlockIds = (ids: string[]): string[] => {
     if (letterA !== letterB) return letterA.localeCompare(letterB)
     return parseInt(numA, 10) - parseInt(numB, 10)
   })
+}
+
+/**
+ * 清單裡這個設備已被別人的訂單佔用幾個。range＝整段佔用（equipment_reserved）、daily＝逐日佔用（equipment_reserved_daily）。
+ * 分時段的設備（有 days）只看借的那幾天裡最滿的一天；選的日子超出租借日期（清單改過日期）、或那一班已經過了
+ * （加進清單後放到下午才送）＝借不到，回 Infinity，清單照缺貨標出來、鎖住送出，請學生移除後重選。沒有逐日資料（RPC 讀不到）退回整段。
+ */
+export const reservedFor = (
+  item: Pick<CartItem, 'id' | 'name' | 'startDate' | 'endDate' | 'days'>,
+  range: Record<string, { reserved: number }> = {},
+  daily?: Record<string, Record<string, number>> | null,
+  now: Date = new Date()
+): number => {
+  if (!item.days) return range[item.id]?.reserved ?? 0
+  const shift = SHIFT_RE.exec(item.name)?.[1] === '午班' ? 'noon' : 'evening'
+  if (item.days.some(d => d < item.startDate || d > item.endDate || shiftPassed(d, shift, now))) return Infinity
+  return daily ? Math.max(0, ...item.days.map(d => daily[item.id]?.[d] ?? 0)) : range[item.id]?.reserved ?? 0
 }
 
 /** 部分時段可借：購物車裡同一類（設備／空間）的品項全部改成新起訖（同類型限一單，不開第二張） */

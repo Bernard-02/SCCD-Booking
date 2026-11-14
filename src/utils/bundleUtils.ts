@@ -23,6 +23,26 @@ export interface BundleCalc {
   left: Record<string, number> // 湊組後剩下的零件數量
 }
 
+/**
+ * 分時段的設備（名稱結尾（午班）／（晚班）、其餘相同的一對，目前是雷切機）：兩班都借押金只收一份、算 1 件，
+ * 不用在後台建組合（2026-11-14 Bernard 定）——從設備名稱推出內建的組合，接在後台組合後面一起湊（equipmentService.loadBundles）。
+ * 押金取兩班裡較高的那個。SQL equipment_bundle_calc 的分時段那段同規則，改一邊要改另一邊。
+ */
+export const SHIFT_RE = /\s*[（(](午班|晚班)[）)]\s*$/
+export const shiftPairBundles = (equipment: { id: string; name: string; deposit: number }[]): Bundle[] => {
+  const byBase: Record<string, { noon?: typeof equipment[number]; evening?: typeof equipment[number] }> = {}
+  for (const e of equipment) {
+    const m = e.name.match(SHIFT_RE)
+    if (m) (byBase[e.name.replace(SHIFT_RE, '')] ??= {})[m[1] === '午班' ? 'noon' : 'evening'] = e
+  }
+  return Object.entries(byBase).flatMap(([base, { noon, evening }]) => (noon && evening ? [{
+    id: `shift:${noon.id}`,
+    name: `${base}（午班＋晚班）`,
+    deposit: Math.max(noon.deposit, evening.deposit),
+    items: [{ equipmentId: noon.id, quantity: 1 }, { equipmentId: evening.id, quantity: 1 }]
+  }] : []))
+}
+
 // ponytail: 依後台建立順序貪婪湊組（同一設備可屬多個組合時先建的優先），不求全域最省；組合多到會互搶再改最佳化
 export const calcBundles = (lines: BundleLine[], bundles: Bundle[]): BundleCalc => {
   const left: Record<string, number> = {}

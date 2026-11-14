@@ -1,7 +1,7 @@
 /**
  * Server 錯誤原因的英文版（SQL 的 raise exception 維持中文，學生端切到 EN 時在這裡對照）。
  * 新增或修改 SQL 的錯誤訊息時，這裡要一起加英文；對不到的照原文（中文）顯示。
- * 範圍：學生會看到的 RPC——submit_orders、modify_my_order、change_my_pickup、extend_my_order_partial、extend_check。
+ * 範圍：學生會看到的 RPC——submit_orders、modify_my_order、change_my_pickup、extend_my_order_partial、extend_check、cancel_my_order。
  */
 
 import { tr } from '../stores/langStore'
@@ -27,6 +27,7 @@ const EXACT: Record<string, string> = {
   沒有可送出的訂單: 'There is nothing to submit.',
   租借天數超過上限: 'The rental period is longer than allowed.',
   '租借日期不正確，請重新選擇': 'The rental dates are invalid. Please choose again.',
+  '今天的營業時間已過，歸還日請選明天以後': 'The SA has closed for today, so the return date must be tomorrow or later.',
   '設備與空間須分開成兩張訂單': 'Equipment and spaces must be booked as separate orders.',
   '大量設備需於 3 天前預約': 'Mass equipment must be booked at least 3 days in advance.',
   '大量設備訂單需選擇繳押金與取件時段': 'Mass equipment orders need a deposit time slot and a pickup time slot.',
@@ -58,6 +59,8 @@ const EXACT: Record<string, string> = {
   '此訂單已延期過（僅可延期乙次）': 'This order has already been extended (only one extension is allowed).',
   '無法延期：延長期間適逢寒暑假封鎖，最後歸還日為放假前一日': 'Can’t extend: the extension falls in the winter/summer break. The latest return date is the day before the break.',
   請選擇至少一項要延期的品項: 'Select at least one item to extend.',
+  請先填寫手機號碼再預約: 'Please add your phone number before booking.',
+  '只有還沒繳押金的訂單可以自己取消，已繳押金請到系學會辦理': 'Only orders with an unpaid deposit can be canceled here. If you have already paid, please visit the SA.',
   選取品項與訂單不符: 'The selected items don’t belong to this order.'
 }
 
@@ -66,6 +69,9 @@ const PATTERNS: [RegExp, (...m: string[]) => string][] = [
   [/^「(.+)」已下架，請從購物車移除$/, n => `"${n}" is no longer available. Please remove it from your cart.`],
   [/^「(.+)」目前未開放，請從購物車移除$/, n => `"${n}" is currently closed. Please remove it from your cart.`],
   [/^「(.+)」該時段已被預約$/, n => `"${n}" is already booked for these dates.`],
+  [/^「(.+)」(\d+\/\d+) 沒有開放（系學會休息），請改日期或改借另一班$/, (n, d) => `"${n}" isn’t open on ${d} (the SA is closed). Please change the dates or book the other shift.`],
+  [/^「(.+)」選的時段不在租借日期內，請重新選擇時段$/, n => `The slots you picked for "${n}" are outside your rental dates. Please pick them again.`],
+  [/^「(.+)」今天的時段已經過了，請重新選擇時段$/, n => `Today’s slot for "${n}" has already passed. Please pick your slots again.`],
   [/^「(.+)」該時段庫存不足（剩餘 (\d+)）$/, (n, q) => `Not enough "${n}" for these dates (${q} left).`],
   [/^「(.+)」該時段庫存不足（最多可借 (\d+)）$/, (n, q) => `Not enough "${n}" for these dates (up to ${q} available).`],
   [/^小量訂單最多 9 件（目前 (\d+) 件，整組算 1 件）$/, q => `Light orders allow up to 9 items (currently ${q}; a full set counts as 1).`],

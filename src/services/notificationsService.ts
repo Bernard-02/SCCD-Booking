@@ -46,6 +46,12 @@ export async function markDutyNotificationsRead(): Promise<void> {
   if (error) console.error('標記通知已讀失敗:', error)
 }
 
+/** 後台通知頁點一則＝那則已讀（收件匣是值班共用的，學會成員沒有那幾列的 RLS，所以走 RPC；supabase/sa-feedback-2026-11.sql 第 5 節） */
+export async function markDutyNotificationRead(id: string): Promise<void> {
+  const { error } = await supabase.rpc('operator_mark_notification_read', { p_id: Number(id) })
+  if (error) console.error('標記通知已讀失敗:', error)
+}
+
 /** 將自己的通知全部標為已讀 */
 export async function markAllNotificationsRead(): Promise<void> {
   const { error } = await supabase

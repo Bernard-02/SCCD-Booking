@@ -3,6 +3,7 @@
  * 可重用的確認對話框，用於需要用戶二次確認的重要操作；
  * children 可塞輸入欄位（例：忘記密碼），hideCancel 用於只需「確認」的告知訊息，
  * closeOnly＝純資訊視窗（不顯示確認／取消列；右上 X 所有彈窗一律有，2026-11-01 統一）
+ * 按 Enter＝確認（hooks/useEnterConfirm，2026-11-14），variant='danger' 除外。
  */
 
 import { BTN } from '@/components/common/btn'
@@ -10,6 +11,7 @@ import React, { useEffect } from 'react'
 import CloseButton from './CloseButton'
 import { createPortal } from 'react-dom'
 import { useT } from '../../stores/langStore'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 interface ConfirmDialogProps {
   isOpen: boolean
@@ -49,6 +51,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   closeOnly = false
 }) => {
   const t = useT()
+  // Enter＝確認；危險動作（刪除、取消訂單）要用點的。危險／純資訊的視窗也要佔住最上層（只是不做事）：
+  // 疊在表單對話框上面時（例：修改組合裡按刪除），Enter 才不會被底下那個表單收走、直接存檔
+  useEnterConfirm(isOpen, closeOnly || variant === 'danger' ? undefined : onConfirm, !confirmDisabled)
   // 按 ESC 鍵關閉對話框
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

@@ -49,6 +49,8 @@ export interface CartItem {
   startDate: string // ISO 格式的開始日期
   endDate: string   // ISO 格式的結束日期
   bookingType?: BookingType // 租借類型
+  /** 分時段的設備（雷切機）：只借這幾天（'YYYY-MM-DD'，依日期排序；選時段的視窗 ShiftDialog）。沒有＝起訖之間每一天 */
+  days?: string[]
 }
 
 /**

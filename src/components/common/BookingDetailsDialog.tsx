@@ -17,6 +17,7 @@ import {
   addBusinessMs, dutySlotOptions, slotStart, slotLabel, toDateKey, PENDING_LIMIT_MS, type DutySlot
 } from '../../utils/timeUtils'
 import { useT } from '../../stores/langStore'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 export interface BookingDetailsData {
   reason: string
@@ -135,6 +136,9 @@ const BookingDetailsDialog: React.FC<BookingDetailsDialogProps> = ({
       document.body.style.overflow = ''
     }
   }, [isOpen])
+
+  // Enter＝確認（使用原因是 textarea，在裡面按 Enter 照樣換行）
+  useEnterConfirm(isOpen, () => { if (isValid) handleSubmit() })
 
   if (!isOpen) return null
 

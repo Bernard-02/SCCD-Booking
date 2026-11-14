@@ -8,7 +8,7 @@
  */
 
 import { supabase, fetchAllRows } from './supabase'
-import { closedDayImpact, closedKey, dutySlotOptions, fromDateKey, slotClosed, slotLabel, slotStart, toDateKey, type ClosedShift } from '../utils/timeUtils'
+import { closedDayImpact, closedKey, daysLabel, dutySlotOptions, fromDateKey, slotClosed, slotLabel, slotStart, toDateKey, type ClosedShift } from '../utils/timeUtils'
 import { fetchClosedDates, fetchDutySlots, invalidateClosedDates } from './ordersService'
 import type { AdminOrderRow } from './ordersService'
 import { loadEquipmentData } from './equipmentService'
@@ -33,7 +33,7 @@ export async function createCheckSheet(o: AdminOrderRow): Promise<{ ok: boolean;
       .map(i => ({
         存放地點: equipment[i.item_id]?.location || '—',
         類別: equipment[i.item_id]?.category ?? '—',
-        品項: `${i.name}${i.pickup_pending ? '（待點交）' : ''}`,
+        品項: `${i.name}${i.days ? `（${daysLabel(i.days)}）` : ''}${i.pickup_pending ? '（待點交）' : ''}`,
         數量: i.quantity
       }))
       .sort((a, b) => a.存放地點.localeCompare(b.存放地點, 'zh-Hant') || a.類別.localeCompare(b.類別, 'zh-Hant'))
@@ -188,6 +188,18 @@ export async function listMembers(): Promise<Member[]> {
   return fetchAllRows<Member>((from, to) =>
     supabase.from('students').select('*').order('student_id').range(from, to)
   )
+}
+
+/**
+ * 學會成員唯讀看會員管理（2026-11-14，sa-feedback-2026-11.sql operator_members）：帳號、預先登記、系學會名單一次拿。
+ * students／login_allowlist／staff_members 的 RLS 都只給 admin，學會成員走這支 RPC；值班時段（duties）這頁用不到，不帶
+ */
+export async function operatorMembers(): Promise<{ members: Member[]; allowlist: AllowEntry[]; staff: StaffMember[] }> {
+  const { data, error } = await supabase.rpc('operator_members')
+  if (error) throw error
+  if (!data) throw new Error('沒有後台權限')
+  const d = data as { members: Member[]; allowlist: AllowEntry[]; staff: Omit<StaffMember, 'duties'>[] }
+  return { members: d.members, allowlist: d.allowlist, staff: d.staff.map(s => ({ ...s, duties: [] })) }
 }
 
 export async function updateMember(id: string, fields: MemberFields): Promise<{ ok: boolean; message?: string }> {
@@ -621,9 +633,23 @@ export async function saveBundle(id: string | null, f: BundleFields): Promise<{ 
   return { ok: true, id: savedId }
 }
 
-export async function deleteBundle(id: string): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await supabase.from('equipment_bundles').delete().eq('id', id)
+/** 刪除組合（品項跟著 cascade）。回傳被刪掉的那一列，給復原用 */
+export async function deleteBundle(id: string): Promise<{ ok: boolean; message?: string; row?: Record<string, unknown> }> {
+  const { data, error } = await supabase.from('equipment_bundles').delete().eq('id', id).select().single()
   if (error) return { ok: false, message: error.message }
+  return { ok: true, row: data }
+}
+
+/**
+ * 復原剛刪掉的組合：deleteBundle 回傳的那一列＋品項照原樣寫回（id、建立時間＝湊組優先序、圖片都不變）。
+ * ponytail: 兩次 insert 不是同一個 transaction；第二次失敗會留一個沒有品項的組合（不影響計算，後台看得到、可再刪）
+ */
+export async function restoreBundle(row: Record<string, unknown>, items: BundleFields['items']): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.from('equipment_bundles').insert(row)
+  if (error) return { ok: false, message: error.message }
+  const { error: itemsError } = await supabase.from('equipment_bundle_items')
+    .insert(items.map(i => ({ bundle_id: row.id, equipment_id: i.equipmentId, quantity: i.quantity })))
+  if (itemsError) return { ok: false, message: itemsError.message }
   return { ok: true }
 }
 

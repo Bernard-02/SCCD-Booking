@@ -145,6 +145,12 @@ async function loadProfile(userId: string, token: string, provider: 'email' | 'g
   }
 }
 
+/** 重讀自己的學生資料：開 app 時更新登入快照（手機、年級、身份在別台或後台改過也跟上）。讀不到回 null，沿用快照 */
+export async function fetchMyProfile(userId: string): Promise<Student | null> {
+  const { data } = await supabase.from('students').select('*').eq('id', userId).single()
+  return data ? toStudent(data as StudentRow) : null
+}
+
 export async function supabaseLogout(): Promise<void> {
   // local＝只登出這台，不動其他裝置的憑證（預設是 global）
   await supabase.auth.signOut({ scope: 'local' })

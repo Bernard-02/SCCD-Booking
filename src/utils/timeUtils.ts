@@ -97,6 +97,37 @@ export const isOffDay = (date: Date, closedDates: ReadonlySet<string>): boolean 
   return day === 0 || day === 6 || closedDates.has(toDateKey(date))
 }
 
+/** 那一班這天有沒有開：週六日、公休整天、只休那一班都算沒開。分時段的設備（雷切機）只能在有開的班借（server 端同規則：submit_orders） */
+export const shiftClosed = (day: string, shift: Exclude<ClosedShift, 'all'>, closedDates: ReadonlySet<string>): boolean =>
+  isOffDay(fromDateKey(day), closedDates) || closedDates.has(closedKey(day, shift))
+
+/**
+ * 午班、晚班幾點結束：同後台營業時間頁寫死的 SHIFTS（AdminHoursPage），server 端 submit_orders 也寫同樣的時間——學會改時間三處一起改
+ */
+export const SHIFT_END: Record<Exclude<ClosedShift, 'all'>, string> = { noon: '13:00', evening: '19:00' }
+
+/** 那一班是不是已經過了：今天以前的日子，或今天而且過了結束時間。分時段的設備（雷切機）過了的班不能借，只能借之後的（server 端同規則：submit_orders） */
+export const shiftPassed = (day: string, shift: Exclude<ClosedShift, 'all'>, now: Date = new Date()): boolean => {
+  const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  return day < toDateKey(now) || (day === toDateKey(now) && hhmm >= SHIFT_END[shift])
+}
+
+/**
+ * 最早可選的歸還日（Bernard 2026-11-14，設備、空間都一樣）：過了今天的最後營業時間（19:00）今天已經沒辦法歸還，
+ * 歸還日最早明天——不然隔天取件當下就逾期。起租日照舊可以選今天。server 端 submit_orders 同檢查
+ */
+export const minEndDate = (now: Date = new Date()): Date => {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  if (shiftPassed(toDateKey(now), 'evening', now)) d.setDate(d.getDate() + 1)
+  return d
+}
+
+/** 清單裡這個時段要重選日期：起租日已經過去，或歸還日已經還不了（minEndDate）。清單頁與日期列的「已過期」都看這個 */
+export const periodExpired = (startDate: string, endDate: string, now: Date = new Date()): boolean => {
+  const day = (s: string) => { const d = new Date(s); d.setHours(0, 0, 0, 0); return d }
+  return day(startDate) < new Date(now.getFullYear(), now.getMonth(), now.getDate()) || day(endDate) < minEndDate(now)
+}
+
 /** 兩個時間點之間的有效毫秒數：總時長扣掉公休日與區間重疊的部分 */
 export const businessMsBetween = (
   start: Date,
@@ -286,6 +317,23 @@ export const slotLabel = ({ date, slot }: DatedSlot) => {
   return `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${slot.replace('-', '–')}`
 }
 
+/** 期限的時間點顯示：'11/16（一）20:00'；剛好落在午夜寫成前一天的 24:00（週末送的單期限是「週一 24:00」，寫「週二 00:00」容易看成週二） */
+export const dateTimeLabel = (d: Date) => {
+  const midnight = d.getHours() === 0 && d.getMinutes() === 0
+  const day = midnight ? new Date(d.getTime() - 1) : d
+  const time = midnight ? '24:00' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return `${day.getMonth() + 1}/${day.getDate()}（${WD[day.getDay()]}）${time}`
+}
+
+/**
+ * 繳押金期限的時間點：送單＋24 工作時（跳過週末與整天公休），選了繳押金時段的取較晚的那個（同 pendingMsRemaining）。
+ * 後台直接顯示這個時間：週五關門後送的單期限是下週一，寫「剩 24 小時」會被當成隔天到期
+ */
+export const pendingDeadline = (createdAt: string, closedDates: ReadonlySet<string>, depositEnd?: Date | null): Date => {
+  const limit = addBusinessMs(new Date(createdAt), PENDING_LIMIT_MS, closedDates)
+  return depositEnd && depositEnd > limit ? depositEnd : limit
+}
+
 /**
  * 前台顯示的營業時間＝系學會值班時段（後台「營業時間」頁排班）：同一天重疊或相接的時段合併，
  * 時段完全相同的星期併成一組，週一到週五全同 →「平日」。沒有排班回 null（顯示端退回「請見 Facebook」）
@@ -357,6 +405,21 @@ export const dayKeysBetween = (start: Date, end: Date): string[] => {
     out.push(toDateKey(d))
   }
   return out
+}
+
+/**
+ * 分時段設備（雷切機）借的那幾天，連續的日子收成一段：'11/17–11/19、11/24'。沒有 days＝整段，回空字串。
+ * 前台英文版分隔用 ', '（sep）；後台與收據用預設
+ */
+export const daysLabel = (days?: readonly string[] | null, sep = '、'): string => {
+  const md = (k: string) => `${Number(k.slice(5, 7))}/${Number(k.slice(8, 10))}`
+  const runs: [string, string][] = []
+  for (const d of [...(days ?? [])].sort()) {
+    const last = runs[runs.length - 1]
+    if (last && dayKeysBetween(fromDateKey(last[1]), fromDateKey(d)).length === 2) last[1] = d
+    else runs.push([d, d])
+  }
+  return runs.map(([a, b]) => (a === b ? md(a) : `${md(a)}–${md(b)}`)).join(sep)
 }
 
 /** 把「夠的天」依 allDays 順序切成連續段 [起, 訖]，依日期順序（popup 預設選第一段） */

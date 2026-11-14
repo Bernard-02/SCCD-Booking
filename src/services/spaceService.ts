@@ -4,8 +4,9 @@
  * 區塊定義（id→區域/押金）模組層快取；佔用狀態依所選時段即時查詢。
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import type { CartItem } from '../types/equipment'
 
 export interface SpaceBlock {
   area: string   // square / corridor / front-terrace / back-terrace / glass-wall / pillar / classroom
@@ -81,6 +82,33 @@ export async function fetchOccupiedSpaces(startDate: string, endDate: string): P
   })
   if (error) throw error
   return (data as { item_id: string }[]).map(row => row.item_id)
+}
+
+/**
+ * 購物車裡的空間（格子／教室）在各自時段是不是已經被別人的訂單借走。
+ * 先送先贏、購物車不佔位（同設備的 equipmentService.useCartReserved）；tick 變了（清單頁每分鐘＋送單被擋之後）重抓。
+ */
+export const useCartTakenSpaces = (cart: CartItem[], tick = 0): ((item: CartItem) => boolean) => {
+  const periods = [...new Set(cart.filter(i => i.category !== 'equipment').map(i => `${i.startDate}_${i.endDate}`))]
+    .sort().join('|')
+  const [map, setMap] = useState<Record<string, string[]>>({})
+
+  useEffect(() => {
+    if (!periods) { setMap({}); return }
+    let alive = true
+    Promise.all(periods.split('|').map(p => {
+      const [s, e] = p.split('_')
+      return fetchOccupiedSpaces(s, e).then(ids => [p, ids] as const)
+    }))
+      .then(entries => { if (alive) setMap(Object.fromEntries(entries)) })
+      .catch(err => console.error('讀取空間佔用失敗:', err))
+    return () => { alive = false }
+  }, [periods, tick])
+
+  return useCallback(
+    (item: CartItem) => item.category !== 'equipment' && !!map[`${item.startDate}_${item.endDate}`]?.includes(item.id),
+    [map]
+  )
 }
 
 /** 該時段各空間被佔用的「日子」（部分時段可借用；supabase/partial-availability.sql）：id → Set<'YYYY-MM-DD'>。RPC 沒執行時 throw */

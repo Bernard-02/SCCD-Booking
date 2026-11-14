@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { Student, LoginResult } from '../utils/authTypes'
 import { tr } from '../stores/langStore'
-import { supabaseLogin, supabaseLogout, signInWithGoogle } from '../services/authService'
+import { supabaseLogin, supabaseLogout, signInWithGoogle, fetchMyProfile } from '../services/authService'
 import { supabase, persistAuth } from '../services/supabase'
 import { readLoginData, isLoginExpired } from '../utils/authStorage'
 import type { LoginData } from '../utils/authStorage'
@@ -18,6 +18,8 @@ interface AuthContextType {
   login: (studentId: string, password: string, rememberMe?: boolean) => Promise<LoginResult>
   loginWithGoogle: (token: string, nonce: string, rememberMe: boolean) => Promise<LoginResult>
   logout: () => Promise<void>
+  /** 資料改了（例：填手機）同步更新登入快照，畫面與 storage 一起改 */
+  updateUser: (patch: Partial<Student>) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -76,6 +78,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const storage = rememberMe ? localStorage : sessionStorage
     storage.setItem(STORAGE_KEY, JSON.stringify(loginData))
   }
+
+  const updateUser = useCallback((patch: Partial<Student>) => {
+    const data = readLoginData()
+    if (!data) return
+    const student = { ...data.student, ...patch }
+    ;(data.rememberMe ? localStorage : sessionStorage).setItem(STORAGE_KEY, JSON.stringify({ ...data, student }))
+    setCurrentUser(student)
+  }, [])
 
   // 登入
   const login = useCallback(async (studentId: string, password: string, rememberMe: boolean = false): Promise<LoginResult> => {
@@ -143,13 +153,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           clearStorage()
           user = null
         }
+        // 登入資料是登入當下的快照：背景重讀一次，手機、年級、身份在別台或後台改過才跟得上
+        else if (result.data.session) {
+          const { provider, studentId } = user
+          void fetchMyProfile(result.data.session.user.id).then(profile => {
+            // 等回應的期間換人登入了就不要蓋
+            if (profile && readLoginData()?.student?.studentId === studentId) updateUser({ ...profile, provider })
+          })
+        }
       }
       setCurrentUser(user)
       setIsLoading(false)
     }
 
     initAuth()
-  }, [loadUserFromStorage])
+  }, [loadUserFromStorage, updateUser])
 
   // 監聽 storage 變化（跨標籤頁同步）
   useEffect(() => {
@@ -179,7 +197,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: currentUser !== null,
     login,
     loginWithGoogle,
-    logout
+    logout,
+    updateUser
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

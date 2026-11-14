@@ -7,9 +7,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import type { CartItem, Equipment, EquipmentData } from '../types/equipment'
-import type { Bundle } from '../utils/bundleUtils'
+import { shiftPairBundles, type Bundle } from '../utils/bundleUtils'
 import { useT } from '../stores/langStore'
-import { AREA_IMAGE_MAP, FALLBACK_BLOCK_IMAGE } from '../components/cart/cartHelpers'
+import { AREA_IMAGE_MAP, FALLBACK_BLOCK_IMAGE, reservedFor } from '../components/cart/cartHelpers'
 
 interface EquipmentRow {
   id: string
@@ -98,23 +98,29 @@ export const useItemName = (): ((id: string, zh: string) => string) => {
 /**
  * 設備組合（後台「設備管理 › 組合」，supabase/equipment-bundles.sql），依建立順序（＝湊組優先序）。
  * 模組層快取同圖片；讀取失敗（例：SQL 尚未執行）回空陣列＝沒有組合，照單件計。
+ * 後面接上分時段設備（雷切機午班＋晚班）內建的組合（bundleUtils.shiftPairBundles；設備不分上下架，舊單也湊得起來），
+ * 後台已經有剛好同一對的組合就不重複加。
  */
 let bundlesPromise: Promise<Bundle[]> | null = null
 export const loadBundles = (): Promise<Bundle[]> => {
   if (!bundlesPromise) {
-    bundlesPromise = Promise.resolve(
+    bundlesPromise = Promise.all([
       supabase
         .from('equipment_bundles')
         .select('id, name, deposit, equipment_bundle_items(equipment_id, quantity)')
-        .order('created_at')
-    ).then(({ data, error }) => {
+        .order('created_at'),
+      supabase.from('equipment').select('id, name, deposit')
+    ]).then(([{ data, error }, equipment]) => {
       if (error) throw error
-      return (data ?? []).map(b => ({
+      const bundles: Bundle[] = (data ?? []).map(b => ({
         id: b.id,
         name: b.name,
         deposit: b.deposit,
         items: (b.equipment_bundle_items ?? []).map(i => ({ equipmentId: i.equipment_id, quantity: i.quantity }))
       }))
+      const samePair = (a: Bundle, b: Bundle) =>
+        a.items.length === 2 && a.items.every(c => c.quantity === 1 && b.items.some(p => p.equipmentId === c.equipmentId))
+      return [...bundles, ...shiftPairBundles(equipment.data ?? []).filter(p => !bundles.some(b => samePair(b, p)))]
     }).catch(err => {
       console.error('載入設備組合失敗:', err)
       bundlesPromise = null
@@ -199,20 +205,26 @@ export async function fetchEquipmentReserved(
 
 /**
  * 購物車設備在各自時段已被生效訂單佔用的量（含待繳押金 On Hold）。
- * 先送先贏：購物車不佔庫存，別人先送出，我車裡超過剩餘量的就要調整（同購物平台）。切回分頁時重抓。
+ * 先送先贏：購物車不佔庫存，別人先送出，我車裡超過剩餘量的就要調整（同購物平台）。切回分頁、或 tick 變了（清單頁每分鐘＋送單被擋之後）重抓。
  */
-export const useCartReserved = (cart: CartItem[]): ((item: CartItem) => number) => {
+export const useCartReserved = (cart: CartItem[], tick = 0): ((item: CartItem) => number) => {
   const periods = [...new Set(cart.filter(i => i.category === 'equipment').map(i => `${i.startDate}_${i.endDate}`))]
     .sort().join('|')
-  const [map, setMap] = useState<Record<string, Record<string, ReservedInfo>>>({})
+  // 分時段的設備（有 days）只佔借的那幾天，要另外抓逐日佔用才知道那幾天有沒有被借走
+  const hasDays = cart.some(i => i.days)
+  const [map, setMap] = useState<Record<string, { range: Record<string, ReservedInfo>; daily: Record<string, Record<string, number>> | null }>>({})
 
   useEffect(() => {
     if (!periods) { setMap({}); return }
     let alive = true
     const load = () => {
-      Promise.all(periods.split('|').map(p => {
+      Promise.all(periods.split('|').map(async p => {
         const [s, e] = p.split('_')
-        return fetchEquipmentReserved(s, e).then(r => [p, r] as const)
+        const [range, daily] = await Promise.all([
+          fetchEquipmentReserved(s, e),
+          hasDays ? fetchEquipmentReservedDaily(s, e).catch(() => null) : null
+        ])
+        return [p, { range, daily }] as const
       }))
         .then(entries => { if (alive) setMap(Object.fromEntries(entries)) })
         .catch(err => console.error('讀取設備佔用失敗:', err))
@@ -220,10 +232,13 @@ export const useCartReserved = (cart: CartItem[]): ((item: CartItem) => number) 
     load()
     window.addEventListener('focus', load)
     return () => { alive = false; window.removeEventListener('focus', load) }
-  }, [periods])
+  }, [periods, tick, hasDays])
 
   return useCallback(
-    (item: CartItem) => map[`${item.startDate}_${item.endDate}`]?.[item.id]?.reserved ?? 0,
+    (item: CartItem) => {
+      const m = map[`${item.startDate}_${item.endDate}`]
+      return reservedFor(item, m?.range, m?.daily)
+    },
     [map]
   )
 }

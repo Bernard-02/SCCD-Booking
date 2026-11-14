@@ -24,6 +24,9 @@ import {
   type ClosedShift,
   maxStartDate,
   slotClosed,
+  shiftClosed,
+  pendingDeadline,
+  dateTimeLabel,
   PENDING_LIMIT_MS
 } from './timeUtils'
 
@@ -205,6 +208,15 @@ describe('公休時段', () => {
     expect(slotClosed('2026-07-14', '17:00-19:00', new Set(['2026-07-14']))).toBe(true)
   })
 
+  it('shiftClosed：只休那一班、公休整天、週六日都算沒開（分時段的設備）', () => {
+    const noon = new Set([closedKey('2026-07-14', 'noon')])
+    expect(shiftClosed('2026-07-14', 'noon', noon)).toBe(true)
+    expect(shiftClosed('2026-07-14', 'evening', noon)).toBe(false)
+    expect(shiftClosed('2026-07-14', 'evening', new Set(['2026-07-14']))).toBe(true)
+    expect(shiftClosed('2026-07-18', 'noon', NONE)).toBe(true) // 週六
+    expect(shiftClosed('2026-07-15', 'noon', noon)).toBe(false) // 隔天照常
+  })
+
   it('只休一班的日子不暫停倒數', () => {
     const start = new Date(2026, 6, 14, 10, 0) // 週二
     const end = new Date(2026, 6, 15, 10, 0)
@@ -293,6 +305,19 @@ describe('addBusinessMs／dutySlotOptions（大量設備選繳押金／取件時
     expect(d).toEqual(new Date('2026-07-21T15:00'))
   })
 
+  it('後台顯示的繳押金期限：週五關門後送單 → 下週一同一時間；選的繳押金時段比較晚就看時段', () => {
+    const created = new Date('2026-07-17T20:00').toISOString() // 週五 20:00
+    expect(dateTimeLabel(pendingDeadline(created, NONE))).toBe('7/20（一）20:00')
+    expect(dateTimeLabel(pendingDeadline(created, new Set(['2026-07-20'])))).toBe('7/21（二）20:00')
+    expect(dateTimeLabel(pendingDeadline(created, NONE, new Date('2026-07-22T13:00')))).toBe('7/22（三）13:00')
+    // 週六送的單：週一 00:00 才開始算，期限是週一整天結束
+    expect(dateTimeLabel(pendingDeadline(new Date('2026-07-18T10:00').toISOString(), NONE))).toBe('7/20（一）24:00')
+    // 與倒數同一個時間點：到期前一分鐘還有剩，到期那一刻歸零
+    const deadline = pendingDeadline(created, NONE)
+    expect(pendingMsRemaining(created, new Date(deadline.getTime() - 60_000), NONE)).toBe(60_000)
+    expect(pendingMsRemaining(created, deadline, NONE)).toBe(0)
+  })
+
   it('只列區間內、未結束、非公休日的值班時段', () => {
     const duties = [
       { weekday: 1, start_time: '12:00:00', end_time: '13:00:00' }, // 週一
@@ -366,5 +391,66 @@ describe('部分時段可借用', () => {
   it('每天都夠＝一整段；沒有一天夠＝沒有段', () => {
     expect(contiguousRuns(new Set(days), days)).toEqual([['2026-10-01', '2026-10-10']])
     expect(contiguousRuns(new Set(), days)).toEqual([])
+  })
+})
+
+// ---- 分時段的設備（雷切機）：只借其中幾天（days） ----
+import { daysLabel, shiftPassed } from './timeUtils'
+import { reservedFor } from '../components/cart/cartHelpers'
+
+describe('分時段設備借的那幾天', () => {
+  it('daysLabel：連續的日子收成一段，跨月也算連續；沒有 days＝空字串', () => {
+    expect(daysLabel(['2026-11-19', '2026-11-17', '2026-11-18', '2026-11-24'])).toBe('11/17–11/19、11/24')
+    expect(daysLabel(['2026-11-30', '2026-12-01'], ', ')).toBe('11/30–12/1')
+    expect(daysLabel(['2026-11-17', '2026-11-19'], ', ')).toBe('11/17, 11/19')
+    expect(daysLabel(null)).toBe('')
+  })
+
+  const item = { id: 'L', name: '雷切機（午班）', startDate: '2026-11-17', endDate: '2026-11-21' }
+  const range = { L: { reserved: 1 } }
+  const daily = { L: { '2026-11-18': 1 } }
+  const BEFORE = new Date(2026, 10, 16, 10, 0) // 租借日期之前
+
+  it('reservedFor：有 days 只看借的那幾天，別人借的是別天就不算', () => {
+    expect(reservedFor({ ...item, days: ['2026-11-17', '2026-11-19'] }, range, daily, BEFORE)).toBe(0)
+    expect(reservedFor({ ...item, days: ['2026-11-17', '2026-11-18'] }, range, daily, BEFORE)).toBe(1)
+  })
+
+  it('reservedFor：沒有 days 看整段；沒有逐日資料退回整段；選的日子超出租借日期＝借不到', () => {
+    expect(reservedFor(item, range, daily, BEFORE)).toBe(1)
+    expect(reservedFor({ ...item, days: ['2026-11-17'] }, range, null, BEFORE)).toBe(1)
+    expect(reservedFor({ ...item, days: ['2026-11-24'] }, range, daily, BEFORE)).toBe(Infinity)
+  })
+
+  it('今天過了的班不能借：午班到 13:00、晚班到 19:00，隔天的照常', () => {
+    const at = (h: number, m = 0) => new Date(2026, 10, 17, h, m)
+    expect(shiftPassed('2026-11-17', 'noon', at(12, 59))).toBe(false)
+    expect(shiftPassed('2026-11-17', 'noon', at(13))).toBe(true)
+    expect(shiftPassed('2026-11-17', 'evening', at(13))).toBe(false)
+    expect(shiftPassed('2026-11-17', 'evening', at(19))).toBe(true)
+    expect(shiftPassed('2026-11-18', 'noon', at(19))).toBe(false)
+    expect(shiftPassed('2026-11-16', 'evening', at(9))).toBe(true)
+    // 清單裡放到下午才送：今天午班那格借不到，晚班的還可以
+    expect(reservedFor({ ...item, days: ['2026-11-17'] }, {}, {}, at(14))).toBe(Infinity)
+    expect(reservedFor({ ...item, name: '雷切機（晚班）', days: ['2026-11-17'] }, {}, {}, at(14))).toBe(0)
+  })
+})
+
+// ---- 過了今天最後營業時間，歸還日不能是今天 ----
+import { minEndDate, periodExpired, toDateKey } from './timeUtils'
+
+describe('過了最後營業時間的歸還日', () => {
+  const at = (h: number, m = 0) => new Date(2026, 10, 17, h, m) // 11/17（二）
+
+  it('minEndDate：19:00 前可以當天還，19:00 起最早明天', () => {
+    expect(toDateKey(minEndDate(at(18, 59)))).toBe('2026-11-17')
+    expect(toDateKey(minEndDate(at(19)))).toBe('2026-11-18')
+  })
+
+  it('periodExpired：起租日過了，或 19:00 後歸還日還是今天；借到明天的不算', () => {
+    expect(periodExpired('2026-11-16', '2026-11-18', at(10))).toBe(true)
+    expect(periodExpired('2026-11-17', '2026-11-17', at(10))).toBe(false)
+    expect(periodExpired('2026-11-17', '2026-11-17', at(20))).toBe(true)
+    expect(periodExpired('2026-11-17', '2026-11-18', at(20))).toBe(false)
   })
 })

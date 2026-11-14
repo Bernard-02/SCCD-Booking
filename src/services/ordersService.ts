@@ -24,6 +24,7 @@ export interface OrderItemRow {
   changed_at: string | null
   pickup_pending: boolean
   handed_over_by: string | null
+  days?: string[] | null // 分時段的設備（雷切機）只借這幾天（orders-rpc.sql）；null＝整段每一天
 }
 
 export interface OrderRow {
@@ -53,6 +54,9 @@ export interface OrderRow {
   proof_path: string | null      // 證明文件（bucket proofs）；老師名義、雷切機一年級的核可
   refunded: number | null        // 已退押金（null＝還沒結；有罰款時是扣完退的）
   items_updated_at: string | null // 學生最後一次改品項（收據／PDF 印出，對照紙本新舊）
+  // 學生送出、學會還沒確認的延期申請（partial-extend.sql）；all＝整單延，否則只延 item_ids。逾期、歸還、歸還日變了就自動清掉
+  extend_request?: { days: number; item_ids: number[]; all: boolean; at: string } | null
+  archived_at?: string | null     // 學期結束從後台訂單頁清掉的（sa-feedback-2026-11.sql）；資料還在
   order_items: OrderItemRow[]
 }
 
@@ -73,6 +77,7 @@ export interface AdminOrderRow extends OrderRow {
   picked_up_by: string | null // 取件經手幹部（大量設備先繳後取時才與 paid_by 不同）
   returned_by: string | null  // 歸還經手幹部（姓名快照）
   refunded_by: string | null  // 退押金經手幹部（姓名快照）
+  penalty_collected_by: string | null // 收罰款經手幹部（姓名快照）
   students: { student_id: string; name: string } | null
 }
 
@@ -227,7 +232,7 @@ export async function adminRefundDeposit(
   return { ok: true }
 }
 
-export type HandlerField = 'paid_by' | 'picked_up_by' | 'returned_by' | 'refunded_by'
+export type HandlerField = 'paid_by' | 'picked_up_by' | 'returned_by' | 'refunded_by' | 'penalty_collected_by'
 /**
  * 後台（最高權限）：經手人選錯時直接換人，不動狀態（2026-11-10）。RLS orders: admin all 放行；
  * 學會成員沒有這條權限，更新會是 0 筆，用回傳筆數判斷。
@@ -242,7 +247,40 @@ export async function adminSetHandler(
   return { ok: true }
 }
 
-/** 後台：代取消（pending／in-progress → canceled；in-progress 退押金為現場人工動作） */
+/**
+ * 後台（最高權限）：學期結束把已完成的單從訂單頁清掉＝標 archived_at，資料不刪（單號流水靠當年度筆數算，刪了會撞號）。
+ * ponytail: id 放在網址的篩選條件裡，一次 200 筆分批送；一學期的單量幾批就完，慢了再改成 RPC
+ */
+export async function adminArchiveOrders(ids: number[]): Promise<{ ok: boolean; message?: string }> {
+  const archived_at = new Date().toISOString()
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error } = await supabase.from('orders').update({ archived_at }).in('id', ids.slice(i, i + 200))
+    if (error) return { ok: false, message: error.message }
+  }
+  return { ok: true }
+}
+
+/** 後台：通過學生的延期申請（這時才真的延、部分延期拆子單；撞期照擋） */
+export async function adminApproveExtend(
+  rentalNumber: string,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_approve_extend', { p_rental_number: rentalNumber, p_handler: handler })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 後台：退回學生的延期申請（照原歸還日歸還；延期權不扣） */
+export async function adminRejectExtend(
+  rentalNumber: string,
+  handler: string
+): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('admin_reject_extend', { p_rental_number: rentalNumber, p_handler: handler })
+  if (error) return { ok: false, message: error.message }
+  return { ok: true }
+}
+
+/** 後台：代取消（只有還沒取件的 pending → canceled；已繳待取件的退押金為現場人工動作。取件後只能歸還） */
 export async function adminCancelOrder(
   rentalNumber: string,
   handler: string
@@ -311,7 +349,17 @@ export async function checkExtendItems(
   }))
 }
 
-/** 延期（支援部分延期）：全選品項＝整單延期不拆單；部分＝拆子單（單號根單號續流水） */
+/** 學生自己取消還沒繳押金的單（佔用立刻釋放；已繳押金的要到學會辦，sa-feedback-2026-11.sql cancel_my_order） */
+export async function cancelMyOrder(rentalNumber: string): Promise<{ ok: boolean; message?: string }> {
+  const { error } = await supabase.rpc('cancel_my_order', { p_rental_number: rentalNumber })
+  if (error) return { ok: false, message: serverErrorText(error.message) }
+  return { ok: true }
+}
+
+/**
+ * 送出延期申請（2026-11-14 起不是直接生效）：學生到學會確認、學會按通過才成立，沒確認就照原歸還日歸還。
+ * 全選品項＝整單延期不拆單；部分＝通過時拆子單（單號根單號續流水）
+ */
 export async function extendMyOrderPartial(
   rentalNumber: string,
   days: number,
