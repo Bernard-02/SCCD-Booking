@@ -10,9 +10,10 @@ import CloseButton from '../common/CloseButton'
 import { Select } from '../admin/adminUi'
 import { createPortal } from 'react-dom'
 import { useEquipmentData, useBundles, useItemName, fetchEquipmentReserved, type ReservedInfo } from '../../services/equipmentService'
-import { calcBundles } from '../../utils/bundleUtils'
+import { calcBundles, SHIFT_RE } from '../../utils/bundleUtils'
 import { EQUIPMENT_CATEGORIES } from '../../types/equipment'
 import { useT } from '../../stores/langStore'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 /** 目前品項（同設備合併）；held＝已點交數量（取件後的下限，取件前為 0） */
 export interface ModifyLine {
@@ -93,9 +94,11 @@ const ModifyOrderDialog: React.FC<Props> = ({
     setBusy(false)
     if (err) setError(err)
   }
+  useEnterConfirm(true, () => void handleSave(), canSave)
 
-  // 新增選單：上架中、本單還沒有的設備，依固定分類分組
-  const addable = Object.values(equipmentData).filter(e => !rows.some(r => r.id === e.id))
+  // 新增選單：上架中、本單還沒有的設備，依固定分類分組。
+  // ponytail: 分時段的設備（雷切機）不列——要選哪幾天的哪一班，這裡沒有選時段的視窗；要加就取消重借，常用到再做
+  const addable = Object.values(equipmentData).filter(e => !rows.some(r => r.id === e.id) && !SHIFT_RE.test(e.name))
   const groups = [
     ...EQUIPMENT_CATEGORIES.map(c => c.zh),
     ...new Set(addable.map(e => e.category).filter(c => !EQUIPMENT_CATEGORIES.some(k => k.zh === c)))

@@ -75,8 +75,8 @@ export const CONTENT: ContentEntry[] = [
   // ---- 延期規則 ----
   {
     key: 'extend.rules', group: 'extend', label: '規則條列', lines: true,
-    zh: '延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。\n若訂單內的所有空間/設備無法同時延期，則無法提出申請。\n延期天數是原歸還日往後開始計算，可最多延期7天。',
-    en: 'Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.\nIf all spaces/equipment in the order cannot be extended together, the request cannot be submitted.\nExtension days are counted from the original return date, up to a maximum of 7 days.'
+    zh: '延期申請需在原訂單歸還日的前三天提出，且僅可以提出乙次申請。\n若訂單內的所有空間/設備無法同時延期，則無法提出申請。\n延期天數是原歸還日往後開始計算，可最多延期7天。\n送出申請後，請在原歸還日前到系學會確認，系學會通過後延期才成立；沒有確認就照原歸還日歸還。',
+    en: 'Extension requests must be submitted at least 3 days before the original return date, and only one request may be made per order.\nIf all spaces/equipment in the order cannot be extended together, the request cannot be submitted.\nExtension days are counted from the original return date, up to a maximum of 7 days.\nAfter applying, visit the SA before the original return date to confirm. The extension only takes effect once the SA approves it; otherwise return on the original date.'
   },
   {
     key: 'extend.example', group: 'extend', label: '範例（灰字）',

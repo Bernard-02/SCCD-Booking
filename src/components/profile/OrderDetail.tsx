@@ -13,6 +13,7 @@ import { useAreaName } from '../../services/contentService'
 import { useT } from '../../stores/langStore'
 import { useBundles, useItemImages, useItemName } from '../../services/equipmentService'
 import { splitIntoSets } from '../../utils/bundleUtils'
+import { daysLabel } from '../../utils/timeUtils'
 
 export interface ReceiptItem {
   id: string
@@ -26,6 +27,7 @@ export interface ReceiptItem {
   bookingType?: 'little' | 'mass-personal' | 'mass-group'
   changedAt?: string | null  // 送單後改過（修改訂單）
   pickupPending?: boolean    // 取件後新增、尚未點交
+  days?: string[] | null     // 分時段的設備（雷切機）只借這幾天；沒有＝整段
 }
 
 export type OrderStatus = 'pending' | 'in-progress' | 'returned' | 'overdue' | 'canceled'
@@ -52,6 +54,7 @@ export interface Receipt {
   refunded?: number | null       // 已退押金
   penaltyTotal?: number | null   // 學會結算時填的罰款
   penaltyOwed?: number           // 押金抵完還要繳的；繳清前不能再預約
+  extendRequest?: { days: number; all: boolean } | null // 已送出、等學會確認的延期申請
 }
 
 export const formatDate = (s: string) =>
@@ -144,8 +147,12 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
                   <Thumb src={first?.image ?? ''} alt={bundle.name} />
                   <div>
                     {itemName(bundle.id, bundle.name)}
+                    {/* 零件；分時段的設備（雷切機午班＋晚班）各自標借的那幾天 */}
                     <div className="text-2xs opacity-50">
-                      {bundle.items.map(c => `${itemName(c.equipmentId, equipment.find(i => i.id === c.equipmentId)?.name ?? '')} ×${c.quantity * count}`).join('、')}
+                      {bundle.items.map(c => {
+                        const part = equipment.find(i => i.id === c.equipmentId)
+                        return `${itemName(c.equipmentId, part?.name ?? '')} ×${c.quantity * count}${part?.days ? `（${daysLabel(part.days, t(', ', '、'))}）` : ''}`
+                      }).join('、')}
                     </div>
                   </div>
                   <div className="text-center"><span className="font-english">{count}</span> {t('set', '組')}</div>
@@ -162,6 +169,7 @@ const OrderDetail: React.FC<{ receipt: Receipt }> = ({ receipt }) => {
                   {item.pickupPending
                     ? <span className={`${CHIP} ml-2 bg-yellow text-black`}>待點交</span>
                     : item.changedAt && <span className="text-2xs ml-2 opacity-50">已更動</span>}
+                  {item.days && <div className="text-2xs opacity-50 font-english">{daysLabel(item.days, t(', ', '、'))}</div>}
                 </div>
                 <div className="text-center font-english">{item.quantity}</div>
                 <div className="font-english">NT$ {(item.deposit * item.quantity).toLocaleString()}</div>

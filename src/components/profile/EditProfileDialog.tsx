@@ -10,6 +10,7 @@ import CloseButton from '../common/CloseButton'
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../stores/langStore'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 type EditMode = 'password' | 'phone'
 
@@ -34,6 +35,8 @@ interface EditProfileDialogProps {
   isOpen: boolean
   mode: EditMode
   currentPhone?: string
+  /** 標題下方的說明（清單頁送出前要求先填手機時用） */
+  hint?: { en: string; zh: string }
   onConfirm: (value: string, currentPassword?: string) => Promise<EditConfirmResult>
   onCancel: () => void
 }
@@ -42,6 +45,7 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   isOpen,
   mode,
   currentPhone = '',
+  hint,
   onConfirm,
   onCancel
 }) => {
@@ -76,6 +80,8 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       document.body.style.overflow = ''
     }
   }, [isOpen, onCancel])
+
+  useEnterConfirm(isOpen, () => void handleSubmit(), !submitting)
 
   if (!isOpen) return null
 
@@ -125,8 +131,9 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         {/* 標題 */}
         <div className="px-6 pt-6 pr-14">
           <h2 className="font-english text-sm text-white font-normal">
-            {isPassword ? t('Change Password', '修改密碼') : t('Change Phone', '修改手機號碼')}
+            {isPassword ? t('Change Password', '修改密碼') : currentPhone ? t('Change Phone', '修改手機號碼') : t('Phone Number', '填寫手機號碼')}
           </h2>
+          {hint && <p className="mt-2 text-xs text-gray-light leading-relaxed">{t(hint.en, hint.zh)}</p>}
         </div>
 
         {/* 表單 */}
@@ -185,6 +192,8 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
                 onChange={(e) => setPhone(e.target.value)}
                 className={`${inputClass} font-english`}
                 placeholder="09xxxxxxxx"
+                inputMode="numeric"
+                autoFocus
               />
             </div>
           )}

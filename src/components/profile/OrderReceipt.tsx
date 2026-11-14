@@ -9,6 +9,7 @@ import { formatDateRange, formatOrderTime } from './OrderDetail'
 import type { Receipt } from './OrderDetail'
 import { useBundles } from '../../services/equipmentService'
 import { splitIntoSets } from '../../utils/bundleUtils'
+import { daysLabel } from '../../utils/timeUtils'
 import { elementsToPdf } from '../../utils/pdf'
 
 // 設備＝小量／大量；空間單 'little'＝個人、'mass-group'＝團體
@@ -108,7 +109,10 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
                 <td className="border-b border-gray-mid">
                   <div className="pt-2 pb-4">
                     Set 組合：{bundle.name}（
-                    {bundle.items.map(c => `${equipmentItems.find(i => i.id === c.equipmentId)?.name ?? ''} ×${c.quantity * count}`).join('、')}）
+                    {bundle.items.map(c => {
+                      const part = equipmentItems.find(i => i.id === c.equipmentId)
+                      return `${part?.name ?? ''} ×${c.quantity * count}${part?.days ? ` ${daysLabel(part.days, ', ')}` : ''}`
+                    }).join('、')}）
                   </div>
                 </td>
                 <td className="border-b border-gray-mid"><div className="font-english pt-2 pb-4 text-left">{count}</div></td>
@@ -120,6 +124,7 @@ const OrderReceipt = React.forwardRef<HTMLDivElement, { receipt: Receipt }>(({ r
                 <td className="border-b border-gray-mid">
                   <div className="pt-2 pb-4">
                     {item.name}
+                    {item.days && `（${daysLabel(item.days)}）`}
                     {item.pickupPending ? '（待點交）' : item.changedAt ? '（已更動）' : ''}
                   </div>
                 </td>

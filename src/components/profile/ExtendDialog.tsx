@@ -1,6 +1,6 @@
 /**
  * 延期對話框
- * 用於訂單延期申請
+ * 用於訂單延期申請：送出的是「申請」，學生到系學會確認、學會通過後才成立（2026-11-14；沒確認就照原歸還日歸還）
  */
 
 import { BTN } from '@/components/common/btn'
@@ -13,6 +13,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useT } from '../../stores/langStore'
 import { zipLines } from '../../data/siteContent'
 import { useSiteContent } from '../../services/contentService'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 interface ExtendDialogProps {
   isOpen: boolean
@@ -82,6 +83,8 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
     })
     return () => { alive = false }
   }, [isOpen, selectedDays, orderNumber])
+
+  useEnterConfirm(isOpen, () => handleConfirm(), selectedDays > 0 && checkedIds.size > 0)
 
   if (!isOpen) return null
 
@@ -320,8 +323,9 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
 
             {/* 狀態提示 */}
             <div style={{ minHeight: '18px' }}>
+              {/* 送出的是申請：到系學會確認、學會通過後才真的延（2026-11-14） */}
               <p className="font-chinese text-white text-xs">
-                您已延期 <span className="font-english">{selectedDays}</span> 天，新的歸還日是{' '}
+                申請延期 <span className="font-english">{selectedDays}</span> 天，到系學會確認後新的歸還日是{' '}
                 <span className="font-english">{formatNewReturnDate(selectedDays)}</span>。
               </p>
             </div>
@@ -366,7 +370,7 @@ const ExtendDialog: React.FC<ExtendDialogProps> = ({
               </div>
               {isPartial && (
                 <p className="font-chinese text-xs text-gray-light mt-3">
-                  部分延期：勾選品項將拆為子單延期，未勾選品項照原歸還日（
+                  部分延期：系學會確認後，勾選品項拆為子單延期，未勾選品項照原歸還日（
                   <span className="font-english">
                     {dueDate.getMonth() + 1} 月 {dueDate.getDate()} 日
                   </span>

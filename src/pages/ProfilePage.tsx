@@ -10,6 +10,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Header from '../components/layouts/Header'
 import Footer from '../components/layouts/Footer'
+import BackButton from '../components/common/BackButton'
 import ExtendDialog from '../components/profile/ExtendDialog'
 import ModifyOrderDialog, { type ModifyLine } from '../components/profile/ModifyOrderDialog'
 import ChangePickupDialog from '../components/profile/ChangePickupDialog'
@@ -22,13 +23,14 @@ import { navItemCls, NAV_ITEM } from '../components/common/navItem'
 import Toast from '../components/common/Toast'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { changePassword, fetchBackendAccess, updateMyPhone } from '../services/authService'
-import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder, changeMyPickup, penaltyOwed } from '../services/ordersService'
+import { fetchMyOrders, extendMyOrderPartial, fetchClosedDates, modifyMyOrder, changeMyPickup, cancelMyOrder, penaltyOwed } from '../services/ordersService'
 import type { OrderRow } from '../services/ordersService'
 import { loadItemImages } from '../services/equipmentService'
 import { classLabel } from '../utils/gradeUtils'
 import { AWAITING_PICKUP_META } from '../components/admin/adminUi'
 import { slotClosed, slotEnd, slotLabel, pendingMsRemaining, displayOrderStatus, isOffDay, effectiveReturnDeadline, overduePenalty, overdueBusinessDays, SUSPENSION_OVERDUE_DAYS, isWithinExtendWindow } from '../utils/timeUtils'
 import { useSuspension } from '../hooks/useSuspension'
+import { useToast } from '../hooks/useToast'
 import { useT } from '../stores/langStore'
 
 type ProfileSection = 'history' | 'profile'
@@ -70,6 +72,8 @@ const ProfilePage: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 pt-[calc(var(--gutter)+4rem)] max-md:pt-[calc(var(--gutter)+3rem)] flex flex-col overflow-hidden">
         <div className="container h-full flex flex-col">
+          {/* 手機：返回上一頁（同清單、通知頁）；桌機從 Header／Footer 就走得掉，不放 */}
+          <div className="md:hidden mb-4"><BackButton /></div>
           {/* 左右分割佈局 */}
           <div className="flex flex-1 overflow-hidden pt-4 pb-4 max-md:flex-col max-md:gap-4 max-md:pt-0">
             {/* 左側：功能選單（佔 3） */}
@@ -147,6 +151,7 @@ const RentalHistorySection: React.FC = () => {
   const [openOrder, setOpenOrder] = useState<string | null>(null) // accordion：一次展開一張
   const [guideOpen, setGuideOpen] = useState(false)
   const [printing, setPrinting] = useState<Receipt | null>(null)  // 正在產生 PDF 的收據
+  const { showToast, toastElement } = useToast()
   const receiptRef = useRef<HTMLDivElement>(null)
 
   // 收據模板渲染到畫面外後再擷取成 PDF
@@ -189,7 +194,8 @@ const RentalHistorySection: React.FC = () => {
           image: itemImage(item),
           bookingType: order.booking_type,
           changedAt: item.changed_at,
-          pickupPending: item.pickup_pending
+          pickupPending: item.pickup_pending,
+          days: item.days
         })),
         createdAt: order.created_at,
         status: order.status,
@@ -205,7 +211,8 @@ const RentalHistorySection: React.FC = () => {
         teacher: order.teacher,
         refunded: order.refunded,
         penaltyTotal: order.penalty_total,
-        penaltyOwed: penaltyOwed(order)
+        penaltyOwed: penaltyOwed(order),
+        extendRequest: order.extend_request
       }))
 
       setAllReceipts(receipts)
@@ -281,8 +288,8 @@ const RentalHistorySection: React.FC = () => {
     setIsExtendDialogOpen(true)
   }
 
-  // 確認延期（RPC：資料庫端驗證僅限租借中、未延期過、1-7 天；
-  // 全勾品項＝整單延期，部分勾選＝拆子單部分延期）
+  // 送出延期申請（RPC：資料庫端驗證僅限租借中、未延期過、1-7 天、撞期）。2026-11-14 起不是直接生效：
+  // 學生到學會確認、學會按通過才真的延（全勾＝整單延、部分＝拆子單）；沒確認就照原歸還日歸還
   const handleConfirmExtend = async (extendDays: number, itemIds: number[]) => {
     if (!extendingReceipt) return
 
@@ -293,10 +300,25 @@ const RentalHistorySection: React.FC = () => {
       return
     }
 
-    // 重新讀取訂單（新歸還日與已延期標記以資料庫為準）
     await loadOrders()
     setIsExtendDialogOpen(false)
     setExtendingReceipt(null)
+    showToast(t('Extension requested. Visit the SA before the return date to confirm — it only takes effect once approved.', '延期申請已送出，請在原歸還日前到系學會確認，通過後才成立'), 'success')
+  }
+
+  // 自己取消還沒繳押金的單（已繳的要到學會退押金，不開放）：先跳確認框，取消後佔用馬上釋放
+  const [canceling, setCanceling] = useState<Receipt | null>(null)
+  const [cancelBusy, setCancelBusy] = useState(false)
+  const handleConfirmCancel = async () => {
+    if (!canceling || cancelBusy) return
+    setCancelBusy(true)
+    const res = await cancelMyOrder(canceling.rentalNumber)
+    setCancelBusy(false)
+    setCanceling(null)
+    if (res.ok) showToast(t(`Order ${canceling.rentalNumber} canceled`, `已取消訂單 ${canceling.rentalNumber}`), 'success')
+    else showToast(res.message || t('Couldn’t cancel the order. Please try again.', '取消失敗，請再試一次'))
+    await loadOrders()
+    window.dispatchEvent(new Event('notificationUpdated'))
   }
 
   // 取消延期
@@ -312,7 +334,7 @@ const RentalHistorySection: React.FC = () => {
         return {
           color: 'var(--color-yellow)',
           en: 'Pending',
-          zh: '待銷單'
+          zh: '待繳費'
         }
       case 'in-progress':
         return {
@@ -363,8 +385,11 @@ const RentalHistorySection: React.FC = () => {
     if (status === 'pending' && receipt.depositPaidAt) {
       return (
         <div className="text-right mt-2">
-          <span className="font-english text-sm" style={{ color: 'var(--color-cyan)' }}>
-            {t('Pickup', '取件')} {pickupText}
+          {/* 大量設備有預選取件時段；其他單收完押金、設備還沒交付時（2026-11-14 收押金與取件分開）只提示去取件 */}
+          <span className={`text-sm ${receipt.pickupSlot ? 'font-english' : ''}`} style={{ color: 'var(--color-cyan)' }}>
+            {receipt.pickupSlot ? <>{t('Pickup', '取件')} {pickupText}</>
+              : receipt.totalDeposit > 0 ? t('Deposit paid — pick up at the SA', '押金已繳，請至系學會取件')
+              : t('Pick up at the SA', '請至系學會取件') /* 免押金（系秘、老師名義） */}
           </span>
         </div>
       )
@@ -421,6 +446,15 @@ const RentalHistorySection: React.FC = () => {
           <span className="font-english text-sm text-cyan">
             {t('Due in', '距離逾期')} {timeText}
           </span>
+          {/* 延期申請送出了但學會還沒確認：歸還日還是原本那天 */}
+          {receipt.extendRequest && (
+            <div className="text-xs mt-1 text-yellow">
+              {t(
+                <>Extension requested (+<span className="font-english">{receipt.extendRequest.days}</span> days) — confirm at the SA</>,
+                <>已申請延期 <span className="font-english">{receipt.extendRequest.days}</span> 天，到系學會確認後才成立</>
+              )}
+            </div>
+          )}
           {addMs > 0 && (
             <div className="font-chinese text-xs mt-1" style={{ color: 'var(--color-yellow)' }}>
               新增設備待點交・剩 <span className="font-english">{Math.ceil(addMs / 3_600_000)} hrs</span>
@@ -513,8 +547,9 @@ const RentalHistorySection: React.FC = () => {
             </div>
           </div>
 
-          {/* 右：下載／延期／修改＋展開 chevron；下方倒數（hover 反白時一律轉黑字） */}
-          <div className="flex flex-col items-end justify-between max-md:flex-row-reverse max-md:items-center">
+          {/* 右：下載／延期／修改／取消＋展開 chevron；下方倒數（hover 反白時一律轉黑字）。
+              手機：倒數在上、icon 列在下各佔一列——icon 最多六顆，同一列塞不下倒數文字 */}
+          <div className="flex flex-col items-end justify-between max-md:flex-col-reverse max-md:gap-3">
             <div className="flex items-center gap-3 max-md:gap-6" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
@@ -548,6 +583,18 @@ const RentalHistorySection: React.FC = () => {
                   className={iconBtnCls}
                 >
                   <span className="material-symbols-outlined">edit</span>
+                </button>
+              )}
+              {/* 取消訂單：還沒繳押金才有（已繳的要到學會退押金） */}
+              {status === 'pending' && !receipt.depositPaidAt && (
+                <button
+                  type="button"
+                  onClick={() => setCanceling(receipt)}
+                  aria-label={t('Cancel order', '取消訂單')}
+                  title={t('Cancel order', '取消訂單')}
+                  className={iconBtnCls}
+                >
+                  <span className="material-symbols-outlined">cancel</span>
                 </button>
               )}
               {pickupBlocked && (
@@ -633,6 +680,24 @@ const RentalHistorySection: React.FC = () => {
         </div>
       )}
 
+      {/* 取消訂單：先確認（危險動作，Enter 不當確認） */}
+      <ConfirmDialog
+        isOpen={canceling !== null}
+        title="取消訂單"
+        titleEn="Cancel order"
+        message={`確定取消訂單 ${canceling?.rentalNumber ?? ''}？保留的設備／空間會馬上釋放給其他人借，取消後無法復原，要借請重新下單。`}
+        messageEn={`Cancel order ${canceling?.rentalNumber ?? ''}? The reserved items will be released to others right away. This can’t be undone — you’ll need to book again.`}
+        confirmText="Cancel order"
+        confirmTextZh="取消訂單"
+        cancelText="Keep order"
+        cancelTextZh="不取消"
+        variant="danger"
+        confirmDisabled={cancelBusy}
+        onConfirm={() => void handleConfirmCancel()}
+        onCancel={() => setCanceling(null)}
+      />
+      {toastElement}
+
       {changingPickup && (
         <ChangePickupDialog
           rentalNumber={changingPickup.rentalNumber}
@@ -684,8 +749,9 @@ const maskEmail = (e: string): string => {
 // 個人資料區塊
 const ProfileDataSection: React.FC = () => {
   const t = useT()
-  const { currentUser } = useAuth()
-  const [phone, setPhone] = useState(currentUser?.phone || '')
+  const { currentUser, updateUser } = useAuth()
+  // 手機直接讀登入資料：存了就寫回去（updateUser），切到訂單分頁再回來、重新整理都還在
+  const phone = currentUser?.phone || ''
   const [editMode, setEditMode] = useState<'password' | 'phone' | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   // 當前最嚴重逾期單的營業日天數（第 1-6 級標籤即時計算，不入庫）
@@ -721,7 +787,7 @@ const ProfileDataSection: React.FC = () => {
     } else if (editMode === 'phone') {
       const result = await updateMyPhone(value)
       if (!result.ok) return { ok: false }
-      setPhone(value)
+      updateUser({ phone: value })
       setToastMessage(t('Phone number updated', '手機號碼已更新'))
     }
     setEditMode(null)
