@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCart, loginRequiredMsg } from './useCart'
+import { useCart, loginRequiredMsg, lateReturnMsg } from './useCart'
 import { useSuspension } from './useSuspension'
 import type { CartItem } from '../types/equipment'
 
@@ -67,6 +67,18 @@ describe('購物車依使用者分開', () => {
 })
 
 describe('addToCart', () => {
+  it('過了今天最後營業時間（19:00），歸還日是今天的加不進去；借到明天可以', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 17, 20, 0))
+    const { result } = renderHook(() => useCart())
+    act(() => {
+      const late = result.current.addToCart(item({ startDate: '2026-11-17', endDate: '2026-11-17' }))
+      expect(late).toEqual({ ok: false, reason: lateReturnMsg() })
+      expect(result.current.addToCart(item({ startDate: '2026-11-17', endDate: '2026-11-18' })).ok).toBe(true)
+    })
+    vi.useRealTimers()
+  })
+
   it('加入成功並寫入購物車', () => {
     const { result } = renderHook(() => useCart())
     act(() => {
@@ -172,8 +184,9 @@ describe('addToCart', () => {
   })
 
   it('同類別既有訂單已過期：提示先重選日期', () => {
+    // 過期的單是放著放到過期的，不是加進去的（歸還日已過的加不進清單），直接寫進購物車
+    localStorage.setItem('sccd-rental-cart_s1', JSON.stringify([item({ startDate: '2020-01-01', endDate: '2020-01-03' })]))
     const { result } = renderHook(() => useCart())
-    act(() => { result.current.addToCart(item({ startDate: '2020-01-01', endDate: '2020-01-03' })) })
     let res: { ok: boolean; reason?: string }
     act(() => { res = result.current.addToCart(item({ id: 'light', name: '燈' })) })
     expect(res!.ok).toBe(false)

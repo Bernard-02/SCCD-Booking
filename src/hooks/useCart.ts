@@ -11,10 +11,13 @@ import { calcBundles } from '../utils/bundleUtils'
 import { tr } from '../stores/langStore'
 import { useSuspension } from './useSuspension'
 import { useAuth } from '../contexts/AuthContext'
-import { cartKey, readCart, writeCart, rescheduleCategory } from '../components/cart/cartHelpers'
+import { cartKey, readCart, writeCart, rescheduleCategory, toDateKey } from '../components/cart/cartHelpers'
+import { minEndDate } from '../utils/timeUtils'
 
 // 訪客可逛型錄、選日期，加入清單才要求登入
 export const loginRequiredMsg = () => tr('Please log in to add items to your list.', '請先登入才能加入清單')
+// 過了今天最後營業時間，歸還日不能是今天（timeUtils.minEndDate）：選日期、加入清單時的提示
+export const lateReturnMsg = () => tr('The SA has closed for today, so the return date must be tomorrow or later.', '今天的營業時間已過，歸還日請選明天以後')
 // 訪客按加入清單：記下頁面上的選取、導去登入頁，登入後回到原頁（HomePage 讀 redirect_url）再還原
 export const loginPath = (page: 'equipment' | 'space', selection: unknown) => {
   sessionStorage.setItem(`sccd_pending_${page}`, JSON.stringify(selection))
@@ -243,6 +246,11 @@ export const useCart = () => {
       // 停權檢查
       if (isSuspended) {
         return { ok: false, reason: tr('Your account is suspended (clean return not completed), so you can’t add items. Please contact the SA.', '帳號已停權（未完成清潔歸還），無法加入購物車，請聯絡系學會') }
+      }
+
+      // 過了今天最後營業時間，歸還日不能是今天（日期是關門前選的、關門後才加入）
+      if (item.endDate < toDateKey(minEndDate())) {
+        return { ok: false, reason: lateReturnMsg() }
       }
 
       // 檢查租借類型衝突

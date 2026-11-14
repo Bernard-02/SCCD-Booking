@@ -2,13 +2,13 @@
  * 購物車結帳前的驗證規則
  * - 大量租借須滿 10 件
  * - 訂單日期不能過期
- * - 設備不能缺貨
+ * - 設備不能缺貨、空間不能已被別人借走
  * - 所有時段都要填借用資訊
  */
 
 import { useMemo } from 'react'
 import { cartGroupKey } from '../types/equipment'
-import { slotEnd } from '../utils/timeUtils'
+import { periodExpired, slotEnd } from '../utils/timeUtils'
 import type { CartItem } from '../types/equipment'
 import { calcBundles, type Bundle } from '../utils/bundleUtils'
 import type { BookingDetailsData } from '../components/common/BookingDetailsDialog'
@@ -36,6 +36,8 @@ interface UseCartValidationArgs {
   getCartQuantity: (id: string) => number
   /** 該品項時段已被他人訂單佔用的量（含 On Hold）；未給視為 0 */
   getReserved?: (item: CartItem) => number
+  /** 空間（格子／教室）這個時段已被別人的訂單借走；未給視為都沒有 */
+  isTaken?: (item: CartItem) => boolean
   /** 設備組合（湊滿一組算 1 件）；未給＝照單件計 */
   bundles?: Bundle[]
 }
@@ -69,6 +71,7 @@ export const useCartValidation = ({
   getOriginalQuantity,
   getCartQuantity,
   getReserved = () => 0,
+  isTaken = () => false,
   bundles = NO_BUNDLES
 }: UseCartValidationArgs): UseCartValidationResult => {
   return useMemo(() => {
@@ -94,19 +97,14 @@ export const useCartValidation = ({
       return { valid: true, message: '', detail: '' }
     })()
 
-    // 過期訂單（開始日期早於今日）
+    // 過期訂單：開始日期早於今日，或歸還日已經還不了（過了今天最後營業時間，歸還日還是今天；timeUtils.periodExpired）
     const expiredOrdersValidation: ExpiredResult = (() => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
       const expiredKeys: string[] = []
       const groups = groupByDateKey(cart)
 
       for (const [key, items] of Object.entries(groups)) {
         if (items.length === 0) continue
-        const startDate = new Date(items[0].startDate)
-        startDate.setHours(0, 0, 0, 0)
-        if (startDate < today) {
+        if (periodExpired(items[0].startDate, items[0].endDate)) {
           expiredKeys.push(key)
         }
       }
@@ -123,14 +121,17 @@ export const useCartValidation = ({
       return { valid: true, message: '', detail: '', expiredKeys: [] }
     })()
 
-    // 設備缺貨檢查
+    // 被別人先借走（先送先贏，購物車不佔位）：設備缺貨、空間已被預約
     const stockAvailabilityValidation: StockResult = (() => {
       const outOfStockItems: string[] = []
       const todayMs = new Date().setHours(0, 0, 0, 0)
       cart.forEach(item => {
-        if (item.category !== 'equipment') return
         // 過期時段由「日期已過期」擋；改日期後才依新時段判斷庫存
         if (new Date(item.startDate).setHours(0, 0, 0, 0) < todayMs) return
+        if (item.category !== 'equipment') {
+          if (isTaken(item)) outOfStockItems.push(item.name)
+          return
+        }
         const totalStock = getOriginalQuantity(item.id) - getReserved(item)
         const otherItemsQty = getCartQuantity(item.id) - item.quantity
         const maxQtyForThisItem = totalStock - otherItemsQty
@@ -142,8 +143,8 @@ export const useCartValidation = ({
       if (outOfStockItems.length > 0) {
         return {
           valid: false,
-          message: '部分設備缺貨，請調整數量或移除',
-          detail: 'Some equipment is out of stock, please adjust quantity or remove',
+          message: '清單裡有東西已被借走，請調整數量或移除',
+          detail: 'Some items in your list have been taken. Please adjust the quantity or remove them',
           outOfStockItems
         }
       }
@@ -209,5 +210,5 @@ export const useCartValidation = ({
       singleOrderValidation,
       littleLimitValidation
     }
-  }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved, bundles])
+  }, [cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved, isTaken, bundles])
 }

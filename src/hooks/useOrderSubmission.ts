@@ -84,7 +84,8 @@ export const useOrderSubmission = ({ cart, clearCart, bookingDetails = {} }: Use
           item_id: item.id,
           name: item.name,
           quantity: item.quantity,
-          deposit: item.deposit
+          deposit: item.deposit,
+          days: item.days // 分時段的設備選的那幾天（沒有就不帶＝整段）
         }))
       }
     })

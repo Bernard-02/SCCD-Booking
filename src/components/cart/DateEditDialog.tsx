@@ -11,8 +11,10 @@ import Calendar from '../Calendar'
 import { formatYmd, toDateKey } from './cartHelpers'
 import { useAuth } from '../../contexts/AuthContext'
 import { maxRentalDays } from '../../utils/gradeUtils'
-import { maxStartDate, minStartDate } from '../../utils/timeUtils'
+import { maxStartDate, minEndDate, minStartDate } from '../../utils/timeUtils'
+import { lateReturnMsg } from '../../hooks/useCart'
 import { useT } from '../../stores/langStore'
+import { useEnterConfirm } from '../../hooks/useEnterConfirm'
 
 interface DateEditDialogProps {
   isOpen: boolean
@@ -37,12 +39,17 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
   const { currentUser } = useAuth()
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
+  const [late, setLate] = useState(false)
+  useEnterConfirm(isOpen, () => handleConfirm(), !!startDate && !!endDate)
 
   if (!isOpen) return null
 
   const handleDateSelect = (newStart: Date | null, newEnd: Date | null) => {
+    // 過了今天最後營業時間，歸還日不能是今天：留著起租日，下面的提示換成原因（toast 會被對話框蓋住）
+    const late = !!newEnd && newEnd < minEndDate()
+    setLate(late)
     setStartDate(newStart)
-    setEndDate(newEnd)
+    setEndDate(late ? null : newEnd)
   }
 
   const handleConfirm = () => {
@@ -142,7 +149,7 @@ const DateEditDialog: React.FC<DateEditDialogProps> = ({
               <p className="text-xs text-gray-light">{t('New Date', '新的時段')}</p>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-yellow">{t('After updating the date, items may become out of stock. We\'ll mark them for you.', '更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。')}</p>
+              <p className="text-xs text-yellow">{late ? lateReturnMsg() : t('After updating the date, items may become out of stock. We\'ll mark them for you.', '更新日期後，部分設備可能缺貨。我們會自動標記缺貨項目。')}</p>
             </div>
             <div className="shrink-0 text-xl text-white font-english">
               {(() => {

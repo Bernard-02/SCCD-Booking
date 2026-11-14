@@ -2,7 +2,7 @@
  * useCartValidation 測試：結帳前四項驗證（大量滿 10 件、過期、缺貨、借用資訊）
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useCartValidation } from './useCartValidation'
 import type { CartItem } from '../types/equipment'
@@ -54,6 +54,15 @@ describe('大量租借滿 10 件', () => {
 })
 
 describe('過期訂單', () => {
+  it('過了今天最後營業時間（19:00），歸還日還是今天 → 要重選日期', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 17, 20, 0))
+    const today = item({ startDate: '2026-11-17', endDate: '2026-11-17' })
+    expect(run([today]).expiredOrdersValidation.expiredKeys).toEqual(['2026-11-17_2026-11-17'])
+    expect(run([item({ startDate: '2026-11-17', endDate: '2026-11-18' })]).expiredOrdersValidation.valid).toBe(true)
+    vi.useRealTimers()
+  })
+
   it('起租日早於今日 → 列入 expiredKeys', () => {
     const expired = item({ startDate: '2020-01-01', endDate: '2020-01-03' })
     const { expiredOrdersValidation } = run([expired])
@@ -93,6 +102,16 @@ describe('設備缺貨', () => {
       })
     ).result.current
     expect(stockAvailabilityValidation.valid).toBe(false)
+  })
+
+  it('空間被別人先借走 → 列入清單、擋送出；過期時段先改日期，不判', () => {
+    const block = (over: Partial<CartItem> = {}) => item({ id: 'A1', name: '區塊 A1', category: 'space-block', ...over })
+    const check = (cart: CartItem[]) => renderHook(() =>
+      useCartValidation({ cart, bookingDetails: {}, getOriginalQuantity: () => 0, getCartQuantity: () => 0, isTaken: i => i.id === 'A1' })
+    ).result.current.stockAvailabilityValidation
+    expect(check([block()]).outOfStockItems).toEqual(['區塊 A1'])
+    expect(check([block({ id: 'A2', name: '區塊 A2' })]).valid).toBe(true)
+    expect(check([block({ startDate: '2020-01-01', endDate: '2020-01-03' })]).valid).toBe(true)
   })
 })
 

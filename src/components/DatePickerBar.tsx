@@ -10,7 +10,9 @@ import { useNavigate } from 'react-router-dom'
 import Calendar from './Calendar'
 import DateEditDialog from './cart/DateEditDialog'
 import { readCart, writeCart, formatYmd, toDateKey } from './cart/cartHelpers'
-import { maxStartDate, minStartDate } from '../utils/timeUtils'
+import { maxStartDate, minEndDate, minStartDate, periodExpired } from '../utils/timeUtils'
+import { useToast } from '../hooks/useToast'
+import { lateReturnMsg } from '../hooks/useCart'
 import { useDateSelection } from '../contexts/DateSelectionContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
@@ -30,6 +32,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const { confirm, ConfirmDialog } = useConfirmDialog()
+  const { showToast, toastElement } = useToast()
   const bundles = useBundles()
   const [isExpanded, setIsExpanded] = useState(false)
   const [originalDates, setOriginalDates] = useState<{
@@ -81,6 +84,11 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
   // 處理日期選擇
   const handleDateSelect = (start: Date | null, end: Date | null) => {
+    // 過了今天最後營業時間，歸還日不能是今天：留著起租日，請使用者再選歸還日
+    if (end && end < minEndDate()) {
+      showToast(lateReturnMsg())
+      end = null
+    }
     if (type === 'equipment') {
       setEquipmentDates(start, end, bookingType)
     } else {
@@ -170,19 +178,17 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
   // 購物車裡同類別的訂單（一次只能一張；舊購物車可能多張，過期的優先——要先 Renew）。
   // match 可再篩租借類型（切類型時只找「另一種」類型）
   const findCartOrder = (match: (bt: BookingType) => boolean = () => true) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
     const items = readCart().filter(item =>
       (item.category === 'equipment' ? 'equipment' : 'space') === type && match(item.bookingType || 'little')
     )
     if (items.length === 0) return null
-    const isExpired = (d: string) => { const s = new Date(d); s.setHours(0, 0, 0, 0); return s < today }
-    const pick = items.find(item => isExpired(item.startDate)) ?? items[0]
+    const isExpired = (i: CartItem) => periodExpired(i.startDate, i.endDate)
+    const pick = items.find(isExpired) ?? items[0]
     return {
       startDate: pick.startDate,
       endDate: pick.endDate,
       bookingType: (pick.bookingType || 'little') as BookingType,
-      isExpired: isExpired(pick.startDate)
+      isExpired: isExpired(pick)
     }
   }
 
@@ -380,9 +386,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
           const bookingType = item.bookingType || 'little'
           const periodTotal = periodTotals.get(periodKey) || 0
 
-          const groupStartDate = new Date(item.startDate)
-          groupStartDate.setHours(0, 0, 0, 0)
-          const isExpired = groupStartDate < today
+          const isExpired = periodExpired(item.startDate, item.endDate)
 
           // 小量訂單且已達到 9 件限制時禁用（過期時段不禁用，開放點擊編輯日期）
           const isDisabled = !isExpired && type === 'equipment' && bookingType === 'little' && periodTotal >= 9
@@ -721,6 +725,7 @@ const DatePickerBar: React.FC<DatePickerBarProps> = ({ type }) => {
 
       {/* 類型衝突提示（Renew／已達上限） */}
       <ConfirmDialog />
+      {toastElement}
     </div>
   )
 }

@@ -64,20 +64,25 @@ const SpacePage: React.FC = () => {
   const [partialBlock, setPartialBlock] = useState<string | null>(null)
   const occupiedStartKey = spaceDates.startDate ? toDateKey(spaceDates.startDate) : null
   const occupiedEndKey = spaceDates.endDate ? toDateKey(spaceDates.endDate) : null
+  // 目前區間的佔用查完了沒（登入回來自動加入要等它）
+  const [occupiedLoaded, setOccupiedLoaded] = useState(false)
 
   useEffect(() => {
+    setOccupiedLoaded(false)
     if (!occupiedStartKey || !occupiedEndKey) {
       setOccupiedIds([])
       setOccupiedDays(null)
       return
     }
     let mounted = true
-    fetchOccupiedSpaces(occupiedStartKey, occupiedEndKey)
-      .then(ids => { if (mounted) setOccupiedIds(ids) })
-      .catch(err => console.error('讀取空間佔用失敗:', err))
-    fetchOccupiedSpacesDaily(occupiedStartKey, occupiedEndKey)
-      .then(map => { if (mounted) setOccupiedDays(map) })
-      .catch(err => { console.warn('逐日佔用 RPC 不可用，退回整段判定:', err); if (mounted) setOccupiedDays(null) })
+    Promise.allSettled([
+      fetchOccupiedSpaces(occupiedStartKey, occupiedEndKey)
+        .then(ids => { if (mounted) setOccupiedIds(ids) })
+        .catch(err => console.error('讀取空間佔用失敗:', err)),
+      fetchOccupiedSpacesDaily(occupiedStartKey, occupiedEndKey)
+        .then(map => { if (mounted) setOccupiedDays(map) })
+        .catch(err => { console.warn('逐日佔用 RPC 不可用，退回整段判定:', err); if (mounted) setOccupiedDays(null) })
+    ]).then(() => { if (mounted) setOccupiedLoaded(true) })
     return () => { mounted = false }
   }, [occupiedStartKey, occupiedEndKey])
 
@@ -103,8 +108,9 @@ const SpacePage: React.FC = () => {
     addToCartRef.current = addToCart
   }, [addToCart])
 
-  // 訪客被導去登入前的選取（分類／區塊／專案許可），回來後還原
-  const [pending] = useState(() => takePendingSelection<{ main: 'NumberedArea' | 'Classroom'; sub: string | null; blocks: string[]; permit: boolean }>('space'))
+  // 訪客被導去登入前的選取（分類／區塊／專案許可），回來後還原；add＝當時按的加入清單（'blocks'＝選好的格子，其餘＝教室 id），登入回來自動加進去
+  const [pending] = useState(() => takePendingSelection<{ main: 'NumberedArea' | 'Classroom'; sub: string | null; blocks: string[]; permit: boolean; add?: string }>('space'))
+  const autoAdd = useRef(pending?.add)
   // 主分類：NumberedArea 或 Classroom
   const [selectedMainCategory, setSelectedMainCategory] = useState<'NumberedArea' | 'Classroom'>(pending?.main ?? 'NumberedArea')
   // 編號區子分類 - 預設為 null（不選擇任何子分類，顯示全部地圖）
@@ -113,7 +119,7 @@ const SpacePage: React.FC = () => {
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>(pending?.blocks ?? [])
   const [hasProjectPermission, setHasProjectPermission] = useState<boolean>(pending?.permit ?? false)
   // 訪客按加入清單：帶去登入頁、登入後還原的選取
-  const goLogin = () => navigate(loginPath('space', { main: selectedMainCategory, sub: selectedSubCategory, blocks: selectedBlocks, permit: hasProjectPermission }))
+  const goLogin = (add: string) => navigate(loginPath('space', { main: selectedMainCategory, sub: selectedSubCategory, blocks: selectedBlocks, permit: hasProjectPermission, add }))
   const [legendOpen, setLegendOpen] = useState(false) // lg 以下才有作用
   // 狀態篩選 - 添加 partial 狀態
   const [statusFilters, setStatusFilters] = useState<Set<'available' | 'unavailable' | 'partial'>>(
@@ -365,7 +371,7 @@ const SpacePage: React.FC = () => {
 
     // 訪客／停權早退：在清空選取前擋下，保留使用者已選的區塊
     if (!isAuthenticated) {
-      goLogin()
+      goLogin('blocks')
       return
     }
     if (isSuspended) {
@@ -448,7 +454,7 @@ const SpacePage: React.FC = () => {
 
     // 訪客：導去登入頁（放在 A508 年級檢查之前，訪客沒有年級）
     if (!isAuthenticated) {
-      goLogin()
+      goLogin(id)
       return
     }
 
@@ -490,6 +496,19 @@ const SpacePage: React.FC = () => {
       }
     }
   }
+
+  // 訪客按加入清單被導去登入：登入回來，資料（空間定義、該時段佔用）到齊後把當時要加的加進去，只做一次。
+  // 走原本的 handleAddBlocks／handleClassroomAdd，押金上限、專案許可、佔用的檢查都照常；格子被別人先借走的不加
+  useEffect(() => {
+    const add = autoAdd.current
+    if (!add || !isAuthenticated || !occupiedLoaded || !hasSelectedDates || Object.keys(spaceBlocks).length === 0) return
+    autoAdd.current = undefined
+    if (add !== 'blocks') { handleClassroomAdd(add); return }
+    const gone = selectedBlocks.filter(id => occupiedIds.includes(id))
+    if (gone.length === 0) { handleAddBlocks(); return }
+    setSelectedBlocks(prev => prev.filter(id => !gone.includes(id)))
+    showToast(t(`${gone.join(', ')} was booked by someone else in the meantime. Please check your selection and add again.`, `${gone.join('、')} 剛剛被別人借走了，請確認選取後再加入清單`), 'error')
+  })
 
   // 判斷編號區是否被選中（主分類是 NumberedArea）
   const isNumberedAreaSelected = selectedMainCategory === 'NumberedArea'

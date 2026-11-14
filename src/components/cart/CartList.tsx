@@ -21,6 +21,7 @@ import { useT } from '../../stores/langStore'
 import Collapse from '../common/Collapse'
 import { calcBundles, type Bundle } from '../../utils/bundleUtils'
 import { isSophomoreOrAbove } from '../../utils/gradeUtils'
+import { daysLabel } from '../../utils/timeUtils'
 
 interface CartListProps {
   cart: CartItem[]
@@ -35,9 +36,19 @@ interface CartListProps {
   selectMode?: boolean
   /** 該品項時段已被他人訂單佔用的量（含 On Hold，useCartReserved） */
   getReserved?: (item: CartItem) => number
+  /** 空間（格子／教室）這個時段已被別人的訂單借走（spaceService.useCartTakenSpaces） */
+  isTaken?: (item: CartItem) => boolean
 }
 
-const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveItem, bookingDetails, onBookingDetailsChange, expiredDateKeys = [], selectedGroups: externalSelectedGroups, onSelectedGroupsChange, selectMode = false, getReserved = () => 0 }) => {
+// 空間列：被別人先借走的標示（同設備的「缺貨」）
+const TakenNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex items-center gap-1 mt-1">
+    <span className="material-symbols-outlined text-xs text-pink">error</span>
+    <span className="text-xs text-pink">{children}</span>
+  </div>
+)
+
+const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveItem, bookingDetails, onBookingDetailsChange, expiredDateKeys = [], selectedGroups: externalSelectedGroups, onSelectedGroupsChange, selectMode = false, getReserved = () => 0, isTaken = () => false }) => {
   const t = useT()
   const itemName = useItemName()
   const areaLabel = useAreaName()
@@ -494,6 +505,8 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
 
                       // 檢查是否有任何區塊正在被刪除
                       const isRemoving = blocks.some(b => removingItems.has(`${b.id}_${group.startDate}_${group.endDate}`))
+                      // 別人先送出、已被借走的格子（過期時段先改日期，不判）
+                      const takenIds = isExpired ? [] : sortBlockIds(blocks.filter(isTaken).map(b => b.id))
 
                       renderedItems.push(
                         <div
@@ -515,8 +528,21 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           </div>
 
                           {/* 名稱（區域 + 所有編號） */}
-                          <div className="font-chinese text-sm text-white">
-                            {areaName}（{blockIds.join('、')}）
+                          <div>
+                            <div className="font-chinese text-sm text-white">
+                              {areaName}（{blockIds.join('、')}）
+                            </div>
+                            {takenIds.length > 0 && (
+                              <TakenNote>
+                                <span className="font-english">{takenIds.join('、')}</span> {t('already booked', '已被借走')}
+                                <button
+                                  onClick={() => takenIds.forEach(id => handleRemoveItem(id, group.startDate, group.endDate))}
+                                  className={`ml-2 underline underline-offset-2 ${BTN}`}
+                                >
+                                  {t('Remove', '移除')}
+                                </button>
+                              </TakenNote>
+                            )}
                           </div>
 
                           {/* 押金（總和） */}
@@ -565,6 +591,7 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           {/* 名稱 */}
                           <div className="text-sm text-white">
                             {itemName(item.id, item.name)}
+                            {!isExpired && isTaken(item) && <TakenNote>{t('Already booked — please remove', '已被借走，請移除')}</TakenNote>}
                           </div>
 
                           {/* 押金 */}
@@ -629,15 +656,25 @@ const CartList: React.FC<CartListProps> = ({ cart, onQuantityChange, onRemoveIte
                           <div className="text-sm text-white">
                             {itemName(item.id, item.name)}
                           </div>
+                          {/* 分時段的設備（雷切機）：借的是哪幾天 */}
+                          {item.days && (
+                            <div className="font-english text-xs text-gray-light">{daysLabel(item.days, t(', ', '、'))}</div>
+                          )}
                           {/* 只在完全缺貨（灰色狀態）時顯示錯誤訊息 */}
                           {isOutOfStock && (
                             <div className="flex items-center gap-1">
                               <span className="material-symbols-outlined text-xs text-pink">
                                 error
                               </span>
-                              <span className="font-english text-xs text-pink">
-                                {t('Out of Stock', '缺貨')} ({t('Available', '可借')}: {maxQtyForThisItem})
-                              </span>
+                              {item.days ? (
+                                <span className="text-xs text-pink">
+                                  {t('Slot has passed, is taken or is outside your dates — remove it and pick again', '時段已過、已被借走或不在租借日期內，請移除後重選')}
+                                </span>
+                              ) : (
+                                <span className="font-english text-xs text-pink">
+                                  {t('Out of Stock', '缺貨')} ({t('Available', '可借')}: {maxQtyForThisItem})
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>

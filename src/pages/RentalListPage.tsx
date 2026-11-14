@@ -19,8 +19,15 @@ import { useCartValidation } from '../hooks/useCartValidation'
 import { useOrderSubmission } from '../hooks/useOrderSubmission'
 import { useSuspension } from '../hooks/useSuspension'
 import { useToast } from '../hooks/useToast'
-import { useCartReserved } from '../services/equipmentService'
-import { readCart, writeCart, formatYmd, detailsKey, readDetails, writeDetails } from '../components/cart/cartHelpers'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { useAuth } from '../contexts/AuthContext'
+import { useCartReserved, useItemName } from '../services/equipmentService'
+import { useCartTakenSpaces } from '../services/spaceService'
+import { updateMyPhone } from '../services/authService'
+import Dialog from '../components/common/ConfirmDialog'
+import EditProfileDialog from '../components/profile/EditProfileDialog'
+import { readCart, writeCart, formatYmd, detailsKey, readDetails, writeDetails, sortBlockIds } from '../components/cart/cartHelpers'
+import { daysLabel } from '../utils/timeUtils'
 import { useT } from '../stores/langStore'
 import { useGuideDocUrl } from '../services/contentService'
 
@@ -54,7 +61,14 @@ const RentalListPage = () => {
     getCartQuantity,
     bundles
   } = useCart()
-  const getReserved = useCartReserved(cart)
+  // 先送先贏、購物車不佔位：別人先送出後，清單裡被借走的要標出來、送出鈕鎖住。
+  // 每分鐘＋切回分頁重查一次，送單被 server 擋下時也馬上重查（availTick）
+  const [availTick, setAvailTick] = useState(0)
+  useAutoRefresh(() => setAvailTick(n => n + 1))
+  const getReserved = useCartReserved(cart, availTick)
+  const isTaken = useCartTakenSpaces(cart, availTick)
+  const { currentUser, updateUser } = useAuth()
+  const itemName = useItemName()
   const { confirm, ConfirmDialog } = useConfirmDialog()
   const { showToast: showErrorToast, toastElement } = useToast()
 
@@ -101,7 +115,7 @@ const RentalListPage = () => {
     bookingDetailsValidation,
     singleOrderValidation,
     littleLimitValidation
-  } = useCartValidation({ cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved, bundles })
+  } = useCartValidation({ cart, bookingDetails, getOriginalQuantity, getCartQuantity, getReserved, isTaken, bundles })
 
   // 計算不同類型的項目數量
   // 設備：累加所有設備的數量 (A設備3個 + B設備2個 = 5)
@@ -125,6 +139,8 @@ const RentalListPage = () => {
     })
     return Object.values(groups)
       .map(items => ({
+        key: cartGroupKey(items[0]),
+        items,
         startDate: items[0].startDate,
         endDate: items[0].endDate,
         deposit: bookingDetails[cartGroupKey(items[0])]?.asTeacher ? 0 : Math.min( // 老師名義免押金
@@ -262,7 +278,12 @@ const RentalListPage = () => {
   // 停權帳號直接鎖住送單按鈕（即時查詢；真正的防線在 submit_orders RPC，此處為 UX）
   const isSuspended = useSuspension()
 
-  const handleCheckout = async () => {
+  // 送出＝三步：沒留手機先填（學會要聯絡得到人，server 端 submit_orders 也擋）→ 再確認一次要借的東西 → 送單
+  const [phoneOpen, setPhoneOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleCheckout = () => {
     if (!agreedToTerms) {
       alert(t('Please agree to the terms and conditions first.', '請先同意使用規則與條款'))
       return
@@ -271,10 +292,29 @@ const RentalListPage = () => {
       alert(t('Your cart is empty.', '購物車是空的'))
       return
     }
-    // 失敗時購物車保留原樣，提示重送即可
+    if (!currentUser?.phone) setPhoneOpen(true)
+    else setReviewOpen(true)
+  }
+
+  const handleSavePhone = async (phone: string) => {
+    const res = await updateMyPhone(phone)
+    if (!res.ok) return { ok: false }
+    updateUser({ phone })
+    setPhoneOpen(false)
+    setReviewOpen(true)
+    return { ok: true }
+  }
+
+  const handleSubmit = async () => {
+    if (submitting) return
+    setReviewOpen(false)
+    setSubmitting(true)
+    // 失敗時購物車保留原樣；最常見是剛好被別人先借走，重查佔用把那幾項標出來（送出鈕跟著鎖住）
     const result = await submitOrder()
+    setSubmitting(false)
     if (!result.ok) {
       showErrorToast(result.reason || t('Submission failed. Please try again.', '送出失敗，請再試一次'))
+      setAvailTick(n => n + 1)
     }
   }
 
@@ -340,6 +380,7 @@ const RentalListPage = () => {
                   onSelectedGroupsChange={setSelectedGroups}
                   selectMode={selectMode}
                   getReserved={getReserved}
+                  isTaken={isTaken}
                 />
               </div>
             </div>
@@ -538,7 +579,7 @@ const RentalListPage = () => {
                 )}
                 <button
                   onClick={handleCheckout}
-                  disabled={isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid || !littleLimitValidation.valid}
+                  disabled={submitting || isSuspended || cart.length === 0 || !agreedToTerms || !cartValidation.valid || !bookingDetailsValidation.valid || !expiredOrdersValidation.valid || !stockAvailabilityValidation.valid || !singleOrderValidation.valid || !littleLimitValidation.valid}
                   className={`w-full h-12 flex items-center justify-center gap-1 pl-4 pr-3 rounded-lg text-sm font-normal whitespace-nowrap bg-white text-black ${BTN}`}
                 >
                   {t('Book', '送出')}
@@ -580,6 +621,74 @@ const RentalListPage = () => {
       {/* 確認對話框 */}
       <ConfirmDialog />
       {toastElement}
+
+      {/* 沒留手機：送出前先填 */}
+      <EditProfileDialog
+        isOpen={phoneOpen}
+        mode="phone"
+        hint={{
+          en: 'Please leave a phone number before booking so the SA can reach you about your rental.',
+          zh: '送出預約前請先留手機號碼，租借有狀況時系學會才聯絡得到你。'
+        }}
+        onConfirm={handleSavePhone}
+        onCancel={() => setPhoneOpen(false)}
+      />
+
+      {/* 送出前再確認一次：一張訂單一段（類型、時段、品項、押金） */}
+      <Dialog
+        isOpen={reviewOpen}
+        title="確認送出"
+        titleEn="Confirm booking"
+        message="請再確認一次要借的東西。送出後請在 24 小時內到系學會繳押金。"
+        messageEn="Please check what you’re borrowing once more. After submitting, pay the deposit at the SA within 24 hrs."
+        confirmText="Book"
+        confirmTextZh="送出"
+        onConfirm={() => void handleSubmit()}
+        onCancel={() => setReviewOpen(false)}
+      >
+        <div className="mt-4 max-h-[50dvh] overflow-y-auto pr-2 custom-scrollbar text-xs text-white">
+          {depositGroups.map(g => {
+            const isEquip = g.items[0].category === 'equipment'
+            const little = (g.items[0].bookingType || 'little') === 'little'
+            const blockIds = sortBlockIds(g.items.filter(i => i.category === 'space-block').map(i => i.id))
+            return (
+              <div key={g.key} className="py-3 border-t border-gray-mid first:border-t-0 first:pt-0">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span>
+                    {isEquip ? t('Equipment', '設備') : t('Space', '空間')}・{isEquip
+                      ? (little ? t('Light', '小量') : t('Mass', '大量'))
+                      : (little ? t('Personal', '個人') : t('Group', '團體'))}
+                  </span>
+                  <span className="font-english">{formatYmd(new Date(g.startDate))} - {formatYmd(new Date(g.endDate))}</span>
+                </div>
+                <ul className="mt-2 space-y-1 text-gray-light">
+                  {g.items.filter(i => i.category !== 'space-block').map(i => (
+                    <li key={i.id} className="flex justify-between gap-4">
+                      <span>
+                        {itemName(i.id, i.name)}
+                        {/* 分時段的設備：借的是哪幾天 */}
+                        {i.days && <span className="font-english">（{daysLabel(i.days, t(', ', '、'))}）</span>}
+                      </span>
+                      {isEquip && <span className="font-english">×{i.quantity}</span>}
+                    </li>
+                  ))}
+                  {blockIds.length > 0 && (
+                    <li>{t('Numbered area', '編號區')}：<span className="font-english">{blockIds.join(', ')}</span></li>
+                  )}
+                </ul>
+                <div className="mt-2 flex justify-between gap-4">
+                  <span>{t('Deposit', '押金')}</span>
+                  <span className="font-english">NT$ {g.deposit.toLocaleString()}</span>
+                </div>
+              </div>
+            )
+          })}
+          <div className="pt-3 border-t border-gray-mid flex justify-between gap-4 text-sm">
+            <span>{t('Total Deposit', '總押金')}</span>
+            <span className="font-english">NT$ {totalDeposit.toLocaleString()}</span>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }
