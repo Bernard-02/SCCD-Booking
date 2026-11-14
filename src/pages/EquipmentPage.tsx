@@ -12,6 +12,7 @@ import BackButton from '../components/common/BackButton'
 import { navItemCls } from '../components/common/navItem'
 import Footer from '../components/layouts/Footer'
 import EquipmentGrid from '../components/equipment/EquipmentGrid'
+import EquipmentStatus from '../components/equipment/EquipmentStatus'
 import DatePickerBar from '../components/DatePickerBar'
 import { EQUIPMENT_CATEGORIES } from '../types/equipment'
 import type { BookingType } from '../types/equipment'
@@ -61,6 +62,28 @@ const EquipmentPage: React.FC = () => {
 
   const [legendOpen, setLegendOpen] = useState(false) // lg 以下才有作用
 
+  // 檢視切換（2026-11-14）：清單＝原本的型錄（選數量、加入清單）；現況＝設備 × 日期，一眼看每天還能借幾個（EquipmentStatus）
+  const [view, setView] = useState<'list' | 'status'>('list')
+  // 兩顆併成一組：選中白底黑字、沒選中的 hover 也是白底黑字；compact＝手機標題列只放 icon
+  const viewToggle = (compact: boolean) => (
+    <div className="flex gap-1" role="group" aria-label={t('View', '檢視方式')}>
+      {([['list', 'view_list', 'List', '清單'], ['status', 'calendar_view_week', 'Availability', '現況']] as const).map(([key, icon, en, zh]) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => setView(key)}
+          aria-pressed={view === key}
+          aria-label={t(en, zh)}
+          title={t(en, zh)}
+          className={`${BTN_TOOL} ${compact ? '!px-2' : ''} ${view === key ? '!bg-white !text-black cursor-pointer' : BTN_INVERT}`}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
+          {!compact && t(en, zh)}
+        </button>
+      ))}
+    </div>
+  )
+
   // 分類列表：全部＋固定分類（與後台設備管理共用 EQUIPMENT_CATEGORIES）＋收藏
   const categories = [
     { en: 'All', zh: '全部', icon: 'apps' },
@@ -80,17 +103,21 @@ const EquipmentPage: React.FC = () => {
             <div className="flex-shrink-0 max-lg:flex max-lg:items-center max-lg:gap-3">
               <BackButton />
               <h1 className="text-white text-xl mb-6 max-lg:mb-0 max-lg:text-md">{t('Equipment', '設備')}</h1>
-              {/* lg 以下圖例收起來，這顆展開；有篩選時標粉點，收著也看得出來 */}
+              {/* lg 以下：清單／現況切換放標題列（桌機在右邊清單的右上角） */}
+              <div className="lg:hidden ml-auto">{viewToggle(true)}</div>
+              {/* lg 以下圖例收起來，這顆展開；有篩選時標粉點，收著也看得出來。狀態篩選只有清單有 */}
+              {view === 'list' && (
               <button
                 type="button"
                 onClick={() => setLegendOpen(o => !o)}
                 aria-expanded={legendOpen}
-                className={`lg:hidden ml-auto ${BTN_TOOL} ${legendOpen ? '!bg-white !text-black cursor-pointer' : BTN_INVERT}`}
+                className={`lg:hidden ${BTN_TOOL} ${legendOpen ? '!bg-white !text-black cursor-pointer' : BTN_INVERT}`}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>filter_list</span>
                 {t('Status', '狀態')}
                 {!legendOpen && statusFilters.size < 3 && <span className="w-2 h-2 rounded-full bg-pink" />}
               </button>
+              )}
             </div>
 
             {/* 下方區塊：分類 Filter + Legend */}
@@ -114,8 +141,8 @@ const EquipmentPage: React.FC = () => {
               {/* 中間空白區域 - 自動填充 */}
               <div className="flex-1 max-lg:hidden"></div>
 
-              {/* 狀態篩選 Legend - 底部 */}
-              <div className="flex-shrink-0">
+              {/* 狀態篩選 Legend - 底部（只有清單有；現況的圖例在它自己上方） */}
+              <div className={`flex-shrink-0 ${view === 'list' ? '' : 'hidden'}`}>
                 <Collapse open={legendOpen} below="lg">
                 <div className="flex flex-col gap-3 max-lg:flex-row max-lg:flex-wrap max-lg:gap-x-4 max-lg:gap-y-1 max-lg:pt-3">
                   <button
@@ -159,12 +186,14 @@ const EquipmentPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 右側欄位：80% - 可滾動 */}
-          <div className="w-[80%] max-lg:w-full min-w-0 overflow-y-auto flex-1">
-            <EquipmentGrid
-              selectedCategory={selectedCategory}
-              statusFilters={statusFilters}
-            />
+          {/* 右側欄位：80% - 可滾動；右上角（清單表頭上方的留白）放清單／現況切換 */}
+          <div className="w-[80%] max-lg:w-full min-w-0 flex-1 relative flex flex-col overflow-hidden">
+            <div className="absolute top-3 right-0 z-10 max-lg:hidden">{viewToggle(false)}</div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {view === 'list'
+                ? <EquipmentGrid selectedCategory={selectedCategory} statusFilters={statusFilters} />
+                : <EquipmentStatus selectedCategory={selectedCategory} />}
+            </div>
           </div>
         </div>
 

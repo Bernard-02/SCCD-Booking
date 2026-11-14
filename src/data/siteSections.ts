@@ -76,7 +76,7 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         '個人空間一個時段只能借一間教室，團體不在此限。',
         '編號區、教室與系學會設備僅限已繳交系學會費者借用。',
         '以老師名義借用：填借用資訊時選「老師名義」，填老師名稱並上傳有老師簽名的證明文件（JPG、PNG 或 PDF），免押金；送出後請於 24 小時內到系學會核對。',
-        '雷切機：一年級借用須上傳授課教師核可證明；每次使用時間由系學會現場確認，借用時請攜帶身分證件。',
+        '雷切機：只能在系學會營業時間內使用，借用時選午班、晚班或兩個時段都借；一年級借用須上傳授課教師核可證明，借用時請攜帶身分證件。',
         '全程遵守【空間與設備管理規章】；施工須全程遵守「施工規範」。'
       ].join('\n'),
       [
@@ -89,7 +89,7 @@ export const DEFAULT_SECTIONS: Record<SectionPage, SiteSection[]> = {
         'Personal bookings can include only one classroom per period; group bookings aren\’t limited.',
         'Numbered areas, classrooms and SA equipment are for students who have paid the Student Association fee.',
         'Booking under a teacher\’s name: choose it in the booking details, enter the teacher\’s name and upload a signed proof (JPG, PNG or PDF). No deposit is charged; bring the proof to the SA within 24 hours of submitting.',
-        'Laser cutter: first-year students must upload their course teacher\’s approval; the SA confirms usage time on site, and please bring your ID when borrowing.',
+        'Laser cutter: it can only be used during SA opening hours — book the noon shift, the evening shift, or both. First-year students must upload their course teacher\’s approval, and please bring your ID when borrowing.',
         'Follow the Space & Equipment Regulations at all times; construction work must follow the Construction Guidelines.'
       ].join('\n'))),
     sec('罰款', 'Penalties', blk('list',

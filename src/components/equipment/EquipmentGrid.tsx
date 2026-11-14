@@ -4,10 +4,10 @@
  */
 
 import { BTN, BTN_OUTLINE, CHIP, TAP } from '@/components/common/btn'
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cartGroupKey, EQUIPMENT_CATEGORIES, type CartItem, type Equipment } from '../../types/equipment'
-import { calcBundles, type Bundle } from '../../utils/bundleUtils'
+import { calcBundles, SHIFT_RE, type Bundle } from '../../utils/bundleUtils'
 import ConfirmDialog from '../common/ConfirmDialog'
 import { useBookmarkStore } from '../../stores/bookmarkStore'
 import { useCart, loginPath, takePendingSelection } from '../../hooks/useCart'
@@ -15,12 +15,17 @@ import { useDateSelection } from '../../contexts/DateSelectionContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { useEquipmentData, useItemName, fetchEquipmentReserved, fetchEquipmentReservedDaily } from '../../services/equipmentService'
 import type { ReservedInfo } from '../../services/equipmentService'
+import { fetchClosedDates } from '../../services/ordersService'
 import { toDateKey, rescheduleCategory } from '../cart/cartHelpers'
-import { dayKeysBetween, fromDateKey } from '../../utils/timeUtils'
+import { dayKeysBetween, fromDateKey, shiftClosed, shiftPassed } from '../../utils/timeUtils'
 import PartialDialog from '../common/PartialDialog'
+import ShiftDialog, { type Shift, type SlotState } from './ShiftDialog'
 import { Select } from '../admin/adminUi'
 import Toast from '../common/Toast'
 import { useT } from '../../stores/langStore'
+
+// 分時段設備的名稱結尾：「雷切機（午班）」「雷切機（晚班）」＝bundleUtils.SHIFT_RE（英文名稱同樣去掉結尾的 (Noon)／(Evening) 當卡片名稱）
+const shiftBaseName = (name: string) => name.replace(/\s*[（(]\s*(午班|晚班|noon|evening)[^）)]*[）)]\s*$/i, '')
 
 interface EquipmentGridProps {
   selectedCategory: string
@@ -33,8 +38,9 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([])
   // 數量允許暫存空字串：使用者可先清空再輸入，失焦時若無有效值會回到 1
-  // 訪客被導去登入前的選取（數量／整組），回來後還原
-  const [pending] = useState(() => takePendingSelection<{ quantities: Record<string, number | ''>; modes: Record<string, string> }>('equipment'))
+  // 訪客被導去登入前的選取（數量／整組），回來後還原；add＝當時按加入清單的那一件，登入回來自動加進去
+  const [pending] = useState(() => takePendingSelection<{ quantities: Record<string, number | ''>; modes: Record<string, string>; add?: string }>('equipment'))
+  const autoAdd = useRef(pending?.add)
   const [quantities, setQuantities] = useState<Record<string, number | ''>>({})
   const [openCard, setOpenCard] = useState<string | null>(null) // 卡片模式展開中的設備（一次一張，同 Profile 訂單）
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -79,28 +85,46 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   const [dailyMap, setDailyMap] = useState<Record<string, Record<string, number>> | null>(null)
   // 正在開選段 popup 的設備
   const [partialItem, setPartialItem] = useState<Equipment | null>(null)
+  // 正在開選時段 popup 的分時段設備（午班那個，卡片的代表）
+  const [shiftItem, setShiftItem] = useState<Equipment | null>(null)
+  // 目前區間的佔用查完了沒（登入回來自動加入要等它，不然會用「沒人借」去判斷）
+  const [availLoaded, setAvailLoaded] = useState(false)
 
   const startKey = equipmentDates.startDate ? toDateKey(equipmentDates.startDate) : null
   const endKey = equipmentDates.endDate ? toDateKey(equipmentDates.endDate) : null
 
   useEffect(() => {
+    setAvailLoaded(false)
     if (!startKey || !endKey) {
       setReservedMap({})
       setDailyMap(null)
       return
     }
     let mounted = true
-    fetchEquipmentReserved(startKey, endKey)
-      .then(map => { if (mounted) setReservedMap(map) })
-      .catch(err => console.error('讀取設備佔用失敗:', err))
-    fetchEquipmentReservedDaily(startKey, endKey)
-      .then(map => { if (mounted) setDailyMap(map) })
-      .catch(err => { console.warn('逐日佔用 RPC 不可用，退回整段判定:', err); if (mounted) setDailyMap(null) })
+    Promise.allSettled([
+      fetchEquipmentReserved(startKey, endKey)
+        .then(map => { if (mounted) setReservedMap(map) })
+        .catch(err => console.error('讀取設備佔用失敗:', err)),
+      fetchEquipmentReservedDaily(startKey, endKey)
+        .then(map => { if (mounted) setDailyMap(map) })
+        .catch(err => { console.warn('逐日佔用 RPC 不可用，退回整段判定:', err); if (mounted) setDailyMap(null) })
+    ]).then(() => { if (mounted) setAvailLoaded(true) })
     return () => { mounted = false }
   }, [startKey, endKey])
 
+  // 分時段的設備（雷切機）只能在營業時間用：那一班沒開的日子（週六日、公休整天、只休那一班）借不到——
+  // 選時段的視窗裡那一格不能點（slotState）；送單時 server 再擋一次（submit_orders）。
+  // 沒成對的分時段設備（只有午班或只有晚班）沒有選時段的視窗，照一般設備整段借，沒開的日子當成那天被借走
+  const [closed, setClosed] = useState<ReadonlySet<string>>(new Set())
+  useEffect(() => { void fetchClosedDates().then(setClosed) }, [])
+  const shiftOff = (id: string, day: string): boolean => {
+    const m = equipmentData[id]?.name.match(SHIFT_RE)
+    return !!m && shiftClosed(day, m[1] === '午班' ? 'noon' : 'evening', closed)
+  }
+
   // 可借數量 = 在庫 − 該時段生效訂單佔用 − 購物車內已加入數量
   const getAvailableQuantity = (id: string): number => {
+    if (rangeDays.some(d => shiftOff(id, d))) return 0
     const stock = equipmentData[id]?.originalQuantity ?? 0
     const reserved = reservedMap[id]?.reserved ?? 0
     return Math.max(0, stock - reserved - getCartQuantity(id))
@@ -109,7 +133,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   // 區間內每一天的 key；逐日可借量＝在庫 − 當天佔用 − 購物車內已加入（部分時段可借用）
   const rangeDays = useMemo(() => (startKey && endKey ? dayKeysBetween(fromDateKey(startKey), fromDateKey(endKey)) : []), [startKey, endKey])
   const dayAvail = (id: string, day: string): number =>
-    Math.max(0, (equipmentData[id]?.originalQuantity ?? 0) - (dailyMap?.[id]?.[day] ?? 0) - getCartQuantity(id))
+    shiftOff(id, day) ? 0 : Math.max(0, (equipmentData[id]?.originalQuantity ?? 0) - (dailyMap?.[id]?.[day] ?? 0) - getCartQuantity(id))
   // 區間內「最好的一天」可借量：有逐日資料時當數量上限（借得到部分時段）；沒有就同整段可借量
   const getMaxDayAvailable = (id: string): number =>
     dailyMap && rangeDays.length ? Math.max(...rangeDays.map(d => dayAvail(id, d))) : getAvailableQuantity(id)
@@ -147,9 +171,57 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     setQuantities({ ...initialQuantities, ...pending?.quantities })
   }, [equipmentData])
 
+  // ---- 分時段的設備（雷切機：只能在營業時間用，借午班、晚班或兩班都借；2026-11-14 學會）----
+  // 後台建兩個設備「XX（午班）」「XX（晚班）」，庫存與佔用各算各的（同一天午班、晚班可以不同人借）；
+  // 型錄把這兩個併成一張卡片，按加入清單開選時段的視窗（ShiftDialog，Bernard 2026-11-14 定）：一天一列選午班／晚班，可以跨天。
+  // 清單與訂單裡還是兩個品項（名稱直接寫午班／晚班），各自帶 days＝借的那幾天，只佔那幾天（order_items.days）。
+  // 兩班都有借＝一組，押金一份、算 1 件：這個組合是內建的，不用在後台建——
+  // useCart 的 bundles（loadBundles）已經接上 bundleUtils.shiftPairBundles，server 的 equipment_bundle_calc 同規則。
+  // ponytail: 靠名稱結尾認時段。之後有別的分法（三班、依小時）或第二種分時段設備再改成設備欄位
+  // ponytail: 一次借 1 台（雷切機每班只有 1 台）；有第二台、要一次借兩台再開放數量
+  const shiftGroups = useMemo(() => {
+    const byBase: Record<string, { noon?: Equipment; evening?: Equipment }> = {}
+    equipment.forEach(e => {
+      const m = e.name.match(SHIFT_RE)
+      if (m) (byBase[e.name.replace(SHIFT_RE, '')] ??= {})[m[1] === '午班' ? 'noon' : 'evening'] = e
+    })
+    // key＝午班那個設備的 id（卡片用它當代表）
+    const groups: Record<string, { evening: Equipment; both: Bundle }> = {}
+    Object.entries(byBase).forEach(([base, { noon, evening }]) => {
+      if (!noon || !evening) return
+      const pair = [noon.id, evening.id]
+      groups[noon.id] = {
+        evening,
+        // 找不到＝組合還在載入：先用同樣內容的頂著
+        both: bundles.find(b => b.items.length === 2 && b.items.every(c => c.quantity === 1 && pair.includes(c.equipmentId))) ?? {
+          id: `shift:${noon.id}`, name: `${base}（午班＋晚班）`, deposit: Math.max(noon.deposit, evening.deposit),
+          items: pair.map(equipmentId => ({ equipmentId, quantity: 1 }))
+        }
+      }
+    })
+    return groups
+  }, [equipment, bundles])
+  // 每列的「單個／整組」：設備 id → 組合 id；沒有＝單個
+  const [modes, setModes] = useState<Record<string, string>>(pending?.modes ?? {})
+
+  // 分時段卡片的每一格（班 × 天）：休息＝那一班那天沒開；已過＝今天那一班已經結束（只能借之後的，Bernard 2026-11-14）；
+  // 已借出＝那天沒有剩（看逐日佔用，沒有逐日資料退回整段）。不扣清單裡自己選的：再開一次視窗是改選，確認時整個換掉
+  const slotState = (id: string, day: string): SlotState =>
+    shiftOff(id, day) ? 'closed'
+      : shiftPassed(day, SHIFT_RE.exec(equipmentData[id]?.name ?? '')?.[1] === '午班' ? 'noon' : 'evening') ? 'past'
+      : (equipmentData[id]?.originalQuantity ?? 0) - (dailyMap ? dailyMap[id]?.[day] ?? 0 : reservedMap[id]?.reserved ?? 0) > 0 ? 'free' : 'taken'
+  // 分時段卡片的狀態：還能借的格子（有開、還沒過）都借得到＝綠、只剩一部分＝橘、一格都借不到＝粉
+  const shiftStatus = (noonId: string): 'available' | 'partial' | 'unavailable' => {
+    const open = rangeDays.flatMap(d => [noonId, shiftGroups[noonId].evening.id].map(id => slotState(id, d))).filter(s => s === 'free' || s === 'taken')
+    const free = open.filter(s => s === 'free').length
+    return !rangeDays.length || (free > 0 && free === open.length) ? 'available' : free > 0 ? 'partial' : 'unavailable'
+  }
+
   // 篩選邏輯
   useEffect(() => {
-    let filtered = equipment
+    // 晚班那個設備併進午班的卡片，不另外列
+    const merged = new Set(Object.values(shiftGroups).map(g => g.evening.id))
+    let filtered = equipment.filter(item => !merged.has(item.id))
 
     // 收藏篩選 - 顯示所有已收藏的設備（不管是否借出）
     if (selectedCategory === '收藏') {
@@ -169,7 +241,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     }
 
     setFilteredEquipment(filtered)
-  }, [equipment, selectedCategory, statusFilters, bookmarkedIds, cart, reservedMap, hasSelectedDates, dailyMap, quantities])
+  }, [equipment, selectedCategory, statusFilters, bookmarkedIds, cart, reservedMap, hasSelectedDates, dailyMap, quantities, shiftGroups, modes, closed])
 
   // 切換書籤
   const toggleBookmark = (id: string, itemName: string) => {
@@ -249,8 +321,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   })
 
   // ---- 設備組合 ----
-  // 每列可選「單個」或「整組」（modes：設備 id → 組合 id；沒有＝單個）。整組時數量＝要再加幾組，系統自動配好零件
-  const [modes, setModes] = useState<Record<string, string>>(pending?.modes ?? {})
+  // 每列可選「單個」或「整組」（modes，宣告在上面篩選邏輯之前）。整組時數量＝要再加幾組，系統自動配好零件
   // 單個加入組合內的設備、加入後還湊不成組時，彈窗問要不要整組借
   const [bundleOffer, setBundleOffer] = useState<{ item: Equipment; quantity: number; bundle: Bundle; sets: number; maxSets: number } | null>(null)
 
@@ -320,6 +391,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
   // 數量上限：單個＝區間裡最好的一天可借幾件；整組＝最好的一天還能加幾組（沒有逐日資料就看整段）
   const getMaxQuantity = (id: string): number => {
+    if (shiftGroups[id]) return getEquipmentStatus(id) === 'unavailable' ? 0 : 1 // 分時段的卡片一次 1 台
     const b = modeBundle(id)
     if (!b) return getMaxDayAvailable(id)
     return dailyMap && rangeDays.length ? Math.max(...rangeDays.map(d => bundleRoomOn(b, d).extra)) : bundleRoom(b).extra
@@ -342,8 +414,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
   // 實際加入（單件或整組），成功後重置該設備的數量為 1
   const commitAdd = (items: CartItem[], label: string, resetId: string) => {
-    // 訪客：導去登入頁，登入後回來還原數量（日期已存 localStorage）
-    if (!isAuthenticated) { navigate(loginPath('equipment', { quantities, modes })); return }
+    // 訪客：導去登入頁，登入後回來還原數量（日期已存 localStorage）並自動加入這一件
+    if (!isAuthenticated) { navigate(loginPath('equipment', { quantities, modes, add: resetId })); return }
     const result = addToCart(items)
     if (!result.ok) {
       // 加入失敗（停權／押金上限／類型衝突／9 件上限），顯示原因而非假的成功訊息
@@ -379,17 +451,42 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
       return
     }
 
+    // 分時段的設備：開視窗選時段（哪幾天、午班或晚班），不走下面的整段流程
+    if (shiftGroups[item.id]) {
+      if (!isAuthenticated) { navigate(loginPath('equipment', { quantities, modes, add: item.id })); return }
+      if (getEquipmentStatus(item.id) === 'unavailable') {
+        const name = shiftBaseName(itemName(item.id, item.name))
+        showToast(t(
+          `${name} has no open slots on the dates you selected (closed, already passed or booked). Please pick other dates.`,
+          `你選的日期「${name}」沒有可以借的時段（休息、已過或已被借走），請改選其他日期`
+        ), 'error')
+        return
+      }
+      setShiftItem(item)
+      return
+    }
+
     const quantity = quantities[item.id] || 1
 
     // 部分時段（單件或整組）：開 popup 選一段（設備日期會改成那段），不走整段庫存檢查
     if (getEquipmentStatus(item.id) === 'partial') {
-      if (!isAuthenticated) { navigate(loginPath('equipment', { quantities, modes })); return }
+      if (!isAuthenticated) { navigate(loginPath('equipment', { quantities, modes, add: item.id })); return }
       setPartialItem(item)
       return
     }
 
     // 下拉選了整組：數量＝組數，直接配好零件
     const setMode = modeBundle(item.id)
+
+    // 沒成對的分時段設備，選的日期那一班都沒開：說清楚是休息，不要顯示成庫存不足
+    if (rangeDays.length > 0 && rangeDays.every(d => shiftOff(item.id, d))) {
+      showToast(t(
+        `${itemName(item.id, item.name)} isn’t open on the dates you selected (the SA is closed). Please pick another date.`,
+        `你選的日期「${itemName(item.id, item.name)}」沒有開放（系學會休息），請改選其他日期`
+      ), 'error')
+      return
+    }
+
     if (setMode) {
       addSets(setMode, quantity, item.id)
       return
@@ -404,7 +501,8 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     }
 
     // 單個加入組合內的設備 → 先問要不要整組借
-    const offer = isAuthenticated ? findBundleOffer(item, quantity) : null
+    // 分時段的設備不問：時段是學生自己在下拉選的，選了午班就不用再問要不要連晚班一起
+    const offer = isAuthenticated && !SHIFT_RE.test(item.name) ? findBundleOffer(item, quantity) : null
     if (offer) {
       setBundleOffer(offer)
       return
@@ -412,6 +510,15 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
 
     commitAdd([toCartItem(item, quantity)], `${itemName(item.id, item.name)} x${quantity}`, item.id)
   }
+
+  // 訪客按加入清單被導去登入：登入回來，資料（設備、數量、該時段佔用）到齊後把那一件加進去，只做一次。
+  // 走同一支 handleAddToCart，庫存、整組、部分時段的檢查都照常
+  useEffect(() => {
+    const id = autoAdd.current
+    if (!id || !isAuthenticated || !availLoaded || !hasSelectedDates || !equipmentData[id] || quantities[id] === undefined) return
+    autoAdd.current = undefined
+    handleAddToCart(equipmentData[id])
+  })
 
   // 部分時段 popup 確認：設備日期改成選的那段，清單裡的設備一起改日期（同一次 save），再加入這件
   const confirmPartial = (startDate: string, endDate: string) => {
@@ -440,6 +547,23 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
     setQuantities(prev => ({ ...prev, [item.id]: 1 }))
   }
 
+  // 選時段 popup 確認：午班、晚班各一個品項，days＝選的那幾天；清單裡這台原本選的整個換掉（兩班都有＝一組，押金一份）
+  const confirmShift = (picked: Record<Shift, string[]>) => {
+    if (!shiftItem) return
+    const { evening } = shiftGroups[shiftItem.id]
+    const items = ([[shiftItem, picked.noon], [evening, picked.evening]] as const)
+      .filter(([, days]) => days.length > 0)
+      .map(([eq, days]) => ({ ...toCartItem(eq, 1), days }))
+    setShiftItem(null)
+    const result = addToCart(items, cart.filter(i => i.id !== shiftItem.id && i.id !== evening.id))
+    if (!result.ok) {
+      showToast(result.reason || t('Couldn’t add to your list.', '無法加入清單'), 'error')
+      return
+    }
+    const name = shiftBaseName(itemName(shiftItem.id, shiftItem.name))
+    showToast(t(`Added ${name} to your list`, `已成功加入 ${name} 到清單`))
+  }
+
   // 處理圖片點擊 - 全螢幕顯示
   const handleImageClick = (e: React.MouseEvent, imageSrc: string) => {
     e.stopPropagation()
@@ -454,6 +578,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
   // 設備狀態看卡片上填的數量（2026-11-02 部分時段）：每天都夠＝可借（綠）、沒有一天夠＝不可借（粉）、
   // 有些天夠＝部分時段（橘，點加入開 PartialDialog 選一段）。沒有逐日資料（RPC 未部署）退回整段判定
   const getEquipmentStatus = (itemId: string): 'available' | 'partial' | 'unavailable' => {
+    if (shiftGroups[itemId]) return shiftStatus(itemId) // 分時段的卡片看每一格（班 × 天）
     const b = modeBundle(itemId)
     if (!dailyMap || !rangeDays.length) return (b ? bundleRoom(b).extra : getAvailableQuantity(itemId)) > 0 ? 'available' : 'unavailable'
     const ok = okDaysFor(itemId).length
@@ -488,6 +613,24 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
           onCancel={() => setPartialItem(null)}
         />
       )}
+      {/* 分時段的設備：選哪幾天的午班／晚班；清單裡已經選的先點好 */}
+      {shiftItem && shiftGroups[shiftItem.id] && (() => {
+        const { evening, both } = shiftGroups[shiftItem.id]
+        const name = shiftBaseName(itemName(shiftItem.id, shiftItem.name))
+        const pickedDays = (id: string) => groupItems().find(i => i.id === id)?.days ?? []
+        return (
+          <ShiftDialog
+            title={`${name}：選擇時段`}
+            titleEn={`${name}: choose your slots`}
+            days={rangeDays}
+            stateOf={(s, d) => slotState(s === 'noon' ? shiftItem.id : evening.id, d)}
+            initial={{ noon: pickedDays(shiftItem.id), evening: pickedDays(evening.id) }}
+            deposit={both.deposit}
+            onConfirm={confirmShift}
+            onCancel={() => setShiftItem(null)}
+          />
+        )
+      })()}
       {bundleOffer && (() => {
         const { item, quantity, bundle, sets, maxSets } = bundleOffer
         const step = (d: number) => setBundleOffer({ ...bundleOffer, sets: Math.min(maxSets, Math.max(1, sets + d)) })
@@ -607,23 +750,28 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
         // 設備列表 - 可滾動
         <div className="flex-1 overflow-y-auto">
             {filteredEquipment.map(item => {
+              // 分時段的設備（午班／晚班併成一張卡片，item＝午班那個）：數量固定 1，可借與狀態看每一格（班 × 天），
+              // 按加入清單開選時段的視窗；沒有單個／整組下拉
+              const group = shiftGroups[item.id]
+              const title = group ? shiftBaseName(itemName(item.id, item.name)) : itemName(item.id, item.name)
               const isBookmarked = bookmarkedIds.has(item.id)
-              const quantity = quantities[item.id] || 1
-              const availableQty = getAvailableQuantity(item.id)
-              const maxDayQty = getMaxDayAvailable(item.id) // 部分時段：最好的一天可借幾件＝數量上限
-              const isAvailable = maxDayQty > 0
+              const quantity = group ? 1 : quantities[item.id] || 1
               const status = getEquipmentStatus(item.id)
               const statusColor = getStatusColor(status)
+              const availableQty = group ? (status === 'unavailable' ? 0 : item.originalQuantity) : getAvailableQuantity(item.id)
+              const maxDayQty = group ? availableQty : getMaxDayAvailable(item.id) // 部分時段：最好的一天可借幾件＝數量上限
+              const isAvailable = maxDayQty > 0
 
               // 組合：可選的組合與目前模式（整組時數量＝組數、上限＝還能加幾組）
-              const rowBundles = bundlesOf(item.id)
-              const setBundle = modeBundle(item.id)
+              const rowBundles = group ? [] : bundlesOf(item.id)
+              const setBundle = group ? undefined : modeBundle(item.id)
               const room = setBundle ? bundleRoom(setBundle) : null
               const maxQty = getMaxQuantity(item.id) // 整組＝最好的一天還能加幾組
               const canAdd = room ? maxQty > 0 : isAvailable
               const setItems = setBundle && room && hasSelectedDates ? topUpItems(setBundle, room.current + quantity) : []
 
-              // 檢查是否達到 Light 9件限制（整組看補齊後的件數，整組算 1 件）
+              // 檢查是否達到 Light 9件限制（整組看補齊後的件數，整組算 1 件）。
+              // 分時段的卡片是換掉清單裡原本選的，先拿掉再算（不然已經在清單裡的會被算兩次）
               const wouldExceedLightLimit = setBundle
                 ? setItems.length > 0 && checkLittleBookingLimit(setItems).allowed === false
                 : checkLittleBookingLimit({
@@ -636,7 +784,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     startDate: equipmentDates.startDate ? toDateKey(equipmentDates.startDate) : '',
                     endDate: equipmentDates.endDate ? toDateKey(equipmentDates.endDate) : '',
                     bookingType: equipmentDates.bookingType
-                  }).allowed === false
+                  }, group ? cart.filter(i => i.id !== item.id && i.id !== group.evening.id) : cart).allowed === false
 
               // 卡片模式收起時藏的欄（數量、收藏、待繳、分類、單個／整組）；表格模式 card: 不作用
               const fold = openCard === item.id ? '' : 'card:hidden'
@@ -659,7 +807,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleBookmark(item.id, item.name)
+                      toggleBookmark(item.id, title)
                     }}
                     className={`w-6 h-6 card:box-content card:col-start-4 card:row-start-3 justify-self-center flex items-center justify-center ${fold} ${TAP} ${isBookmarked ? 'cursor-pointer' : BTN}`}
                     aria-label={isBookmarked ? '取消收藏' : '加入收藏'}
@@ -688,7 +836,7 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                   <div className={`text-sm flex flex-col items-start gap-1 card:col-start-3 card:row-start-1 ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
-                    {itemName(item.id, item.name)}
+                    {title}
                     {/* 全部／收藏底下混了各種分類，名稱下方標出分類 chip（純文字）；進到單一分類就不用 */}
                     {(selectedCategory === '全部' || selectedCategory === '收藏') && (() => {
                       const cat = EQUIPMENT_CATEGORIES.find(c => c.zh === item.category)
@@ -698,7 +846,12 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                         </span>
                       )
                     })()}
-                    {rowBundles.length > 0 && (
+                    {/* 分時段的設備：時段在按加入清單後的視窗裡選，這裡只提示有分午班／晚班（卡片收著也看得到） */}
+                    {group ? (
+                      <span className={`text-2xs ${isAvailable ? 'text-gray-light' : ''}`}>
+                        {t('Pick noon / evening when adding', '加入清單時選午班／晚班')}
+                      </span>
+                    ) : rowBundles.length > 0 && (
                       <div className={fold} onClick={e => e.stopPropagation()}>
                       <Select
                         size="xs"
@@ -742,14 +895,15 @@ const EquipmentGrid: React.FC<EquipmentGridProps> = ({ selectedCategory, statusF
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
                     <div className="hidden card:block text-2xs text-gray-light">{t('On Hold', '待繳押金')}</div>
-                    {reservedMap[item.id]?.onHold ?? 0}
+                    {/* 分時段的卡片：午班、晚班裡較多的那個（同一張單兩班都借只算一台） */}
+                    {Math.max(reservedMap[item.id]?.onHold ?? 0, group ? reservedMap[group.evening.id]?.onHold ?? 0 : 0)}
                   </div>
 
                   {/* 押金/個 */}
                   <div className={`font-english text-sm card:text-xs text-center ${
                     !isAvailable ? 'text-gray-mid' : 'text-white'
                   }`}>
-                    NT$ {setBundle ? setBundle.deposit : item.deposit}
+                    NT$ {(group?.both ?? setBundle ?? item).deposit}
                     {setBundle && <span className="text-2xs text-gray-light">/{t('set', '組')}</span>}
                   </div>
 
