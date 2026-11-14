@@ -1,6 +1,8 @@
 -- SCCD Booking — 拆單機制：部分歸還（後台）＋部分延期（前台）（情境 5＋8，2026-09-26 定案）
--- 使用方式：SQL Editor 貼上執行一次（可重複執行）。前置：schema.sql、orders-rpc.sql、rental-blackouts.sql、equipment-bundles.sql。
+-- 使用方式：SQL Editor 貼上執行一次（可重複執行）。前置：schema.sql、orders-rpc.sql、rental-blackouts.sql、equipment-bundles.sql、
+--   admin-actions.sql（extended_by 欄位）、operator-access.sql（operator_handler）。
 -- 規則：延期介面勾選品項——全選＝整單延期不拆單；部分＝拆子單（單號根單號續流水、parent_order_id 指根單）。
+-- 2026-11-14 起學生的延期是「申請」，學會確認後才成立（第 4 節）。
 -- 延期用掉整張單的延期權（原單與子單 has_extended 皆 true）；
 -- 押金一律不拆（2026-11-08 Bernard 定）：全留根單，原單＋子單都還完才在「退押金」一次結，不開放還多少退多少。
 
@@ -38,7 +40,9 @@ begin
 
   return query
   select oi.id, oi.name,
-    case when oi.item_type = 'equipment' then
+    -- 分時段的設備只佔選的那幾天（order_items.days，orders-rpc.sql）：延期不會多佔日子，不用查撞期
+    case when oi.days is not null then true
+    when oi.item_type = 'equipment' then
       oi.quantity <= coalesce((select e.stock_quantity from public.equipment e where e.id = oi.item_id), 0)
         - coalesce((
             select sum(x.quantity)
@@ -152,14 +156,39 @@ begin
 end;
 $$;
 
--- ---------- 4. 部分延期（全選＝整單延；部分＝拆子單）----------
-create or replace function public.extend_my_order_partial(p_rental_number text, p_days int, p_item_ids bigint[])
+-- ---------- 4. 延期（2026-11-14 改兩段式：學生申請 → 學會確認後才成立；全選＝整單延、部分＝拆子單）----------
+-- orders.extend_request＝{days, item_ids, all, at}：學生送出、還沒確認的申請；null＝沒有。
+-- 學生要到學會確認，學會按「通過」才真的延（admin_approve_extend）；沒來確認就照原歸還日歸還，逾期照走 mark_overdue。
+-- 申請不佔庫存：送出時查一次撞期（擋掉一定延不了的），學會通過當下再查一次，中間被別人借走就延不成。
+alter table public.orders add column if not exists extend_request jsonb;
+
+-- 申請只在「租借中、歸還日沒變」時有效：逾期、歸還、取消、學會代延之後自動作廢，不必每支 RPC 各自清
+create or replace function public.orders_drop_stale_extend_request()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status <> 'in-progress' or new.end_date <> old.end_date then
+    new.extend_request := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_drop_stale_extend_request on public.orders;
+create trigger orders_drop_stale_extend_request
+  before update on public.orders
+  for each row when (old.extend_request is not null)
+  execute function public.orders_drop_stale_extend_request();
+
+-- 檢查（品項、封鎖期、撞期）＋ p_apply 時真的延。只給下面兩支呼叫，API 端不能直接叫（不然學生可以跳過學會確認）
+create or replace function public.extend_apply(
+  p_order_id bigint, p_days int, p_item_ids bigint[], p_apply boolean, p_handler text default null)
 returns text
 language plpgsql
 security definer set search_path = public
 as $$
 declare
-  v_uid uuid := auth.uid();
   v_order public.orders%rowtype;
   v_new_end date;
   v_item record;
@@ -174,36 +203,15 @@ declare
   v_child_number text;
   v_child_id bigint;
 begin
-  if v_uid is null then
-    raise exception '未登入';
-  end if;
-  if p_days < 1 or p_days > 7 then
-    raise exception '延期天數需為 1-7 天';
-  end if;
-  if p_item_ids is null or array_length(p_item_ids, 1) is null then
-    raise exception '請選擇至少一項要延期的品項';
-  end if;
-
-  select * into v_order from public.orders
-    where rental_number = p_rental_number and student_id = v_uid
-    for update;
+  select * into v_order from public.orders where id = p_order_id for update;
   if not found then
     raise exception '查無此訂單';
-  end if;
-  if v_order.status <> 'in-progress' then
-    raise exception '僅租借中的訂單可延期';
-  end if;
-  if v_order.has_extended then
-    raise exception '此訂單已延期過（僅可延期乙次）';
-  end if;
-  if (now() at time zone 'Asia/Taipei')::date > v_order.end_date - 3 then
-    raise exception '延期須在原歸還日前三天提出，已逾期限無法延期';
   end if;
 
   v_new_end := v_order.end_date + p_days;
 
-  -- 寒暑假封鎖（同 extend_my_order）：延長區間不得跨入封鎖期；admin／staff 不受限
-  if public.user_role() = 'student' and exists (
+  -- 寒暑假封鎖：延長區間不得跨入封鎖期；看借用人的身份（學會按通過時 user_role() 是學會自己的），admin／staff 不受限
+  if (select role from public.students where id = v_order.student_id) = 'student' and exists (
     select 1 from public.rental_blackouts b
     where b.start_date <= v_new_end
       and b.end_date >= v_order.end_date + 1
@@ -221,9 +229,10 @@ begin
 
   -- 逐選取品項撞期檢查（設備鎖列，與 extend_my_order 同邏輯）
   for v_item in
-    select id, item_type, item_id, name, quantity
+    select id, item_type, item_id, name, quantity, days
     from public.order_items where order_id = v_order.id and id = any(p_item_ids)
   loop
+    continue when v_item.days is not null; -- 分時段的設備只佔選的那幾天，延期不會多佔（同 extend_check）
     if v_item.item_type = 'equipment' then
       select stock_quantity into v_stock
         from public.equipment where id = v_item.item_id for update;
@@ -263,9 +272,15 @@ begin
       array_to_string(v_conflicts, '」、「');
   end if;
 
+  if not p_apply then
+    return v_order.rental_number;
+  end if;
+
   -- 全選 → 不拆單，等同整單延期
   if v_selected = v_total_items then
-    update public.orders set end_date = v_new_end, has_extended = true where id = v_order.id;
+    update public.orders
+      set end_date = v_new_end, has_extended = true, extend_request = null, extended_by = p_handler
+      where id = v_order.id;
     return v_order.rental_number;
   end if;
 
@@ -277,24 +292,144 @@ begin
 
   insert into public.orders
     (rental_number, student_id, start_date, end_date, booking_type, status,
-     deposit_total, has_extended, parent_order_id, reason, class_name, teacher, as_teacher, proof_path)
+     deposit_total, has_extended, parent_order_id, reason, class_name, teacher, as_teacher, proof_path, extended_by)
   values
     (v_child_number, v_order.student_id, v_order.start_date, v_new_end, v_order.booking_type,
      'in-progress', 0, true, v_root_id, v_order.reason, v_order.class_name, v_order.teacher,
-     v_order.as_teacher, v_order.proof_path)
+     v_order.as_teacher, v_order.proof_path, p_handler)
   returning id into v_child_id;
 
   update public.order_items set order_id = v_child_id where id = any(p_item_ids);
 
   -- 原單：延期權用掉（整張單僅乙次）
-  update public.orders set has_extended = true where id = v_order.id;
-
-  insert into public.notifications (student_id, type, title, message, link)
-  values (v_uid, 'success', '部分延期成功',
-          '訂單 ' || v_order.rental_number || ' 部分延期：延期品項拆為子單 ' || v_child_number ||
-          '，新歸還日 ' || to_char(v_new_end, 'YYYY-MM-DD') || '；其餘品項照原歸還日歸還。', '/profile');
+  update public.orders set has_extended = true, extend_request = null where id = v_order.id;
 
   return v_child_number;
+end;
+$$;
+revoke all on function public.extend_apply(bigint, int, bigint[], boolean, text) from public, anon, authenticated;
+
+-- 學生：送出延期申請（函式名沿用舊的，前端呼叫不用改；2026-11-14 前是直接生效）。
+-- 資格（租借中、僅乙次、前三天）與撞期在這裡先擋；重送會蓋掉上一筆申請。
+create or replace function public.extend_my_order_partial(p_rental_number text, p_days int, p_item_ids bigint[])
+returns text
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_order public.orders%rowtype;
+  v_all boolean;
+begin
+  if v_uid is null then
+    raise exception '未登入';
+  end if;
+  if p_days < 1 or p_days > 7 then
+    raise exception '延期天數需為 1-7 天';
+  end if;
+  if p_item_ids is null or array_length(p_item_ids, 1) is null then
+    raise exception '請選擇至少一項要延期的品項';
+  end if;
+
+  select * into v_order from public.orders
+    where rental_number = p_rental_number and student_id = v_uid
+    for update;
+  if not found then
+    raise exception '查無此訂單';
+  end if;
+  if v_order.status <> 'in-progress' then
+    raise exception '僅租借中的訂單可延期';
+  end if;
+  if v_order.has_extended then
+    raise exception '此訂單已延期過（僅可延期乙次）';
+  end if;
+  if (now() at time zone 'Asia/Taipei')::date > v_order.end_date - 3 then
+    raise exception '延期須在原歸還日前三天提出，已逾期限無法延期';
+  end if;
+
+  perform public.extend_apply(v_order.id, p_days, p_item_ids, false);
+
+  -- all＝申請時全選：學會通過時整單延（之後才加的待點交品項一起延），不照當時的品項 id
+  v_all := array_length(p_item_ids, 1) = (select count(*) from public.order_items where order_id = v_order.id);
+  update public.orders
+    set extend_request = jsonb_build_object('days', p_days, 'item_ids', to_jsonb(p_item_ids), 'all', v_all, 'at', now())
+    where id = v_order.id;
+
+  insert into public.notifications (student_id, type, title, message, link)
+  values (v_uid, 'info', '延期申請已送出',
+          '訂單 ' || v_order.rental_number || ' 申請延期 ' || p_days || ' 天，請在原歸還日（'
+          || to_char(v_order.end_date, 'MM/DD') || '）前到系學會確認，通過後才成立；沒有確認就照原歸還日歸還。', '/profile');
+
+  return v_order.rental_number;
+end;
+$$;
+
+-- 學會：通過延期申請（學生到學會確認後按）。這時才真的改歸還日／拆子單，經手人記 extended_by
+create or replace function public.admin_approve_extend(p_rental_number text, p_handler text default null)
+returns text
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_order public.orders%rowtype;
+  v_ids bigint[];
+  v_days int;
+  v_result text;
+begin
+  p_handler := public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
+
+  select * into v_order from public.orders
+    where rental_number = p_rental_number for update;
+  if not found or v_order.extend_request is null then
+    raise exception '這張訂單沒有待確認的延期申請';
+  end if;
+  if v_order.status <> 'in-progress' then
+    raise exception '訂單已逾期或已結束，延期申請失效（要通融請用「延期」代延）';
+  end if;
+
+  v_days := (v_order.extend_request ->> 'days')::int;
+  if (v_order.extend_request ->> 'all')::boolean then
+    select array_agg(id) into v_ids from public.order_items where order_id = v_order.id;
+  else
+    select array_agg(x::bigint) into v_ids from jsonb_array_elements_text(v_order.extend_request -> 'item_ids') x;
+  end if;
+
+  v_result := public.extend_apply(v_order.id, v_days, v_ids, true, p_handler);
+
+  insert into public.notifications (student_id, type, title, message, link)
+  values (v_order.student_id, 'success', '延期成立',
+          '訂單 ' || v_order.rental_number ||
+          case when v_result = v_order.rental_number
+            then ' 的延期申請已通過，新歸還日 ' || to_char(v_order.end_date + v_days, 'YYYY-MM-DD') || '。'
+            else ' 的部分延期已通過：延期品項拆為子單 ' || v_result || '，新歸還日 '
+                 || to_char(v_order.end_date + v_days, 'YYYY-MM-DD') || '；其餘品項照原歸還日歸還。' end,
+          '/profile');
+
+  return v_result;
+end;
+$$;
+
+-- 學會：退回延期申請（延期權不扣，期限內學生可以再申請）
+create or replace function public.admin_reject_extend(p_rental_number text, p_handler text default null)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_student uuid;
+begin
+  perform public.operator_handler(p_handler); -- 值班：admin 或學會成員（operator-access.sql）
+
+  update public.orders set extend_request = null
+    where rental_number = p_rental_number and extend_request is not null
+    returning student_id into v_student;
+  if not found then
+    raise exception '這張訂單沒有待確認的延期申請';
+  end if;
+
+  insert into public.notifications (student_id, type, title, message, link)
+  values (v_student, 'warning', '延期申請未通過',
+          '訂單 ' || p_rental_number || ' 的延期申請未通過，請照原歸還日歸還。', '/profile');
 end;
 $$;
 

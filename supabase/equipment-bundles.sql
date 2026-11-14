@@ -2,7 +2,9 @@
 -- 後台設定「哪些設備湊成一組、一組押金多少」：同一張設備單湊滿一組 → 押金只收一組，
 -- 小量 9 件額度／大量 10 件門檻也只算 1 件；湊不滿（例：少一個支架）照單件押金與件數計。小量、大量都適用。
 -- 同一設備可屬多個組合：依建立順序貪婪湊組（前端 src/utils/bundleUtils.ts 同演算法，改一邊要改另一邊）。
--- 使用方式：SQL Editor 貼上執行一次（可重複執行）；之後重貼 orders-rpc.sql 與 modify-order.sql（兩者呼叫本檔函式）。
+-- 分時段的設備（雷切機午班＋晚班）兩班都借算一組、押金一份：內建在 equipment_bundle_calc，不用建組合（2026-11-14）。
+-- 使用方式：SQL Editor 貼上執行（可重複執行）。呼叫端（orders-rpc.sql、modify-order.sql）執行時才查這支函式，不用跟著重貼。
+-- 後台存組合的 admin_save_bundle 在 bundle-images.sql（回傳 id 的版本）；這裡原本那份舊版已拿掉，重貼本檔才不會撞到它。
 
 create table if not exists public.equipment_bundles (
   id uuid primary key default gen_random_uuid(),
@@ -65,6 +67,28 @@ begin
     o_deposit := o_deposit + v_sets * v_b.deposit;
   end loop;
 
+  -- 分時段的設備（名稱結尾（午班）／（晚班）、其餘相同的一對，目前是雷切機；2026-11-14 Bernard 定）：
+  -- 兩班都借算 1 件、押金只收一份（取兩班裡較高的），不用在後台建組合。排在後台組合後面湊。
+  -- 前端 bundleUtils.shiftPairBundles 同規則，改一邊要改另一邊
+  for v_b in
+    select n.id as noon_id, e.id as evening_id,
+           greatest(coalesce((v_dep ->> n.id)::int, n.deposit), coalesce((v_dep ->> e.id)::int, e.deposit)) as deposit
+      from public.equipment n
+      join public.equipment e
+        on e.name ~ '[（(]晚班[）)]\s*$'
+       and regexp_replace(e.name, '\s*[（(]晚班[）)]\s*$', '') = regexp_replace(n.name, '\s*[（(]午班[）)]\s*$', '')
+      where n.name ~ '[（(]午班[）)]\s*$'
+        and v_left ? n.id and v_left ? e.id
+  loop
+    v_sets := least((v_left ->> v_b.noon_id)::int, (v_left ->> v_b.evening_id)::int);
+    continue when v_sets <= 0;
+    v_left := v_left || jsonb_build_object(
+      v_b.noon_id, (v_left ->> v_b.noon_id)::int - v_sets,
+      v_b.evening_id, (v_left ->> v_b.evening_id)::int - v_sets);
+    o_units := o_units + v_sets;
+    o_deposit := o_deposit + v_sets * v_b.deposit;
+  end loop;
+
   o_set_deposit := o_deposit;
   o_left := v_left;
   select o_units + coalesce(sum(l.value::int), 0),
@@ -75,41 +99,5 @@ begin
 end;
 $$;
 
--- ---------- 後台：新增／編輯組合（一次寫完組合與品項，不會只存一半）----------
--- p_id＝null 新增；p_items＝[{equipment_id, quantity}]。權限靠 RLS（admin write）
-create or replace function public.admin_save_bundle(p_id uuid, p_name text, p_deposit int, p_items jsonb)
-returns void
-language plpgsql
-set search_path = public
-as $$
-declare
-  v_id uuid := p_id;
-begin
-  if public.user_role() <> 'admin' then
-    raise exception '沒有權限';
-  end if;
-  if coalesce(trim(p_name), '') = '' then
-    raise exception '請輸入組合名稱';
-  end if;
-  if p_deposit is null or p_deposit < 0 then
-    raise exception '押金不可為負';
-  end if;
-  if p_items is null or jsonb_array_length(p_items) = 0 then
-    raise exception '組合至少需要一項設備';
-  end if;
 
-  if v_id is null then
-    insert into public.equipment_bundles (name, deposit) values (trim(p_name), p_deposit) returning id into v_id;
-  else
-    update public.equipment_bundles set name = trim(p_name), deposit = p_deposit where id = v_id;
-    if not found then
-      raise exception '組合不存在';
-    end if;
-    delete from public.equipment_bundle_items where bundle_id = v_id;
-  end if;
-
-  insert into public.equipment_bundle_items (bundle_id, equipment_id, quantity)
-  select v_id, i ->> 'equipment_id', (i ->> 'quantity')::int
-    from jsonb_array_elements(p_items) i;
-end;
-$$;
+notify pgrst, 'reload schema';

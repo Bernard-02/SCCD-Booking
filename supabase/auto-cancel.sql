@@ -57,6 +57,8 @@ $$;
 -- 改完即釋放庫存與空間），並發「訂單已取消」通知。回傳取消筆數。
 -- 已繳押金沒來取件（2026-11-06 學會決議）：取件日 19:00（最後營業時間）過了就取消、釋放設備，不算違規；
 -- 取件日碰到公休學生沒改也一樣（2026-11-07 Bernard 定）。押金留紀錄，後台「退押金」結清。
+-- 只取消有預選取件時段的單（大量設備）。2026-11-14 起收押金與取件分兩步，小量單也會停在「已繳待取件」，
+-- 但那多半是設備已經交出去、學會忘了按取件——自動取消會讓系統以為東西還在架上，所以小量單不自動取消，留在後台「待取件」由學會處理。
 create or replace function public.cancel_expired_pending()
 returns integer
 language plpgsql
@@ -90,6 +92,7 @@ begin
        set status = 'canceled'
      where status = 'pending'
        and deposit_paid_at is not null
+       and pickup_slot is not null
        and (now() at time zone 'Asia/Taipei') > coalesce(pickup_date, start_date) + time '19:00'
      returning *
   loop

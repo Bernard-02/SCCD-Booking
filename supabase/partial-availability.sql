@@ -4,6 +4,7 @@
 -- 前端抓不到這兩支（尚未執行本檔）會自動退回整段判定、不會壞。在 Supabase SQL Editor 執行。
 
 -- 各設備每天被生效訂單佔用的件數（只回有佔用的天）
+-- 分時段的設備（雷切機）只佔選的那幾天：order_items.days（orders-rpc.sql 加的欄位，要先貼那支），null＝整段每一天
 create or replace function public.equipment_reserved_daily(p_start date, p_end date)
 returns table(item_id text, day date, reserved bigint)
 language sql
@@ -18,6 +19,7 @@ as $$
     and o.status in ('pending', 'in-progress', 'overdue')
     and o.start_date <= p_end
     and o.end_date >= p_start
+    and (oi.days is null or d.day::date = any(oi.days))
   group by oi.item_id, d.day
   order by oi.item_id, d.day;
 $$;

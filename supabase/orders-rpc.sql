@@ -3,6 +3,13 @@
 -- 要嘛全部成立（訂單＋品項＋通知），要嘛全部不算，不會有半張訂單。
 -- 使用方式：SQL Editor 貼上執行一次（可重複執行）。
 
+-- 分時段的設備（雷切機）只借其中幾天（2026-11-14 Bernard 定：型錄按加入清單開視窗，一天一列選午班／晚班，可以跨天）：
+-- days＝這個品項實際佔用的日子，null＝整段每一天（一般設備一律 null）。佔用的計算都要看它：
+-- 這支的 submit_orders／equipment_reserved、partial-availability.sql 的 equipment_reserved_daily；
+-- 延期（partial-extend.sql、admin-actions.sql）遇到有 days 的品項不查撞期——延期不會多佔日子。
+-- 加了這欄之後要接著重貼：partial-availability.sql → partial-extend.sql → admin-actions.sql
+alter table public.order_items add column if not exists days date[];
+
 create or replace function public.submit_orders(p_orders jsonb)
 returns text[]
 language plpgsql
@@ -33,6 +40,10 @@ declare
   v_total int;            -- 本單件數（設備算數量、整組算 1；空間每格 1）
   v_dep int;              -- 單價（從資料表讀，不信任前端）
   v_active boolean;
+  v_name text;            -- 設備名稱（讀資料表的，不信任前端）
+  v_shift boolean;        -- 分時段的設備（名稱結尾（午班）／（晚班），目前是雷切機）
+  v_days date[];          -- 這個品項要佔用的日子：分時段的設備＝選的那幾天，其餘＝整段每一天
+  v_shift_day date;       -- 分時段的設備撞到休息：哪一天
 begin
   if v_uid is null then
     raise exception '未登入';
@@ -59,6 +70,10 @@ begin
   -- 系學會費（2026-11-07）：只看學生；系秘、admin 不用繳
   if public.user_role() = 'student' and not (select dues_paid from public.students where id = v_uid) then
     raise exception '尚未繳交系學會費，請先至系學會繳交後再預約';
+  end if;
+  -- 手機號碼（2026-11-14 學會測試後加）：學會要聯絡得到借用人，沒填不能送單；前端清單頁送出前會先請學生填
+  if public.user_role() = 'student' and coalesce(trim((select phone from public.students where id = v_uid)), '') = '' then
+    raise exception '請先填寫手機號碼再預約';
   end if;
   if p_orders is null or jsonb_array_length(p_orders) = 0 then
     raise exception '沒有可送出的訂單';
@@ -115,6 +130,11 @@ begin
     if (v_order ->> 'start_date')::date < v_today
        or (v_order ->> 'end_date')::date < (v_order ->> 'start_date')::date then
       raise exception '租借日期不正確，請重新選擇';
+    end if;
+    -- 過了今天的最後營業時間（19:00）歸還日不能是今天（Bernard 2026-11-14，設備、空間都一樣）：今天已經沒辦法歸還，
+    -- 隔天取件當下就逾期（mark_overdue）。起租日照舊可以是今天。同前端 timeUtils.minEndDate
+    if (now() at time zone 'Asia/Taipei') >= (v_order ->> 'end_date')::date + time '19:00' then
+      raise exception '今天的營業時間已過，歸還日請選明天以後';
     end if;
     if v_is_equip and v_order ->> 'booking_type' = 'mass-personal'
        and (v_order ->> 'start_date')::date < v_today + 3 then
@@ -200,7 +220,7 @@ begin
     v_space_dep := 0;
     for v_item in select * from jsonb_array_elements(v_order -> 'items') loop
       if v_item ->> 'item_type' = 'equipment' then
-        select stock_quantity, deposit, is_active into v_stock, v_dep, v_active
+        select name, stock_quantity, deposit, is_active into v_name, v_stock, v_dep, v_active
           from public.equipment
           where id = v_item ->> 'item_id'
           for update;
@@ -210,6 +230,43 @@ begin
         if not v_active then
           raise exception '「%」已下架，請從購物車移除', v_item ->> 'name';
         end if;
+
+        -- 這個品項要佔用哪幾天。分時段的設備（名稱結尾（午班）／（晚班），目前是雷切機）可以只借其中幾天：
+        -- 前台選時段的視窗（ShiftDialog）把選的日子放在 days，下面存進 order_items.days。
+        -- 沒帶 days＝整段每一天；一般設備是帶回去用的，一律整段，帶了 days 也不理（不然可以只佔一天、實際借走整段）
+        v_shift := v_name ~ '[（(](午班|晚班)[）)]\s*$';
+        if v_shift and jsonb_typeof(v_item -> 'days') = 'array' then
+          select array_agg(s.d order by s.d) into v_days
+            from (select distinct x::date as d from jsonb_array_elements_text(v_item -> 'days') x) s;
+          if v_days is null or v_days[1] < (v_order ->> 'start_date')::date
+             or v_days[array_upper(v_days, 1)] > (v_order ->> 'end_date')::date then
+            raise exception '「%」選的時段不在租借日期內，請重新選擇時段', v_name;
+          end if;
+        else
+          select array_agg(g::date) into v_days
+            from generate_series((v_order ->> 'start_date')::date, (v_order ->> 'end_date')::date, interval '1 day') g;
+        end if;
+
+        -- 分時段的設備只能在營業時間用（2026-11-14 學會）：要用的日子裡那一班沒開（週六日、公休整天、只休那一班）就擋。
+        -- 前台選時段的視窗已經不能點這些格子，這裡是防線：加入清單後才新增的公休、沒選時段的舊購物車
+        if v_shift then
+          select min(d) into v_shift_day
+            from unnest(v_days) d
+            where extract(isodow from d) in (6, 7)
+               or exists (select 1 from public.closed_dates c
+                          where c.day = d
+                            and c.shift in ('all', case when v_name ~ '午班[）)]\s*$' then 'noon' else 'evening' end));
+          if v_shift_day is not null then
+            raise exception '「%」% 沒有開放（系學會休息），請改日期或改借另一班', v_name, to_char(v_shift_day, 'FMMM/FMDD');
+          end if;
+          -- 今天已經結束的班不能借，只能借之後的（Bernard 2026-11-14）：午班到 13:00、晚班到 19:00——
+          -- 同後台營業時間頁寫死的 SHIFTS、前端 timeUtils.SHIFT_END，學會改時間三處一起改
+          if v_today = any(v_days)
+             and (now() at time zone 'Asia/Taipei')::time >= (case when v_name ~ '午班[）)]\s*$' then time '13:00' else time '19:00' end) then
+            raise exception '「%」今天的時段已經過了，請重新選擇時段', v_name;
+          end if;
+        end if;
+
         select coalesce(sum(oi.quantity), 0) into v_reserved
           from public.order_items oi
           join public.orders o on o.id = oi.order_id
@@ -217,7 +274,11 @@ begin
             and oi.item_id = v_item ->> 'item_id'
             and o.status in ('pending', 'in-progress', 'overdue')
             and o.start_date <= (v_order ->> 'end_date')::date
-            and o.end_date >= (v_order ->> 'start_date')::date;
+            and o.end_date >= (v_order ->> 'start_date')::date
+            -- 對方只佔其中幾天（days）：有同一天才算撞；對方整段：我要用的日子有落在他的區間才算
+            and (case when oi.days is null
+                   then exists (select 1 from unnest(v_days) d where d between o.start_date and o.end_date)
+                   else oi.days && v_days end);
 
         if (v_item ->> 'quantity')::int > v_stock - v_reserved then
           raise exception '「%」該時段庫存不足（剩餘 %）',
@@ -266,7 +327,8 @@ begin
     v_equip_dep := least(v_equip_dep, 5000);
     v_space_dep := least(v_space_dep, 5000);
 
-    -- 系秘直借（情境 10，2026-09-26 實作）：staff 免押金、送出即 in-progress（免審核）；仍守先來後到。
+    -- 系秘（情境 10）：只有免押金，其餘比照一般使用者（2026-11-14 改，原本送出即 in-progress）——
+    -- 沒有押金要繳，送出就是「已繳待取件」（pending＋deposit_paid_at，沒有 paid_by），到學會取件才 in-progress；仍守先來後到。
     -- 老師名義也免押金，但照走待繳押金流程：學生到學會核對證明，學會按收押金（0 元），不符就取消訂單
     if public.user_role() = 'staff' or v_as_teacher then
       v_equip_dep := 0;
@@ -283,19 +345,20 @@ begin
     insert into public.orders
       (rental_number, student_id, start_date, end_date, booking_type, status,
        deposit_total, reason, class_name, teacher, deposit_date, deposit_slot, pickup_slot,
-       as_teacher, proof_path)
+       as_teacher, proof_path, deposit_paid_at)
     values
       (v_rental, v_uid,
        (v_order ->> 'start_date')::date, (v_order ->> 'end_date')::date,
        v_order ->> 'booking_type',
-       case when public.user_role() = 'staff' then 'in-progress' else 'pending' end,
+       'pending',
        v_equip_dep + v_space_dep,
        v_order ->> 'reason', v_order ->> 'class_name', v_order ->> 'teacher',
        (v_order ->> 'deposit_date')::date, v_order ->> 'deposit_slot', v_order ->> 'pickup_slot',
-       v_as_teacher, v_proof)
+       v_as_teacher, v_proof,
+       case when public.user_role() = 'staff' then now() end)
     returning id into v_order_id;
 
-    insert into public.order_items (order_id, item_type, item_id, name, quantity, deposit)
+    insert into public.order_items (order_id, item_type, item_id, name, quantity, deposit, days)
     select v_order_id,
            i ->> 'item_type',
            i ->> 'item_id',
@@ -303,13 +366,18 @@ begin
            (i ->> 'quantity')::int,
            case when i ->> 'item_type' = 'equipment'
              then (select e.deposit from public.equipment e where e.id = i ->> 'item_id')
-             else (select s.deposit from public.space s where s.id = i ->> 'item_id') end
+             else (select s.deposit from public.space s where s.id = i ->> 'item_id') end,
+           -- 分時段的設備選的日子（上面驗過都在租借日期內）；其餘 null＝整段
+           case when i ->> 'item_type' = 'equipment' and jsonb_typeof(i -> 'days') = 'array'
+                 and exists (select 1 from public.equipment e
+                             where e.id = i ->> 'item_id' and e.name ~ '[（(](午班|晚班)[）)]\s*$')
+             then array(select distinct x::date from jsonb_array_elements_text(i -> 'days') x order by 1) end
     from jsonb_array_elements(v_order -> 'items') i;
 
     insert into public.notifications (student_id, type, title, message, link)
     values (v_uid, 'success', '預約成功',
             case when public.user_role() = 'staff'
-              then '訂單 ' || v_rental || ' 已成立（系秘直借，免押金）。'
+              then '訂單 ' || v_rental || ' 已送出（免押金），請至系學會取件。'
               when v_as_teacher
               then '訂單 ' || v_rental || ' 已送出，請於 24 小時內至系學會核對證明文件。'
               else '訂單 ' || v_rental || ' 已送出，請於 24 小時內繳交押金。' end, '/profile');
@@ -323,7 +391,9 @@ $$;
 
 -- 後台：收押金／取件。僅 admin（情境 4；大量設備預繳見 mass-pickup.sql）。
 --   p_pickup = true（預設）：收押金＋取件同時進行，或已預繳者來取件 → in-progress，租借開始。
---   p_pickup = false：只收押金（大量設備先繳後取）→ 仍為 pending，記 deposit_paid_at（＝已繳待取件）。
+--   p_pickup = false：只收押金 → 仍為 pending，記 deposit_paid_at（＝已繳待取件）。
+--   2026-11-14 起後台一律分兩次叫（先 false 收押金、再 true 取件，各帶各的經手人；小量單也一樣）：收押金的人不一定是交付設備的人。
+--   「同時進行」那條路（pending 未繳直接 p_pickup = true）前端不再走，函式照舊支援。
 -- p_handler = 值班經手幹部姓名（快照：收押金寫 paid_by、取件寫 picked_up_by；名單見 staff-members.sql）。
 -- p_deposit_total = 已繳待取件的單在繳押金後被學生改過品項時，學會現場補收／退還後的押金總額（null＝不變）。
 drop function if exists public.admin_mark_paid(text);                -- 舊簽名（未帶經手人）
@@ -389,6 +459,7 @@ drop function if exists public.admin_mark_returned(text, integer, text);
 -- reserved = pending + in-progress + overdue 的重疊訂單數量；on_hold = 其中押金還沒繳的部分
 --   （待繳押金的單＋小量單取件後新增、尚未點交補押金的品項；已繳待取件與大量單取件後新增＝押金已繳，直接扣）
 --   pickup_pending 欄位見 modify-order.sql（需先執行）
+-- 分時段的設備只佔選的那幾天（order_items.days）：那幾天有落在查詢區間才算
 create or replace function public.equipment_reserved(p_start date, p_end date)
 returns table(item_id text, reserved bigint, on_hold bigint)
 language sql
@@ -407,6 +478,7 @@ as $$
     and o.status in ('pending', 'in-progress', 'overdue')
     and o.start_date <= p_end
     and o.end_date >= p_start
+    and (oi.days is null or exists (select 1 from unnest(oi.days) d where d between p_start and p_end))
   group by oi.item_id;
 $$;
 

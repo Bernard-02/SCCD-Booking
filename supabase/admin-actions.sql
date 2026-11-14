@@ -6,8 +6,9 @@ alter table public.orders add column if not exists canceled_by text; -- 代取�
 alter table public.orders add column if not exists extended_by text; -- 代延期經手幹部（學生自助延期不寫）
 
 -- ---------- 2. 代取消（情境 2：學生到學會現場辦，涉及退押金）----------
--- pending（還沒繳錢，直接作廢）與 in-progress（已繳押金，現金退還為人工動作）皆可；
--- canceled 不佔用，庫存／空間自動釋放。overdue 不可取消（要走歸還＋罰款）。
+-- 只有還沒取件的單（pending）：待繳押金直接作廢；已繳待取件當場退押金（現金退還為人工動作）。
+-- 取件後（in-progress／overdue）東西在學生手上，不能取消，一律走歸還（2026-11-14 改，原本 in-progress 也能取消）。
+-- canceled 不佔用，庫存／空間自動釋放。
 create or replace function public.admin_cancel_order(p_rental_number text, p_handler text default null)
 returns void
 language plpgsql
@@ -23,22 +24,22 @@ begin
   if not found then
     raise exception '查無此訂單';
   end if;
-  if v_order.status not in ('pending', 'in-progress') then
-    raise exception '僅待繳押金／租借中的訂單可取消（逾期單請走歸還＋罰款）';
+  if v_order.status <> 'pending' then
+    raise exception '僅還沒取件的訂單可取消（已取件請走歸還）';
   end if;
 
-  -- 已繳押金：對話框要求當場退還，這裡一併記錄，訂單頁「退押金」欄才不會又出現按鈕
+  -- 已繳押金（已繳待取件：pending＋deposit_paid_at，見 mass-pickup.sql）：對話框要求當場退還，
+  -- 這裡一併記錄，訂單頁「退押金」欄才不會又出現按鈕
   update public.orders
     set status = 'canceled', canceled_by = p_handler,
-        refunded = case when status = 'in-progress' or deposit_paid_at is not null then deposit_total else refunded end,
-        refunded_by = case when status = 'in-progress' or deposit_paid_at is not null then p_handler else refunded_by end
+        refunded = case when deposit_paid_at is not null then deposit_total else refunded end,
+        refunded_by = case when deposit_paid_at is not null then p_handler else refunded_by end
     where id = v_order.id;
 
   insert into public.notifications (student_id, type, title, message, link)
   values (v_order.student_id, 'info', '訂單已取消',
           '訂單 ' || v_order.rental_number || ' 已由系學會協助取消'
-          -- 已繳押金＝租借中，或大量設備預繳待取件（pending＋deposit_paid_at，見 mass-pickup.sql）
-          || case when v_order.deposit_total > 0 and (v_order.status = 'in-progress' or v_order.deposit_paid_at is not null)
+          || case when v_order.deposit_total > 0 and v_order.deposit_paid_at is not null
                   then '，押金 NT$ ' || v_order.deposit_total || ' 已退還' else '' end || '。', '/profile');
 end;
 $$;
@@ -78,9 +79,10 @@ begin
 
   -- 撞期檢查（與 extend_my_order 同邏輯；先來後到不可破）
   for v_item in
-    select item_type, item_id, name, quantity
+    select item_type, item_id, name, quantity, days
     from public.order_items where order_id = v_order.id
   loop
+    continue when v_item.days is not null; -- 分時段的設備只佔選的那幾天（order_items.days，orders-rpc.sql），延期不會多佔
     if v_item.item_type = 'equipment' then
       select stock_quantity into v_stock
         from public.equipment where id = v_item.item_id for update;

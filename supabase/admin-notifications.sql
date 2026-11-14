@@ -4,9 +4,10 @@
 --
 -- 用 orders 表的 trigger 做，不必動各支 RPC。「本人自己做的」＝ auth.uid() = 該單 student_id：
 -- 後台代操作是 admin 的 uid、pg_cron 排程沒有 uid，都不會發。
--- 事件：送單（新訂單）、修改品項（items_updated_at 變動）、整單延期（has_extended 轉 true 且歸還日變）、
---       部分延期（拆出的子單 insert，parent_order_id 不為空）、自行取消（status → canceled；前台目前沒有這個操作，先留著）。
--- 在 Supabase SQL Editor 執行一次。
+-- 事件：送單（新訂單）、修改品項（items_updated_at 變動）、延期申請（extend_request 有新的，2026-11-14；欄位在 partial-extend.sql，那支要先跑）、
+--       自行取消（status → canceled，cancel_my_order）。
+--       整單延期／部分延期拆子單那兩段是 2026-11-14 前學生延期直接生效時用的，現在延期由學會按通過，只有學會成員通過自己的單才會走到。
+-- 在 Supabase SQL Editor 執行（可重複執行）。
 -- =============================================================
 
 create or replace function public.notify_admins(p_type text, p_title text, p_message text, p_link text)
@@ -46,6 +47,10 @@ begin
   elsif new.items_updated_at is distinct from old.items_updated_at then
     perform public.notify_admins('info', '修改訂單',
       v_who || ' 修改了訂單 ' || new.rental_number || ' 的品項。', v_link);
+  elsif new.extend_request is not null and new.extend_request is distinct from old.extend_request then
+    perform public.notify_admins('info', '延期申請',
+      v_who || ' 申請將訂單 ' || new.rental_number || ' 延期 ' || (new.extend_request ->> 'days') || ' 天'
+      || case when (new.extend_request ->> 'all')::boolean then '' else '（部分品項）' end || '，等學會確認。', v_link);
   elsif new.has_extended and not old.has_extended and new.end_date <> old.end_date then
     perform public.notify_admins('info', '延期',
       v_who || ' 將訂單 ' || new.rental_number || ' 延期至 ' || to_char(new.end_date, 'YYYY-MM-DD') || '。', v_link);
